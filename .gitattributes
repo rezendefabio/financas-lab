@@ -1,0 +1,31 @@
+# Default: LF para todos os arquivos de texto
+* text=auto eol=lf
+
+# Windows scripts exigem CRLF
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf
+
+# Shell scripts: forçar LF
+*.sh text eol=lf
+
+# Código e configuração: LF explícito
+*.java       text eol=lf
+*.xml        text eol=lf
+*.yml        text eol=lf
+*.yaml       text eol=lf
+*.json       text eol=lf
+*.md         text eol=lf
+*.sql        text eol=lf
+*.properties text eol=lf
+
+# Binários: sem conversão
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.gif  binary
+*.ico  binary
+*.pdf  binary
+*.zip  binary
+*.jar  binary
+*.war  binary
