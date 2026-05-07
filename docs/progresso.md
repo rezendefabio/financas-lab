@@ -89,7 +89,7 @@ Construir a fundação não-negociável da fábrica: testes em três níveis, CI
 - [ ] GitHub Actions configurado: lint + test + build em PR
 - [ ] CI verde no primeiro commit em `main`
 - [ ] Pre-commit hook local rodando lint + format
-- [ ] Branch protection em `main` (sem push direto, exige PR e CI verde)
+- [x] Branch protection em `main` (sem push direto, exige PR e CI verde)
 
 ### Roadmap detalhado
 
@@ -231,7 +231,22 @@ Definir como capturar quando chegarmos na Camada 4 — não criar burocracia ago
 
 ---
 
+## Lições da Etapa 1.2
+
+### Candidatos a hook (automatizar em etapas futuras)
+
+1. Validar antes de iniciar Tier 2 que branch protection da default branch está ativa e enforcing — não apenas configurada na interface.
+2. Validar que o usuário não está na lista de bypass do ruleset, mesmo sendo admin.
+
+### Lições de ambiente
+
+1. **GitHub Free + repo privado não suporta branch protection.** Tanto "Branch protection rules" (clássica) quanto "Repository rulesets" (nova) ficam configuradas mas marcadas como "Not enforced" — interface permite criar e dá impressão de que está protegido, mas não bloqueia. Solução: tornar repo público (Free) ou migrar pra GitHub Team (pago). Decisão tomada: público.
+2. **Validação obrigatória de branch protection é não-negociável.** O passo de testar push direto e ver erro deve sempre ser executado. Sem isso, branch protection pode estar inativa por meses sem ninguém notar.
+3. **Repo tornado público não tem custo se nenhum dado sensível está versionado.** ADR-005 (auth) e práticas de .env já garantem isso. Ganho colateral: GitHub Actions ilimitado em repo público, alinhado com o pulo de posicionamento profissional do blueprint.
+
+---
+
 ## Histórico de mudanças deste documento
 
-- **2026-05-07** — Etapa 1.1 concluída: critérios marcados. Seção de lições reescrita após revisão para conter apenas o observado na sessão.
+- **2026-05-07** — Etapa 1.2 concluída: branch protection ativa via Repository Ruleset após repo se tornar público. Etapa 1.1 concluída: critérios marcados. Seção de lições reescrita após revisão para conter apenas o observado na sessão.
 - **2026-05-06** — Criação inicial. Camada 0 marcada como concluída. Critérios da Camada 1 detalhados.
