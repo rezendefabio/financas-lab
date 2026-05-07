@@ -217,21 +217,21 @@ Definir como capturar quando chegarmos na Camada 4 — não criar burocracia ago
 
 ### Candidatos a hook (automatizar em etapas futuras)
 
-1. **Ordem de commit do `.gitattributes`** — verificar que `.gitattributes` é o único arquivo no primeiro commit quando criado pela primeira vez. Se outros arquivos forem staged junto, line endings não são normalizados corretamente nos arquivos já presentes.
-2. **Linhas em branco em Markdown** — verificar que arquivos `.md` criados ou modificados têm linhas em branco antes e depois de cada `##` heading. Sem isso, alguns renderers não reconhecem o header.
-3. **`.claude/` fora de commits** — verificar que o diretório `.claude/` não está staged. É configuração local do Claude Code e não deve entrar no repositório.
-4. **Encoding de arquivos criados no Windows** — verificar que arquivos `.md`, `.yml`, `.json` e `.java` gerados no ambiente Windows estão em UTF-8 sem BOM. PowerShell 5 escreve UTF-8 com BOM por default, o que quebra parsers Java e ferramentas Unix.
+1. **Linhas em branco em Markdown** — validar que arquivos `.md` modificados têm linhas em branco antes e depois de headers (`##`, `###`). Sem isso, alguns renderers não reconhecem o header.
+2. **Encoding UTF-8 em arquivos de texto** — validar que arquivos criados pela fábrica estão em UTF-8.
+3. **Conventional Commits** — validar que mensagens de commit seguem o padrão (`feat:`, `fix:`, `chore:`, etc.).
+4. **Tamanho de documentos em `docs/`** — alertar se algum `.md` em `docs/` ultrapassa um limite definido (anti-enciclopédia, segundo o princípio "CLAUDE.md curto > CLAUDE.md enciclopédia").
 
 ### Lições de ambiente
 
-1. **Output truncado no Bash com `cd`** — encadear `cd <dir> && powershell -Command ...` no bash do Windows pode redirecionar output inesperadamente. Usar caminho absoluto diretamente no comando PowerShell é mais confiável.
-2. **Encoding UTF-8 no PowerShell** — `Get-Content -Encoding UTF8` em PowerShell 5 pode adicionar BOM silenciosamente. Para leitura confiável de arquivos gerados pela fábrica, preferir `[System.IO.File]::ReadAllText()` ou PowerShell 7+ com `UTF8NoBOM`.
-3. **`Measure-Object -Line` não conta linhas vazias** — o cmdlet conta apenas linhas com conteúdo não-vazio. Para contar o total real de linhas (incluindo em branco), usar `([System.IO.File]::ReadAllLines('<path>')).Count`. A diferença causou falso alarme na validação do README.md nesta etapa.
-4. **Validação independente do conteúdo** — nunca declarar sucesso em criação de arquivo baseado apenas no retorno do comando de escrita. Sempre confirmar com leitura direta do arquivo (ferramenta Read ou equivalente) antes de reportar ao usuário.
+1. **Tools `Read`/`Write` do Claude Code truncam output do CLI** com marcador "+N lines (ctrl+o to expand)". Sempre validar conteúdo em disco antes de aceitar arquivo criado, não confiar no preview.
+2. **PowerShell padrão sem `-Encoding UTF8` lê UTF-8 errado** — mostra `Ã³` no lugar de `ó`, `Ã§` no lugar de `ç`. Para validação confiável de arquivos com acentos, usar `Get-Content -Encoding UTF8` explícito.
+3. **`Measure-Object -Line` não conta linhas em branco** — o cmdlet conta apenas linhas com conteúdo. Para contagem real (incluindo vazias), usar `[System.IO.File]::ReadAllLines('<path>').Count`.
+4. **Premissas do orquestrador externo podem estar erradas** — validação independente com cálculo concreto resolve. O Claude Code acertou em pushback técnico contradizendo análise visual feita no chat externo. Reforça o princípio: dado concreto vence interpretação.
 
 ---
 
 ## Histórico de mudanças deste documento
 
-- **2026-05-07** — Etapa 1.1 concluída: critérios de `.gitattributes`, `.gitignore`, README e CLAUDE.md marcados. Seção de lições da etapa 1.1 adicionada.
+- **2026-05-07** — Etapa 1.1 concluída: critérios marcados. Seção de lições reescrita após revisão para conter apenas o observado na sessão.
 - **2026-05-06** — Criação inicial. Camada 0 marcada como concluída. Critérios da Camada 1 detalhados.
