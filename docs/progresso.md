@@ -73,8 +73,8 @@ Construir a fundação não-negociável da fábrica: testes em três níveis, CI
 
 ### Critérios de "pronto"
 
-- [ ] Repo configurado com `.gitattributes`, `.gitignore`, README inicial
-- [ ] CLAUDE.md mínimo do projeto criado (apontando para docs)
+- [x] Repo configurado com `.gitattributes`, `.gitignore`, README inicial
+- [x] CLAUDE.md mínimo do projeto criado (apontando para docs)
 - [ ] Estrutura de pastas inicial criada
 - [ ] `docker-compose.yml` rodando Postgres 16 + Redis 7
 - [ ] Scripts PowerShell criados: `setup.ps1`, `dev.ps1`, `test.ps1`, `check.ps1`, `ship.ps1`
@@ -213,6 +213,25 @@ Definir como capturar quando chegarmos na Camada 4 — não criar burocracia ago
 
 ---
 
+## Lições da Etapa 1.1
+
+### Candidatos a hook (automatizar em etapas futuras)
+
+1. **Ordem de commit do `.gitattributes`** — verificar que `.gitattributes` é o único arquivo no primeiro commit quando criado pela primeira vez. Se outros arquivos forem staged junto, line endings não são normalizados corretamente nos arquivos já presentes.
+2. **Linhas em branco em Markdown** — verificar que arquivos `.md` criados ou modificados têm linhas em branco antes e depois de cada `##` heading. Sem isso, alguns renderers não reconhecem o header.
+3. **`.claude/` fora de commits** — verificar que o diretório `.claude/` não está staged. É configuração local do Claude Code e não deve entrar no repositório.
+4. **Encoding de arquivos criados no Windows** — verificar que arquivos `.md`, `.yml`, `.json` e `.java` gerados no ambiente Windows estão em UTF-8 sem BOM. PowerShell 5 escreve UTF-8 com BOM por default, o que quebra parsers Java e ferramentas Unix.
+
+### Lições de ambiente
+
+1. **Output truncado no Bash com `cd`** — encadear `cd <dir> && powershell -Command ...` no bash do Windows pode redirecionar output inesperadamente. Usar caminho absoluto diretamente no comando PowerShell é mais confiável.
+2. **Encoding UTF-8 no PowerShell** — `Get-Content -Encoding UTF8` em PowerShell 5 pode adicionar BOM silenciosamente. Para leitura confiável de arquivos gerados pela fábrica, preferir `[System.IO.File]::ReadAllText()` ou PowerShell 7+ com `UTF8NoBOM`.
+3. **`Measure-Object -Line` não conta linhas vazias** — o cmdlet conta apenas linhas com conteúdo não-vazio. Para contar o total real de linhas (incluindo em branco), usar `([System.IO.File]::ReadAllLines('<path>')).Count`. A diferença causou falso alarme na validação do README.md nesta etapa.
+4. **Validação independente do conteúdo** — nunca declarar sucesso em criação de arquivo baseado apenas no retorno do comando de escrita. Sempre confirmar com leitura direta do arquivo (ferramenta Read ou equivalente) antes de reportar ao usuário.
+
+---
+
 ## Histórico de mudanças deste documento
 
+- **2026-05-07** — Etapa 1.1 concluída: critérios de `.gitattributes`, `.gitignore`, README e CLAUDE.md marcados. Seção de lições da etapa 1.1 adicionada.
 - **2026-05-06** — Criação inicial. Camada 0 marcada como concluída. Critérios da Camada 1 detalhados.
