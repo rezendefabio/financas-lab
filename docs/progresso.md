@@ -78,12 +78,12 @@ Construir a fundação não-negociável da fábrica: testes em três níveis, CI
 - [ ] Estrutura de pastas inicial criada
 - [x] `docker-compose.yml` rodando Postgres 16 + Redis 7
 - [ ] Scripts PowerShell criados: `setup.ps1`, `dev.ps1`, `test.ps1`, `check.ps1`, `ship.ps1`
-- [ ] Projeto Spring Boot inicializado via Spring Initializr (manualmente)
-- [ ] `pom.xml` com todas as dependências da stack
+- [x] Projeto Spring Boot inicializado via Spring Initializr (manualmente)
+- [x] `pom.xml` com todas as dependências da stack
 - [ ] Flyway configurado, primeira migration criada (schema vazio + tabela de versão)
 - [ ] Testcontainers configurado e funcional
 - [ ] Hello-world endpoint passando teste e2e via Testcontainers
-- [ ] JaCoCo configurado com thresholds por camada
+- [x] JaCoCo configurado (sem thresholds — apenas prepare-agent + report; thresholds por camada entram na Etapa 2.4)
 - [ ] Checkstyle + SpotBugs configurados
 - [ ] Projeto Next.js inicializado
 - [ ] GitHub Actions configurado: lint + test + build em PR
@@ -231,6 +231,27 @@ Definir como capturar quando chegarmos na Camada 4 — não criar burocracia ago
 
 ---
 
+## Lições da Etapa 1.4
+
+### Candidatos a hook (automatizar em etapas futuras)
+
+1. Validar que pesquisa de versões em pom.xml consultou Maven Central / BOM Spring antes de fixar (não memória do agente). Versões podem estar desatualizadas no conhecimento do agente.
+2. Validar que `<release>` está sendo usado em vez de `<source>` + `<target>` no maven-compiler-plugin (idiomático desde Java 9).
+3. Validar ordem "Lombok antes de MapStruct" em `<annotationProcessorPaths>` do maven-compiler-plugin.
+4. Validar que agente NÃO sugere "próxima etapa" espontaneamente após abrir PR. Cada etapa tem fim explícito (PR mergeado + progresso.md atualizado + sync local) antes da próxima.
+
+### Lições de ambiente
+
+1. `python3` não existe no PATH do Windows nativo — o binário se chama `python`. Lição reapareceu durante a sessão (primeira vez no início, segunda vez no curl /v3/api-docs). Persistência de lições entre comandos da mesma sessão é necessária.
+2. Spring Security em classpath protege todos os endpoints sem `SecurityFilterChain` customizado. `/v3/api-docs` retorna 401 (não 404) — confirma que springdoc registrou o endpoint mas Spring Security está bloqueando. Será resolvido quando `SecurityFilterChain` for configurado na Camada 2.
+3. `<source>` + `<target>` no maven-compiler-plugin não é equivalente a `<release>` desde Java 9. `<release>` garante que apenas APIs públicas da versão alvo são usadas, evitando uso acidental de APIs internas do JDK atual.
+4. BOM do Spring Boot 3.5.14 fixa Testcontainers em 1.21.4 mesmo com 2.0.5 disponível no Maven Central. Usar versão do BOM evita incompatibilidades.
+5. `mvn -N wrapper:wrapper -Dmaven=X` gera wrapper na versão pedida, mas a versão default do plugin pode estar desalinhada da Maven local. Wrapper foi gerado em 3.9.9 (Maven local: 3.9.15) — recomendado alinhar manualmente em `maven-wrapper.properties` em etapa futura.
+6. Spring Boot 3.x mostra warning de "spring.jpa.open-in-view is enabled by default" mesmo configurando `false` explicitamente. É bug conhecido do Spring Boot, não regressão da config. Ignorar.
+7. `-Amapstruct.defaultComponentModel=spring` no `<compilerArgs>` gera warning "options were not recognized by any processor" quando não há classe `@Mapper` no projeto. Investigar na Camada 2 quando primeiro mapper for criado: pode ser necessário usar `@Mapper(componentModel = "spring")` direto em cada classe se o argumento global não estiver sendo passado corretamente.
+
+---
+
 ## Lições da Etapa 1.3
 
 ### Candidatos a hook (automatizar em etapas futuras)
@@ -264,6 +285,7 @@ Definir como capturar quando chegarmos na Camada 4 — não criar burocracia ago
 
 ## Histórico de mudanças deste documento
 
+- **2026-05-07** — Etapa 1.4 concluída: Spring Boot 3.5.14 + Java 21 inicializado manualmente, pom.xml com toda a stack, Maven Wrapper 3.9.9, JaCoCo configurado (prepare-agent + report). Mergeado via PR #8.
 - **2026-05-07** — Etapa 1.3 concluída: docker-compose.yml com Postgres 16 e Redis 7 rodando e validado (8 checks).
 - **2026-05-07** — Etapa 1.2 concluída: branch protection ativa via Repository Ruleset após repo se tornar público.
 - **2026-05-07** — Etapa 1.1 concluída: critérios marcados. Seção de lições reescrita após revisão para conter apenas o observado na sessão.
