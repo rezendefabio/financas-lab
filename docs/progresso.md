@@ -76,7 +76,7 @@ Construir a fundação não-negociável da fábrica: testes em três níveis, CI
 - [x] Repo configurado com `.gitattributes`, `.gitignore`, README inicial
 - [x] CLAUDE.md mínimo do projeto criado (apontando para docs)
 - [ ] Estrutura de pastas inicial criada
-- [ ] `docker-compose.yml` rodando Postgres 16 + Redis 7
+- [x] `docker-compose.yml` rodando Postgres 16 + Redis 7
 - [ ] Scripts PowerShell criados: `setup.ps1`, `dev.ps1`, `test.ps1`, `check.ps1`, `ship.ps1`
 - [ ] Projeto Spring Boot inicializado via Spring Initializr (manualmente)
 - [ ] `pom.xml` com todas as dependências da stack
@@ -231,6 +231,22 @@ Definir como capturar quando chegarmos na Camada 4 — não criar burocracia ago
 
 ---
 
+## Lições da Etapa 1.3
+
+### Candidatos a hook (automatizar em etapas futuras)
+
+1. Validar que docker-compose.yml não declara campo "version:" (obsoleto em Compose v2).
+2. Validar que imagens em docker-compose.yml estão fixadas em major.minor (não :latest).
+3. Validar que portas em docker-compose.yml estão expostas em 127.0.0.1, não 0.0.0.0.
+
+### Lições de ambiente
+
+1. Sandbox de bash do Claude Code bloqueia "sleep N && comando" para evitar uso impróprio. Solução idiomática é usar polling com `until <check>; do sleep N; done`.
+2. PowerShell padrão sem -Encoding UTF8 lê arquivos UTF-8 incorretamente, mas o conteúdo em disco continua íntegro. Confirmação obrigatória: `Get-Content arquivo -Encoding UTF8`.
+3. Healthcheck do Redis com senha precisa receber -a ${REDIS_PASSWORD} explicitamente. Sem isso, healthcheck falha silenciosamente e container fica unhealthy indefinidamente.
+
+---
+
 ## Lições da Etapa 1.2
 
 ### Candidatos a hook (automatizar em etapas futuras)
@@ -248,6 +264,7 @@ Definir como capturar quando chegarmos na Camada 4 — não criar burocracia ago
 
 ## Histórico de mudanças deste documento
 
+- **2026-05-07** — Etapa 1.3 concluída: docker-compose.yml com Postgres 16 e Redis 7 rodando e validado (8 checks).
 - **2026-05-07** — Etapa 1.2 concluída: branch protection ativa via Repository Ruleset após repo se tornar público.
 - **2026-05-07** — Etapa 1.1 concluída: critérios marcados. Seção de lições reescrita após revisão para conter apenas o observado na sessão.
 - **2026-05-06** — Criação inicial. Camada 0 marcada como concluída. Critérios da Camada 1 detalhados.
