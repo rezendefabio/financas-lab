@@ -6,7 +6,7 @@
 
 **Período:** 2026-05-06 a 2026-05-08
 **Etapas:** 1.1 a 2.8 (15 etapas, contando 2.6.1 e 2.6.2 como sub-etapas)
-**PRs:** #1 a #XX (número final após merge desta etapa)
+**PRs:** #1 a #27
 
 ---
 
@@ -60,7 +60,7 @@ Itens explicitamente fora do escopo da Camada 1, agora candidatos:
 - **Bugs encontrados em validação manual destrutiva:** 3 (2.6.1: exit code falso; 2.6.2: stderr nativo sob Stop; 2.8: .env ausente = credenciais vazias)
 - **Sub-etapas de fix:** 2 (2.6.1, 2.6.2)
 - **Linhas em `decisoes.md`:** 358
-- **Linhas em `progresso.md`:** (preencher após atualização da Tarefa 5)
+- **Linhas em `progresso.md`:** 476
 
 ---
 
