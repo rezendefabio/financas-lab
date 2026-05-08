@@ -177,7 +177,7 @@
                 </configuration>
             </plugin>
 
-            <!-- JaCoCo: report only (thresholds by layer added in Etapa 2.4) -->
+            <!-- JaCoCo: prepare-agent + report + check (thresholds ativados na Etapa 2.4) -->
             <plugin>
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
@@ -197,6 +197,74 @@
                         </goals>
                         <configuration>
                             <outputDirectory>${project.reporting.outputDirectory}/jacoco</outputDirectory>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>check</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                        <configuration>
+                            <excludes>
+                                <!-- Main do Spring Boot, sem logica testavel. -->
+                                <exclude>**/FinancasApplication.class</exclude>
+                            </excludes>
+                            <rules>
+                                <!-- Threshold global: 75% de cobertura agregada. -->
+                                <rule>
+                                    <element>BUNDLE</element>
+                                    <limits>
+                                        <limit>
+                                            <counter>INSTRUCTION</counter>
+                                            <value>COVEREDRATIO</value>
+                                            <minimum>0.75</minimum>
+                                        </limit>
+                                    </limits>
+                                </rule>
+
+                                <!-- Pacote infrastructure: 60% (existem classes hoje). -->
+                                <rule>
+                                    <element>PACKAGE</element>
+                                    <includes>
+                                        <include>**.infrastructure.*</include>
+                                    </includes>
+                                    <limits>
+                                        <limit>
+                                            <counter>INSTRUCTION</counter>
+                                            <value>COVEREDRATIO</value>
+                                            <minimum>0.60</minimum>
+                                        </limit>
+                                    </limits>
+                                </rule>
+
+                                <!--
+                                    Thresholds adiados (pacotes vazios hoje):
+                                    - domain        — 90% — ativar quando primeira classe de dominio entrar (Camada 2)
+                                    - application   — 80% — ativar quando primeiro use case entrar (Camada 2)
+                                    - interfaces    — 70% — ativar quando primeiro Controller de bounded context entrar (Camada 2)
+
+                                    Manter as regras abaixo COMENTADAS ate ter classes nesses pacotes.
+                                    JaCoCo `check` em pacote sem classes tem comportamento inconsistente
+                                    entre versoes — incluir agora geraria falso positivo ou falso negativo.
+
+                                    <rule>
+                                        <element>PACKAGE</element>
+                                        <includes><include>**.domain.*</include></includes>
+                                        <limits><limit><counter>INSTRUCTION</counter><value>COVEREDRATIO</value><minimum>0.90</minimum></limit></limits>
+                                    </rule>
+                                    <rule>
+                                        <element>PACKAGE</element>
+                                        <includes><include>**.application.*</include></includes>
+                                        <limits><limit><counter>INSTRUCTION</counter><value>COVEREDRATIO</value><minimum>0.80</minimum></limit></limits>
+                                    </rule>
+                                    <rule>
+                                        <element>PACKAGE</element>
+                                        <includes><include>**.interfaces.*</include></includes>
+                                        <limits><limit><counter>INSTRUCTION</counter><value>COVEREDRATIO</value><minimum>0.70</minimum></limit></limits>
+                                    </rule>
+                                -->
+                            </rules>
                         </configuration>
                     </execution>
                 </executions>
