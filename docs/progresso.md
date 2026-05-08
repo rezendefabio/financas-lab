@@ -86,8 +86,8 @@ Construir a fundação não-negociável da fábrica: testes em três níveis, CI
 - [x] JaCoCo configurado (sem thresholds — apenas prepare-agent + report; thresholds por camada entram na Etapa 2.4)
 - [ ] Checkstyle + SpotBugs configurados
 - [ ] Projeto Next.js inicializado
-- [ ] GitHub Actions configurado: lint + test + build em PR
-- [ ] CI verde no primeiro commit em `main`
+- [x] GitHub Actions configurado: lint + test + build em PR
+- [x] CI verde no primeiro commit em `main`
 - [ ] Pre-commit hook local rodando lint + format
 - [x] Branch protection em `main` (sem push direto, exige PR e CI verde)
 
@@ -231,6 +231,27 @@ Definir como capturar quando chegarmos na Camada 4 — não criar burocracia ago
 
 ---
 
+## Lições da Etapa 1.5
+
+### Candidatos a hook (automatizar em etapas futuras)
+
+1. Validar que mvnw tem bit de execução no git index antes de empurrar workflow Linux que o use. Comando: git update-index --chmod=+x mvnw. Sem isso, primeiro CI no Linux falha com Permission denied.
+2. Validar que comandos em scripts/instruções para Windows não usam ferramentas Unix (tail, head, grep, sed, awk) que não existem no PowerShell. Equivalentes: Select-Object -Last/-First, Select-String.
+3. Validar que arquivos .java criados via Out-File no PowerShell usam encoding sem BOM. Out-File -Encoding UTF8 adiciona BOM por default, e javac rejeita arquivos com BOM no início. Alternativas: [System.IO.File]::WriteAllText com UTF8Encoding(false), ou Set-Content -Encoding utf8NoBOM no PowerShell 7+.
+4. Validar que toda configuração de branch protection ou required check passou por teste destrutivo (PR proposital com CI falhando, confirmar bloqueio do merge) antes de ser declarada concluída.
+
+### Lições de ambiente
+
+1. Maven Wrapper gerado no Windows não tem bit de execução no git por default. Linux Ubuntu (GitHub Actions) precisa do bit para executar ./mvnw, e o erro é Permission denied (exit code 126). Solução estrutural: git update-index --chmod=+x mvnw. O bit fica registrado no git index, não afeta o arquivo no Windows mas Linux passa a respeitar.
+2. Distinção entre flags do Maven Surefire: -DfailIfNoTests=false ignora projeto sem nenhum teste; -Dsurefire.failIfNoSpecifiedTests=false ignora pattern especificado que não casa com nenhum teste. Não são intercambiáveis.
+3. actions/upload-artifact@v4 com if-no-files-found tem default warn (não fail). Diretório vazio não quebra o CI por default, mas explicitar o parâmetro torna o comportamento auto-documentado.
+4. Cache Maven via cache: maven do actions/setup-java@v4 é suficiente. Não combinar com actions/cache@v4 separado para Maven.
+5. Squash merge preserva mudanças de file mode (chmod +x). Confirmação observada: PR #11 mergeou com "mode change 100644 => 100755" preservado em main.
+6. Out-File -Encoding UTF8 no PowerShell adiciona BOM no arquivo. javac rejeita arquivos .java com BOM (illegal character: '﻿'). Mesma família de problema do Get-Content -Encoding UTF8 (lição da Etapa 1.4): PowerShell trata UTF-8 com BOM por default em ambas direções.
+7. gh pr merge tem flag --admin para bypass de proteções. Comando deve ser tratado como destrutivo e nunca usado em fluxo normal. Branch protection + required check confirmados funcionais por teste destrutivo (PR #12 bloqueado com erro "the base branch policy prohibits the merge").
+
+---
+
 ## Lições da Etapa 1.4
 
 ### Candidatos a hook (automatizar em etapas futuras)
@@ -285,6 +306,7 @@ Definir como capturar quando chegarmos na Camada 4 — não criar burocracia ago
 
 ## Histórico de mudanças deste documento
 
+- **2026-05-08** — Etapa 1.5 concluída: GitHub Actions CI configurado, branch protection com required check validada destrutivamente (PR #12 bloqueado). Mergeado via PR #11.
 - **2026-05-07** — Etapa 1.4 concluída: Spring Boot 3.5.14 + Java 21 inicializado manualmente, pom.xml com toda a stack, Maven Wrapper 3.9.9, JaCoCo configurado (prepare-agent + report). Mergeado via PR #8.
 - **2026-05-07** — Etapa 1.3 concluída: docker-compose.yml com Postgres 16 e Redis 7 rodando e validado (8 checks).
 - **2026-05-07** — Etapa 1.2 concluída: branch protection ativa via Repository Ruleset após repo se tornar público.
