@@ -3,7 +3,7 @@
 > Documento de tracking. Mostra **onde estamos** na construção da fábrica e do produto.
 > Atualizado conforme camadas avançam. Diferente do `decisoes.md` (que registra escolhas) e dos `adrs.md` (que registram porquês), este documento responde a pergunta: "em que ponto eu estou?".
 
-**Última atualização:** 2026-05-08 (Etapa 2.6.2)
+**Última atualização:** 2026-05-08 (Etapa 2.7)
 
 ---
 
@@ -85,7 +85,7 @@ Construir a fundação não-negociável da fábrica: testes em três níveis, CI
 - [x] Hello-world endpoint passando teste e2e via Testcontainers
 - [x] JaCoCo configurado com thresholds (BUNDLE 75%, infrastructure 60%; domain/application/interfaces aguardam Camada 2)
 - [x] Checkstyle + SpotBugs configurados
-- [ ] Projeto Next.js inicializado
+- [x] Projeto Next.js inicializado
 - [x] GitHub Actions configurado: lint + test + build em PR
 - [x] CI verde no primeiro commit em `main`
 - [ ] Pre-commit hook local rodando lint + format
@@ -228,6 +228,20 @@ Definir como capturar quando chegarmos na Camada 4 — não criar burocracia ago
 2. **PowerShell padrão sem `-Encoding UTF8` lê UTF-8 errado** — mostra `Ã³` no lugar de `ó`, `Ã§` no lugar de `ç`. Para validação confiável de arquivos com acentos, usar `Get-Content -Encoding UTF8` explícito.
 3. **`Measure-Object -Line` não conta linhas em branco** — o cmdlet conta apenas linhas com conteúdo. Para contagem real (incluindo vazias), usar `[System.IO.File]::ReadAllLines('<path>').Count`.
 4. **Premissas do orquestrador externo podem estar erradas** — validação independente com cálculo concreto resolve. O Claude Code acertou em pushback técnico contradizendo análise visual feita no chat externo. Reforça o princípio: dado concreto vence interpretação.
+
+---
+
+## Lições da Etapa 2.7
+
+### Candidatos a hook (automatizar em etapas futuras)
+
+1. **`npx shadcn@latest init --defaults` instala componente `button.tsx` automaticamente** além dos artefatos de init (`components.json`, `src/lib/utils.ts`, `globals.css`). Em etapas que proíbem componentes, o hook deve detectar e remover `src/components/ui/*.tsx` gerado pelo init antes do commit.
+
+### Lições de ambiente
+
+1. **Next.js 16 usa Tailwind v4** (não v3). Não há `tailwind.config.ts` separado — configuração via `@import "tailwindcss"` em `globals.css`. shadcn 4.x detecta isso automaticamente e usa `style: base-nova` com CSS variables. Agentes treinados em Next.js 14/15 com Tailwind v3 devem consultar `node_modules/next/dist/docs/` antes de editar estilos.
+2. **`shadcn@latest init --defaults` não prompta — escolhe defaults internos (baseColor `neutral`, style `base-nova`).** O prompt original pedia `Slate`; o resultado foi `neutral`. Ambos são neutros aceitáveis. Em etapas futuras que exijam cor específica, passar `--base-color <cor>` explicitamente se o shadcn suportar a flag, ou rodar sem `--defaults` e responder prompts.
+3. **`AGENTS.md` e `CLAUDE.md` gerados pelo create-next-app são mecanismo de contexto do Claude Code**, não arquivos decorativos. `CLAUDE.md` com `@AGENTS.md` é sintaxe aditiva que carrega o aviso quando o agente está trabalhando em `frontend/`. Não conflita com `CLAUDE.md` da raiz. Decisão inicial de remover foi corrigida pelo operador — registrar padrão: scaffolds Next.js 16+ incluem esses arquivos intencionalmente.
 
 ---
 
@@ -416,6 +430,7 @@ Definir como capturar quando chegarmos na Camada 4 — não criar burocracia ago
 
 ## Histórico de mudanças deste documento
 
+- **2026-05-08** — Etapa 2.7 concluída: Next.js 16 inicializado em `frontend/`, dependências adicionais instaladas, shadcn/ui configurado, CI atualizado, decisões e stack registradas. Mergeado via PR #26.
 - **2026-05-08** — Etapa 2.6.2 concluída: fix de UX em checagem de Docker nos scripts `.ps1`. Aplicado padrão "suspender `Stop` localmente" em `dev.ps1`/`test-integration.ps1`/`check.ps1`. Regra adicionada em `decisoes.md`. Mergeado via PR #25.
 - **2026-05-08** — Etapa 2.6.1 concluída: fix de exit code em scripts `.ps1`. `Write-Error` + `exit 1` substituído por `Write-Host -ForegroundColor Red` + `exit 1` nos 5 scripts afetados. Regra formalizada em `decisoes.md`. Lições registradas. Mergeado via PR #24.
 - **2026-05-08** — Etapa 2.6 concluída: 6 scripts PowerShell criados em `scripts/`. README atualizado com tabela de comandos + pré-requisito ExecutionPolicy. Mergeado via PR #23.

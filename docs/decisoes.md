@@ -57,16 +57,19 @@
 
 ### Frontend
 
-| Componente | Escolha |
-|---|---|
-| Framework | Next.js 15 (App Router) |
-| Linguagem | TypeScript (strict) |
-| Estilização | Tailwind CSS |
-| PWA | next-pwa |
-| Validação | Zod |
-| HTTP | TanStack Query (React Query) + fetch nativo |
-| Forms | React Hook Form + Zod resolver |
-| Componentes | shadcn/ui (copy, não dependência) |
+| Componente | Escolha | Versão |
+|---|---|---|
+| Framework | Next.js | 16.2.6 |
+| Bundler | Turbopack (default Next 16) | gerenciado pelo Next |
+| Linguagem | TypeScript (strict) | ^5 |
+| Estilização | Tailwind CSS | ^4 |
+| Lint | ESLint (config Next) | eslint-config-next 16.2.6 |
+| Componentes | shadcn/ui (copy, não dependência) | shadcn 4.7.0, style base-nova |
+| HTTP / cache | @tanstack/react-query | ^5.100.9 |
+| Validação | Zod | ^4.4.3 |
+| Forms | React Hook Form + @hookform/resolvers | ^7.75.0 / ^5.2.2 |
+| React | React | 19.2.4 |
+| Node.js | mínimo 20.9, recomendado 22 LTS | — |
 
 ### Infraestrutura
 
@@ -293,6 +296,20 @@ Scripts PowerShell em `scripts/`. Padrão da fábrica:
 
 ---
 
+## Frontend
+
+Aplicação Next.js em `frontend/`.
+
+**Decisões registradas:**
+
+- **Localização:** `frontend/` na raiz do repo. Sem ferramenta de monorepo (workspaces, turborepo, nx). Razão: simplicidade. Migrar para monorepo formal só quando justificar.
+- **PWA adiada para Camada 2.** Package `next-pwa` não é mantido desde 2024; sucessor `serwist` ou abordagem nativa via `manifest.ts` ficam como decisão da Camada 2 quando houver telas reais.
+- **shadcn/ui via copy.** Componentes vão para `src/components/ui/` quando instalados via `npx shadcn add <componente>`. Não é dependência de runtime — o código fica versionado no repo. Style `base-nova`, baseColor `neutral`, CSS variables ativas.
+- **`AGENTS.md` e `CLAUDE.md` do scaffold mantidos.** `AGENTS.md` contém aviso do Next.js 16 sobre breaking changes em relação a training data de agentes; `CLAUDE.md` usa sintaxe `@AGENTS.md` para carregar o aviso como contexto quando o Claude Code está trabalhando em `frontend/`. Não conflita com `CLAUDE.md` da raiz (sintaxe aditiva).
+- **CI:** job único com Java + Node executados sequencialmente. Refatorar para dois jobs paralelos só quando justificar.
+
+---
+
 ## Modelo financeiro do projeto
 
 Atual:
@@ -329,6 +346,7 @@ Lembretes operacionais que regem decisões em chats futuros:
 
 ### Histórico de mudanças
 
+- **2026-05-08** — Etapa 2.7 concluída: frontend Next.js 16 inicializado em `frontend/`. Stack: TypeScript + Tailwind + ESLint + App Router + shadcn/ui + TanStack Query + Zod + React Hook Form. CI atualizado com steps de Node 22 + lint + build do frontend. PWA adiada para Camada 2. Seção Stack > Frontend atualizada com versões reais; seção `## Frontend` com decisões adicionada.
 - **2026-05-08** — Etapa 2.6.2 concluída: fix de UX em `dev.ps1`/`test-integration.ps1`/`check.ps1` — `docker info 2>&1 | Out-Null` sob `Stop` vazava stderr nativo + stack trace do PowerShell, engolindo a mensagem amigável. Aplicado padrão "suspender Stop localmente" em torno do `docker info`. Regra adicionada na seção "Scripts PowerShell".
 - **2026-05-08** — Etapa 2.6.1 concluída: fix de bug encontrado em validação manual da 2.6 — `Write-Error` + `exit 1` sob `Stop` não propagava `$LASTEXITCODE = 1` em sessão direta. Substituído por `Write-Host -ForegroundColor Red` + `exit 1` nos 5 scripts. Regra formalizada na seção "Scripts PowerShell".
 - **2026-05-08** — Etapa 2.6 concluída: 6 scripts PowerShell em `scripts/` implementados (`setup`, `dev`, `test`, `test-integration`, `check`, `ship`). Diferenciação real entre `test.ps1` (rápido), `test-integration.ps1` (testes + JaCoCo) e `check.ps1` (gate completo, espelho do CI). Encoding UTF-8 sem BOM formalizado.
