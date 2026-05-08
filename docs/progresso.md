@@ -3,7 +3,7 @@
 > Documento de tracking. Mostra **onde estamos** na construção da fábrica e do produto.
 > Atualizado conforme camadas avançam. Diferente do `decisoes.md` (que registra escolhas) e dos `adrs.md` (que registram porquês), este documento responde a pergunta: "em que ponto eu estou?".
 
-**Última atualização:** 2026-05-08 (Etapa 2.4)
+**Última atualização:** 2026-05-08 (Etapa 2.5)
 
 ---
 
@@ -84,7 +84,7 @@ Construir a fundação não-negociável da fábrica: testes em três níveis, CI
 - [x] Testcontainers configurado e funcional
 - [x] Hello-world endpoint passando teste e2e via Testcontainers
 - [x] JaCoCo configurado com thresholds (BUNDLE 75%, infrastructure 60%; domain/application/interfaces aguardam Camada 2)
-- [ ] Checkstyle + SpotBugs configurados
+- [x] Checkstyle + SpotBugs configurados
 - [ ] Projeto Next.js inicializado
 - [x] GitHub Actions configurado: lint + test + build em PR
 - [x] CI verde no primeiro commit em `main`
@@ -231,6 +231,20 @@ Definir como capturar quando chegarmos na Camada 4 — não criar burocracia ago
 
 ---
 
+## Lições da Etapa 2.5
+
+### Candidatos a hook (automatizar em etapas futuras)
+
+(Nenhum novo nesta etapa.)
+
+### Licoes de ambiente
+
+1. O `maven-checkstyle-plugin` ao ser configurado com `fileExtensions = java, properties, xml` também tentaria validar arquivos `.xml` e `.properties` do source tree com regras como `NewlineAtEndOfFile lineSeparator=lf`. Para evitar falsos positivos em arquivos que não são código Java, a configuração foi restrita a `fileExtensions = java`. Isso é suficiente para o objetivo da etapa.
+2. O `tail` do log do `mvnw verify` é dominado por linhas de progress bar de download do Maven (first run baixa todas as deps do SpotBugs/Checkstyle). Em execuções subsequentes o log é compacto. Lição para futuras etapas: na primeira execução com novos plugins, o log útil fica no final — usar `grep -E` no arquivo completo é mais confiável que `tail`.
+3. Indentação de `lineWrappingIndentation = 8` do Checkstyle `Indentation` module aplica-se à primeira linha de continuação após um `=` ou abertura de método multi-linha. Linhas seguintes da mesma expressão (ex: chain `withDatabaseName`, `withUsername`) podem ficar no mesmo nível da primeira continuação sem nova violação — Checkstyle não exige escalada incremental por linha de chain.
+
+---
+
 ## Lições da Etapa 2.4
 
 ### Candidatos a hook (automatizar em etapas futuras)
@@ -360,6 +374,7 @@ Definir como capturar quando chegarmos na Camada 4 — não criar burocracia ago
 
 ## Histórico de mudanças deste documento
 
+- **2026-05-08** — Etapa 2.5 concluída: Checkstyle (`validate`) e SpotBugs (`verify`) integrados como gates obrigatórios do `mvnw verify`. Configuração externa, severidade `error`, validação destrutiva confirmada. Mergeado via PR #22.
 - **2026-05-08** — Etapa 2.4 concluída: JaCoCo `check` com thresholds aplicados (BUNDLE 75%, infrastructure 60%), thresholds dos pacotes vazios comentados como TODO Camada 2, validação destrutiva confirmando gate. Mergeado via PR #21.
 - **2026-05-08** — Etapa 2.3 concluída: HealthcheckController em `/api/healthcheck`, SecurityConfig com whitelist explícita, HealthcheckControllerTest com 2 testes (status + bloqueio de não-whitelisted). Mergeado via PR #20.
 - **2026-05-08** — Etapa 2.2 concluida: V1__schema_inicial.sql aplicada, Flyway configurado em todos os profiles, FlywayMigrationTest validando aplicacao da migration. Mergeado via PR #19.

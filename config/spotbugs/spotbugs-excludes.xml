@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    Filtros SpotBugs do projeto financas-lab.
+    Excludes para padroes conhecidos de falso positivo no contexto Spring/JPA.
+-->
+<FindBugsFilter>
+    <!-- Main do Spring Boot, sem logica testavel. -->
+    <Match>
+        <Class name="com.laboratorio.financas.FinancasApplication"/>
+    </Match>
+
+    <!-- Records sao imutaveis por design; SpotBugs nao precisa analisar mutabilidade. -->
+    <Match>
+        <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2"/>
+        <Class name="~.*Response"/>
+    </Match>
+    <Match>
+        <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2"/>
+        <Class name="~.*Request"/>
+    </Match>
+
+    <!--
+        Classes @Configuration: metodos @Bean retornando objeto novo
+        sao padrao Spring, nao "returned object never used".
+    -->
+    <Match>
+        <Class name="~.*Config"/>
+        <Bug pattern="UPM_UNCALLED_PRIVATE_METHOD"/>
+    </Match>
+</FindBugsFilter>
