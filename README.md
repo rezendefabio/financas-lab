@@ -38,6 +38,29 @@ Set-ExecutionPolicy -Scope CurrentUser RemoteSigned
 - Docker Desktop rodando
 - (opcional) GitHub CLI (`gh`) para fluxo de PRs
 
+## Frontend
+
+Aplicação web em Next.js 16 (App Router) + TypeScript + Tailwind. Localização: `frontend/`.
+
+| Comando (a partir de `frontend/`) | Função |
+|---|---|
+| `npm install` | Instala dependências |
+| `npm run dev` | Sobe dev server em http://localhost:3000 |
+| `npm run build` | Build de produção |
+| `npm run lint` | Roda ESLint |
+| `npm run start` | Sobe build de produção |
+
+### Stack
+
+- Next.js 16 (App Router, Turbopack)
+- TypeScript
+- Tailwind CSS
+- ESLint
+- shadcn/ui (componentes via copy, não dependência)
+- TanStack Query, Zod, React Hook Form (instaladas, sem uso ainda — Camada 2)
+
+PWA fica para Camada 2.
+
 ## Status
 
 Camada 1 (Infraestrutura de confiança) — em andamento. Ver `docs/progresso.md`.
