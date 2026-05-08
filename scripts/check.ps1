@@ -6,7 +6,11 @@
 $ErrorActionPreference = "Stop"
 
 # Verifica Docker rodando (Testcontainers precisa).
+# Suspende Stop localmente para evitar que stderr nativo do docker vaze (PowerShell + Stop intercepta stderr antes de redirecionamento).
+$prev = $ErrorActionPreference
+$ErrorActionPreference = "Continue"
 docker info 2>&1 | Out-Null
+$ErrorActionPreference = $prev
 if ($LASTEXITCODE -ne 0) {
     Write-Host "Docker Desktop nao esta rodando. Testcontainers precisa do Docker." -ForegroundColor Red
     exit 1

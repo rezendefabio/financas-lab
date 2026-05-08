@@ -5,7 +5,11 @@
 $ErrorActionPreference = "Stop"
 
 # Verifica Docker rodando antes de tentar subir compose.
+# Suspende Stop localmente para evitar que stderr nativo do docker vaze (PowerShell + Stop intercepta stderr antes de redirecionamento).
+$prev = $ErrorActionPreference
+$ErrorActionPreference = "Continue"
 docker info 2>&1 | Out-Null
+$ErrorActionPreference = $prev
 if ($LASTEXITCODE -ne 0) {
     Write-Host "Docker Desktop nao esta rodando. Inicie o Docker e tente novamente." -ForegroundColor Red
     exit 1
