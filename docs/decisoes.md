@@ -169,7 +169,7 @@ Decisões obrigatórias do `pom.xml` que **não devem ser alteradas sem novo ADR
   - Test deps: `test`
   - MapStruct: runtime padrão (não declarar scope explícito)
 - Spring Boot Maven Plugin com excludes do Lombok no `repackage`
-- JaCoCo plugin com `prepare-agent` + `report` (regras de cobertura por camada entram na Etapa 2.4)
+- JaCoCo plugin com 3 execuções: `prepare-agent` + `report` + `check`. Regras ativas hoje: BUNDLE 75% (global), PACKAGE `**.infrastructure.*` 60%. Regras de `domain`/`application`/`interfaces` (90%/80%/70%) ficam **comentadas** no `pom.xml` aguardando primeira classe nesses pacotes (Camada 2). Exclusão única: `FinancasApplication.class`.
 
 ### Testes
 
@@ -189,6 +189,13 @@ Decisões obrigatórias do `pom.xml` que **não devem ser alteradas sem novo ADR
 | `interfaces/` | 70% |
 
 CI falha se cobertura agregada cair abaixo de 75%.
+
+**Status atual de aplicação dos thresholds (Etapa 2.4):**
+
+- ✅ **Ativos:** BUNDLE 75% (global), `infrastructure` 60%
+- ⏸️ **Aguardando classes (ativados na Camada 2):** `domain` 90%, `application` 80%, `interfaces` 70%
+
+Regras inativas estão comentadas no `pom.xml` e devem ser descomentadas no PR que introduzir a primeira classe do pacote correspondente. Esse é débito técnico consciente — registrado, com data de resolução conhecida (Camada 2).
 
 ---
 
@@ -284,6 +291,7 @@ Lembretes operacionais que regem decisões em chats futuros:
 
 ### Histórico de mudanças
 
+- **2026-05-08** — Etapa 2.4 concluída: JaCoCo `check` ativado com thresholds BUNDLE 75% e `infrastructure` 60%. Thresholds de `domain`/`application`/`interfaces` ficam comentados aguardando primeira classe (Camada 2). Validação destrutiva confirmou que `mvnw verify` falha quando cobertura cai abaixo do threshold.
 - **2026-05-08** — Etapa 2.3 concluída: primeiro endpoint HTTP (`GET /api/healthcheck`), `SecurityFilterChain` mínimo com whitelist explícita, precedente sobre endpoints técnicos em `shared/infrastructure/web/`, convenção de naming de teste formalizada.
 - **2026-05-08** — Etapa 2.2 concluida: primeira migration Flyway (`V1__schema_inicial.sql`) aplicada, configuracao Flyway nos profiles formalizada, regra dura sobre `baseline-on-migrate` por profile registrada.
 - **2026-05-08** — Atualização pós-Camada 1 etapas 1.3 a 1.5: versões fixadas no `pom.xml` (Spring Boot 3.5.14, MapStruct 1.6.3, JJWT 0.12.7, springdoc 2.8.17, JaCoCo 0.8.14), seção "Ambiente de desenvolvimento" criada com pegadinhas Windows, configuração crítica do `pom.xml` documentada, scripts PowerShell substituem Makefile, política de débito técnico consciente formalizada.
