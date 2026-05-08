@@ -30,7 +30,8 @@
 | Testes — framework | JUnit 5 + AssertJ + Mockito (uso comedido) | gerenciado pelo BOM Spring Boot |
 | Testes — integração | Testcontainers (junit-jupiter + postgresql) | 1.21.4 (gerenciado pelo BOM, não 2.x) |
 | Cobertura | JaCoCo Maven Plugin | 0.8.14 |
-| Análise estática | SpotBugs + Checkstyle (configuração na Etapa 2.5) | a definir |
+| Análise estática (estilo) | maven-checkstyle-plugin + Checkstyle engine | maven-checkstyle-plugin 3.6.0, Checkstyle 13.4.1 |
+| Análise estática (bugs) | spotbugs-maven-plugin | 4.9.8.3 |
 | API doc | springdoc-openapi-starter-webmvc-ui | 2.8.17 |
 
 > **Política de versões:** versões fixadas explicitamente em `pom.xml` para dependências não gerenciadas pelo BOM do Spring Boot. Para gerenciadas pelo BOM, deixar sem `<version>` no `pom.xml` (BOM do parent resolve). Atualizações de versão exigem novo PR justificando — não atualizar em massa sem necessidade.
@@ -170,6 +171,8 @@ Decisões obrigatórias do `pom.xml` que **não devem ser alteradas sem novo ADR
   - MapStruct: runtime padrão (não declarar scope explícito)
 - Spring Boot Maven Plugin com excludes do Lombok no `repackage`
 - JaCoCo plugin com 3 execuções: `prepare-agent` + `report` + `check`. Regras ativas hoje: BUNDLE 75% (global), PACKAGE `**.infrastructure.*` 60%. Regras de `domain`/`application`/`interfaces` (90%/80%/70%) ficam **comentadas** no `pom.xml` aguardando primeira classe nesses pacotes (Camada 2). Exclusão única: `FinancasApplication.class`.
+- Checkstyle plugin: phase `validate`, severidade `error`, configuração externa em `config/checkstyle/checkstyle.xml`. Base Google Style com overrides: indentação 4 espaços (default Google é 2), linha 140 chars (default Google é 100), regras de Javadoc obrigatório suprimidas.
+- SpotBugs plugin: phase `verify`, effort `max`, threshold `medium`, exclude filter em `config/spotbugs/spotbugs-excludes.xml`. Excludes iniciais: `FinancasApplication`, records de `*Response`/`*Request` (EI_EXPOSE_REP), classes `*Config` (UPM_UNCALLED_PRIVATE_METHOD).
 
 ### Testes
 
@@ -178,6 +181,12 @@ Decisões obrigatórias do `pom.xml` que **não devem ser alteradas sem novo ADR
 - **Padrão AAA explícito:** comentários `// Given`, `// When`, `// Then` em testes não-triviais.
 - **Não compartilhar estado entre testes.** `@DirtiesContext` quando inevitável, mas evitar.
 - **Testcontainers via `@Container` static** para reuso entre testes da mesma classe.
+
+### Análise estática
+
+- **Checkstyle severidade `error` para tudo.** Sem categoria warning silenciosa. Cada supressão é decisão consciente registrada em `config/checkstyle/checkstyle.xml`.
+- **SpotBugs excludes estreitos.** Filtros sempre com `<Class>` específico ou `<Bug pattern>` específico. Filtros amplos (ex: pacote inteiro) exigem novo ADR.
+- **Javadoc não é obrigatório nesta fase.** Regras `JavadocMethod`, `JavadocType`, `JavadocVariable`, `MissingJavadocMethod`, `MissingJavadocType` ficam desabilitadas. Reativação fica como decisão futura.
 
 ### Cobertura mínima por camada (JaCoCo)
 
@@ -291,6 +300,7 @@ Lembretes operacionais que regem decisões em chats futuros:
 
 ### Histórico de mudanças
 
+- **2026-05-08** — Etapa 2.5 concluída: Checkstyle e SpotBugs ativados como gates do `mvnw verify`. Configuração externa em `config/`, severidade `error`, validação destrutiva confirmada para ambos.
 - **2026-05-08** — Etapa 2.4 concluída: JaCoCo `check` ativado com thresholds BUNDLE 75% e `infrastructure` 60%. Thresholds de `domain`/`application`/`interfaces` ficam comentados aguardando primeira classe (Camada 2). Validação destrutiva confirmou que `mvnw verify` falha quando cobertura cai abaixo do threshold.
 - **2026-05-08** — Etapa 2.3 concluída: primeiro endpoint HTTP (`GET /api/healthcheck`), `SecurityFilterChain` mínimo com whitelist explícita, precedente sobre endpoints técnicos em `shared/infrastructure/web/`, convenção de naming de teste formalizada.
 - **2026-05-08** — Etapa 2.2 concluida: primeira migration Flyway (`V1__schema_inicial.sql`) aplicada, configuracao Flyway nos profiles formalizada, regra dura sobre `baseline-on-migrate` por profile registrada.
