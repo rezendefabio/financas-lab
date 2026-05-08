@@ -63,4 +63,11 @@ PWA fica para Camada 2.
 
 ## Status
 
-Camada 1 (Infraestrutura de confiança) — em andamento. Ver `docs/progresso.md`.
+**Camada 1 (Infraestrutura de confiança) — ✅ Concluída** (2026-05-08).
+
+Próxima: Camada 2 (Arquitetura otimizada para agentes).
+
+Documentos relevantes:
+- `docs/progresso.md` — estado atual da fábrica
+- `docs/retrospectiva-camada-1.md` — reflexão sobre o que aprendemos
+- `docs/hooks-pendentes.md` — candidatos a hook para Camada 3

@@ -3,7 +3,7 @@
 > Documento de tracking. Mostra **onde estamos** na construção da fábrica e do produto.
 > Atualizado conforme camadas avançam. Diferente do `decisoes.md` (que registra escolhas) e dos `adrs.md` (que registram porquês), este documento responde a pergunta: "em que ponto eu estou?".
 
-**Última atualização:** 2026-05-08 (Etapa 2.7)
+**Última atualização:** 2026-05-08 (Etapa 2.8 — Camada 1 concluída)
 
 ---
 
@@ -12,7 +12,7 @@
 | Camada | Descrição | Status |
 |---|---|---|
 | **0** | Discovery (visão, ADRs, decisões, ambiente) | ✅ Concluída |
-| **1** | Infraestrutura de confiança | 🔵 Próxima |
+| **1** | Infraestrutura de confiança | ✅ Concluída |
 | **2** | Arquitetura otimizada para agentes | ⏸️ Aguardando |
 | **3** | Configuração do Claude Code (subagents, skills, hooks) | ⏸️ Aguardando |
 | **4** | Modelo operacional (tiers de autonomia ativados) | ⏸️ Aguardando |
@@ -64,8 +64,7 @@ Resumo executivo (detalhes em `adrs.md`):
 
 ## Camada 1 — Infraestrutura de confiança
 
-**Status:** 🔵 Próxima
-**Estimativa:** 2 semanas (semanas 1-2 do projeto)
+**Status:** ✅ Concluída em 2026-05-08
 
 ### Objetivo
 
@@ -75,7 +74,7 @@ Construir a fundação não-negociável da fábrica: testes em três níveis, CI
 
 - [x] Repo configurado com `.gitattributes`, `.gitignore`, README inicial
 - [x] CLAUDE.md mínimo do projeto criado (apontando para docs)
-- [ ] Estrutura de pastas inicial criada
+- [x] Estrutura de pastas inicial criada
 - [x] `docker-compose.yml` rodando Postgres 16 + Redis 7
 - [x] Scripts PowerShell criados: `setup.ps1`, `dev.ps1`, `test.ps1`, `check.ps1`, `ship.ps1`
 - [x] Projeto Spring Boot inicializado via Spring Initializr (manualmente)
@@ -90,6 +89,23 @@ Construir a fundação não-negociável da fábrica: testes em três níveis, CI
 - [x] CI verde no primeiro commit em `main`
 - [ ] Pre-commit hook local rodando lint + format
 - [x] Branch protection em `main` (sem push direto, exige PR e CI verde)
+
+### Auditoria final (Etapa 2.8)
+
+Critérios de "Camada 1 concluída" definidos em `roadmap-camada-1.md`:
+
+| Critério | Status | Evidência |
+|---|---|---|
+| Clone novo + `setup.ps1` em <10 min | ✅ | 29 segundos (clone 1.5s + setup ~27s). Margem 20x. Nota: setup passa silenciosamente com `.env` ausente — credenciais vazias. Débito técnico registrado. |
+| CI verde no `main` em ≥3 commits consecutivos | ✅ | PRs #26, #25, #24 mergeados com `build: COMPLETED / SUCCESS` |
+| Cobertura JaCoCo nos thresholds | ✅ | `mvnw verify` local confirmou. BUNDLE 75%, infrastructure 60% |
+| ≥1 PR rejeitado pelo CI por motivo legítimo | ✅ | Etapa 1.2: PR #12 bloqueado por branch protection (teste destrutivo). Etapas 2.4 e 2.5: validações destrutivas confirmaram CI falhando em violações reais |
+| Operador confia que CI verde = código mergeable sem segunda revisão | 🟡 Parcial | Sim para código de produção. Scripts/configs ainda precisam de validação manual destrutiva — CI não cobre `.ps1` e `.env`. Confiança expandirá com hooks da Camada 3. |
+| `progresso.md` atualizado | ✅ | Esta auditoria + outras seções refletem estado atual |
+
+**Resultado:** Camada 1 CONCLUÍDA.
+
+Ver `docs/retrospectiva-camada-1.md` para reflexão histórica e `docs/hooks-pendentes.md` para lista consolidada de candidatos a hook (input para Camada 3).
 
 ### Roadmap detalhado
 
@@ -228,6 +244,18 @@ Definir como capturar quando chegarmos na Camada 4 — não criar burocracia ago
 2. **PowerShell padrão sem `-Encoding UTF8` lê UTF-8 errado** — mostra `Ã³` no lugar de `ó`, `Ã§` no lugar de `ç`. Para validação confiável de arquivos com acentos, usar `Get-Content -Encoding UTF8` explícito.
 3. **`Measure-Object -Line` não conta linhas em branco** — o cmdlet conta apenas linhas com conteúdo. Para contagem real (incluindo vazias), usar `[System.IO.File]::ReadAllLines('<path>').Count`.
 4. **Premissas do orquestrador externo podem estar erradas** — validação independente com cálculo concreto resolve. O Claude Code acertou em pushback técnico contradizendo análise visual feita no chat externo. Reforça o princípio: dado concreto vence interpretação.
+
+---
+
+## Lições da Etapa 2.8
+
+### Candidatos a hook (automatizar em etapas futuras)
+
+1. **`setup.ps1` deve detectar `.env` ausente antes de subir containers.** Clone novo sem `.env` resulta em containers com credenciais vazias — Docker Compose interpreta variáveis ausentes como strings vazias e sobe silenciosamente. Hook: validar presença de `.env` antes de chamar Docker Compose, criando a partir de `.env.example` com aviso ou falhando com mensagem clara.
+
+### Lições de ambiente
+
+1. **Validação manual destrutiva de clone novo revelou falha silenciosa em `setup.ps1`.** Sem `.env`, Docker Compose sobe containers com credenciais vazias — setup "conclui com sucesso" porque `mvn -DskipTests` não testa conexão, mas ambiente é inutilizável para dev real. CI nunca teria detectado porque CI tem secrets injetados. Reforça princípio consolidado: validação manual destrutiva de fluxo completo (clone + setup + uso real) detecta classes de bug que automação jamais pega.
 
 ---
 
@@ -430,6 +458,7 @@ Definir como capturar quando chegarmos na Camada 4 — não criar burocracia ago
 
 ## Histórico de mudanças deste documento
 
+- **2026-05-08** — Etapa 2.8 concluída: wrap-up Camada 1. Auditoria de critérios, retrospectiva criada (`docs/retrospectiva-camada-1.md`), hooks pendentes consolidados (`docs/hooks-pendentes.md`). Camada 1 marcada como ✅ Concluída. Mergeado via PR #XX.
 - **2026-05-08** — Etapa 2.7 concluída: Next.js 16 inicializado em `frontend/`, dependências adicionais instaladas, shadcn/ui configurado, CI atualizado, decisões e stack registradas. Mergeado via PR #26.
 - **2026-05-08** — Etapa 2.6.2 concluída: fix de UX em checagem de Docker nos scripts `.ps1`. Aplicado padrão "suspender `Stop` localmente" em `dev.ps1`/`test-integration.ps1`/`check.ps1`. Regra adicionada em `decisoes.md`. Mergeado via PR #25.
 - **2026-05-08** — Etapa 2.6.1 concluída: fix de exit code em scripts `.ps1`. `Write-Error` + `exit 1` substituído por `Write-Host -ForegroundColor Red` + `exit 1` nos 5 scripts afetados. Regra formalizada em `decisoes.md`. Lições registradas. Mergeado via PR #24.
