@@ -7,7 +7,7 @@ $ErrorActionPreference = "Stop"
 # 1. Working tree limpo? (commits feitos)
 $status = git status --porcelain
 if ($status) {
-    Write-Error "Working tree nao esta limpo. Commit ou descarte mudancas antes de ship."
+    Write-Host "Working tree nao esta limpo. Commit ou descarte mudancas antes de ship." -ForegroundColor Red
     Write-Host ""
     Write-Host "Mudancas pendentes:"
     Write-Host $status
@@ -17,7 +17,7 @@ if ($status) {
 # 2. Branch atual e remote tracking.
 $branch = git rev-parse --abbrev-ref HEAD
 if ($branch -eq "main" -or $branch -eq "master") {
-    Write-Error "Voce esta em '$branch'. Ship deve rodar a partir de uma feature branch."
+    Write-Host "Voce esta em '$branch'. Ship deve rodar a partir de uma feature branch." -ForegroundColor Red
     exit 1
 }
 
@@ -27,7 +27,7 @@ Write-Host "==> Branch: $branch" -ForegroundColor Cyan
 Write-Host "==> Rodando gate completo antes do push..." -ForegroundColor Cyan
 & "$PSScriptRoot\check.ps1"
 if ($LASTEXITCODE -ne 0) {
-    Write-Error "check.ps1 falhou. Push cancelado."
+    Write-Host "check.ps1 falhou. Push cancelado." -ForegroundColor Red
     exit 1
 }
 
@@ -36,7 +36,7 @@ Write-Host ""
 Write-Host "==> Empurrando '$branch' para origin..." -ForegroundColor Cyan
 git push -u origin $branch
 if ($LASTEXITCODE -ne 0) {
-    Write-Error "git push falhou."
+    Write-Host "git push falhou." -ForegroundColor Red
     exit 1
 }
 
