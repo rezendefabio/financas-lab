@@ -3,7 +3,7 @@
 > Documento de tracking. Mostra **onde estamos** na construção da fábrica e do produto.
 > Atualizado conforme camadas avançam. Diferente do `decisoes.md` (que registra escolhas) e dos `adrs.md` (que registram porquês), este documento responde a pergunta: "em que ponto eu estou?".
 
-**Última atualização:** 2026-05-08
+**Última atualização:** 2026-05-08 (Etapa 2.2)
 
 ---
 
@@ -80,7 +80,7 @@ Construir a fundação não-negociável da fábrica: testes em três níveis, CI
 - [ ] Scripts PowerShell criados: `setup.ps1`, `dev.ps1`, `test.ps1`, `check.ps1`, `ship.ps1`
 - [x] Projeto Spring Boot inicializado via Spring Initializr (manualmente)
 - [x] `pom.xml` com todas as dependências da stack
-- [ ] Flyway configurado, primeira migration criada (schema vazio + tabela de versão)
+- [x] Flyway configurado, primeira migration criada (schema vazio + tabela de versão)
 - [x] Testcontainers configurado e funcional
 - [ ] Hello-world endpoint passando teste e2e via Testcontainers
 - [x] JaCoCo configurado (sem thresholds — apenas prepare-agent + report; thresholds por camada entram na Etapa 2.4)
@@ -231,6 +231,19 @@ Definir como capturar quando chegarmos na Camada 4 — não criar burocracia ago
 
 ---
 
+## Licoes da Etapa 2.2
+
+### Candidatos a hook (automatizar em etapas futuras)
+
+(Nenhum novo nesta etapa. A regra "baseline-on-migrate apenas em profiles de teste/dev" foi formalizada em decisoes.md mas ja constava como candidato na Etapa 2.1.)
+
+### Licoes de ambiente
+
+1. Sufixo `IT` (convencao Maven Failsafe) nao e reconhecido pelo Surefire padrao do Spring Boot parent — testes `*IT.java` nao rodam sem configurar o Failsafe plugin. O projeto ja usa `*Tests` para testes de integracao via Testcontainers (ex: `FinancasApplicationTests`); seguir esse padrao e mais coerente que introduzir Failsafe nesta etapa. Decisao sobre adotar Failsafe formalmente fica para etapa propria com ADR se necessario.
+2. O prompt original prescrevia sufixo `IT` (convencao Maven Failsafe) sem validar que o Failsafe plugin estava configurado no pom.xml — nao estava. Isso causou tentativa inicial de adicionar Failsafe ao pom.xml fora do escopo declarado, bloqueada pela Restricao 1 do prompt. Licao para geracao de prompts futuros: validar convencoes de teste do projeto (pom.xml, Surefire/Failsafe configurados, padrao de naming dos testes existentes) antes de prescrever sufixo de classe em prompt.
+
+---
+
 ## Lições da Etapa 2.1
 
 ### Candidatos a hook (automatizar em etapas futuras)
@@ -321,6 +334,7 @@ Definir como capturar quando chegarmos na Camada 4 — não criar burocracia ago
 
 ## Histórico de mudanças deste documento
 
+- **2026-05-08** — Etapa 2.2 concluida: V1__schema_inicial.sql aplicada, Flyway configurado em todos os profiles, FlywayMigrationTest validando aplicacao da migration. Mergeado via PR #19.
 - **2026-05-08** — Etapa 2.1 concluída: Testcontainers configurado, AbstractIntegrationTest criado, FinancasApplicationTests passa contra Postgres real via container, débito técnico da Etapa 1.5 (exclusão do FinancasApplicationTests no CI) resolvido. Mergeado via PR #17.
 - **2026-05-08** — Etapa 1.5 concluída: GitHub Actions CI configurado, branch protection com required check validada destrutivamente (PR #12 bloqueado). Mergeado via PR #11.
 - **2026-05-07** — Etapa 1.4 concluída: Spring Boot 3.5.14 + Java 21 inicializado manualmente, pom.xml com toda a stack, Maven Wrapper 3.9.9, JaCoCo configurado (prepare-agent + report). Mergeado via PR #8.
