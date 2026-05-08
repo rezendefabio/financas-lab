@@ -242,6 +242,19 @@ Regras inativas estão comentadas no `pom.xml` e devem ser descomentadas no PR q
   }
   ```
 - **`Write-Error` é apropriado** apenas em scripts/módulos onde quem invoca vai capturar o erro como exceção (try/catch, pipeline com `-ErrorAction`). Em scripts user-facing chamados diretamente no terminal, prefira `Write-Host` colorido.
+- **Suspender `Stop` localmente em checagens com comando nativo + redirecionamento.** Sob `$ErrorActionPreference = "Stop"`, comandos nativos (`docker`, `git`, `mvn`, etc) que escrevem em stderr fazem o PowerShell vazar o erro pra tela com stack trace, **antes** que operadores de redirecionamento (`2>&1`, `2>$null`, `2>&1 > $null`) possam suprimir. Não há sintaxe de redirecionamento que evite. Padrão correto:
+  ```powershell
+  $prev = $ErrorActionPreference
+  $ErrorActionPreference = "Continue"
+  docker info 2>&1 | Out-Null
+  $ErrorActionPreference = $prev
+
+  if ($LASTEXITCODE -ne 0) {
+      Write-Host "mensagem clara do erro" -ForegroundColor Red
+      exit 1
+  }
+  ```
+  Aplicar este padrão sempre que o script chamar comando nativo com intenção de checar `$LASTEXITCODE` em vez de tratar como erro fatal.
 - **Manter `$ErrorActionPreference = "Stop"`** no topo dos scripts. A regra acima é apenas para o fluxo "validação detectou problema, sair com código de erro". Para erros inesperados de comandos nativos (ex: Maven crashar), `Stop` continua sendo o comportamento desejado.
 
 ---
@@ -316,6 +329,7 @@ Lembretes operacionais que regem decisões em chats futuros:
 
 ### Histórico de mudanças
 
+- **2026-05-08** — Etapa 2.6.2 concluída: fix de UX em `dev.ps1`/`test-integration.ps1`/`check.ps1` — `docker info 2>&1 | Out-Null` sob `Stop` vazava stderr nativo + stack trace do PowerShell, engolindo a mensagem amigável. Aplicado padrão "suspender Stop localmente" em torno do `docker info`. Regra adicionada na seção "Scripts PowerShell".
 - **2026-05-08** — Etapa 2.6.1 concluída: fix de bug encontrado em validação manual da 2.6 — `Write-Error` + `exit 1` sob `Stop` não propagava `$LASTEXITCODE = 1` em sessão direta. Substituído por `Write-Host -ForegroundColor Red` + `exit 1` nos 5 scripts. Regra formalizada na seção "Scripts PowerShell".
 - **2026-05-08** — Etapa 2.6 concluída: 6 scripts PowerShell em `scripts/` implementados (`setup`, `dev`, `test`, `test-integration`, `check`, `ship`). Diferenciação real entre `test.ps1` (rápido), `test-integration.ps1` (testes + JaCoCo) e `check.ps1` (gate completo, espelho do CI). Encoding UTF-8 sem BOM formalizado.
 - **2026-05-08** — Etapa 2.5 concluída: Checkstyle e SpotBugs ativados como gates do `mvnw verify`. Configuração externa em `config/`, severidade `error`, validação destrutiva confirmada para ambos.
