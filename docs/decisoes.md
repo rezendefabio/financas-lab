@@ -201,6 +201,7 @@ CI falha se cobertura agregada cair abaixo de 75%.
 - **Naming:** `V{N}__{descricao_em_snake_case}.sql` (ex: `V3__cria_tabela_transacao.sql`).
 - **Append-only após merge.** Schema fix é nova migration, nunca edição de existente.
 - **Toda alteração de `@Entity` JPA exige migration correspondente no mesmo PR.** Hook futuro vai validar isso.
+- **`baseline-on-migrate` por profile:** `false` em `application.yml` (defaults) e `application-prod.yml`; `true` apenas em `application-test.yml` (e `application-dev.yml` se existir). Baseline silencioso em prod e fonte classica de inconsistencia.
 
 ### Configuração de ambiente
 
@@ -278,5 +279,6 @@ Lembretes operacionais que regem decisões em chats futuros:
 
 ### Histórico de mudanças
 
+- **2026-05-08** — Etapa 2.2 concluida: primeira migration Flyway (`V1__schema_inicial.sql`) aplicada, configuracao Flyway nos profiles formalizada, regra dura sobre `baseline-on-migrate` por profile registrada.
 - **2026-05-08** — Atualização pós-Camada 1 etapas 1.3 a 1.5: versões fixadas no `pom.xml` (Spring Boot 3.5.14, MapStruct 1.6.3, JJWT 0.12.7, springdoc 2.8.17, JaCoCo 0.8.14), seção "Ambiente de desenvolvimento" criada com pegadinhas Windows, configuração crítica do `pom.xml` documentada, scripts PowerShell substituem Makefile, política de débito técnico consciente formalizada.
 - **2026-05-06** — Criação inicial. Stack, arquitetura, convenções e modelo financeiro consolidados a partir dos ADRs 001-008.
