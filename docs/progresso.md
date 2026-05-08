@@ -3,7 +3,7 @@
 > Documento de tracking. Mostra **onde estamos** na construção da fábrica e do produto.
 > Atualizado conforme camadas avançam. Diferente do `decisoes.md` (que registra escolhas) e dos `adrs.md` (que registram porquês), este documento responde a pergunta: "em que ponto eu estou?".
 
-**Última atualização:** 2026-05-08 (Etapa 2.5)
+**Última atualização:** 2026-05-08 (Etapa 2.6)
 
 ---
 
@@ -77,7 +77,7 @@ Construir a fundação não-negociável da fábrica: testes em três níveis, CI
 - [x] CLAUDE.md mínimo do projeto criado (apontando para docs)
 - [ ] Estrutura de pastas inicial criada
 - [x] `docker-compose.yml` rodando Postgres 16 + Redis 7
-- [ ] Scripts PowerShell criados: `setup.ps1`, `dev.ps1`, `test.ps1`, `check.ps1`, `ship.ps1`
+- [x] Scripts PowerShell criados: `setup.ps1`, `dev.ps1`, `test.ps1`, `check.ps1`, `ship.ps1`
 - [x] Projeto Spring Boot inicializado via Spring Initializr (manualmente)
 - [x] `pom.xml` com todas as dependências da stack
 - [x] Flyway configurado, primeira migration criada (schema vazio + tabela de versão)
@@ -231,6 +231,19 @@ Definir como capturar quando chegarmos na Camada 4 — não criar burocracia ago
 
 ---
 
+## Lições da Etapa 2.6
+
+### Candidatos a hook (automatizar em etapas futuras)
+
+(Nenhum novo nesta etapa.)
+
+### Lições de ambiente
+
+1. A tool `Write` do Claude Code cria arquivos com encoding UTF-8 sem BOM por default — confirmado via `xxd` (primeiros bytes `23 20`, não `EF BB BF`). Arquivos com apenas ASCII são reportados como "ASCII text" pelo `file`; arquivos com caractere backtick (`` ` ``) são reportados como "Unicode text, UTF-8 text" mesmo sem BOM. A verificação confiável é via `xxd`, não via `file`.
+2. Usar a tool `Write` nativa do Claude Code para criar scripts `.ps1` é mais seguro que passar heredoc via `-Command` do `powershell.exe` no Bash tool — o escape de shell dentro do heredoc pode corromper o conteúdo (blocos duplicados, erros de texto).
+
+---
+
 ## Lições da Etapa 2.5
 
 ### Candidatos a hook (automatizar em etapas futuras)
@@ -374,6 +387,7 @@ Definir como capturar quando chegarmos na Camada 4 — não criar burocracia ago
 
 ## Histórico de mudanças deste documento
 
+- **2026-05-08** — Etapa 2.6 concluída: 6 scripts PowerShell criados em `scripts/`. README atualizado com tabela de comandos + pré-requisito ExecutionPolicy. Mergeado via PR #XX.
 - **2026-05-08** — Etapa 2.5 concluída: Checkstyle (`validate`) e SpotBugs (`verify`) integrados como gates obrigatórios do `mvnw verify`. Configuração externa, severidade `error`, validação destrutiva confirmada. Mergeado via PR #22.
 - **2026-05-08** — Etapa 2.4 concluída: JaCoCo `check` com thresholds aplicados (BUNDLE 75%, infrastructure 60%), thresholds dos pacotes vazios comentados como TODO Camada 2, validação destrutiva confirmando gate. Mergeado via PR #21.
 - **2026-05-08** — Etapa 2.3 concluída: HealthcheckController em `/api/healthcheck`, SecurityConfig com whitelist explícita, HealthcheckControllerTest com 2 testes (status + bloqueio de não-whitelisted). Mergeado via PR #20.
