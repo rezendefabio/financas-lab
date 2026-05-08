@@ -10,6 +10,34 @@ Projeto-laboratório para validar uma fábrica de desenvolvimento AI-native, usa
 - `docs/progresso.md` — estado atual da fábrica e próximas camadas
 - `docs/roadmap-camada-1.md` — plano detalhado da Camada 1 (infraestrutura de confiança)
 
+## Comandos do projeto
+
+Os scripts em `scripts/` encapsulam os comandos atômicos do projeto.
+
+| Comando | Função |
+|---|---|
+| `scripts\setup.ps1` | Sobe Docker Compose + baixa deps + compila (sem testes). Use ao clonar o repo ou após reset. |
+| `scripts\dev.ps1` | Sobe Docker Compose + roda Spring Boot em modo dev. Bloqueia o terminal. |
+| `scripts\test.ps1` | Ciclo rápido: `mvnw test`. Sem JaCoCo check, sem análise estática. |
+| `scripts\test-integration.ps1` | Testes + JaCoCo, sem Checkstyle/SpotBugs. Útil pra debugar testes. |
+| `scripts\check.ps1` | Gate completo. Equivalente ao CI. |
+| `scripts\ship.ps1` | Roda `check.ps1` + `git push`. Não cria PR automaticamente. |
+
+### Pré-requisito Windows
+
+PowerShell por default não permite executar scripts não-assinados. Configurar uma vez:
+
+```powershell
+Set-ExecutionPolicy -Scope CurrentUser RemoteSigned
+```
+
+### Pré-requisitos do ambiente
+
+- Java 21 (Temurin recomendado)
+- Maven (já incluso via Maven Wrapper — `.\mvnw`)
+- Docker Desktop rodando
+- (opcional) GitHub CLI (`gh`) para fluxo de PRs
+
 ## Status
 
 Camada 1 (Infraestrutura de confiança) — em andamento. Ver `docs/progresso.md`.

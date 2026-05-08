@@ -249,18 +249,22 @@ Exemplo real: exclusão de `FinancasApplicationTests` no `ci.yml` da Etapa 1.5, 
 
 ---
 
-## Comandos atômicos do projeto (alvo)
+## Comandos atômicos do projeto
 
-A serem implementados via scripts PowerShell na Etapa 2.6. Padrão da fábrica:
+Scripts PowerShell em `scripts/`. Padrão da fábrica:
 
 | Comando | Função |
 |---|---|
-| `.\scripts\setup.ps1` | Sobe Postgres + Redis no Docker, instala deps, roda migrations |
-| `.\scripts\dev.ps1` | Sobe backend + frontend em modo desenvolvimento |
-| `.\scripts\test.ps1` | Roda testes unitários (rápidos, sem container) |
-| `.\scripts\test-integration.ps1` | Roda integration + e2e (com Testcontainers) |
-| `.\scripts\check.ps1` | Espelho do que CI roda em PR (`mvnw verify`) |
-| `.\scripts\ship.ps1` | `check.ps1` + push + abre PR via `gh` |
+| `.\scripts\setup.ps1` | Sobe Postgres + Redis no Docker, instala deps, compila |
+| `.\scripts\dev.ps1` | Sobe backend em modo dev (`mvnw spring-boot:run`) |
+| `.\scripts\test.ps1` | Ciclo rápido: apenas `mvnw test` (sem análise estática) |
+| `.\scripts\test-integration.ps1` | Testes + JaCoCo, pula Checkstyle/SpotBugs |
+| `.\scripts\check.ps1` | Gate completo (`mvnw verify`). Equivalente ao CI. |
+| `.\scripts\ship.ps1` | `check.ps1` + push. Sugere comando pra abrir PR. |
+
+**Encoding dos scripts:** UTF-8 sem BOM, obrigatoriamente. PowerShell `Out-File -Encoding UTF8` adiciona BOM e é proibido em arquivos `.ps1`. Usar `[System.IO.File]::WriteAllText(<path>, <conteudo>, (New-Object System.Text.UTF8Encoding $false))` ou método equivalente sem BOM.
+
+**Pré-requisito Windows:** `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` (uma vez por usuário). Documentado no README.
 
 ---
 
@@ -300,6 +304,7 @@ Lembretes operacionais que regem decisões em chats futuros:
 
 ### Histórico de mudanças
 
+- **2026-05-08** — Etapa 2.6 concluída: 6 scripts PowerShell em `scripts/` implementados (`setup`, `dev`, `test`, `test-integration`, `check`, `ship`). Diferenciação real entre `test.ps1` (rápido), `test-integration.ps1` (testes + JaCoCo) e `check.ps1` (gate completo, espelho do CI). Encoding UTF-8 sem BOM formalizado.
 - **2026-05-08** — Etapa 2.5 concluída: Checkstyle e SpotBugs ativados como gates do `mvnw verify`. Configuração externa em `config/`, severidade `error`, validação destrutiva confirmada para ambos.
 - **2026-05-08** — Etapa 2.4 concluída: JaCoCo `check` ativado com thresholds BUNDLE 75% e `infrastructure` 60%. Thresholds de `domain`/`application`/`interfaces` ficam comentados aguardando primeira classe (Camada 2). Validação destrutiva confirmou que `mvnw verify` falha quando cobertura cai abaixo do threshold.
 - **2026-05-08** — Etapa 2.3 concluída: primeiro endpoint HTTP (`GET /api/healthcheck`), `SecurityFilterChain` mínimo com whitelist explícita, precedente sobre endpoints técnicos em `shared/infrastructure/web/`, convenção de naming de teste formalizada.
