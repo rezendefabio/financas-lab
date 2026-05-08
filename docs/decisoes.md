@@ -98,6 +98,8 @@ com.laboratorio.financas/
     └── infrastructure/               # configs globais (security, OpenAPI, etc)
 ```
 
+**Endpoints técnicos** (healthcheck, métricas, debug) ficam em `shared/infrastructure/web/`, não em bounded context próprio. Bounded contexts são reservados pra domínio de negócio. Precedente: `HealthcheckController` (Etapa 2.3).
+
 ### Regras duras (não-negociáveis)
 
 1. **Domínio não conhece Spring nem JPA.** Zero anotação de framework em classes de `domain/`.
@@ -152,6 +154,8 @@ com.laboratorio.financas/
 - **`@Component` / `@Service` / `@Repository`** usados no papel correto, não intercambiavelmente.
 - **Configuração via `@ConfigurationProperties`** com record imutável, não `@Value` espalhado.
 
+- **`SecurityFilterChain` com whitelist explícita.** Endpoints públicos são listados em `requestMatchers(...).permitAll()`; o resto é `authenticated()`. Enquanto JWT não está implementado (Camada 2), `authenticated()` funciona como bloqueio efetivo (qualquer request não-whitelisted retorna 401). Whitelist atual: `/api/healthcheck`, `/actuator/health`, `/v3/api-docs/**`, `/swagger-ui/**`, `/swagger-ui.html`. Quando JWT entrar, `authenticated()` é substituído por filtro JWT — não relaxar pra `permitAll()` global em hipótese alguma. **Atenção:** Spring Security 6 sem `AuthenticationEntryPoint` explícito retorna 403 (não 401) para requisições não autenticadas com `httpBasic` desabilitado — configurar entry point explícito para garantir 401 semanticamente correto.
+
 ### Configuração crítica do `pom.xml`
 
 Decisões obrigatórias do `pom.xml` que **não devem ser alteradas sem novo ADR**:
@@ -169,7 +173,8 @@ Decisões obrigatórias do `pom.xml` que **não devem ser alteradas sem novo ADR
 
 ### Testes
 
-- **Nomes de teste:** `metodoTestado_cenarioDoTeste_resultadoEsperado` (ex: `criarTransacao_comValorNegativo_lancaExcecao`).
+- **Naming de classe de teste:** sufixo `Test` (singular) é o padrão. Sufixo `Tests` (plural) é tolerado em classes geradas pelo Spring Initializr (`FinancasApplicationTests`) e não deve ser usado em classes novas. Sufixo `IT` (convenção Maven Failsafe) **não é usado** neste projeto — Failsafe não está configurado e Surefire não pega esse sufixo por default.
+- **Nomes de método de teste:** `metodoTestado_cenarioDoTeste_resultadoEsperado` (ex: `criarTransacao_comValorNegativo_lancaExcecao`).
 - **Padrão AAA explícito:** comentários `// Given`, `// When`, `// Then` em testes não-triviais.
 - **Não compartilhar estado entre testes.** `@DirtiesContext` quando inevitável, mas evitar.
 - **Testcontainers via `@Container` static** para reuso entre testes da mesma classe.
@@ -279,6 +284,7 @@ Lembretes operacionais que regem decisões em chats futuros:
 
 ### Histórico de mudanças
 
+- **2026-05-08** — Etapa 2.3 concluída: primeiro endpoint HTTP (`GET /api/healthcheck`), `SecurityFilterChain` mínimo com whitelist explícita, precedente sobre endpoints técnicos em `shared/infrastructure/web/`, convenção de naming de teste formalizada.
 - **2026-05-08** — Etapa 2.2 concluida: primeira migration Flyway (`V1__schema_inicial.sql`) aplicada, configuracao Flyway nos profiles formalizada, regra dura sobre `baseline-on-migrate` por profile registrada.
 - **2026-05-08** — Atualização pós-Camada 1 etapas 1.3 a 1.5: versões fixadas no `pom.xml` (Spring Boot 3.5.14, MapStruct 1.6.3, JJWT 0.12.7, springdoc 2.8.17, JaCoCo 0.8.14), seção "Ambiente de desenvolvimento" criada com pegadinhas Windows, configuração crítica do `pom.xml` documentada, scripts PowerShell substituem Makefile, política de débito técnico consciente formalizada.
 - **2026-05-06** — Criação inicial. Stack, arquitetura, convenções e modelo financeiro consolidados a partir dos ADRs 001-008.
