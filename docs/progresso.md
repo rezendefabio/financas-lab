@@ -3,7 +3,7 @@
 > Documento de tracking. Mostra **onde estamos** na construção da fábrica e do produto.
 > Atualizado conforme camadas avançam. Diferente do `decisoes.md` (que registra escolhas) e dos `adrs.md` (que registram porquês), este documento responde a pergunta: "em que ponto eu estou?".
 
-**Última atualização:** 2026-05-08 (Etapa 2.6.1)
+**Última atualização:** 2026-05-08 (Etapa 2.6.2)
 
 ---
 
@@ -231,6 +231,20 @@ Definir como capturar quando chegarmos na Camada 4 — não criar burocracia ago
 
 ---
 
+## Lições da Etapa 2.6.2
+
+### Candidatos a hook (automatizar em etapas futuras)
+
+1. Detectar comando nativo (`docker`, `git`, `mvn`, etc) seguido de `if ($LASTEXITCODE -ne 0)` em arquivos `.ps1` **sem** ser precedido por suspensão local de `$ErrorActionPreference`. Indica risco do mesmo bug que esta etapa corrigiu. Hook leve futuro: `grep -B1 -A2 "if (\$LASTEXITCODE" scripts/*.ps1` revisado caso a caso.
+
+### Lições de ambiente
+
+1. **`$ErrorActionPreference = "Stop"` + comando nativo + redirecionamento de stderr é incompatível em PowerShell.** Os operadores de redirecionamento (`2>&1`, `2>$null`, `2>&1 > $null`, `2>&1 | Out-Null`) **não são aplicados antes** do `Stop` interceptar stderr de comando nativo. Resultado: erro vaza pra tela com stack trace do PowerShell. Testado: 3 variantes de redirecionamento falharam. Única solução prática: suspender `Stop` localmente durante a checagem.
+2. **Validação manual continua descobrindo bugs que automação não pega.** A 2.6.1 corrigiu um bug parecido (`Write-Error` + `exit` sob `Stop`), e foi descoberta na validação manual destrutiva. A 2.6.2 corrigiu outro bug do mesmo padrão raiz (`Stop` + comando que escreve stderr), descoberto também em validação manual destrutiva (rodar `dev.ps1` com Docker parado). Conclusão reforçada: validação manual destrutiva é instrumento de qualidade de primeira linha, não opcional.
+3. **Diagnóstico via teste em terminal direto > inferência.** A solução final foi descoberta por reprodução isolada no terminal (3 tentativas, comparação de comportamento com/sem `Stop`). Sem reprodução isolada, teria ficado tentando variações com `2>&1` infinitamente. Padrão pra debugar comportamento confuso de PowerShell: reproduzir linha-a-linha no terminal direto antes de mexer em script.
+
+---
+
 ## Lições da Etapa 2.6.1
 
 ### Candidatos a hook (automatizar em etapas futuras)
@@ -402,6 +416,7 @@ Definir como capturar quando chegarmos na Camada 4 — não criar burocracia ago
 
 ## Histórico de mudanças deste documento
 
+- **2026-05-08** — Etapa 2.6.2 concluída: fix de UX em checagem de Docker nos scripts `.ps1`. Aplicado padrão "suspender `Stop` localmente" em `dev.ps1`/`test-integration.ps1`/`check.ps1`. Regra adicionada em `decisoes.md`. Mergeado via PR #25.
 - **2026-05-08** — Etapa 2.6.1 concluída: fix de exit code em scripts `.ps1`. `Write-Error` + `exit 1` substituído por `Write-Host -ForegroundColor Red` + `exit 1` nos 5 scripts afetados. Regra formalizada em `decisoes.md`. Lições registradas. Mergeado via PR #24.
 - **2026-05-08** — Etapa 2.6 concluída: 6 scripts PowerShell criados em `scripts/`. README atualizado com tabela de comandos + pré-requisito ExecutionPolicy. Mergeado via PR #23.
 - **2026-05-08** — Etapa 2.5 concluída: Checkstyle (`validate`) e SpotBugs (`verify`) integrados como gates obrigatórios do `mvnw verify`. Configuração externa, severidade `error`, validação destrutiva confirmada. Mergeado via PR #22.
