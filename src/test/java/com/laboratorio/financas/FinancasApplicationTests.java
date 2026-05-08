@@ -1,12 +1,9 @@
 package com.laboratorio.financas;
 
+import com.laboratorio.financas.shared.AbstractIntegrationTest;
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.ActiveProfiles;
 
-@SpringBootTest
-@ActiveProfiles("test")
-class FinancasApplicationTests {
+class FinancasApplicationTests extends AbstractIntegrationTest {
 
     @Test
     void contextLoads() {
