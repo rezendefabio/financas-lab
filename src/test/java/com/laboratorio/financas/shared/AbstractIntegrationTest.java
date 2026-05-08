@@ -14,7 +14,7 @@ public abstract class AbstractIntegrationTest {
 
     @SuppressWarnings("resource")
     protected static final PostgreSQLContainer<?> POSTGRES =
-        new PostgreSQLContainer<>("postgres:16-alpine")
+            new PostgreSQLContainer<>("postgres:16-alpine")
             .withDatabaseName("financas_test")
             .withUsername("test")
             .withPassword("test");

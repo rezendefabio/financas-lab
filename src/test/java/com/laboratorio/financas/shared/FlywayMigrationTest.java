@@ -17,8 +17,8 @@ class FlywayMigrationTest extends AbstractIntegrationTest {
 
         // When
         Boolean v1Aplicada = jdbcTemplate.queryForObject(
-            "SELECT success FROM flyway_schema_history WHERE version = '1'",
-            Boolean.class
+                "SELECT success FROM flyway_schema_history WHERE version = '1'",
+                Boolean.class
         );
 
         // Then
@@ -29,8 +29,8 @@ class FlywayMigrationTest extends AbstractIntegrationTest {
     void deveTerCriadoTabelaHealthcheckComLinhaPlaceholder() {
         // When
         Integer total = jdbcTemplate.queryForObject(
-            "SELECT COUNT(*) FROM __healthcheck",
-            Integer.class
+                "SELECT COUNT(*) FROM __healthcheck",
+                Integer.class
         );
 
         // Then
