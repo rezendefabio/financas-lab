@@ -52,6 +52,9 @@ data/
 # ─── Testcontainers ──────────────────────────────────────────────────────────
 .testcontainers/
 
+# ─── Claude Code (settings locais pessoais) ─────────────────────────────────
+.claude/
+
 # ─── Sistema operacional ─────────────────────────────────────────────────────
 .DS_Store
 Thumbs.db
