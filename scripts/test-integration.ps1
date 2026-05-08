@@ -8,7 +8,7 @@ $ErrorActionPreference = "Stop"
 # Verifica Docker rodando (Testcontainers precisa).
 docker info 2>&1 | Out-Null
 if ($LASTEXITCODE -ne 0) {
-    Write-Error "Docker Desktop nao esta rodando. Testcontainers precisa do Docker."
+    Write-Host "Docker Desktop nao esta rodando. Testcontainers precisa do Docker." -ForegroundColor Red
     exit 1
 }
 

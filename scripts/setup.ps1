@@ -8,7 +8,7 @@ $ErrorActionPreference = "Stop"
 Write-Host "==> Subindo servicos Docker Compose..." -ForegroundColor Cyan
 docker compose up -d
 if ($LASTEXITCODE -ne 0) {
-    Write-Error "Falha ao subir Docker Compose. Docker Desktop esta rodando?"
+    Write-Host "Falha ao subir Docker Compose. Docker Desktop esta rodando?" -ForegroundColor Red
     exit 1
 }
 
@@ -16,7 +16,7 @@ Write-Host ""
 Write-Host "==> Baixando dependencias e compilando (sem testes)..." -ForegroundColor Cyan
 .\mvnw clean install -DskipTests
 if ($LASTEXITCODE -ne 0) {
-    Write-Error "Falha no mvnw clean install."
+    Write-Host "Falha no mvnw clean install." -ForegroundColor Red
     exit 1
 }
 
