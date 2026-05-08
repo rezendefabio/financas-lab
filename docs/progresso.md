@@ -3,7 +3,7 @@
 > Documento de tracking. Mostra **onde estamos** na construção da fábrica e do produto.
 > Atualizado conforme camadas avançam. Diferente do `decisoes.md` (que registra escolhas) e dos `adrs.md` (que registram porquês), este documento responde a pergunta: "em que ponto eu estou?".
 
-**Última atualização:** 2026-05-08 (Etapa 2.3)
+**Última atualização:** 2026-05-08 (Etapa 2.4)
 
 ---
 
@@ -83,7 +83,7 @@ Construir a fundação não-negociável da fábrica: testes em três níveis, CI
 - [x] Flyway configurado, primeira migration criada (schema vazio + tabela de versão)
 - [x] Testcontainers configurado e funcional
 - [x] Hello-world endpoint passando teste e2e via Testcontainers
-- [x] JaCoCo configurado (sem thresholds — apenas prepare-agent + report; thresholds por camada entram na Etapa 2.4)
+- [x] JaCoCo configurado com thresholds (BUNDLE 75%, infrastructure 60%; domain/application/interfaces aguardam Camada 2)
 - [ ] Checkstyle + SpotBugs configurados
 - [ ] Projeto Next.js inicializado
 - [x] GitHub Actions configurado: lint + test + build em PR
@@ -231,6 +231,20 @@ Definir como capturar quando chegarmos na Camada 4 — não criar burocracia ago
 
 ---
 
+## Lições da Etapa 2.4
+
+### Candidatos a hook (automatizar em etapas futuras)
+
+(Nenhum novo nesta etapa.)
+
+### Licoes de ambiente
+
+1. JaCoCo `check` com `<minimum>` fora do intervalo [0.0, 1.0] gera BUILD FAILURE com mensagem `Rule violated... given minimum ratio is X.XX, but must be between 0.0 and 1.0` — a falha é de configuração inválida, não de cobertura insuficiente. Threshold > 1.0 prova que o gate roda e bloqueia o build, mas não valida a avaliação de cobertura em si.
+2. Código de configuração Spring (`@Configuration` com `@Bean`) atinge 100% de cobertura de instrução JaCoCo com qualquer teste que carregue o contexto (`@SpringBootTest`). Todas as instruções do método `securityFilterChain` rodam na criação do bean — não em chamadas subsequentes. Isso significa que testes de comportamento do Security (ex: endpoint bloqueado retornando 401) não contribuem para cobertura JaCoCo do `SecurityConfig`, apenas para cobertura comportamental. Consequência prática: validação destrutiva por remoção de testes de Security não reduz coverage.
+3. Uso de `tail` (Unix) em vez de equivalente PowerShell (`Select-Object -Last N`) em ambiente Windows — erro já documentado em `decisoes.md` repetido durante a execução. Candidato a hook que valide comandos Unix em scripts antes de rodar.
+
+---
+
 ## Lições da Etapa 2.3
 
 ### Candidatos a hook (automatizar em etapas futuras)
@@ -346,6 +360,7 @@ Definir como capturar quando chegarmos na Camada 4 — não criar burocracia ago
 
 ## Histórico de mudanças deste documento
 
+- **2026-05-08** — Etapa 2.4 concluída: JaCoCo `check` com thresholds aplicados (BUNDLE 75%, infrastructure 60%), thresholds dos pacotes vazios comentados como TODO Camada 2, validação destrutiva confirmando gate. Mergeado via PR #21.
 - **2026-05-08** — Etapa 2.3 concluída: HealthcheckController em `/api/healthcheck`, SecurityConfig com whitelist explícita, HealthcheckControllerTest com 2 testes (status + bloqueio de não-whitelisted). Mergeado via PR #20.
 - **2026-05-08** — Etapa 2.2 concluida: V1__schema_inicial.sql aplicada, Flyway configurado em todos os profiles, FlywayMigrationTest validando aplicacao da migration. Mergeado via PR #19.
 - **2026-05-08** — Etapa 2.1 concluída: Testcontainers configurado, AbstractIntegrationTest criado, FinancasApplicationTests passa contra Postgres real via container, débito técnico da Etapa 1.5 (exclusão do FinancasApplicationTests no CI) resolvido. Mergeado via PR #17.
