@@ -3,7 +3,7 @@
 > Documento de tracking. Mostra **onde estamos** na construção da fábrica e do produto.
 > Atualizado conforme camadas avançam. Diferente do `decisoes.md` (que registra escolhas) e dos `adrs.md` (que registram porquês), este documento responde a pergunta: "em que ponto eu estou?".
 
-**Última atualização:** 2026-05-08 (Etapa 2.6)
+**Última atualização:** 2026-05-08 (Etapa 2.6.1)
 
 ---
 
@@ -231,6 +231,21 @@ Definir como capturar quando chegarmos na Camada 4 — não criar burocracia ago
 
 ---
 
+## Lições da Etapa 2.6.1
+
+### Candidatos a hook (automatizar em etapas futuras)
+
+1. Detectar `Write-Error` seguido de `exit N` em arquivos `.ps1` — combinação que indica bug do mesmo padrão que esta etapa corrigiu. Hook leve: `grep -B0 -A1 "Write-Error" scripts/*.ps1 | grep -A1 "exit"`.
+
+### Lições de ambiente
+
+1. **Validação manual destrutiva pega bugs que validação automática mascara.** A 2.6 passou sintaxe (parser), encoding (sem BOM) e CI (porque CI invoca via subprocess, que traduz exceção terminating em exit 1 corretamente). Mas em uso interativo no PowerShell o `$LASTEXITCODE` ficava 0 falsamente. Conclusão: validação manual no fluxo real do operador descobriu bug que toda automação validou como verde. Validar destrutivamente é não-negociável.
+2. **`$ErrorActionPreference = "Stop"` + `Write-Error` + `exit N` é armadilha clássica em PowerShell.** O `Stop` faz `Write-Error` virar exceção terminating, abortando o script antes do `exit N`. Em sessão direta, `$LASTEXITCODE` permanece com o valor do último comando externo que rodou (geralmente 0). Em subprocess (`powershell.exe -File`), o exit traduz pra 1 corretamente. Comportamento inconsistente. Padrão correto registrado em `decisoes.md`.
+3. **Subprocess test mascara bug de exit code em PowerShell.** Para validar exit code real de scripts `.ps1`, usar `powershell.exe -Command` rodando o script + captura de `$LASTEXITCODE` na **mesma sessão**. Subprocess via `-File` reporta exit code do processo (que sempre é 1 quando há exceção), não do comportamento da sessão.
+4. **Validação destrutiva da branch `== main` não foi exercitada** porque o agente está em feature branch durante o fix. O caminho de erro segue o mesmo padrão `Write-Host` vermelho + `exit 1` dos demais `Write-Error`s do `ship.ps1`, então é coberto pelo precedente da validação 1 (working tree sujo).
+
+---
+
 ## Lições da Etapa 2.6
 
 ### Candidatos a hook (automatizar em etapas futuras)
@@ -387,6 +402,7 @@ Definir como capturar quando chegarmos na Camada 4 — não criar burocracia ago
 
 ## Histórico de mudanças deste documento
 
+- **2026-05-08** — Etapa 2.6.1 concluída: fix de exit code em scripts `.ps1`. `Write-Error` + `exit 1` substituído por `Write-Host -ForegroundColor Red` + `exit 1` nos 5 scripts afetados. Regra formalizada em `decisoes.md`. Lições registradas. Mergeado via PR #XX.
 - **2026-05-08** — Etapa 2.6 concluída: 6 scripts PowerShell criados em `scripts/`. README atualizado com tabela de comandos + pré-requisito ExecutionPolicy. Mergeado via PR #23.
 - **2026-05-08** — Etapa 2.5 concluída: Checkstyle (`validate`) e SpotBugs (`verify`) integrados como gates obrigatórios do `mvnw verify`. Configuração externa, severidade `error`, validação destrutiva confirmada. Mergeado via PR #22.
 - **2026-05-08** — Etapa 2.4 concluída: JaCoCo `check` com thresholds aplicados (BUNDLE 75%, infrastructure 60%), thresholds dos pacotes vazios comentados como TODO Camada 2, validação destrutiva confirmando gate. Mergeado via PR #21.

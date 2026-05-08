@@ -232,6 +232,18 @@ Regras inativas estão comentadas no `pom.xml` e devem ser descomentadas no PR q
 - `application-prod.yml` — produção
 - **Secrets nunca em YAML.** `${VAR_NAME}` referenciando env, com `.env.example` versionado e `.env` no `.gitignore`.
 
+### Scripts PowerShell
+
+- **`Write-Host -ForegroundColor Red` em vez de `Write-Error` antes de `exit N`.** Sob `$ErrorActionPreference = "Stop"`, `Write-Error` lança exceção terminating, encerra o script antes do `exit N`, e em sessão dot-source o `$LASTEXITCODE` não é atualizado (fica 0 falsamente). Padrão correto:
+  ```powershell
+  if ($alguma_condicao_de_erro) {
+      Write-Host "mensagem clara do erro" -ForegroundColor Red
+      exit 1
+  }
+  ```
+- **`Write-Error` é apropriado** apenas em scripts/módulos onde quem invoca vai capturar o erro como exceção (try/catch, pipeline com `-ErrorAction`). Em scripts user-facing chamados diretamente no terminal, prefira `Write-Host` colorido.
+- **Manter `$ErrorActionPreference = "Stop"`** no topo dos scripts. A regra acima é apenas para o fluxo "validação detectou problema, sair com código de erro". Para erros inesperados de comandos nativos (ex: Maven crashar), `Stop` continua sendo o comportamento desejado.
+
 ---
 
 ## Política de débito técnico consciente
@@ -304,6 +316,7 @@ Lembretes operacionais que regem decisões em chats futuros:
 
 ### Histórico de mudanças
 
+- **2026-05-08** — Etapa 2.6.1 concluída: fix de bug encontrado em validação manual da 2.6 — `Write-Error` + `exit 1` sob `Stop` não propagava `$LASTEXITCODE = 1` em sessão direta. Substituído por `Write-Host -ForegroundColor Red` + `exit 1` nos 5 scripts. Regra formalizada na seção "Scripts PowerShell".
 - **2026-05-08** — Etapa 2.6 concluída: 6 scripts PowerShell em `scripts/` implementados (`setup`, `dev`, `test`, `test-integration`, `check`, `ship`). Diferenciação real entre `test.ps1` (rápido), `test-integration.ps1` (testes + JaCoCo) e `check.ps1` (gate completo, espelho do CI). Encoding UTF-8 sem BOM formalizado.
 - **2026-05-08** — Etapa 2.5 concluída: Checkstyle e SpotBugs ativados como gates do `mvnw verify`. Configuração externa em `config/`, severidade `error`, validação destrutiva confirmada para ambos.
 - **2026-05-08** — Etapa 2.4 concluída: JaCoCo `check` ativado com thresholds BUNDLE 75% e `infrastructure` 60%. Thresholds de `domain`/`application`/`interfaces` ficam comentados aguardando primeira classe (Camada 2). Validação destrutiva confirmou que `mvnw verify` falha quando cobertura cai abaixo do threshold.
