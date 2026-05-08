@@ -26,15 +26,11 @@ jobs:
         run: ./mvnw --version
 
       - name: Build com testes
-        # FinancasApplicationTests.contextLoads falha esperadamente nesta etapa:
-        # contexto Spring nao sobe sem Postgres real (Testcontainers configurado na Etapa 2.1).
-        # Debito tecnico consciente — exclusao sera removida na Etapa 2.1.
-        run: ./mvnw verify -Dtest='!FinancasApplicationTests' -Dsurefire.failIfNoSpecifiedTests=false
+        # Testcontainers sobe Postgres real para testes de integracao.
+        # Docker disponivel por padrao no runner ubuntu-latest.
+        run: ./mvnw verify
 
-      # JaCoCo report nao e gerado quando nenhum teste roda
-      # (caso atual ate Etapa 2.1). Default do upload-artifact ja
-      # e "warn", mas explicitamos para deixar claro que diretorio
-      # vazio nao deve falhar o CI.
+      # JaCoCo report gerado pelo mvnw verify via plugin JaCoCo.
       - name: Upload relatorio JaCoCo
         if: always()
         uses: actions/upload-artifact@v4

@@ -1,3 +1,17 @@
-# Configurações específicas de teste serão adicionadas na Etapa 2.1
-# (configuração do Testcontainers).
-# Por enquanto, mantemos arquivo vazio para o profile existir.
+# Configuracao de teste.
+# Datasource e Flyway sao injetados via @DynamicPropertySource
+# pela classe AbstractIntegrationTest (Testcontainers).
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+        show_sql: false
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
