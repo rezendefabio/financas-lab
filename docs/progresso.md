@@ -3,7 +3,7 @@
 > Documento de tracking. Mostra **onde estamos** na construção da fábrica e do produto.
 > Atualizado conforme camadas avançam. Diferente do `decisoes.md` (que registra escolhas) e dos `adrs.md` (que registram porquês), este documento responde a pergunta: "em que ponto eu estou?".
 
-**Última atualização:** 2026-05-08 (Etapa 2.2)
+**Última atualização:** 2026-05-08 (Etapa 2.3)
 
 ---
 
@@ -82,7 +82,7 @@ Construir a fundação não-negociável da fábrica: testes em três níveis, CI
 - [x] `pom.xml` com todas as dependências da stack
 - [x] Flyway configurado, primeira migration criada (schema vazio + tabela de versão)
 - [x] Testcontainers configurado e funcional
-- [ ] Hello-world endpoint passando teste e2e via Testcontainers
+- [x] Hello-world endpoint passando teste e2e via Testcontainers
 - [x] JaCoCo configurado (sem thresholds — apenas prepare-agent + report; thresholds por camada entram na Etapa 2.4)
 - [ ] Checkstyle + SpotBugs configurados
 - [ ] Projeto Next.js inicializado
@@ -231,6 +231,18 @@ Definir como capturar quando chegarmos na Camada 4 — não criar burocracia ago
 
 ---
 
+## Lições da Etapa 2.3
+
+### Candidatos a hook (automatizar em etapas futuras)
+
+(Nenhum novo nesta etapa.)
+
+### Licoes de ambiente
+
+1. Spring Security 6 sem `AuthenticationEntryPoint` explícito retorna 403 (não 401) para requisições não autenticadas quando `httpBasic` está desabilitado. Sem entry point configurado, o framework não sabe como desafiar o cliente e cai para 403 (Forbidden). Solução: adicionar `.exceptionHandling(ex -> ex.authenticationEntryPoint(...))` com `response.sendError(401)` explícito. Registrado em `decisoes.md` na seção Spring específico.
+
+---
+
 ## Licoes da Etapa 2.2
 
 ### Candidatos a hook (automatizar em etapas futuras)
@@ -334,6 +346,7 @@ Definir como capturar quando chegarmos na Camada 4 — não criar burocracia ago
 
 ## Histórico de mudanças deste documento
 
+- **2026-05-08** — Etapa 2.3 concluída: HealthcheckController em `/api/healthcheck`, SecurityConfig com whitelist explícita, HealthcheckControllerTest com 2 testes (status + bloqueio de não-whitelisted). Mergeado via PR #XX.
 - **2026-05-08** — Etapa 2.2 concluida: V1__schema_inicial.sql aplicada, Flyway configurado em todos os profiles, FlywayMigrationTest validando aplicacao da migration. Mergeado via PR #19.
 - **2026-05-08** — Etapa 2.1 concluída: Testcontainers configurado, AbstractIntegrationTest criado, FinancasApplicationTests passa contra Postgres real via container, débito técnico da Etapa 1.5 (exclusão do FinancasApplicationTests no CI) resolvido. Mergeado via PR #17.
 - **2026-05-08** — Etapa 1.5 concluída: GitHub Actions CI configurado, branch protection com required check validada destrutivamente (PR #12 bloqueado). Mergeado via PR #11.
