@@ -3,7 +3,7 @@
 > Documento de tracking. Mostra **onde estamos** na construção da fábrica e do produto.
 > Atualizado conforme camadas avançam. Diferente do `decisoes.md` (que registra escolhas) e dos `adrs.md` (que registram porquês), este documento responde a pergunta: "em que ponto eu estou?".
 
-**Última atualização:** 2026-05-06
+**Última atualização:** 2026-05-08
 
 ---
 
@@ -81,7 +81,7 @@ Construir a fundação não-negociável da fábrica: testes em três níveis, CI
 - [x] Projeto Spring Boot inicializado via Spring Initializr (manualmente)
 - [x] `pom.xml` com todas as dependências da stack
 - [ ] Flyway configurado, primeira migration criada (schema vazio + tabela de versão)
-- [ ] Testcontainers configurado e funcional
+- [x] Testcontainers configurado e funcional
 - [ ] Hello-world endpoint passando teste e2e via Testcontainers
 - [x] JaCoCo configurado (sem thresholds — apenas prepare-agent + report; thresholds por camada entram na Etapa 2.4)
 - [ ] Checkstyle + SpotBugs configurados
@@ -231,6 +231,21 @@ Definir como capturar quando chegarmos na Camada 4 — não criar burocracia ago
 
 ---
 
+## Lições da Etapa 2.1
+
+### Candidatos a hook (automatizar em etapas futuras)
+
+1. Validar que classes base de teste em `src/test/java/.../shared/` (ou pacote equivalente) que servem de superclasse para outras classes de teste tenham modificador `abstract`. Sem `abstract`, JUnit tenta instanciar a classe base e roda o lifecycle dela além das filhas, gerando execução duplicada e potencial inicialização de container fora de hora.
+2. Validar que `application-test.yml` (e qualquer profile de teste) não declare URL JDBC hardcoded quando o projeto usa Testcontainers via `@DynamicPropertySource`. Hardcoding anula o ponto da injeção dinâmica e faz o teste rodar contra banco que não é o do container.
+3. Validar que `baseline-on-migrate: true` apareça **apenas** em profiles de teste (e potencialmente `dev`), nunca em `application.yml` (defaults) ou `application-prod.yml`. Em produção, baseline silencioso de schema desconhecido é fonte clássica de inconsistência.
+
+### Lições de ambiente
+
+1. Cold-start de CI com Testcontainers em runner do GitHub Actions (`ubuntu-latest`) foi de 33s no PR #17, bem abaixo dos 80-120s previstos no plano da etapa. O cache de camada do `postgres:16-alpine` no runner é mais agressivo que o estimado. Calibrar previsões futuras para 30-90s, com 120s como teto pessimista — não como expectativa.
+2. `spring.jpa.hibernate.ddl-auto: validate` com schema vazio (sem migrations ainda) só funciona porque também não existem classes `@Entity` no projeto. Quando as primeiras entidades JPA aparecerem na Camada 2, validar contra schema vazio vai quebrar a inicialização do Spring. Exige migration `V1` não-vazia ou migrations escritas em paralelo às entidades — não depois. Já cobre a Etapa 2.2 (primeira migration Flyway).
+
+---
+
 ## Lições da Etapa 1.5
 
 ### Candidatos a hook (automatizar em etapas futuras)
@@ -306,6 +321,7 @@ Definir como capturar quando chegarmos na Camada 4 — não criar burocracia ago
 
 ## Histórico de mudanças deste documento
 
+- **2026-05-08** — Etapa 2.1 concluída: Testcontainers configurado, AbstractIntegrationTest criado, FinancasApplicationTests passa contra Postgres real via container, débito técnico da Etapa 1.5 (exclusão do FinancasApplicationTests no CI) resolvido. Mergeado via PR #17.
 - **2026-05-08** — Etapa 1.5 concluída: GitHub Actions CI configurado, branch protection com required check validada destrutivamente (PR #12 bloqueado). Mergeado via PR #11.
 - **2026-05-07** — Etapa 1.4 concluída: Spring Boot 3.5.14 + Java 21 inicializado manualmente, pom.xml com toda a stack, Maven Wrapper 3.9.9, JaCoCo configurado (prepare-agent + report). Mergeado via PR #8.
 - **2026-05-07** — Etapa 1.3 concluída: docker-compose.yml com Postgres 16 e Redis 7 rodando e validado (8 checks).
