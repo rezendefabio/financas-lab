@@ -112,6 +112,9 @@ com.laboratorio.financas/
 4. **Use case = classe.** Padrão de nome: `<Verbo><Substantivo>UseCase` (ex: `CriarTransacaoUseCase`, `ListarTransacoesPorPeriodoUseCase`).
 5. **Repository pattern.** Interface no domínio (`TransacaoRepository`), implementação na infra (`TransacaoRepositoryImpl`) que delega a `TransacaoJpaRepository extends JpaRepository`.
 6. **Money desde o dia 1.** Toda quantia monetária é `Money`, nunca `BigDecimal` cru, nunca `double`, nunca `float`.
+
+   **Implementação de `Money`** (a partir da Etapa 3.1): record imutável em `shared/domain` com `BigDecimal valor` (escala 2 fixa, `RoundingMode.HALF_EVEN`) e `Currency moeda`. Operações: `somar`, `subtrair`, `multiplicar(BigDecimal)`, `negar`, `ehZero`, `ehNegativo`, `ehPositivo`. Operações entre `Money` exigem mesma moeda — moedas diferentes lançam `IllegalArgumentException`. Métodos adiados (porta aberta): `dividir`, `percentual`, formatação localizada, `Comparable`, conversão entre moedas.
+
 7. **DTOs em três níveis.** `*Request`/`*Response` na API; `*Command`/`*Query` na entrada do use case quando necessário; `*Entity` na persistência. Não vazam entre camadas.
 8. **Schema é declarado em SQL via Flyway.** `spring.jpa.hibernate.ddl-auto` é `validate` em todos os ambientes, nunca `update` ou `create`.
 9. **Senhas com BCrypt cost 12.** Sem exceção.
@@ -180,7 +183,7 @@ Decisões obrigatórias do `pom.xml` que **não devem ser alteradas sem novo ADR
 ### Testes
 
 - **Naming de classe de teste:** sufixo `Test` (singular) é o padrão. Sufixo `Tests` (plural) é tolerado em classes geradas pelo Spring Initializr (`FinancasApplicationTests`) e não deve ser usado em classes novas. Sufixo `IT` (convenção Maven Failsafe) **não é usado** neste projeto — Failsafe não está configurado e Surefire não pega esse sufixo por default.
-- **Nomes de método de teste:** `metodoTestado_cenarioDoTeste_resultadoEsperado` (ex: `criarTransacao_comValorNegativo_lancaExcecao`).
+- **Naming de método de teste:** camelCase puro, sem underscore (restrição do Checkstyle `MethodName` do projeto, que aplica `^[a-z][a-zA-Z0-9]*$`). Estrutura tripartite recomendada quando aplicável: `<metodoTestado><CenarioDoTeste><ResultadoEsperado>` em camelCase. Exemplos: `somarDoisValoresPositivosRetornaSoma`, `construtorComValorNuloLancaNullPointerException`. Tentar manter sob 60 chars; se ficar maior, encurtar preservando intenção. (Nota: versões anteriores deste doc prescreviam underscore — corrigido na Etapa 3.1 para alinhar ao código vivo e ao Checkstyle.)
 - **Padrão AAA explícito:** comentários `// Given`, `// When`, `// Then` em testes não-triviais.
 - **Não compartilhar estado entre testes.** `@DirtiesContext` quando inevitável, mas evitar.
 - **Testcontainers via `@Container` static** para reuso entre testes da mesma classe.
@@ -202,10 +205,10 @@ Decisões obrigatórias do `pom.xml` que **não devem ser alteradas sem novo ADR
 
 CI falha se cobertura agregada cair abaixo de 75%.
 
-**Status atual de aplicação dos thresholds (Etapa 2.4):**
+**Status atual de aplicação dos thresholds (Etapas 2.4 e 3.1):**
 
-- ✅ **Ativos:** BUNDLE 75% (global), `infrastructure` 60%
-- ⏸️ **Aguardando classes (ativados na Camada 2):** `domain` 90%, `application` 80%, `interfaces` 70%
+- ✅ **Ativos:** BUNDLE 75% (global), `infrastructure` 60%, `domain` 90%
+- ⏸️ **Aguardando classes (ativados na Camada 2):** `application` 80%, `interfaces` 70%
 
 Regras inativas estão comentadas no `pom.xml` e devem ser descomentadas no PR que introduzir a primeira classe do pacote correspondente. Esse é débito técnico consciente — registrado, com data de resolução conhecida (Camada 2).
 
@@ -348,6 +351,7 @@ Lembretes operacionais que regem decisões em chats futuros:
 
 ### Histórico de mudanças
 
+- **2026-05-09** — Etapa 3.1 concluída: value object `Money` implementado em `shared/domain` (record imutável, escala 2, HALF_EVEN). Threshold JaCoCo `domain` 90% ativado. Naming de método de teste corrigido no doc (camelCase puro, alinhado ao Checkstyle). Mergeado via PR #XX.
 - **2026-05-08** — Etapa 2.9 concluída: `setup.ps1` e `dev.ps1` criam `.env` automaticamente a partir de `.env.example` quando ausente. Resolve débito técnico descoberto na Etapa 2.8. Mergeado via PR #28.
 - **2026-05-08** — Etapa 2.8 concluída: wrap-up Camada 1. Sem novas decisões técnicas. Documentos `retrospectiva-camada-1.md` e `hooks-pendentes.md` criados. Camada 1 marcada como ✅ concluída.
 - **2026-05-08** — Etapa 2.7 concluída: frontend Next.js 16 inicializado em `frontend/`. Stack: TypeScript + Tailwind + ESLint + App Router + shadcn/ui + TanStack Query + Zod + React Hook Form. CI atualizado com steps de Node 22 + lint + build do frontend. PWA adiada para Camada 2. Seção Stack > Frontend atualizada com versões reais; seção `## Frontend` com decisões adicionada.

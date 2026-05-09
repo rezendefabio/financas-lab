@@ -3,7 +3,7 @@
 > Documento de tracking. Mostra **onde estamos** na construção da fábrica e do produto.
 > Atualizado conforme camadas avançam. Diferente do `decisoes.md` (que registra escolhas) e dos `adrs.md` (que registram porquês), este documento responde a pergunta: "em que ponto eu estou?".
 
-**Última atualização:** 2026-05-08 (Etapa 2.9 — fix do .env)
+**Última atualização:** 2026-05-09 (Etapa 3.1 — Money)
 
 ---
 
@@ -13,7 +13,7 @@
 |---|---|---|
 | **0** | Discovery (visão, ADRs, decisões, ambiente) | ✅ Concluída |
 | **1** | Infraestrutura de confiança | ✅ Concluída |
-| **2** | Arquitetura otimizada para agentes | ⏸️ Aguardando |
+| **2** | Arquitetura otimizada para agentes | 🟢 Em andamento |
 | **3** | Configuração do Claude Code (subagents, skills, hooks) | ⏸️ Aguardando |
 | **4** | Modelo operacional (tiers de autonomia ativados) | ⏸️ Aguardando |
 | **5** | Runtime de agentes (VPS) — opcional | ⏸️ Aguardando |
@@ -115,7 +115,7 @@ Ver `docs/roadmap-camada-1.md` para o passo a passo das 2 semanas.
 
 ## Camada 2 — Arquitetura otimizada para agentes
 
-**Status:** ⏸️ Aguardando
+**Status:** 🟢 Em andamento
 **Pré-requisito:** Camada 1 concluída
 
 ### Objetivo
@@ -125,7 +125,7 @@ Implementar a estrutura de bounded contexts, primeiros agregados/use cases, valu
 ### Critérios de "pronto" (preliminar)
 
 - [ ] Estrutura de pacotes implementada conforme ADR-004
-- [ ] Value object `Money` implementado e testado
+- [x] Value object `Money` implementado e testado
 - [ ] Bounded context `conta` com domínio puro + use cases + repositório
 - [ ] Bounded context `categoria` no mesmo padrão
 - [ ] MapStruct funcionando entre Entity JPA ↔ Domain
@@ -244,6 +244,18 @@ Definir como capturar quando chegarmos na Camada 4 — não criar burocracia ago
 2. **PowerShell padrão sem `-Encoding UTF8` lê UTF-8 errado** — mostra `Ã³` no lugar de `ó`, `Ã§` no lugar de `ç`. Para validação confiável de arquivos com acentos, usar `Get-Content -Encoding UTF8` explícito.
 3. **`Measure-Object -Line` não conta linhas em branco** — o cmdlet conta apenas linhas com conteúdo. Para contagem real (incluindo vazias), usar `[System.IO.File]::ReadAllLines('<path>').Count`.
 4. **Premissas do orquestrador externo podem estar erradas** — validação independente com cálculo concreto resolve. O Claude Code acertou em pushback técnico contradizendo análise visual feita no chat externo. Reforça o princípio: dado concreto vence interpretação.
+
+---
+
+## Lições da Etapa 3.1
+
+### Candidatos a hook (automatizar em etapas futuras)
+
+(Nenhum novo nesta etapa.)
+
+### Lições de ambiente
+
+1. **Conflito naming de testes vs Checkstyle detectado em zona limítrofe.** `decisoes.md` prescrevia underscore (`metodoTestado_cenarioDoTeste_resultadoEsperado`), mas Checkstyle do projeto e testes existentes (`HealthcheckControllerTest`, `FlywayMigrationTest`) usam camelCase puro. Agente detectou em zona limítrofe e escalou em vez de tomar decisão silenciosa. Resolução: doc alinhado ao código vivo (camelCase puro). Reforça princípio: quando `decisoes.md` diverge do que está rodando (testes, configs, CI), a verdade canônica é o código vivo, e o doc é o débito a resolver.
 
 ---
 
@@ -470,6 +482,7 @@ Definir como capturar quando chegarmos na Camada 4 — não criar burocracia ago
 
 ## Histórico de mudanças deste documento
 
+- **2026-05-09** — Etapa 3.1 concluída: `Money` implementado em `shared/domain`, threshold JaCoCo `domain` 90% ativado. Camada 2 marcada como 🟢 Em andamento. Mergeado via PR #XX.
 - **2026-05-08** — Etapa 2.9 concluída: `setup.ps1` e `dev.ps1` criam `.env` automaticamente a partir de `.env.example` quando ausente. Débito técnico da Camada 1 (descoberto na 2.8) resolvido. Mergeado via PR #28.
 - **2026-05-08** — Etapa 2.8 concluída: wrap-up Camada 1. Auditoria de critérios, retrospectiva criada (`docs/retrospectiva-camada-1.md`), hooks pendentes consolidados (`docs/hooks-pendentes.md`). Camada 1 marcada como ✅ Concluída. Mergeado via PR #27.
 - **2026-05-08** — Etapa 2.7 concluída: Next.js 16 inicializado em `frontend/`, dependências adicionais instaladas, shadcn/ui configurado, CI atualizado, decisões e stack registradas. Mergeado via PR #26.
