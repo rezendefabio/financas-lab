@@ -23,7 +23,8 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
                                 "/api/healthcheck",
-                                "/api/contas/**",  // TODO Etapa Auth (futura): remover whitelist quando JWT estiver pronto
+                                "/api/contas/**",       // TODO Etapa Auth (futura): remover quando JWT estiver pronto
+                                "/api/categorias/**",   // TODO Etapa Auth (futura): remover quando JWT estiver pronto
                                 "/actuator/health",
                                 "/v3/api-docs/**",
                                 "/swagger-ui/**",
