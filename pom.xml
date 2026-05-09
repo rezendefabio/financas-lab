@@ -238,9 +238,15 @@
                                     </limits>
                                 </rule>
 
+                                <!-- Pacote domain: 90% (ativado na Etapa 3.1 — Money). -->
+                                <rule>
+                                    <element>PACKAGE</element>
+                                    <includes><include>**.domain.*</include></includes>
+                                    <limits><limit><counter>INSTRUCTION</counter><value>COVEREDRATIO</value><minimum>0.90</minimum></limit></limits>
+                                </rule>
+
                                 <!--
                                     Thresholds adiados (pacotes vazios hoje):
-                                    - domain        — 90% — ativar quando primeira classe de dominio entrar (Camada 2)
                                     - application   — 80% — ativar quando primeiro use case entrar (Camada 2)
                                     - interfaces    — 70% — ativar quando primeiro Controller de bounded context entrar (Camada 2)
 
@@ -248,11 +254,6 @@
                                     JaCoCo `check` em pacote sem classes tem comportamento inconsistente
                                     entre versoes — incluir agora geraria falso positivo ou falso negativo.
 
-                                    <rule>
-                                        <element>PACKAGE</element>
-                                        <includes><include>**.domain.*</include></includes>
-                                        <limits><limit><counter>INSTRUCTION</counter><value>COVEREDRATIO</value><minimum>0.90</minimum></limit></limits>
-                                    </rule>
                                     <rule>
                                         <element>PACKAGE</element>
                                         <includes><include>**.application.*</include></includes>
