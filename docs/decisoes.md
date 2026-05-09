@@ -348,7 +348,7 @@ Lembretes operacionais que regem decisões em chats futuros:
 
 ### Histórico de mudanças
 
-- **2026-05-08** — Etapa 2.9 concluída: `setup.ps1` e `dev.ps1` criam `.env` automaticamente a partir de `.env.example` quando ausente. Resolve débito técnico descoberto na Etapa 2.8. Mergeado via PR #XX.
+- **2026-05-08** — Etapa 2.9 concluída: `setup.ps1` e `dev.ps1` criam `.env` automaticamente a partir de `.env.example` quando ausente. Resolve débito técnico descoberto na Etapa 2.8. Mergeado via PR #28.
 - **2026-05-08** — Etapa 2.8 concluída: wrap-up Camada 1. Sem novas decisões técnicas. Documentos `retrospectiva-camada-1.md` e `hooks-pendentes.md` criados. Camada 1 marcada como ✅ concluída.
 - **2026-05-08** — Etapa 2.7 concluída: frontend Next.js 16 inicializado em `frontend/`. Stack: TypeScript + Tailwind + ESLint + App Router + shadcn/ui + TanStack Query + Zod + React Hook Form. CI atualizado com steps de Node 22 + lint + build do frontend. PWA adiada para Camada 2. Seção Stack > Frontend atualizada com versões reais; seção `## Frontend` com decisões adicionada.
 - **2026-05-08** — Etapa 2.6.2 concluída: fix de UX em `dev.ps1`/`test-integration.ps1`/`check.ps1` — `docker info 2>&1 | Out-Null` sob `Stop` vazava stderr nativo + stack trace do PowerShell, engolindo a mensagem amigável. Aplicado padrão "suspender Stop localmente" em torno do `docker info`. Regra adicionada na seção "Scripts PowerShell".
