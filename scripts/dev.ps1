@@ -36,4 +36,4 @@ if ($LASTEXITCODE -ne 0) {
 
 Write-Host ""
 Write-Host "==> Iniciando Spring Boot (Ctrl+C para parar)..." -ForegroundColor Cyan
-.\mvnw spring-boot:run
+.\mvnw spring-boot:run "-Dspring-boot.run.profiles=dev"
