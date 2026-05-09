@@ -25,7 +25,7 @@ class TransacaoTest {
     // --- Construtor "novo" ---
 
     @Test
-    void construtorNovoReceita_comCategoriaId_construiCorretamente() {
+    void construtorNovoReceitaComCategoriaIdConstruiCorretamente() {
         // When
         Transacao t = new Transacao(TipoTransacao.RECEITA, VALOR_100, HOJE, "Salario", CONTA_A, null, CATEGORIA);
 
@@ -40,7 +40,7 @@ class TransacaoTest {
     }
 
     @Test
-    void construtorNovoReceita_semCategoriaId_construiCorretamente() {
+    void construtorNovoReceitaSemCategoriaIdConstruiCorretamente() {
         // When
         Transacao t = new Transacao(TipoTransacao.RECEITA, VALOR_100, HOJE, "Bonus", CONTA_A, null, null);
 
@@ -50,7 +50,7 @@ class TransacaoTest {
     }
 
     @Test
-    void construtorNovoDespesa_comCategoriaId_construiCorretamente() {
+    void construtorNovoDespesaComCategoriaIdConstruiCorretamente() {
         // When
         Transacao t = new Transacao(TipoTransacao.DESPESA, VALOR_100, HOJE, "Aluguel", CONTA_A, null, CATEGORIA);
 
@@ -61,7 +61,7 @@ class TransacaoTest {
     }
 
     @Test
-    void construtorNovoTransferencia_comContaDestino_construiCorretamente() {
+    void construtorNovoTransferenciaComContaDestinoConstruiCorretamente() {
         // When
         Transacao t = new Transacao(TipoTransacao.TRANSFERENCIA, VALOR_100, HOJE, "TED", CONTA_A, CONTA_B, null);
 
@@ -86,37 +86,32 @@ class TransacaoTest {
 
     @Test
     void construtorNovoLancaNullPointerExceptionQuandoTipoNulo() {
-        assertThatThrownBy(() ->
-            new Transacao(null, VALOR_100, HOJE, "Desc", CONTA_A, null, null)
-        ).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new Transacao(null, VALOR_100, HOJE, "Desc", CONTA_A, null, null))
+                .isInstanceOf(NullPointerException.class);
     }
 
     @Test
     void construtorNovoLancaNullPointerExceptionQuandoValorNulo() {
-        assertThatThrownBy(() ->
-            new Transacao(TipoTransacao.RECEITA, null, HOJE, "Desc", CONTA_A, null, null)
-        ).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new Transacao(TipoTransacao.RECEITA, null, HOJE, "Desc", CONTA_A, null, null))
+                .isInstanceOf(NullPointerException.class);
     }
 
     @Test
     void construtorNovoLancaNullPointerExceptionQuandoDataNula() {
-        assertThatThrownBy(() ->
-            new Transacao(TipoTransacao.RECEITA, VALOR_100, null, "Desc", CONTA_A, null, null)
-        ).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new Transacao(TipoTransacao.RECEITA, VALOR_100, null, "Desc", CONTA_A, null, null))
+                .isInstanceOf(NullPointerException.class);
     }
 
     @Test
     void construtorNovoLancaNullPointerExceptionQuandoDescricaoNula() {
-        assertThatThrownBy(() ->
-            new Transacao(TipoTransacao.RECEITA, VALOR_100, HOJE, null, CONTA_A, null, null)
-        ).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new Transacao(TipoTransacao.RECEITA, VALOR_100, HOJE, null, CONTA_A, null, null))
+                .isInstanceOf(NullPointerException.class);
     }
 
     @Test
     void construtorNovoLancaIllegalArgumentExceptionQuandoDescricaoBlank() {
-        assertThatThrownBy(() ->
-            new Transacao(TipoTransacao.RECEITA, VALOR_100, HOJE, "   ", CONTA_A, null, null)
-        ).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> new Transacao(TipoTransacao.RECEITA, VALOR_100, HOJE, "   ", CONTA_A, null, null))
+                .isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
@@ -124,16 +119,15 @@ class TransacaoTest {
         // Given
         String descricaoLonga = "A".repeat(201);
 
-        assertThatThrownBy(() ->
-            new Transacao(TipoTransacao.RECEITA, VALOR_100, HOJE, descricaoLonga, CONTA_A, null, null)
+        assertThatThrownBy(
+                () -> new Transacao(TipoTransacao.RECEITA, VALOR_100, HOJE, descricaoLonga, CONTA_A, null, null)
         ).isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
     void construtorNovoLancaNullPointerExceptionQuandoContaIdNulo() {
-        assertThatThrownBy(() ->
-            new Transacao(TipoTransacao.RECEITA, VALOR_100, HOJE, "Desc", null, null, null)
-        ).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new Transacao(TipoTransacao.RECEITA, VALOR_100, HOJE, "Desc", null, null, null))
+                .isInstanceOf(NullPointerException.class);
     }
 
     @Test
@@ -141,9 +135,8 @@ class TransacaoTest {
         // Given
         Money valorZero = new Money(BigDecimal.ZERO, BRL);
 
-        assertThatThrownBy(() ->
-            new Transacao(TipoTransacao.RECEITA, valorZero, HOJE, "Desc", CONTA_A, null, null)
-        ).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> new Transacao(TipoTransacao.RECEITA, valorZero, HOJE, "Desc", CONTA_A, null, null))
+                .isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
@@ -151,8 +144,8 @@ class TransacaoTest {
         // Given
         Money valorNegativo = new Money(new BigDecimal("-10.00"), BRL);
 
-        assertThatThrownBy(() ->
-            new Transacao(TipoTransacao.RECEITA, valorNegativo, HOJE, "Desc", CONTA_A, null, null)
+        assertThatThrownBy(
+                () -> new Transacao(TipoTransacao.RECEITA, valorNegativo, HOJE, "Desc", CONTA_A, null, null)
         ).isInstanceOf(IllegalArgumentException.class);
     }
 
@@ -181,36 +174,35 @@ class TransacaoTest {
 
     @Test
     void receitaComContaDestinoIdLancaIllegalArgumentException() {
-        assertThatThrownBy(() ->
-            new Transacao(TipoTransacao.RECEITA, VALOR_100, HOJE, "Desc", CONTA_A, CONTA_B, null)
-        ).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> new Transacao(TipoTransacao.RECEITA, VALOR_100, HOJE, "Desc", CONTA_A, CONTA_B, null))
+                .isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
     void despesaComContaDestinoIdLancaIllegalArgumentException() {
-        assertThatThrownBy(() ->
-            new Transacao(TipoTransacao.DESPESA, VALOR_100, HOJE, "Desc", CONTA_A, CONTA_B, null)
+        assertThatThrownBy(
+                () -> new Transacao(TipoTransacao.DESPESA, VALOR_100, HOJE, "Desc", CONTA_A, CONTA_B, null)
         ).isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
     void transferenciaComContaDestinoIdNuloLancaIllegalArgumentException() {
-        assertThatThrownBy(() ->
-            new Transacao(TipoTransacao.TRANSFERENCIA, VALOR_100, HOJE, "TED", CONTA_A, null, null)
+        assertThatThrownBy(
+                () -> new Transacao(TipoTransacao.TRANSFERENCIA, VALOR_100, HOJE, "TED", CONTA_A, null, null)
         ).isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
     void transferenciaComContaDestinoIgualContaIdLancaIllegalArgumentException() {
-        assertThatThrownBy(() ->
-            new Transacao(TipoTransacao.TRANSFERENCIA, VALOR_100, HOJE, "TED", CONTA_A, CONTA_A, null)
+        assertThatThrownBy(
+                () -> new Transacao(TipoTransacao.TRANSFERENCIA, VALOR_100, HOJE, "TED", CONTA_A, CONTA_A, null)
         ).isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
     void transferenciaComCategoriaIdLancaIllegalArgumentException() {
-        assertThatThrownBy(() ->
-            new Transacao(TipoTransacao.TRANSFERENCIA, VALOR_100, HOJE, "TED", CONTA_A, CONTA_B, CATEGORIA)
+        assertThatThrownBy(
+                () -> new Transacao(TipoTransacao.TRANSFERENCIA, VALOR_100, HOJE, "TED", CONTA_A, CONTA_B, CATEGORIA)
         ).isInstanceOf(IllegalArgumentException.class);
     }
 
@@ -259,20 +251,20 @@ class TransacaoTest {
     @Test
     void construtorReconstrucaoLancaNullPointerExceptionQuandoIdNulo() {
         assertThatThrownBy(() ->
-            new Transacao(
-                null, TipoTransacao.RECEITA, VALOR_100, HOJE, "Desc",
-                CONTA_A, null, null, Instant.now(), null
-            )
+                new Transacao(
+                        null, TipoTransacao.RECEITA, VALOR_100, HOJE, "Desc",
+                        CONTA_A, null, null, Instant.now(), null
+                )
         ).isInstanceOf(NullPointerException.class);
     }
 
     @Test
     void construtorReconstrucaoLancaNullPointerExceptionQuandoCriadoEmNulo() {
         assertThatThrownBy(() ->
-            new Transacao(
-                UUID.randomUUID(), TipoTransacao.RECEITA, VALOR_100, HOJE, "Desc",
-                CONTA_A, null, null, null, null
-            )
+                new Transacao(
+                        UUID.randomUUID(), TipoTransacao.RECEITA, VALOR_100, HOJE, "Desc",
+                        CONTA_A, null, null, null, null
+                )
         ).isInstanceOf(NullPointerException.class);
     }
 

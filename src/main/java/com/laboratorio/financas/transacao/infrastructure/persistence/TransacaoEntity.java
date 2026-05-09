@@ -30,10 +30,8 @@ public class TransacaoEntity {
 
     @NotNull
     @Embedded
-    @AttributeOverride(name = "valor", column = @Column(
-        name = "valor_valor", nullable = false, precision = 19, scale = 2))
-    @AttributeOverride(name = "moeda", column = @Column(
-        name = "valor_moeda", nullable = false, length = 3))
+    @AttributeOverride(name = "valor", column = @Column(name = "valor_valor", nullable = false, precision = 19, scale = 2))
+    @AttributeOverride(name = "moeda", column = @Column(name = "valor_moeda", nullable = false, length = 3))
     private MoneyEmbeddable valor;
 
     @NotNull

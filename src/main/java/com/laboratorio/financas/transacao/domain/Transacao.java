@@ -112,23 +112,23 @@ public final class Transacao {
         if (tipo == TipoTransacao.TRANSFERENCIA) {
             if (contaDestinoId == null) {
                 throw new IllegalArgumentException(
-                    "TRANSFERENCIA exige contaDestinoId"
+                        "TRANSFERENCIA exige contaDestinoId"
                 );
             }
             if (contaId.equals(contaDestinoId)) {
                 throw new IllegalArgumentException(
-                    "TRANSFERENCIA nao pode ter contaId igual a contaDestinoId"
+                        "TRANSFERENCIA nao pode ter contaId igual a contaDestinoId"
                 );
             }
             if (categoriaId != null) {
                 throw new IllegalArgumentException(
-                    "TRANSFERENCIA nao deve ter categoriaId"
+                        "TRANSFERENCIA nao deve ter categoriaId"
                 );
             }
         } else {
             if (contaDestinoId != null) {
                 throw new IllegalArgumentException(
-                    tipo + " nao deve ter contaDestinoId"
+                        tipo + " nao deve ter contaDestinoId"
                 );
             }
         }
