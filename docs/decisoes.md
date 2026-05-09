@@ -355,7 +355,7 @@ Lembretes operacionais que regem decisões em chats futuros:
 
 ### Histórico de mudanças
 
-- **2026-05-09** — Etapa 3.3.1 concluída: fix do `dev.ps1` para ativar profile `dev` via `-Dspring-boot.run.profiles=dev`. Bug descoberto em validação destrutiva manual pós-merge da 3.3. Mergeado via PR #XX.
+- **2026-05-09** — Etapa 3.3.1 concluída: fix do `dev.ps1` para ativar profile `dev` via `-Dspring-boot.run.profiles=dev`. Bug descoberto em validação destrutiva manual pós-merge da 3.3. Mergeado via PR #32.
 - **2026-05-09** — Etapa 3.3 concluída: infraestrutura do bounded context `conta`. `ContaEntity` (primeira `@Entity` real), `MoneyEmbeddable` em `shared/infrastructure/persistence/` (primeiro `@Embeddable`), `ContaMapper` (primeiro MapStruct ativo), `ContaRepository` (interface no domain), `ContaRepositoryImpl` + `ContaJpaRepository`, `V2__cria_tabela_conta.sql`, `ContaRepositoryImplTest` (11 testes integração com Testcontainers). Mergeado via PR #31.
 - **2026-05-09** — Etapa 3.2 concluída: bounded context `conta` — domain puro. Entidade `Conta` (class imutável com igualdade por id), enum `TipoConta`, validações de invariante via `IllegalArgumentException`. Saldo atual deliberadamente fora desta etapa (entrará quando `transacao` aparecer). Sem JPA, sem MapStruct, sem persistência — esses ficam para 3.3. Mergeado via PR #30.
 - **2026-05-09** — Etapa 3.1 concluída: value object `Money` implementado em `shared/domain` (record imutável, escala 2, HALF_EVEN). Threshold JaCoCo `domain` 90% ativado. Naming de método de teste corrigido no doc (camelCase puro, alinhado ao Checkstyle). Mergeado via PR #29.
