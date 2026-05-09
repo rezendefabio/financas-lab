@@ -1,9 +1,12 @@
 package com.laboratorio.financas.transacao.infrastructure.persistence;
 
+import com.laboratorio.financas.transacao.domain.FiltrosTransacao;
 import com.laboratorio.financas.transacao.domain.Transacao;
 import com.laboratorio.financas.transacao.domain.TransacaoRepository;
 import java.util.Optional;
 import java.util.UUID;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -32,5 +35,17 @@ public class TransacaoRepositoryImpl implements TransacaoRepository {
     @Override
     public void deletar(UUID id) {
         jpaRepository.deleteById(id);
+    }
+
+    @Override
+    public Page<Transacao> listarComFiltros(FiltrosTransacao filtros, Pageable pageable) {
+        return jpaRepository.findComFiltros(
+                filtros.contaId(),
+                filtros.dataInicio(),
+                filtros.dataFim(),
+                filtros.tipo(),
+                filtros.categoriaId(),
+                pageable
+        ).map(mapper::toDomain);
     }
 }
