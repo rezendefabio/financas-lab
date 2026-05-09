@@ -351,7 +351,7 @@ Lembretes operacionais que regem decisões em chats futuros:
 
 ### Histórico de mudanças
 
-- **2026-05-09** — Etapa 3.1 concluída: value object `Money` implementado em `shared/domain` (record imutável, escala 2, HALF_EVEN). Threshold JaCoCo `domain` 90% ativado. Naming de método de teste corrigido no doc (camelCase puro, alinhado ao Checkstyle). Mergeado via PR #XX.
+- **2026-05-09** — Etapa 3.1 concluída: value object `Money` implementado em `shared/domain` (record imutável, escala 2, HALF_EVEN). Threshold JaCoCo `domain` 90% ativado. Naming de método de teste corrigido no doc (camelCase puro, alinhado ao Checkstyle). Mergeado via PR #29.
 - **2026-05-08** — Etapa 2.9 concluída: `setup.ps1` e `dev.ps1` criam `.env` automaticamente a partir de `.env.example` quando ausente. Resolve débito técnico descoberto na Etapa 2.8. Mergeado via PR #28.
 - **2026-05-08** — Etapa 2.8 concluída: wrap-up Camada 1. Sem novas decisões técnicas. Documentos `retrospectiva-camada-1.md` e `hooks-pendentes.md` criados. Camada 1 marcada como ✅ concluída.
 - **2026-05-08** — Etapa 2.7 concluída: frontend Next.js 16 inicializado em `frontend/`. Stack: TypeScript + Tailwind + ESLint + App Router + shadcn/ui + TanStack Query + Zod + React Hook Form. CI atualizado com steps de Node 22 + lint + build do frontend. PWA adiada para Camada 2. Seção Stack > Frontend atualizada com versões reais; seção `## Frontend` com decisões adicionada.
