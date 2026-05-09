@@ -4,7 +4,7 @@
 > Input direto para a Camada 3 (Configuração do Claude Code), quando hooks formais entrarem.
 > Atualizado conforme novas lições aparecem.
 
-**Última atualização:** 2026-05-08 (consolidado durante Etapa 2.8, item de .env resolvido na Etapa 2.9)
+**Última atualização:** 2026-05-09 (Etapa 3.3.1 — hook de profile em scripts + débito de application-prod.yml)
 
 ---
 
@@ -21,7 +21,7 @@ Itens **não estão implementados** — são pendência pra Camada 3.
 
 ## Hooks de setup / ambiente
 
-(Nenhum item ativo no momento.)
+- **Validar que scripts que invocam `mvnw spring-boot:run` passam `-Dspring-boot.run.profiles=<profile>` explicitamente.** (Etapa 3.3.1) Sem a flag, Spring usa profile `default` que não tem datasource → `Failed to configure a DataSource`. Hook leve: `grep -nE "mvnw\s+spring-boot:run" scripts/*.ps1 | grep -v "spring-boot.run.profiles"` deve retornar zero linhas.
 
 ## Hooks Markdown / docs
 
@@ -56,6 +56,10 @@ Itens **não estão implementados** — são pendência pra Camada 3.
 
 - **`npx shadcn@latest init --defaults` instala componente `button.tsx` automaticamente.** (Etapa 2.7) Em etapas que proíbem componentes, detectar e remover `src/components/ui/*.tsx` gerado pelo init antes do commit.
 - **`AGENTS.md` ou `CLAUDE.md` em subdiretórios gerados por scaffold.** (Etapa 2.7) Quando framework gera, decidir conscientemente manter/remover. Conteúdo específico (avisos sobre training data desatualizada) tende a valer; conteúdo genérico tende a remover.
+
+## Débitos de configuração
+
+- **`application-prod.yml` não existe.** (Descoberto na 3.3.1) `decisoes.md` prescreve "Profiles sempre explícitos: dev, test, prod", mas o arquivo de prod nunca foi criado. Não bloqueante hoje (sem deploy prod), mas precisa ser criado quando deploy prod entrar no escopo. Resolver junto com a etapa de deploy.
 
 ## Hooks de processo
 
