@@ -128,6 +128,8 @@ com.laboratorio.financas/
   - Bean Validation nos `*Request` DTOs (formato, tamanho, presença)
   - Validação de invariantes de negócio dentro da entidade ou use case (regras de domínio)
 - **Igualdade em entidades de domínio**: por `id`, não por valor. `equals` e `hashCode` implementados manualmente baseados apenas em `id`. Diferente de value objects (Money, etc) que usam record com igualdade estrutural. Estabelecido na Etapa 3.2 com `Conta`.
+- **Persistência de value objects compartilhados** (a partir da Etapa 3.3): VOs do domain (`Money`, etc) são mapeados para `*Embeddable` em `shared/infrastructure/persistence/`. MapStruct converte na borda. Domain permanece framework-free. `@AttributeOverride` na entidade hospedeira define os nomes de coluna concretos.
+- **MapStruct mappers**: anotação `@Mapper(componentModel = "spring")` sempre explícita. Argumento global `-Amapstruct.defaultComponentModel=spring` no pom.xml ainda gera warning recorrente "options were not recognized" — explicitar no `@Mapper` é o mecanismo confiável.
 
 ### Padrões adiados (porta aberta, não aplicar preventivamente)
 
@@ -352,6 +354,7 @@ Lembretes operacionais que regem decisões em chats futuros:
 
 ### Histórico de mudanças
 
+- **2026-05-09** — Etapa 3.3 concluída: infraestrutura do bounded context `conta`. `ContaEntity` (primeira `@Entity` real), `MoneyEmbeddable` em `shared/infrastructure/persistence/` (primeiro `@Embeddable`), `ContaMapper` (primeiro MapStruct ativo), `ContaRepository` (interface no domain), `ContaRepositoryImpl` + `ContaJpaRepository`, `V2__cria_tabela_conta.sql`, `ContaRepositoryImplTest` (11 testes integração com Testcontainers). Mergeado via PR #XX.
 - **2026-05-09** — Etapa 3.2 concluída: bounded context `conta` — domain puro. Entidade `Conta` (class imutável com igualdade por id), enum `TipoConta`, validações de invariante via `IllegalArgumentException`. Saldo atual deliberadamente fora desta etapa (entrará quando `transacao` aparecer). Sem JPA, sem MapStruct, sem persistência — esses ficam para 3.3. Mergeado via PR #30.
 - **2026-05-09** — Etapa 3.1 concluída: value object `Money` implementado em `shared/domain` (record imutável, escala 2, HALF_EVEN). Threshold JaCoCo `domain` 90% ativado. Naming de método de teste corrigido no doc (camelCase puro, alinhado ao Checkstyle). Mergeado via PR #29.
 - **2026-05-08** — Etapa 2.9 concluída: `setup.ps1` e `dev.ps1` criam `.env` automaticamente a partir de `.env.example` quando ausente. Resolve débito técnico descoberto na Etapa 2.8. Mergeado via PR #28.

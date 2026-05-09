@@ -3,7 +3,7 @@
 > Documento de tracking. Mostra **onde estamos** na construção da fábrica e do produto.
 > Atualizado conforme camadas avançam. Diferente do `decisoes.md` (que registra escolhas) e dos `adrs.md` (que registram porquês), este documento responde a pergunta: "em que ponto eu estou?".
 
-**Última atualização:** 2026-05-09 (Etapa 3.2 — Conta domain)
+**Última atualização:** 2026-05-09 (Etapa 3.3 — Conta infra)
 
 ---
 
@@ -126,9 +126,9 @@ Implementar a estrutura de bounded contexts, primeiros agregados/use cases, valu
 
 - [ ] Estrutura de pacotes implementada conforme ADR-004
 - [x] Value object `Money` implementado e testado
-- [~] Bounded context `conta` com domínio puro + use cases + repositório (domain puro pronto na 3.2; infra/use cases/controllers nas 3.3 e 3.4)
+- [~] Bounded context `conta` com domínio puro + use cases + repositório (domain 3.2 ✅, infra+repository 3.3 ✅, use cases+controllers ⏸️ Etapa 3.4)
 - [ ] Bounded context `categoria` no mesmo padrão
-- [ ] MapStruct funcionando entre Entity JPA ↔ Domain
+- [x] MapStruct funcionando entre Entity JPA ↔ Domain
 - [ ] Bean Validation aplicada em DTOs de Request
 - [ ] Spring Security configurado com JWT + refresh rotativo
 - [ ] Endpoints de auth funcionando (signup, login, refresh, logout)
@@ -244,6 +244,18 @@ Definir como capturar quando chegarmos na Camada 4 — não criar burocracia ago
 2. **PowerShell padrão sem `-Encoding UTF8` lê UTF-8 errado** — mostra `Ã³` no lugar de `ó`, `Ã§` no lugar de `ç`. Para validação confiável de arquivos com acentos, usar `Get-Content -Encoding UTF8` explícito.
 3. **`Measure-Object -Line` não conta linhas em branco** — o cmdlet conta apenas linhas com conteúdo. Para contagem real (incluindo vazias), usar `[System.IO.File]::ReadAllLines('<path>').Count`.
 4. **Premissas do orquestrador externo podem estar erradas** — validação independente com cálculo concreto resolve. O Claude Code acertou em pushback técnico contradizendo análise visual feita no chat externo. Reforça o princípio: dado concreto vence interpretação.
+
+---
+
+## Lições da Etapa 3.3
+
+### Candidatos a hook (automatizar em etapas futuras)
+
+(Nenhum novo nesta etapa.)
+
+### Lições de ambiente
+
+(Nenhum novo nesta etapa.)
 
 ---
 
@@ -494,6 +506,7 @@ Definir como capturar quando chegarmos na Camada 4 — não criar burocracia ago
 
 ## Histórico de mudanças deste documento
 
+- **2026-05-09** — Etapa 3.3 concluída: infra de `conta` (entity, embeddable, mapper, repository pattern, migration V2, 11 testes integração). MapStruct ativo pela primeira vez. Mergeado via PR #XX.
 - **2026-05-09** — Etapa 3.2 concluída: domain puro de `conta` (entidade `Conta`, enum `TipoConta`, 28 testes). Mergeado via PR #30.
 - **2026-05-09** — Etapa 3.1 concluída: `Money` implementado em `shared/domain`, threshold JaCoCo `domain` 90% ativado. Camada 2 marcada como 🟢 Em andamento. Mergeado via PR #29.
 - **2026-05-08** — Etapa 2.9 concluída: `setup.ps1` e `dev.ps1` criam `.env` automaticamente a partir de `.env.example` quando ausente. Débito técnico da Camada 1 (descoberto na 2.8) resolvido. Mergeado via PR #28.
