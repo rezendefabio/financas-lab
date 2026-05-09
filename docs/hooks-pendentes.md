@@ -4,7 +4,7 @@
 > Input direto para a Camada 3 (Configuração do Claude Code), quando hooks formais entrarem.
 > Atualizado conforme novas lições aparecem.
 
-**Última atualização:** 2026-05-08 (consolidado durante Etapa 2.8)
+**Última atualização:** 2026-05-08 (consolidado durante Etapa 2.8, item de .env resolvido na Etapa 2.9)
 
 ---
 
@@ -21,7 +21,7 @@ Itens **não estão implementados** — são pendência pra Camada 3.
 
 ## Hooks de setup / ambiente
 
-- **`setup.ps1` deve detectar `.env` ausente antes de subir containers.** (Etapa 2.8) Clone novo sem `.env` resulta em containers com credenciais vazias — Docker Compose interpreta variáveis ausentes como strings vazias e sobe silenciosamente. Comportamento: criar `.env` a partir de `.env.example` com aviso, OU falhar com mensagem clara antes de chamar Docker Compose. Esboço: `if (-not (Test-Path .env)) { Write-Host "AVISO: .env não encontrado. Criando a partir de .env.example..." -ForegroundColor Yellow; Copy-Item .env.example .env }`.
+(Nenhum item ativo no momento.)
 
 ## Hooks Markdown / docs
 

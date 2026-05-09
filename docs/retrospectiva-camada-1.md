@@ -50,7 +50,7 @@ Itens explicitamente fora do escopo da Camada 1, agora candidatos:
 - Spring Security configurado de verdade (auth flow real, não só whitelist)
 - Endpoints de auth (signup, login, refresh, logout)
 - Primeira feature implementada manualmente do início ao fim, pra servir de referência aos agentes em Tier 2
-- Fix do `setup.ps1` para criar/validar `.env` de `.env.example` (débito técnico da Camada 1)
+- ~~Fix do `setup.ps1` para criar/validar `.env` de `.env.example` (débito técnico da Camada 1)~~ — **resolvido na Etapa 2.9 (PR #28).**
 
 ## Métricas
 
