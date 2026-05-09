@@ -3,7 +3,7 @@
 > Documento de tracking. Mostra **onde estamos** na construção da fábrica e do produto.
 > Atualizado conforme camadas avançam. Diferente do `decisoes.md` (que registra escolhas) e dos `adrs.md` (que registram porquês), este documento responde a pergunta: "em que ponto eu estou?".
 
-**Última atualização:** 2026-05-09 (Etapa 3.4 — Conta application+interfaces)
+**Última atualização:** 2026-05-09 (Etapa 3.5 — categoria)
 
 ---
 
@@ -127,7 +127,7 @@ Implementar a estrutura de bounded contexts, primeiros agregados/use cases, valu
 - [ ] Estrutura de pacotes implementada conforme ADR-004
 - [x] Value object `Money` implementado e testado
 - [x] Bounded context `conta` com domínio puro + use cases + repositório (domain 3.2 ✅, infra+repository 3.3 ✅, use cases+controllers 3.4 ✅)
-- [ ] Bounded context `categoria` no mesmo padrão
+- [x] Bounded context `categoria` no mesmo padrão
 - [x] MapStruct funcionando entre Entity JPA ↔ Domain
 - [x] Bean Validation aplicada em DTOs de Request
 - [ ] Spring Security configurado com JWT + refresh rotativo
@@ -246,6 +246,20 @@ Definir como capturar quando chegarmos na Camada 4 — não criar burocracia ago
 4. **Premissas do orquestrador externo podem estar erradas** — validação independente com cálculo concreto resolve. O Claude Code acertou em pushback técnico contradizendo análise visual feita no chat externo. Reforça o princípio: dado concreto vence interpretação.
 
 ---
+
+## Lições da Etapa 3.5
+
+### Candidatos a hook (automatizar em etapas futuras)
+
+(Nenhum novo nesta etapa.)
+
+### Lições de ambiente
+
+(Nenhum novo nesta etapa.)
+
+### Sobre a etapa em si (template replicável validado)
+
+O segundo bounded context (`categoria`) foi implementado em etapa única, contra 4 etapas + 1 fix do `conta`. O template estabelecido por `conta` foi replicado sem zonas limítrofes significativas: nenhuma nova dependência no `pom.xml`, nenhum novo padrão de código, nenhuma decisão silenciosa necessária. As únicas adaptações foram semânticas (`hard delete` vs `soft delete`, filtro por `tipo` vs por `ativa`) — não estruturais. O compile passou com 0 violações Checkstyle na primeira tentativa e `mvnw verify` resultou em BUILD SUCCESS com 170 testes (36 novos), 0 SpotBugs, JaCoCo "All coverage checks have been met". Evidência de que o template é replicável.
 
 ## Lições da Etapa 3.4
 
@@ -531,6 +545,7 @@ Definir como capturar quando chegarmos na Camada 4 — não criar burocracia ago
 
 ## Histórico de mudanças deste documento
 
+- **2026-05-09** — Etapa 3.5 concluída: bounded context `categoria` em etapa única. ~50 testes novos. Template estabelecido por `conta` validado como replicável. Mergeado via PR #34.
 - **2026-05-09** — Etapa 3.4 concluída: `conta` ponta a ponta. 4 use cases, controller, handler global, 116 testes total (use cases unitários + e2e via MockMvc). Thresholds JaCoCo de `application` e `interfaces` ativados. Mergeado via PR #33.
 - **2026-05-09** — Etapa 3.3.1 concluída: fix do `dev.ps1` para ativar profile `dev` (`-Dspring-boot.run.profiles=dev`). Bug descoberto em validação destrutiva manual pós-merge da 3.3. Débito de `application-prod.yml` ausente registrado em `hooks-pendentes.md`. Mergeado via PR #32.
 - **2026-05-09** — Etapa 3.3 concluída: infra de `conta` (entity, embeddable, mapper, repository pattern, migration V2, 11 testes integração). MapStruct ativo pela primeira vez. Mergeado via PR #31.

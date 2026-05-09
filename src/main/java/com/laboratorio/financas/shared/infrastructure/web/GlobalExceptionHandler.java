@@ -1,5 +1,6 @@
 package com.laboratorio.financas.shared.infrastructure.web;
 
+import com.laboratorio.financas.categoria.domain.CategoriaNaoEncontradaException;
 import com.laboratorio.financas.conta.domain.ContaNaoEncontradaException;
 import java.util.HashMap;
 import java.util.Map;
@@ -49,6 +50,15 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(ContaNaoEncontradaException.class)
     public ProblemDetail handleContaNaoEncontrada(ContaNaoEncontradaException ex) {
+        ProblemDetail problem = ProblemDetail.forStatus(HttpStatus.NOT_FOUND);
+        problem.setTitle("Not Found");
+        problem.setDetail(ex.getMessage());
+        problem.setProperty("id", ex.getId().toString());
+        return problem;
+    }
+
+    @ExceptionHandler(CategoriaNaoEncontradaException.class)
+    public ProblemDetail handleCategoriaNaoEncontrada(CategoriaNaoEncontradaException ex) {
         ProblemDetail problem = ProblemDetail.forStatus(HttpStatus.NOT_FOUND);
         problem.setTitle("Not Found");
         problem.setDetail(ex.getMessage());
