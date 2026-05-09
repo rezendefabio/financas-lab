@@ -127,6 +127,7 @@ com.laboratorio.financas/
 - **Validação em duas fases:**
   - Bean Validation nos `*Request` DTOs (formato, tamanho, presença)
   - Validação de invariantes de negócio dentro da entidade ou use case (regras de domínio)
+- **Igualdade em entidades de domínio**: por `id`, não por valor. `equals` e `hashCode` implementados manualmente baseados apenas em `id`. Diferente de value objects (Money, etc) que usam record com igualdade estrutural. Estabelecido na Etapa 3.2 com `Conta`.
 
 ### Padrões adiados (porta aberta, não aplicar preventivamente)
 
@@ -351,6 +352,7 @@ Lembretes operacionais que regem decisões em chats futuros:
 
 ### Histórico de mudanças
 
+- **2026-05-09** — Etapa 3.2 concluída: bounded context `conta` — domain puro. Entidade `Conta` (class imutável com igualdade por id), enum `TipoConta`, validações de invariante via `IllegalArgumentException`. Saldo atual deliberadamente fora desta etapa (entrará quando `transacao` aparecer). Sem JPA, sem MapStruct, sem persistência — esses ficam para 3.3. Mergeado via PR #XX.
 - **2026-05-09** — Etapa 3.1 concluída: value object `Money` implementado em `shared/domain` (record imutável, escala 2, HALF_EVEN). Threshold JaCoCo `domain` 90% ativado. Naming de método de teste corrigido no doc (camelCase puro, alinhado ao Checkstyle). Mergeado via PR #29.
 - **2026-05-08** — Etapa 2.9 concluída: `setup.ps1` e `dev.ps1` criam `.env` automaticamente a partir de `.env.example` quando ausente. Resolve débito técnico descoberto na Etapa 2.8. Mergeado via PR #28.
 - **2026-05-08** — Etapa 2.8 concluída: wrap-up Camada 1. Sem novas decisões técnicas. Documentos `retrospectiva-camada-1.md` e `hooks-pendentes.md` criados. Camada 1 marcada como ✅ concluída.
