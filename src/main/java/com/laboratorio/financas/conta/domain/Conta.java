@@ -22,13 +22,13 @@ public final class Conta {
      */
     public Conta(String nome, TipoConta tipo, Money saldoInicial) {
         this(
-            UUID.randomUUID(),
-            nome,
-            tipo,
-            saldoInicial,
-            true,
-            Instant.now(),
-            null  // atualizadoEm sera ajustado para criadoEm pelo construtor de reconstrucao
+                UUID.randomUUID(),
+                nome,
+                tipo,
+                saldoInicial,
+                true,
+                Instant.now(),
+                null  // atualizadoEm sera ajustado para criadoEm pelo construtor de reconstrucao
         );
     }
 
@@ -37,13 +37,13 @@ public final class Conta {
      * Todos os campos sao recebidos e validados. atualizadoEm aceita null (defaults para criadoEm).
      */
     public Conta(
-        UUID id,
-        String nome,
-        TipoConta tipo,
-        Money saldoInicial,
-        boolean ativa,
-        Instant criadoEm,
-        Instant atualizadoEm
+            UUID id,
+            String nome,
+            TipoConta tipo,
+            Money saldoInicial,
+            boolean ativa,
+            Instant criadoEm,
+            Instant atualizadoEm
     ) {
         Objects.requireNonNull(id, "id nao pode ser nulo");
         Objects.requireNonNull(tipo, "tipo nao pode ser nulo");
@@ -78,28 +78,52 @@ public final class Conta {
             return this;
         }
         return new Conta(
-            this.id,
-            this.nome,
-            this.tipo,
-            this.saldoInicial,
-            false,
-            this.criadoEm,
-            Instant.now()
+                this.id,
+                this.nome,
+                this.tipo,
+                this.saldoInicial,
+                false,
+                this.criadoEm,
+                Instant.now()
         );
     }
 
-    public UUID getId() { return id; }
-    public String getNome() { return nome; }
-    public TipoConta getTipo() { return tipo; }
-    public Money getSaldoInicial() { return saldoInicial; }
-    public boolean isAtiva() { return ativa; }
-    public Instant getCriadoEm() { return criadoEm; }
-    public Instant getAtualizadoEm() { return atualizadoEm; }
+    public UUID getId() {
+        return id;
+    }
+
+    public String getNome() {
+        return nome;
+    }
+
+    public TipoConta getTipo() {
+        return tipo;
+    }
+
+    public Money getSaldoInicial() {
+        return saldoInicial;
+    }
+
+    public boolean isAtiva() {
+        return ativa;
+    }
+
+    public Instant getCriadoEm() {
+        return criadoEm;
+    }
+
+    public Instant getAtualizadoEm() {
+        return atualizadoEm;
+    }
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof Conta other)) return false;
+        if (this == o) {
+            return true;
+        }
+        if (!(o instanceof Conta other)) {
+            return false;
+        }
         return this.id.equals(other.id);
     }
 
