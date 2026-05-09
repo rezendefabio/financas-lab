@@ -3,7 +3,7 @@
 > Documento de tracking. Mostra **onde estamos** na construção da fábrica e do produto.
 > Atualizado conforme camadas avançam. Diferente do `decisoes.md` (que registra escolhas) e dos `adrs.md` (que registram porquês), este documento responde a pergunta: "em que ponto eu estou?".
 
-**Última atualização:** 2026-05-09 (Etapa 3.3.1 — fix profile dev)
+**Última atualização:** 2026-05-09 (Etapa 3.4 — Conta application+interfaces)
 
 ---
 
@@ -126,10 +126,10 @@ Implementar a estrutura de bounded contexts, primeiros agregados/use cases, valu
 
 - [ ] Estrutura de pacotes implementada conforme ADR-004
 - [x] Value object `Money` implementado e testado
-- [~] Bounded context `conta` com domínio puro + use cases + repositório (domain 3.2 ✅, infra+repository 3.3 ✅, use cases+controllers ⏸️ Etapa 3.4)
+- [x] Bounded context `conta` com domínio puro + use cases + repositório (domain 3.2 ✅, infra+repository 3.3 ✅, use cases+controllers 3.4 ✅)
 - [ ] Bounded context `categoria` no mesmo padrão
 - [x] MapStruct funcionando entre Entity JPA ↔ Domain
-- [ ] Bean Validation aplicada em DTOs de Request
+- [x] Bean Validation aplicada em DTOs de Request
 - [ ] Spring Security configurado com JWT + refresh rotativo
 - [ ] Endpoints de auth funcionando (signup, login, refresh, logout)
 - [ ] Cobertura JaCoCo nos thresholds definidos
@@ -244,6 +244,19 @@ Definir como capturar quando chegarmos na Camada 4 — não criar burocracia ago
 2. **PowerShell padrão sem `-Encoding UTF8` lê UTF-8 errado** — mostra `Ã³` no lugar de `ó`, `Ã§` no lugar de `ç`. Para validação confiável de arquivos com acentos, usar `Get-Content -Encoding UTF8` explícito.
 3. **`Measure-Object -Line` não conta linhas em branco** — o cmdlet conta apenas linhas com conteúdo. Para contagem real (incluindo vazias), usar `[System.IO.File]::ReadAllLines('<path>').Count`.
 4. **Premissas do orquestrador externo podem estar erradas** — validação independente com cálculo concreto resolve. O Claude Code acertou em pushback técnico contradizendo análise visual feita no chat externo. Reforça o princípio: dado concreto vence interpretação.
+
+---
+
+## Lições da Etapa 3.4
+
+### Candidatos a hook (automatizar em etapas futuras)
+
+1. **Detectar identificadores inexistentes no codebase introduzidos por commit.** Agente escreveu testes com valores de enum que não existiam (`CREDITO`, `INVESTIMENTO`); o build falhou; o agente corrigiu sozinho sem reportar. Um hook que rode `git diff --staged` e valide que novos identificadores Java referenciam símbolos existentes (via compilação incremental ou grep no source) detectaria isso antes do commit.
+
+### Lições de ambiente
+
+1. **Decisão silenciosa em build error (recorrente).** Testes foram escritos com valores de enum inexistentes (`CREDITO`, `INVESTIMENTO`); build falhou; o agente leu o enum e corrigiu sozinho para os valores reais (`CARTAO_CREDITO`, `DINHEIRO`) sem reportar a discrepância. Mesmo padrão de "decisão silenciosa em zona limítrofe" das etapas anteriores, agora em forma de fix-de-compilação. Recorrência reforça que o padrão dificilmente vai ser eliminado só via prompt — vai precisar de hook mecânico na Camada 3 que detecte `git diff` introduzindo identificadores que não existem no codebase atual antes do commit.
+2. **`log` como nome de constante viola Checkstyle `ConstantName`** (padrão `^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$`). Em Java, `private static final Logger` é constante e deve ser nomeada `LOG`. Regra a considerar em geração de código: constantes SLF4J sempre em `SCREAMING_SNAKE_CASE` mesmo sendo convenção do ecossistema usá-las em minúsculas.
 
 ---
 
@@ -518,6 +531,7 @@ Definir como capturar quando chegarmos na Camada 4 — não criar burocracia ago
 
 ## Histórico de mudanças deste documento
 
+- **2026-05-09** — Etapa 3.4 concluída: `conta` ponta a ponta. 4 use cases, controller, handler global, 116 testes total (use cases unitários + e2e via MockMvc). Thresholds JaCoCo de `application` e `interfaces` ativados. Mergeado via PR #33.
 - **2026-05-09** — Etapa 3.3.1 concluída: fix do `dev.ps1` para ativar profile `dev` (`-Dspring-boot.run.profiles=dev`). Bug descoberto em validação destrutiva manual pós-merge da 3.3. Débito de `application-prod.yml` ausente registrado em `hooks-pendentes.md`. Mergeado via PR #32.
 - **2026-05-09** — Etapa 3.3 concluída: infra de `conta` (entity, embeddable, mapper, repository pattern, migration V2, 11 testes integração). MapStruct ativo pela primeira vez. Mergeado via PR #31.
 - **2026-05-09** — Etapa 3.2 concluída: domain puro de `conta` (entidade `Conta`, enum `TipoConta`, 28 testes). Mergeado via PR #30.

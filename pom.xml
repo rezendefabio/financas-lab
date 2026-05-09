@@ -245,26 +245,19 @@
                                     <limits><limit><counter>INSTRUCTION</counter><value>COVEREDRATIO</value><minimum>0.90</minimum></limit></limits>
                                 </rule>
 
-                                <!--
-                                    Thresholds adiados (pacotes vazios hoje):
-                                    - application   — 80% — ativar quando primeiro use case entrar (Camada 2)
-                                    - interfaces    — 70% — ativar quando primeiro Controller de bounded context entrar (Camada 2)
+                                <!-- Pacote application: 80% (ativado na Etapa 3.4 — use cases). -->
+                                <rule>
+                                    <element>PACKAGE</element>
+                                    <includes><include>**.application.*</include></includes>
+                                    <limits><limit><counter>INSTRUCTION</counter><value>COVEREDRATIO</value><minimum>0.80</minimum></limit></limits>
+                                </rule>
 
-                                    Manter as regras abaixo COMENTADAS ate ter classes nesses pacotes.
-                                    JaCoCo `check` em pacote sem classes tem comportamento inconsistente
-                                    entre versoes — incluir agora geraria falso positivo ou falso negativo.
-
-                                    <rule>
-                                        <element>PACKAGE</element>
-                                        <includes><include>**.application.*</include></includes>
-                                        <limits><limit><counter>INSTRUCTION</counter><value>COVEREDRATIO</value><minimum>0.80</minimum></limit></limits>
-                                    </rule>
-                                    <rule>
-                                        <element>PACKAGE</element>
-                                        <includes><include>**.interfaces.*</include></includes>
-                                        <limits><limit><counter>INSTRUCTION</counter><value>COVEREDRATIO</value><minimum>0.70</minimum></limit></limits>
-                                    </rule>
-                                -->
+                                <!-- Pacote interfaces: 70% (ativado na Etapa 3.4 — ContaController). -->
+                                <rule>
+                                    <element>PACKAGE</element>
+                                    <includes><include>**.interfaces.*</include></includes>
+                                    <limits><limit><counter>INSTRUCTION</counter><value>COVEREDRATIO</value><minimum>0.70</minimum></limit></limits>
+                                </rule>
                             </rules>
                         </configuration>
                     </execution>
