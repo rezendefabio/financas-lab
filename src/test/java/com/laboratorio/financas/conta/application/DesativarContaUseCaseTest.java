@@ -104,8 +104,8 @@ class DesativarContaUseCaseTest {
         // Given
         UUID id = UUID.randomUUID();
         Conta conta = new Conta(
-                "Investimento",
-                TipoConta.INVESTIMENTO,
+                "Dinheiro",
+                TipoConta.DINHEIRO,
                 new Money(BigDecimal.valueOf(1000), Currency.getInstance("USD"))
         );
         when(repository.buscarPorId(id)).thenReturn(Optional.of(conta));

@@ -75,14 +75,14 @@ class CriarContaUseCaseTest {
     void executarComValorNegativoNaoLancaExcecao() {
         // Given
         Conta contaSalva = new Conta(
-                "Credito",
-                TipoConta.CREDITO,
+                "Cartao",
+                TipoConta.CARTAO_CREDITO,
                 new Money(BigDecimal.valueOf(-50), Currency.getInstance("BRL"))
         );
         when(repository.salvar(any(Conta.class))).thenReturn(contaSalva);
 
         CriarContaUseCase.Comando comando = new CriarContaUseCase.Comando(
-                "Credito", TipoConta.CREDITO, BigDecimal.valueOf(-50), "BRL"
+                "Cartao", TipoConta.CARTAO_CREDITO, BigDecimal.valueOf(-50), "BRL"
         );
 
         // When
@@ -108,14 +108,14 @@ class CriarContaUseCaseTest {
     void executarChamaRepositorioSalvarUmaVez() {
         // Given
         Conta contaSalva = new Conta(
-                "Investimento",
-                TipoConta.INVESTIMENTO,
+                "Dinheiro",
+                TipoConta.DINHEIRO,
                 new Money(BigDecimal.valueOf(1000), Currency.getInstance("USD"))
         );
         when(repository.salvar(any(Conta.class))).thenReturn(contaSalva);
 
         CriarContaUseCase.Comando comando = new CriarContaUseCase.Comando(
-                "Investimento", TipoConta.INVESTIMENTO, BigDecimal.valueOf(1000), "USD"
+                "Dinheiro", TipoConta.DINHEIRO, BigDecimal.valueOf(1000), "USD"
         );
 
         // When
