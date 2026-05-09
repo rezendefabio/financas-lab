@@ -3,7 +3,7 @@
 > Documento de tracking. Mostra **onde estamos** na construção da fábrica e do produto.
 > Atualizado conforme camadas avançam. Diferente do `decisoes.md` (que registra escolhas) e dos `adrs.md` (que registram porquês), este documento responde a pergunta: "em que ponto eu estou?".
 
-**Última atualização:** 2026-05-09 (Etapa 3.5 — categoria)
+**Última atualização:** 2026-05-09 (Etapa 3.6 — transacao domain+infra)
 
 ---
 
@@ -246,6 +246,18 @@ Definir como capturar quando chegarmos na Camada 4 — não criar burocracia ago
 4. **Premissas do orquestrador externo podem estar erradas** — validação independente com cálculo concreto resolve. O Claude Code acertou em pushback técnico contradizendo análise visual feita no chat externo. Reforça o princípio: dado concreto vence interpretação.
 
 ---
+
+## Lições da Etapa 3.6
+
+### Candidatos a hook (automatizar em etapas futuras)
+
+(Nenhum novo nesta etapa.)
+
+### Lições de ambiente
+
+1. **Checkstyle `lineWrappingIndentation=8` com `throw new Exception(` aninhado dentro de dois `if` exige 24 espaços de indentação no argumento** (16 do throw + 8 de wrapping), não 20. A diferença é não-óbvia quando se usa 4 espaços por nível e se perde a conta dos aninhamentos. Padrão a observar em código com múltiplos `if` aninhados antes do commit.
+2. **`@AttributeOverride` deve ficar em linha única** quando o total de caracteres couber em 140 (limite do Checkstyle do projeto). A alternativa de quebrar `@Column(` em múltiplas linhas requer que os atributos do `@Column` comecem com 12 espaços (4 de campo + 8 de wrapping), não 8.
+3. **Nomes de método de teste com underscore são violação de Checkstyle** (`MethodName` aceita apenas `^[a-z][a-zA-Z0-9]*$`). Padrão consolidado desde a Etapa 3.1, mas reapareceu nesta etapa — confirmar antes do primeiro compile.
 
 ## Lições da Etapa 3.5
 
@@ -545,6 +557,7 @@ O segundo bounded context (`categoria`) foi implementado em etapa única, contra
 
 ## Histórico de mudanças deste documento
 
+- **2026-05-09** — Etapa 3.6 concluída: domain + infra de `transacao`. Entidade com validações cruzadas, V4 com FKs e CHECK constraints, ~40 testes. Mergeado via PR #XX.
 - **2026-05-09** — Etapa 3.5 concluída: bounded context `categoria` em etapa única. ~50 testes novos. Template estabelecido por `conta` validado como replicável. Mergeado via PR #34.
 - **2026-05-09** — Etapa 3.4 concluída: `conta` ponta a ponta. 4 use cases, controller, handler global, 116 testes total (use cases unitários + e2e via MockMvc). Thresholds JaCoCo de `application` e `interfaces` ativados. Mergeado via PR #33.
 - **2026-05-09** — Etapa 3.3.1 concluída: fix do `dev.ps1` para ativar profile `dev` (`-Dspring-boot.run.profiles=dev`). Bug descoberto em validação destrutiva manual pós-merge da 3.3. Débito de `application-prod.yml` ausente registrado em `hooks-pendentes.md`. Mergeado via PR #32.
