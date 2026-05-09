@@ -1,4 +1,4 @@
-# Decisões — Stack, Padrões e Convenções
+﻿# Decisões — Stack, Padrões e Convenções
 
 > Documento operacional. Resume **o que foi decidido** para consulta rápida em qualquer chat.
 > Diferente dos ADRs, este documento não preserva contexto histórico — é a foto atual.
@@ -359,7 +359,7 @@ Lembretes operacionais que regem decisões em chats futuros:
 
 ### Histórico de mudanças
 
-- **2026-05-09** — Etapa 3.6 concluída: bounded context `transacao` — domain + infra. Entidade `Transacao` (10 campos, validações cruzadas RECEITA/DESPESA/TRANSFERENCIA), enum `TipoTransacao`, repository (3 métodos básicos — filtros vêm na 3.7), `TransacaoEntity` (FKs por UUID, sem `@ManyToOne`), `TransacaoMapper` (MapStruct, `default` methods), `V4__cria_tabela_transacao.sql` (3 FKs + 2 CHECK constraints como defesa em profundidade), 40 testes. Application e interfaces ficam para 3.7. Mergeado via PR #XX.
+- **2026-05-09** — Etapa 3.6 concluída: bounded context `transacao` — domain + infra. Entidade `Transacao` (10 campos, validações cruzadas RECEITA/DESPESA/TRANSFERENCIA), enum `TipoTransacao`, repository (3 métodos básicos — filtros vêm na 3.7), `TransacaoEntity` (FKs por UUID, sem `@ManyToOne`), `TransacaoMapper` (MapStruct, `default` methods), `V4__cria_tabela_transacao.sql` (3 FKs + 2 CHECK constraints como defesa em profundidade), 40 testes. Application e interfaces ficam para 3.7. Mergeado via PR #35.
 - **2026-05-09** — Etapa 3.5 concluída: bounded context `categoria` em **etapa única**. Domain (`Categoria`, `TipoCategoria`, `CategoriaNaoEncontradaException`, `CategoriaRepository`), infra (`CategoriaEntity`, `CategoriaMapper`, `CategoriaJpaRepository`, `CategoriaRepositoryImpl`, `V3__cria_tabela_categoria.sql`), application (4 use cases), interfaces (`CategoriaController`, 2 DTOs), handler reusado (+1 entry), whitelist atualizada. Sem hierarquia, sem seed, sem soft delete (decisoes adiadas ate justificarem). Mergeado via PR #34.
 - **2026-05-09** — Etapa 3.4 concluída: bounded context `conta` finalizado ponta a ponta. 4 use cases, 2 DTOs (`CriarContaRequest`/`ContaResponse`), `ContaController` com 4 endpoints (`POST/GET/GET/DELETE /api/contas`), `GlobalExceptionHandler` com `ProblemDetail` (RFC 7807), whitelist temporária de `/api/contas/**` em `SecurityConfig` (TODO Auth). Thresholds JaCoCo `application` 80% e `interfaces` 70% ativados. Mergeado via PR #33.
 - **2026-05-09** — Etapa 3.3.1 concluída: fix do `dev.ps1` para ativar profile `dev` via `-Dspring-boot.run.profiles=dev`. Bug descoberto em validação destrutiva manual pós-merge da 3.3. Mergeado via PR #32.
