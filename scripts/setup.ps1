@@ -5,6 +5,18 @@
 
 $ErrorActionPreference = "Stop"
 
+if (-not (Test-Path .env)) {
+    if (Test-Path .env.example) {
+        Copy-Item .env.example .env
+        Write-Host "AVISO: .env nao encontrado. Criado a partir de .env.example." -ForegroundColor Yellow
+        Write-Host "Revise as credenciais em .env antes de usar em ambiente compartilhado." -ForegroundColor Yellow
+    } else {
+        Write-Host "ERRO: .env nao encontrado e .env.example tambem nao existe." -ForegroundColor Red
+        Write-Host "Repositorio parece corrompido. Verifique o clone." -ForegroundColor Red
+        exit 1
+    }
+}
+
 Write-Host "==> Subindo servicos Docker Compose..." -ForegroundColor Cyan
 docker compose up -d
 if ($LASTEXITCODE -ne 0) {
