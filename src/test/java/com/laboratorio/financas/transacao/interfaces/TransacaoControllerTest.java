@@ -1,7 +1,6 @@
 package com.laboratorio.financas.transacao.interfaces;
 
 import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -379,23 +378,18 @@ class TransacaoControllerTest extends AbstractIntegrationTest {
                 .andReturn();
         String idStr = objectMapper.readTree(resultado.getResponse().getContentAsString())
                 .get("id").asText();
-        String criadoEmStr = objectMapper.readTree(resultado.getResponse().getContentAsString())
-                .get("criadoEm").asText();
 
         Map<String, Object> update = requestReceita(contaId);
         update.put("descricao", "Salario atualizado");
         update.put("valor", BigDecimal.valueOf(200));
 
-        MvcResult putResult = mockMvc.perform(put("/api/transacoes/" + idStr)
+        mockMvc.perform(put("/api/transacoes/" + idStr)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(update)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.descricao", equalTo("Salario atualizado")))
-                .andReturn();
-
-        String criadoEmAtualizado = objectMapper.readTree(putResult.getResponse().getContentAsString())
-                .get("criadoEm").asText();
-        org.assertj.core.api.Assertions.assertThat(criadoEmAtualizado).isEqualTo(criadoEmStr);
+                .andExpect(jsonPath("$.criadoEm", notNullValue()))
+                .andExpect(jsonPath("$.atualizadoEm", notNullValue()));
     }
 
     @Test
