@@ -1,12 +1,14 @@
 package com.laboratorio.financas.conta.interfaces;
 
 import com.laboratorio.financas.conta.application.BuscarContaPorIdUseCase;
+import com.laboratorio.financas.conta.application.CalcularSaldoDaContaUseCase;
 import com.laboratorio.financas.conta.application.CriarContaUseCase;
 import com.laboratorio.financas.conta.application.DesativarContaUseCase;
 import com.laboratorio.financas.conta.application.ListarContasUseCase;
 import com.laboratorio.financas.conta.domain.Conta;
 import com.laboratorio.financas.conta.interfaces.dto.ContaResponse;
 import com.laboratorio.financas.conta.interfaces.dto.CriarContaRequest;
+import com.laboratorio.financas.conta.interfaces.dto.SaldoResponse;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
@@ -30,17 +32,20 @@ public class ContaController {
     private final ListarContasUseCase listarContasUseCase;
     private final BuscarContaPorIdUseCase buscarContaPorIdUseCase;
     private final DesativarContaUseCase desativarContaUseCase;
+    private final CalcularSaldoDaContaUseCase calcularSaldoDaContaUseCase;
 
     public ContaController(
             CriarContaUseCase criarContaUseCase,
             ListarContasUseCase listarContasUseCase,
             BuscarContaPorIdUseCase buscarContaPorIdUseCase,
-            DesativarContaUseCase desativarContaUseCase
+            DesativarContaUseCase desativarContaUseCase,
+            CalcularSaldoDaContaUseCase calcularSaldoDaContaUseCase
     ) {
         this.criarContaUseCase = criarContaUseCase;
         this.listarContasUseCase = listarContasUseCase;
         this.buscarContaPorIdUseCase = buscarContaPorIdUseCase;
         this.desativarContaUseCase = desativarContaUseCase;
+        this.calcularSaldoDaContaUseCase = calcularSaldoDaContaUseCase;
     }
 
     @PostMapping
@@ -72,5 +77,11 @@ public class ContaController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void desativar(@PathVariable UUID id) {
         desativarContaUseCase.executar(id);
+    }
+
+    @GetMapping("/{id}/saldo")
+    public SaldoResponse calcularSaldo(@PathVariable UUID id) {
+        CalcularSaldoDaContaUseCase.Resultado resultado = calcularSaldoDaContaUseCase.executar(id);
+        return SaldoResponse.fromResultado(resultado);
     }
 }

@@ -1,6 +1,7 @@
 package com.laboratorio.financas.transacao.infrastructure.persistence;
 
 import com.laboratorio.financas.transacao.domain.TipoTransacao;
+import com.laboratorio.financas.transacao.domain.TotaisTransacaoPorConta;
 import java.time.LocalDate;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
@@ -27,4 +28,20 @@ public interface TransacaoJpaRepository extends JpaRepository<TransacaoEntity, U
             @Param("categoriaId") UUID categoriaId,
             Pageable pageable
     );
+
+    @Query("""
+            SELECT new com.laboratorio.financas.transacao.domain.TotaisTransacaoPorConta(
+                COALESCE(SUM(CASE WHEN t.tipo = com.laboratorio.financas.transacao.domain.TipoTransacao.RECEITA
+                        AND t.contaId = :contaId THEN t.valor.valor ELSE 0 END), 0),
+                COALESCE(SUM(CASE WHEN t.tipo = com.laboratorio.financas.transacao.domain.TipoTransacao.DESPESA
+                        AND t.contaId = :contaId THEN t.valor.valor ELSE 0 END), 0),
+                COALESCE(SUM(CASE WHEN t.tipo = com.laboratorio.financas.transacao.domain.TipoTransacao.TRANSFERENCIA
+                        AND t.contaId = :contaId THEN t.valor.valor ELSE 0 END), 0),
+                COALESCE(SUM(CASE WHEN t.tipo = com.laboratorio.financas.transacao.domain.TipoTransacao.TRANSFERENCIA
+                        AND t.contaDestinoId = :contaId THEN t.valor.valor ELSE 0 END), 0)
+            )
+            FROM TransacaoEntity t
+            WHERE t.contaId = :contaId OR t.contaDestinoId = :contaId
+            """)
+    TotaisTransacaoPorConta calcularTotaisPorConta(@Param("contaId") UUID contaId);
 }

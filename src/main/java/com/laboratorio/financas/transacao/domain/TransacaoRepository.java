@@ -14,4 +14,6 @@ public interface TransacaoRepository {
     void deletar(UUID id);
 
     Page<Transacao> listarComFiltros(FiltrosTransacao filtros, Pageable pageable);
+
+    TotaisTransacaoPorConta calcularTotaisPorConta(UUID contaId);
 }

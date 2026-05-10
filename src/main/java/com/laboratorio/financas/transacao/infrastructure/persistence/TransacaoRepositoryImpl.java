@@ -3,6 +3,7 @@ package com.laboratorio.financas.transacao.infrastructure.persistence;
 import com.laboratorio.financas.transacao.domain.FiltrosTransacao;
 import com.laboratorio.financas.transacao.domain.Transacao;
 import com.laboratorio.financas.transacao.domain.TransacaoRepository;
+import com.laboratorio.financas.transacao.domain.TotaisTransacaoPorConta;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
@@ -47,5 +48,10 @@ public class TransacaoRepositoryImpl implements TransacaoRepository {
                 filtros.categoriaId(),
                 pageable
         ).map(mapper::toDomain);
+    }
+
+    @Override
+    public TotaisTransacaoPorConta calcularTotaisPorConta(UUID contaId) {
+        return jpaRepository.calcularTotaisPorConta(contaId);
     }
 }
