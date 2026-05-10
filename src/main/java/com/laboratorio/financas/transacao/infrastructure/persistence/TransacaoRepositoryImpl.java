@@ -3,7 +3,6 @@ package com.laboratorio.financas.transacao.infrastructure.persistence;
 import com.laboratorio.financas.transacao.domain.FiltrosTransacao;
 import com.laboratorio.financas.transacao.domain.Transacao;
 import com.laboratorio.financas.transacao.domain.TransacaoRepository;
-import java.time.LocalDate;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
@@ -40,12 +39,10 @@ public class TransacaoRepositoryImpl implements TransacaoRepository {
 
     @Override
     public Page<Transacao> listarComFiltros(FiltrosTransacao filtros, Pageable pageable) {
-        LocalDate inicio = filtros.dataInicio() != null ? filtros.dataInicio() : LocalDate.of(1900, 1, 1);
-        LocalDate fim = filtros.dataFim() != null ? filtros.dataFim() : LocalDate.of(9999, 12, 31);
         return jpaRepository.findComFiltros(
                 filtros.contaId(),
-                inicio,
-                fim,
+                filtros.dataInicio(),
+                filtros.dataFim(),
                 filtros.tipo(),
                 filtros.categoriaId(),
                 pageable
