@@ -1,5 +1,7 @@
 # Prompt — Etapa 4.1: Hook universal de Conventional Commits (primeiro hook funcional da Camada 3)
 
+> **Nota pós-execução:** o entrypoint prescrito em `.githooks/commit-msg` originalmente chamava `pwsh` (PowerShell Core 7). Durante a execução, descobriu-se que `pwsh` não está instalado neste ambiente — apenas `powershell` (Windows PowerShell 5.1, nativo no Windows). Ajuste aplicado: `pwsh` → `powershell` em `.githooks/commit-msg` e em `.githooks/README.md` (criado na 4.0, referência para sub-etapas seguintes). Scripts `.ps1` confirmados compatíveis com PS5.1. **Sub-etapas seguintes da Camada 3 devem usar `powershell` por default em entrypoints, não `pwsh`.** Lição completa registrada em `docs/progresso.md` (seção "Lições da Sub-etapa 4.1").
+
 ## Contexto
 
 A Sub-etapa 4.0 (PR #38) estabeleceu a infraestrutura organizacional da Camada 3: estrutura `.claude/` separada por escopo, `.githooks/` com `core.hooksPath` configurado pelo `setup.ps1`, ADR-009 e ADR-010 registrados, triagem completa do `hooks-pendentes.md`. A Sub-etapa 4.0.1 (PR #39) corrigiu posição do bloco `core.hooksPath` no `setup.ps1` para sobreviver a falha de Docker.
