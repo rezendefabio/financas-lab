@@ -3,7 +3,7 @@
 > Documento de tracking. Mostra **onde estamos** na construção da fábrica e do produto.
 > Atualizado conforme camadas avançam. Diferente do `decisoes.md` (que registra escolhas) e dos `adrs.md` (que registram porquês), este documento responde a pergunta: "em que ponto eu estou?".
 
-**Última atualização:** 2026-05-09 (Etapa 3.6 — transacao domain+infra)
+**Última atualização:** 2026-05-09 (Etapa 3.7 — transacao application+interfaces)
 
 ---
 
@@ -128,6 +128,7 @@ Implementar a estrutura de bounded contexts, primeiros agregados/use cases, valu
 - [x] Value object `Money` implementado e testado
 - [x] Bounded context `conta` com domínio puro + use cases + repositório (domain 3.2 ✅, infra+repository 3.3 ✅, use cases+controllers 3.4 ✅)
 - [x] Bounded context `categoria` no mesmo padrão
+- [x] Bounded context `transacao` ponta a ponta (domain + infra 3.6, application + interfaces 3.7)
 - [x] MapStruct funcionando entre Entity JPA ↔ Domain
 - [x] Bean Validation aplicada em DTOs de Request
 - [ ] Spring Security configurado com JWT + refresh rotativo
@@ -244,6 +245,20 @@ Definir como capturar quando chegarmos na Camada 4 — não criar burocracia ago
 2. **PowerShell padrão sem `-Encoding UTF8` lê UTF-8 errado** — mostra `Ã³` no lugar de `ó`, `Ã§` no lugar de `ç`. Para validação confiável de arquivos com acentos, usar `Get-Content -Encoding UTF8` explícito.
 3. **`Measure-Object -Line` não conta linhas em branco** — o cmdlet conta apenas linhas com conteúdo. Para contagem real (incluindo vazias), usar `[System.IO.File]::ReadAllLines('<path>').Count`.
 4. **Premissas do orquestrador externo podem estar erradas** — validação independente com cálculo concreto resolve. O Claude Code acertou em pushback técnico contradizendo análise visual feita no chat externo. Reforça o princípio: dado concreto vence interpretação.
+
+---
+
+## Lições da Etapa 3.7
+
+### Candidatos a hook (automatizar em etapas futuras)
+
+(Nenhum novo nesta etapa.)
+
+### Lições de ambiente
+
+1. **PostgreSQL não infere tipo de parâmetro `null` em JPQL quando o campo é `LocalDate`.** A query `(:dataInicio IS NULL OR t.data >= :dataInicio)` gera SQL `(? is null or t.data >= ?)`. Quando `:dataInicio` é null, o PostgreSQL não consegue inferir o tipo SQL do `?` e lança `could not determine data type of parameter $N`. UUID e enum null funcionam por ter representação unívoca. Solução: substituir null por valores sentinela (`LocalDate.of(1900,1,1)` e `LocalDate.of(9999,12,31)`) no repositório e remover o `IS NULL` da query.
+2. **`Instant` retornado pelo JPA `save()` tem precisão de nanosegundos (Java) vs. microssegundos (PostgreSQL/banco).** `Instant.now()` retorna `...684277400Z` (9 casas decimais), mas ao recarregar do banco via `buscarPorId`, o mesmo campo retorna `...684277Z` (6 casas decimais). Comparar strings exatas de `criadoEm`/`atualizadoEm` entre `save()` e reload falha. Solução: usar `notNullValue()` em vez de comparação exata quando o teste não precisa verificar o valor preciso.
+3. **`@Validated` na classe controller é necessário para ativar `@Min`/`@Max` em parâmetros primitivos (`int`) de query string.** Sem `@Validated`, as anotações são ignoradas silenciosamente — `page=-1` e `size=200` são aceitos. Com `@Validated`, violações lançam `ConstraintViolationException` (não `MethodArgumentNotValidException`), requerendo handler separado no `GlobalExceptionHandler`.
 
 ---
 
@@ -557,6 +572,7 @@ O segundo bounded context (`categoria`) foi implementado em etapa única, contra
 
 ## Histórico de mudanças deste documento
 
+- **2026-05-09** — Etapa 3.7 concluída: `transacao` ponta a ponta. 5 use cases, controller com paginação e 5 filtros, ~55 testes. Mergeado via PR #XX.
 - **2026-05-09** — Etapa 3.6 concluída: domain + infra de `transacao`. Entidade com validações cruzadas, V4 com FKs e CHECK constraints, ~40 testes. Mergeado via PR #35.
 - **2026-05-09** — Etapa 3.5 concluída: bounded context `categoria` em etapa única. ~50 testes novos. Template estabelecido por `conta` validado como replicável. Mergeado via PR #34.
 - **2026-05-09** — Etapa 3.4 concluída: `conta` ponta a ponta. 4 use cases, controller, handler global, 116 testes total (use cases unitários + e2e via MockMvc). Thresholds JaCoCo de `application` e `interfaces` ativados. Mergeado via PR #33.

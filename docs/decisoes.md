@@ -4,7 +4,7 @@
 > Diferente dos ADRs, este documento não preserva contexto histórico — é a foto atual.
 > Atualizado quando uma decisão muda. Para entender o **porquê** de uma decisão, ver `adrs.md`.
 
-**Última atualização:** 2026-05-08
+**Última atualização:** 2026-05-09
 
 ---
 
@@ -137,6 +137,9 @@ com.laboratorio.financas/
 
 - **Relacionamentos entre bounded contexts via UUID, não @ManyToOne** (a partir da Etapa 3.6): entidades JPA referenciam outros agregados por `UUID` direto (`@Column(name = "conta_id")`), não por `@ManyToOne ContaEntity`. FK constraint existe no banco, validação de existência fica no use case. Razões: baixo acoplamento entre bounded contexts, evita `LazyInitializationException`, queries mais previsíveis. Padrão idiomático em DDD com bounded contexts.
 - **Defesa em profundidade no banco** (a partir da Etapa 3.6): regras de domínio importantes (valor positivo, regras de transferência) são duplicadas em `CHECK` constraints do banco. Domain valida na escrita, banco valida no commit. Custo zero, ganho de robustez contra bypass do domain.
+- **Paginação via `Page<T>` e `Pageable` do Spring Data** (a partir da Etapa 3.7): aceito como exceção pragmática à regra "domain não conhece framework". Alternativa seria criar abstrações próprias (`PaginaResultado<T>`, `Paginacao`) que adicionam camada sem ganho real. `Page` e `Pageable` são interfaces, não anotações.
+- **Validação de FK no use case via `Optional.isEmpty()` dos repositórios** (a partir da Etapa 3.7): use cases que criam/editam entidades com FK validam existência das referências antes de construir a entidade. Lança `*ComReferenciaInvalidaException` (extends `RuntimeException`) com nome do recurso e id, mapeada como 400 no handler global. Validação no banco (FK constraint) continua existindo como defesa em profundidade.
+- **Filtros opcionais via JPQL com sentinelas de data** (a partir da Etapa 3.7): cada filtro não-date usa `:param IS NULL OR campo = :param` no JPQL. Filtros de data usam comparação direta (`t.data >= :dataInicio AND t.data <= :dataFim`) com sentinelas `LocalDate.of(1900, 1, 1)` e `LocalDate.of(9999, 12, 31)` no `RepositoryImpl` quando nulos — evita erro PostgreSQL "could not determine data type of parameter" para nulls de LocalDate. Sem `Specification`. Boring tech.
 
 ### Padrões adiados (porta aberta, não aplicar preventivamente)
 
@@ -359,6 +362,7 @@ Lembretes operacionais que regem decisões em chats futuros:
 
 ### Histórico de mudanças
 
+- **2026-05-09** — Etapa 3.7 concluída: bounded context `transacao` finalizado ponta a ponta. 5 use cases (Criar/Listar/Buscar/Editar/Deletar), DTO único `TransacaoRequest` para POST e PUT, `TransacaoController` com paginação (`Pageable`) e 5 filtros opcionais combináveis, 2 novas exceções (`TransacaoNaoEncontradaException`, `TransacaoComReferenciaInvalidaException`), 3 handlers globais novos (incluindo `ConstraintViolationException`), whitelist atualizada. ~55 testes. Mergeado via PR #XX.
 - **2026-05-09** — Etapa 3.6 concluída: bounded context `transacao` — domain + infra. Entidade `Transacao` (10 campos, validações cruzadas RECEITA/DESPESA/TRANSFERENCIA), enum `TipoTransacao`, repository (3 métodos básicos — filtros vêm na 3.7), `TransacaoEntity` (FKs por UUID, sem `@ManyToOne`), `TransacaoMapper` (MapStruct, `default` methods), `V4__cria_tabela_transacao.sql` (3 FKs + 2 CHECK constraints como defesa em profundidade), 40 testes. Application e interfaces ficam para 3.7. Mergeado via PR #35.
 - **2026-05-09** — Etapa 3.5 concluída: bounded context `categoria` em **etapa única**. Domain (`Categoria`, `TipoCategoria`, `CategoriaNaoEncontradaException`, `CategoriaRepository`), infra (`CategoriaEntity`, `CategoriaMapper`, `CategoriaJpaRepository`, `CategoriaRepositoryImpl`, `V3__cria_tabela_categoria.sql`), application (4 use cases), interfaces (`CategoriaController`, 2 DTOs), handler reusado (+1 entry), whitelist atualizada. Sem hierarquia, sem seed, sem soft delete (decisoes adiadas ate justificarem). Mergeado via PR #34.
 - **2026-05-09** — Etapa 3.4 concluída: bounded context `conta` finalizado ponta a ponta. 4 use cases, 2 DTOs (`CriarContaRequest`/`ContaResponse`), `ContaController` com 4 endpoints (`POST/GET/GET/DELETE /api/contas`), `GlobalExceptionHandler` com `ProblemDetail` (RFC 7807), whitelist temporária de `/api/contas/**` em `SecurityConfig` (TODO Auth). Thresholds JaCoCo `application` 80% e `interfaces` 70% ativados. Mergeado via PR #33.
