@@ -17,6 +17,15 @@ if (-not (Test-Path .env)) {
     }
 }
 
+Write-Host "==> Configurando core.hooksPath..." -ForegroundColor Cyan
+git config core.hooksPath .githooks
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "[ERRO] Falha ao configurar core.hooksPath." -ForegroundColor Red
+    exit 1
+}
+Write-Host "[OK] core.hooksPath configurado para .githooks/" -ForegroundColor Green
+Write-Host ""
+
 Write-Host "==> Subindo servicos Docker Compose..." -ForegroundColor Cyan
 docker compose up -d
 if ($LASTEXITCODE -ne 0) {
@@ -31,15 +40,6 @@ if ($LASTEXITCODE -ne 0) {
     Write-Host "Falha no mvnw clean install." -ForegroundColor Red
     exit 1
 }
-
-Write-Host ""
-Write-Host "==> Configurando core.hooksPath..." -ForegroundColor Cyan
-git config core.hooksPath .githooks
-if ($LASTEXITCODE -ne 0) {
-    Write-Host "[ERRO] Falha ao configurar core.hooksPath." -ForegroundColor Red
-    exit 1
-}
-Write-Host "[OK] core.hooksPath configurado para .githooks/" -ForegroundColor Green
 
 Write-Host ""
 Write-Host "Setup concluido com sucesso." -ForegroundColor Green
