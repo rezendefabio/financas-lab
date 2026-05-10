@@ -118,7 +118,7 @@ A seção "Débitos de configuração" deste documento (`application-prod.yml` a
 
 Itens originalmente listados em "Hooks Markdown / docs" ou outras secoes, agora implementados e ativos no projeto. Mantidos aqui como historico de progresso da Camada 3.
 
-- **Conventional Commits** (Sub-etapa 4.1, PR #XX). Implementado em `.claude/hooks/universal/conventional-commits.ps1`, invocado via `.githooks/commit-msg` no evento `commit-msg`. Tipos: feat, fix, chore, docs, test, refactor, style, perf, build, ci. Scope opcional, breaking change via `!`, descricao minima 10 chars. Excecoes automaticas: merge e revert commits. Override consciente: `git commit --no-verify` documentado em `decisoes.md`. Entrypoint usa `powershell` (Windows PowerShell 5.1).
+- **Conventional Commits** (Sub-etapa 4.1, PR #40). Implementado em `.claude/hooks/universal/conventional-commits.ps1`, invocado via `.githooks/commit-msg` no evento `commit-msg`. Tipos: feat, fix, chore, docs, test, refactor, style, perf, build, ci. Scope opcional, breaking change via `!`, descricao minima 10 chars. Excecoes automaticas: merge e revert commits. Override consciente: `git commit --no-verify` documentado em `decisoes.md`. Entrypoint usa `powershell` (Windows PowerShell 5.1).
 
 ## Hooks de processo
 
