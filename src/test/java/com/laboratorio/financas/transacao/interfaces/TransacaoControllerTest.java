@@ -283,6 +283,60 @@ class TransacaoControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
+    void getTransacoesSemFiltroDeDateRetornaTodasIndependenteDaData() throws Exception {
+        UUID contaId = criarContaPersistida();
+        mockMvc.perform(post("/api/transacoes")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(requestReceita(contaId))));
+
+        Map<String, Object> outraData = requestReceita(contaId);
+        outraData.put("data", "2024-06-01");
+        mockMvc.perform(post("/api/transacoes")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(outraData)));
+
+        mockMvc.perform(get("/api/transacoes"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalElements", equalTo(2)));
+    }
+
+    @Test
+    void getTransacoesSemDataInicioPegaTransacoesAnterioresAoFim() throws Exception {
+        UUID contaId = criarContaPersistida();
+        mockMvc.perform(post("/api/transacoes")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(requestReceita(contaId))));
+
+        Map<String, Object> outraData = requestReceita(contaId);
+        outraData.put("data", "2024-06-01");
+        mockMvc.perform(post("/api/transacoes")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(outraData)));
+
+        mockMvc.perform(get("/api/transacoes").param("dataFim", "2025-01-31"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalElements", equalTo(2)));
+    }
+
+    @Test
+    void getTransacoesSemDataFimPegaTransacoesAposInicio() throws Exception {
+        UUID contaId = criarContaPersistida();
+        mockMvc.perform(post("/api/transacoes")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(requestReceita(contaId))));
+
+        Map<String, Object> outraData = requestReceita(contaId);
+        outraData.put("data", "2024-06-01");
+        mockMvc.perform(post("/api/transacoes")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(outraData)));
+
+        mockMvc.perform(get("/api/transacoes").param("dataInicio", "2025-01-01"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalElements", equalTo(1)));
+    }
+
+    @Test
     void getTransacoesComFiltroTipoFiltraTipo() throws Exception {
         UUID contaId = criarContaPersistida();
         mockMvc.perform(post("/api/transacoes")
