@@ -3,7 +3,7 @@
 > Documento de tracking. Mostra **onde estamos** na construção da fábrica e do produto.
 > Atualizado conforme camadas avançam. Diferente do `decisoes.md` (que registra escolhas) e dos `adrs.md` (que registram porquês), este documento responde a pergunta: "em que ponto eu estou?".
 
-**Última atualização:** 2026-05-09 (Etapa 3.7 — transacao application+interfaces)
+**Última atualização:** 2026-05-10 (Etapa 3.8 — saldo derivado, Camada 2 fechada)
 
 ---
 
@@ -13,7 +13,7 @@
 |---|---|---|
 | **0** | Discovery (visão, ADRs, decisões, ambiente) | ✅ Concluída |
 | **1** | Infraestrutura de confiança | ✅ Concluída |
-| **2** | Arquitetura otimizada para agentes | 🟢 Em andamento |
+| **2** | Arquitetura otimizada para agentes | ✅ Concluída |
 | **3** | Configuração do Claude Code (subagents, skills, hooks) | ⏸️ Aguardando |
 | **4** | Modelo operacional (tiers de autonomia ativados) | ⏸️ Aguardando |
 | **5** | Runtime de agentes (VPS) — opcional | ⏸️ Aguardando |
@@ -115,7 +115,7 @@ Ver `docs/roadmap-camada-1.md` para o passo a passo das 2 semanas.
 
 ## Camada 2 — Arquitetura otimizada para agentes
 
-**Status:** 🟢 Em andamento
+**Status:** ✅ Concluída em 2026-05-10
 **Pré-requisito:** Camada 1 concluída
 
 ### Objetivo
@@ -129,11 +129,12 @@ Implementar a estrutura de bounded contexts, primeiros agregados/use cases, valu
 - [x] Bounded context `conta` com domínio puro + use cases + repositório (domain 3.2 ✅, infra+repository 3.3 ✅, use cases+controllers 3.4 ✅)
 - [x] Bounded context `categoria` no mesmo padrão
 - [x] Bounded context `transacao` ponta a ponta (domain + infra 3.6, application + interfaces 3.7)
+- [x] Saldo derivado da Conta cruzando bounded contexts via porta (3.8)
 - [x] MapStruct funcionando entre Entity JPA ↔ Domain
 - [x] Bean Validation aplicada em DTOs de Request
+- [x] Cobertura JaCoCo nos thresholds definidos
 - [ ] Spring Security configurado com JWT + refresh rotativo
 - [ ] Endpoints de auth funcionando (signup, login, refresh, logout)
-- [ ] Cobertura JaCoCo nos thresholds definidos
 - [ ] OpenAPI gerada automaticamente
 
 (Detalhes serão expandidos quando a Camada 1 estiver concluída.)
@@ -245,6 +246,21 @@ Definir como capturar quando chegarmos na Camada 4 — não criar burocracia ago
 2. **PowerShell padrão sem `-Encoding UTF8` lê UTF-8 errado** — mostra `Ã³` no lugar de `ó`, `Ã§` no lugar de `ç`. Para validação confiável de arquivos com acentos, usar `Get-Content -Encoding UTF8` explícito.
 3. **`Measure-Object -Line` não conta linhas em branco** — o cmdlet conta apenas linhas com conteúdo. Para contagem real (incluindo vazias), usar `[System.IO.File]::ReadAllLines('<path>').Count`.
 4. **Premissas do orquestrador externo podem estar erradas** — validação independente com cálculo concreto resolve. O Claude Code acertou em pushback técnico contradizendo análise visual feita no chat externo. Reforça o princípio: dado concreto vence interpretação.
+
+---
+
+## Lições da Etapa 3.8
+
+### Candidatos a hook (automatizar em etapas futuras)
+
+(Nenhum novo nesta etapa.)
+
+### Lições de ambiente
+
+1. **JPQL `SELECT new` com record exige path fully-qualified da classe e dos enums.** `SELECT new TotaisTransacaoPorConta(...)` sem package completo falha em tempo de parsing. Enums também precisam de path completo: `com.laboratorio.financas.transacao.domain.TipoTransacao.RECEITA`. Sem isso, Hibernate não resolve os símbolos no contexto JPQL.
+2. **`WHERE t.contaId = :contaId OR t.contaDestinoId = :contaId` + `CASE WHEN ... AND t.contaId = :contaId`** é a combinação necessária para capturar transferências corretamente. O `WHERE` abre para todas as transações em que a conta participa (origem OU destino), e o `AND t.contaId/contaDestinoId` dentro do `CASE` distingue o papel da conta em cada tipo. Sem o `OR` no `WHERE`, transferências recebidas teriam totais sempre zero.
+3. **`COALESCE(SUM(...), 0)` é necessário quando o `SUM` pode ser NULL.** `SUM` sobre conjunto vazio retorna NULL no SQL. Sem `COALESCE`, `TotaisTransacaoPorConta` receberia `null` no construtor do record, quebrando qualquer uso downstream.
+4. **`mvnw clean verify` obrigatório antes de declarar etapa pronta** (reiterado após incidente da 3.7). Cache de compilação pode mascarar erros. Esta etapa passou em `clean verify` sem atrito, confirmando que o template JPQL prescrito funcionou na primeira tentativa.
 
 ---
 
@@ -573,6 +589,7 @@ O segundo bounded context (`categoria`) foi implementado em etapa única, contra
 
 ## Histórico de mudanças deste documento
 
+- **2026-05-10** — Etapa 3.8 concluída: saldo derivado da Conta. Endpoint GET /api/contas/{id}/saldo, primeiro cruzamento entre bounded contexts via porta no domain, primeira query agregada JPQL. Camada 2 fechada. Mergeado via PR #XX.
 - **2026-05-09** — Etapa 3.7 concluída: `transacao` ponta a ponta. 5 use cases, controller com paginação e 5 filtros, ~55 testes. Mergeado via PR #36.
 - **2026-05-09** — Etapa 3.6 concluída: domain + infra de `transacao`. Entidade com validações cruzadas, V4 com FKs e CHECK constraints, ~40 testes. Mergeado via PR #35.
 - **2026-05-09** — Etapa 3.5 concluída: bounded context `categoria` em etapa única. ~50 testes novos. Template estabelecido por `conta` validado como replicável. Mergeado via PR #34.
