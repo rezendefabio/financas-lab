@@ -310,3 +310,130 @@ Documentadas no blueprint Camada 6. Decisão aqui é apenas formalizar o ponto d
 ### Consequências
 
 Configuração da conta API e budget alerts deve ser feita ainda no mês 1, mesmo que não usada — evita estar travado em momento crítico configurando billing.
+
+---
+
+## ADR-009 — Layout `.claude/` e mecanismo de hooks no Windows
+
+**Status:** Aceito
+**Data:** 2026-05-10
+
+### Contexto
+
+Abertura da Camada 3 (Configuração do Claude Code). O `hooks-pendentes.md` lista ~20 itens com escopos heterogeneos: alguns universais (Conventional Commits, encoding UTF-8), alguns especificos de stack (Maven `<release>`, sufixo `Test`), alguns especificos de SO (PowerShell `Write-Error` + `exit`), alguns especificos de framework (`shadcn init` deixando `button.tsx`). Tratar todos como iguais cria tres problemas: dificulta separar o que serve a outros projetos (laboratorio e tambem investimento em fabrica replicavel), inflaciona o lookup do agente em cada validacao, e mistura preocupacoes conceitualmente distintas. Ao mesmo tempo, criar repositorio separado para a "fabrica" antes da primeira replicacao real e abstracao prematura (N=1 nao ensina abstracao).
+
+### Decisao
+
+**Casa unica no `financas-lab/`, com separacao interna por escopo de aplicabilidade.**
+
+Estrutura:
+
+```
+.claude/
+├── hooks/
+│   ├── universal/        (qualquer projeto)
+│   ├── java-spring/      (preset stack Java/Maven/Spring)
+│   ├── windows/          (Windows + PowerShell)
+│   ├── next/             (Next.js)
+│   └── local/            (so financas-lab)
+├── agents/
+│   ├── universal/
+│   ├── java-spring/
+│   └── local/
+└── skills/
+    ├── universal/
+    └── local/
+```
+
+**Mecanismo de git hooks no Windows:**
+
+- `git config core.hooksPath .githooks` (configurado automaticamente por `scripts/setup.ps1`).
+- Entrypoints em `.githooks/` sao arquivos sem extensao (`pre-commit`, `commit-msg`, `pre-push`) — wrappers bash minimos que invocam `pwsh -File .githooks/<nome>.ps1`. Git no Windows (Git Bash) interpreta o shebang `#!/usr/bin/env bash`.
+- Logica real fica em `.claude/hooks/<escopo>/*.ps1`, invocada pelos `.ps1` companherios em `.githooks/`.
+
+**Regra de promocao entre escopos:**
+
+- Item nasce na pasta mais especifica que comporta seu uso real (default: `local/`).
+- Promove para escopo mais amplo (`java-spring/` → `universal/`) apenas apos **evidencia explicita** de aplicabilidade no escopo maior, registrada em commit ou ADR. Evidencia minima: segundo projeto/contexto provando reuso, ou justificativa tecnica documentada.
+- Promocao e decisao consciente, nao automatica. Nao ha ferramenta que "detecta" universalidade.
+
+### Alternativas consideradas
+
+- **Tudo plano em `.claude/hooks/` sem separacao por escopo** — rejeitada porque nao captura a heterogeneidade ja presente em `hooks-pendentes.md` e dificulta reuso futuro. Adicionar disciplina retroativamente custa mais que nascer com ela.
+- **Repositorio separado `fabrica-ai-native/` consumido por copia via `new-fabrica.ps1`** — considerada e rejeitada nesta fase. N=1 (este projeto unico) nao fornece evidencia suficiente para validar a fronteira universal vs. stack vs. local. Decisao reversivel: quando 2a fabrica nascer ou itens em `universal/`/`java-spring/` estabilizarem, extrair para repo separado vira refactor barato.
+- **Husky (Node.js) ou pre-commit framework (Python) em vez de PowerShell + `core.hooksPath`** — rejeitada para preservar coerencia com a Camada 1 (scripts ja sao PowerShell, decisao da Camada 0 foi Windows nativo). Adicionar dependencia nova ao ciclo de hooks e friccao desnecessaria no atual estagio.
+- **Claude Code hooks nativos (`PreToolUse`, `Stop`) como mecanismo unico** — rejeitada como solucao completa porque cobre apenas comportamento do agente, nao validacao de codigo pre-commit. Os dois mecanismos sao complementares; Claude Code hooks entram em sub-etapa propria apos 4.2.
+
+### Consequencias
+
+**Aceitas:**
+
+- Cinco pastas vazias com `.gitkeep` no nascimento — ruido visual inicial. Justificado pela disciplina que estabelece.
+- Decisao sobre escopo de cada hook fica em humanos no momento da criacao — nao ha tooling que valida automaticamente. Em troca, forca reflexao explicita.
+- Entrypoints em `.githooks/` exigirem wrapper bash + companheiro `.ps1` e dois arquivos por hook do git — verboso, mas idiomatico no Windows + Git Bash.
+
+**Ganhos:**
+
+- Quando 2a fabrica nascer, copia `hooks/universal/` + `agents/universal/` + `skills/universal/` e ignora o resto. Custo de replicacao proporcional ao que de fato e replicavel.
+- Lookup do agente reduz: ao trabalhar em codigo Java, hooks em `next/` ou `windows/` sao irrelevantes e nem precisam ser carregados se a invocacao do agente filtrar por escopo.
+- Mistura de preocupacoes fica visualmente clara — separacao fisica e o gate.
+- Reversibilidade preservada: estrutura interna pode virar repo separado depois sem refactor doloroso, porque a fronteira ja esta desenhada.
+
+---
+
+## ADR-010 — Debito de portabilidade: PowerShell e Windows-specific aceitos conscientemente
+
+**Status:** Aceito
+**Data:** 2026-05-10
+
+### Contexto
+
+Camada 0 decidiu Windows nativo + PowerShell + Docker Desktop como ambiente. A Camada 1 produziu 6 scripts `.ps1` em `scripts/` e dedicou 2 sub-etapas inteiras (2.6.1, 2.6.2) a bugs especificos do PowerShell. A Camada 3 vai produzir hooks e wrappers que tambem serao PowerShell-specific. Ja existe risco previsto (Camada 5) de migracao para VPS Linux para rodar routines de agente, momento em que parte dessa infraestrutura tera de ser reescrita em bash. A pergunta e: pagar custo de cross-platform agora (postura defensiva) ou aceitar custo futuro maior em troca de velocidade presente?
+
+### Decisao
+
+**Aceitar conscientemente o debito de portabilidade.** Manter scripts e hooks PowerShell-specific. Nao introduzir abstracao cross-platform (Node, Python como wrapper, Docker para tudo) preventivamente.
+
+### Criterio explicito de revisao
+
+Esta decisao e revisitada quando **qualquer um** dos eventos abaixo ocorrer:
+
+1. **Camada 5 entra em escopo** — abertura formal da decisao de subir VPS Linux para routines persistentes ou batch paralelo pesado.
+2. **2a fabrica nasce em outro SO** — quando segundo projeto adotar este modelo de fabrica em ambiente nao-Windows.
+3. **Dor concreta acumulada** — soma de tempo perdido em workarounds de PowerShell (medida em horas registradas em `progresso.md`) cruzar limiar subjetivo de "vale reescrever". Sem numero fixo aqui; e gatilho de bom senso revisitado a cada retrospectiva de camada.
+
+Quando qualquer um disparar, abrir ADR novo (superseder este) com nova decisao.
+
+### Custo estimado da migracao futura
+
+- Reescrita de 6 scripts em `scripts/*.ps1` para `scripts/*.sh` — 4-8h.
+- Reescrita de hooks em `.claude/hooks/windows/` e wrappers em `.githooks/` (quantidade depende do que a Camada 3 produzir) — 4-12h.
+- Revalidacao destrutiva manual de todos os fluxos no SO destino — 4-8h.
+- **Total estimado: 1-3 dias de trabalho** num momento futuro escolhido conscientemente.
+
+Estimativa intencionalmente otimista — assume que a logica e estavel e so o veiculo muda. Se descobrir que padroes PowerShell-especificos vazaram para o desenho (nao so sintaxe), o custo dobra.
+
+### Mitigacao enquanto debito vigora
+
+- Cada hook em `.claude/hooks/windows/` traz comentario no topo identificando explicitamente que e Windows-only. Reduz surpresa futura.
+- Logica de hook fica enxuta nos `.ps1`; complexidade real fica em codigo que poderia ser portado (validacao via `grep` padrao, leitura de bytes, etc.). PowerShell vira involucro fino, nao corpo da logica.
+- Estrutura `.claude/hooks/<escopo>/` ja separa Windows-specific do resto. Migrar significa reescrever uma pasta, nao auditar todo o projeto.
+
+### Alternativas consideradas
+
+- **Cross-platform desde ja (Node/Python como veiculo de hooks)** — rejeitada por custo presente certo em troca de ganho futuro hipotetico. Postura inconsistente com decisao da Camada 0 (Windows nativo) e com principio "stack on-distribution > stack que voce acha bonita".
+- **Tudo em Docker, hooks rodam em container** — rejeitada por inverter o eixo do problema (carrega complexidade massiva no presente para resolver portabilidade que pode nunca ser exercida).
+- **Nada decidido formalmente, lidar quando bater** — rejeitada porque debito nao registrado e debito que assombra como ansiedade difusa. Formalizar em ADR transforma "preocupacao" em "tarefa futura com gatilho claro".
+
+### Consequencias
+
+**Aceitas:**
+
+- Quando a Camada 5 ou 2a fabrica chegarem, 1-3 dias de trabalho de migracao — custo conhecido em momento previsto.
+- Contribuidores externos (improvavel neste estagio, mas possivel) precisariam de Windows + PowerShell para rodar localmente. Cobertura limitada.
+
+**Ganhos:**
+
+- Zero custo presente. Velocidade da Camada 3 nao e comprometida por abstracao defensiva.
+- Coerencia com decisoes anteriores do projeto (Camada 0 e 1).
+- Debito conhecido > ansiedade difusa. Decisao arquivada com criterio de revisao; sai do plano mental ativo.

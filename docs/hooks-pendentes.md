@@ -4,7 +4,7 @@
 > Input direto para a Camada 3 (Configuração do Claude Code), quando hooks formais entrarem.
 > Atualizado conforme novas lições aparecem.
 
-**Última atualização:** 2026-05-09 (Etapa 3.3.1 — hook de profile em scripts + débito de application-prod.yml)
+**Última atualização:** 2026-05-10 (Sub-etapa 4.0 — triagem de escopo de aplicabilidade)
 
 ---
 
@@ -16,6 +16,58 @@ Cada item lista:
 - **Como detectar (esboço):** sintaxe shell ou critério de validação
 
 Itens **não estão implementados** — são pendência pra Camada 3.
+
+---
+
+## Escopo de aplicabilidade (triagem da Sub-etapa 4.0)
+
+Conforme ADR-009, cada hook nasce na pasta `.claude/hooks/<escopo>/` correspondente ao seu escopo de aplicabilidade. Esta seção mapeia cada item já registrado neste documento ao seu escopo.
+
+| Item (resumo) | Escopo | Pasta destino |
+|---|---|---|
+| `mvnw spring-boot:run` sem profile | java-spring | `.claude/hooks/java-spring/` |
+| Linhas em branco em Markdown | universal | `.claude/hooks/universal/` |
+| Encoding UTF-8 em arquivos de texto | universal | `.claude/hooks/universal/` |
+| Conventional Commits | universal | `.claude/hooks/universal/` |
+| Tamanho de docs em `docs/` | universal | `.claude/hooks/universal/` |
+| `<release>` no maven-compiler-plugin | java-spring | `.claude/hooks/java-spring/` |
+| Ordem Lombok antes de MapStruct | java-spring | `.claude/hooks/java-spring/` |
+| Versão de plugin Maven validada via Maven Central | java-spring | `.claude/hooks/java-spring/` |
+| `@Entity` JPA exige migration Flyway | java-spring | `.claude/hooks/java-spring/` |
+| Classe base de teste sem `abstract` | java-spring | `.claude/hooks/java-spring/` |
+| `baseline-on-migrate: true` apenas em test/dev | java-spring | `.claude/hooks/java-spring/` |
+| Sufixo de classe de teste (`Test` singular) | java-spring | `.claude/hooks/java-spring/` |
+| `mvnw` com bit de execução no git index | java-spring | `.claude/hooks/java-spring/` |
+| Scripts Windows não usam ferramentas Unix | windows | `.claude/hooks/windows/` |
+| Toda configuração de branch protection passou por teste destrutivo | universal (processo) | (não é hook automatizável — mantém em documentação de processo) |
+| `Write-Error` + `exit N` em `.ps1` | windows | `.claude/hooks/windows/` |
+| Comando nativo + `$LASTEXITCODE` sem suspensão de `Stop` | windows | `.claude/hooks/windows/` |
+| Encoding UTF-8 sem BOM em `.ps1` | windows | `.claude/hooks/windows/` |
+| `shadcn init --defaults` deixa `button.tsx` | next | `.claude/hooks/next/` |
+| `AGENTS.md`/`CLAUDE.md` em subdiretórios scaffold | next | `.claude/hooks/next/` |
+| Agente NÃO sugere "próxima etapa" espontaneamente | universal (Claude Code hook nativo) | (sub-etapa própria após 4.2, não git hook) |
+| Agente NÃO toma decisões silenciosas em zona limítrofe | universal (Claude Code hook nativo) | (sub-etapa própria após 4.2, não git hook) |
+| Validação destrutiva genuína exige código com lógica condicional real | universal (princípio) | (não é hook — princípio para retrospectivas/CLAUDE.md) |
+
+### Convenções da tabela
+
+- **universal:** roda em qualquer projeto, independente de stack ou SO.
+- **java-spring:** roda em projetos com stack Java/Maven/Spring. Tipicamente faz `grep` em `pom.xml`, `*.java`, `application*.yml`.
+- **windows:** roda em ambiente Windows + PowerShell. Tipicamente valida arquivos `.ps1` ou configurações Windows-specific.
+- **next:** roda em projetos com Next.js. Tipicamente valida `frontend/` ou `package.json`.
+- **local:** roda só neste projeto. Reservado para regras com forte vínculo a `financas-lab/` (nenhuma hoje).
+
+### Itens fora do mecanismo de git hooks
+
+Três tipos de item aparecem na lista acima mas **não vão para `.claude/hooks/`**:
+
+1. **Claude Code hooks nativos** (comportamento do agente): vivem em `.claude/settings.json` via `PreToolUse`, `Stop`, `UserPromptSubmit`. Tratados em sub-etapa própria após 4.2.
+2. **Princípios para retrospectiva/CLAUDE.md**: regras que dependem de bom senso humano ou de contexto que automação não captura. Documentação, não código.
+3. **Processo manual de validação**: ex. "testar branch protection destrutivamente antes de concluir". Lembrete em documentação, não hook.
+
+### Débito de configuração (não-hook) preservado
+
+A seção "Débitos de configuração" deste documento (`application-prod.yml` ausente) **não é hook**. Continua válida e separada — débito de schema/config a resolver junto com a etapa de deploy.
 
 ---
 
