@@ -2,6 +2,9 @@ package com.laboratorio.financas.shared.infrastructure.web;
 
 import com.laboratorio.financas.categoria.domain.CategoriaNaoEncontradaException;
 import com.laboratorio.financas.conta.domain.ContaNaoEncontradaException;
+import com.laboratorio.financas.transacao.domain.TransacaoComReferenciaInvalidaException;
+import com.laboratorio.financas.transacao.domain.TransacaoNaoEncontradaException;
+import jakarta.validation.ConstraintViolationException;
 import java.util.HashMap;
 import java.util.Map;
 import org.slf4j.Logger;
@@ -63,6 +66,36 @@ public class GlobalExceptionHandler {
         problem.setTitle("Not Found");
         problem.setDetail(ex.getMessage());
         problem.setProperty("id", ex.getId().toString());
+        return problem;
+    }
+
+    @ExceptionHandler(TransacaoNaoEncontradaException.class)
+    public ProblemDetail handleTransacaoNaoEncontrada(TransacaoNaoEncontradaException ex) {
+        ProblemDetail problem = ProblemDetail.forStatus(HttpStatus.NOT_FOUND);
+        problem.setTitle("Not Found");
+        problem.setDetail(ex.getMessage());
+        problem.setProperty("id", ex.getId().toString());
+        return problem;
+    }
+
+    @ExceptionHandler(TransacaoComReferenciaInvalidaException.class)
+    public ProblemDetail handleReferenciaInvalida(TransacaoComReferenciaInvalidaException ex) {
+        ProblemDetail problem = ProblemDetail.forStatus(HttpStatus.BAD_REQUEST);
+        problem.setTitle("Bad Request");
+        problem.setDetail(ex.getMessage());
+        problem.setProperty("recurso", ex.getRecurso());
+        problem.setProperty("id", ex.getId().toString());
+        return problem;
+    }
+
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ProblemDetail handleConstraintViolation(ConstraintViolationException ex) {
+        ProblemDetail problem = ProblemDetail.forStatus(HttpStatus.BAD_REQUEST);
+        problem.setTitle("Bad Request");
+        problem.setDetail("Parametro fora dos limites permitidos.");
+        problem.setProperty("violacoes", ex.getConstraintViolations().stream()
+                .map(v -> v.getPropertyPath() + ": " + v.getMessage())
+                .toList());
         return problem;
     }
 
