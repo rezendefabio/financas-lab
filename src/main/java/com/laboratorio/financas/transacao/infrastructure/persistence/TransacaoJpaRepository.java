@@ -14,8 +14,8 @@ public interface TransacaoJpaRepository extends JpaRepository<TransacaoEntity, U
     @Query("""
             SELECT t FROM TransacaoEntity t
             WHERE (:contaId IS NULL OR t.contaId = :contaId OR t.contaDestinoId = :contaId)
-              AND (:dataInicio IS NULL OR t.data >= :dataInicio)
-              AND (:dataFim IS NULL OR t.data <= :dataFim)
+              AND t.data >= COALESCE(:dataInicio, t.data)
+              AND t.data <= COALESCE(:dataFim, t.data)
               AND (:tipo IS NULL OR t.tipo = :tipo)
               AND (:categoriaId IS NULL OR t.categoriaId = :categoriaId)
             """)
