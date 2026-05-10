@@ -52,8 +52,9 @@ data/
 # ─── Testcontainers ──────────────────────────────────────────────────────────
 .testcontainers/
 
-# ─── Claude Code (settings locais pessoais) ─────────────────────────────────
-.claude/
+# ─── Claude Code (settings locais pessoais — estrutura de projeto e versionada) ─
+.claude/settings.local.json
+.claude/settings.json
 
 # ─── Sistema operacional ─────────────────────────────────────────────────────
 .DS_Store
