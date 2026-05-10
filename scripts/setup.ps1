@@ -33,6 +33,15 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 Write-Host ""
+Write-Host "==> Configurando core.hooksPath..." -ForegroundColor Cyan
+git config core.hooksPath .githooks
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "[ERRO] Falha ao configurar core.hooksPath." -ForegroundColor Red
+    exit 1
+}
+Write-Host "[OK] core.hooksPath configurado para .githooks/" -ForegroundColor Green
+
+Write-Host ""
 Write-Host "Setup concluido com sucesso." -ForegroundColor Green
 Write-Host "Proximos passos sugeridos:"
 Write-Host "  scripts\dev.ps1                  # subir aplicacao em modo dev"
