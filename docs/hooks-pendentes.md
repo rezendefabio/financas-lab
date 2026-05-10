@@ -4,7 +4,7 @@
 > Input direto para a Camada 3 (Configuração do Claude Code), quando hooks formais entrarem.
 > Atualizado conforme novas lições aparecem.
 
-**Última atualização:** 2026-05-10 (Sub-etapa 4.0 — triagem de escopo de aplicabilidade)
+**Última atualização:** 2026-05-10 (Sub-etapa 4.0.1 — fix posição core.hooksPath + débito container_name)
 
 ---
 
@@ -110,6 +110,8 @@ A seção "Débitos de configuração" deste documento (`application-prod.yml` a
 - **`AGENTS.md` ou `CLAUDE.md` em subdiretórios gerados por scaffold.** (Etapa 2.7) Quando framework gera, decidir conscientemente manter/remover. Conteúdo específico (avisos sobre training data desatualizada) tende a valer; conteúdo genérico tende a remover.
 
 ## Débitos de configuração
+
+- **Containers Docker com `container_name:` fixo no `docker-compose.yml`.** (Descoberto no smoke test pós-merge da Sub-etapa 4.0, registrado na 4.0.1.) `financas-lab-postgres` e `financas-lab-redis` têm nome global no Docker daemon. Tentar subir um segundo clone em paralelo dispara conflito (`Error response from daemon: Conflict. The container name "/financas-lab-postgres" is already in use...`). Sem impacto em fluxo normal (1 clone por vez). Workaround manual: `docker rm -f financas-lab-postgres financas-lab-redis` antes de rodar `setup.ps1` no segundo clone. Resolver quando paralelismo de clones virar necessidade real (debugging em branch isolada com containers separados, smoke test sistematizado pós-merge, ou ambiente CI local rodando em paralelo). Fix: remover `container_name:` deixando Docker Compose gerar nomes prefixados pelo diretório do projeto. Custo estimado: 1-2h incluindo ajustes em qualquer script que referencie container por nome e revalidação destrutiva.
 
 - **`application-prod.yml` não existe.** (Descoberto na 3.3.1) `decisoes.md` prescreve "Profiles sempre explícitos: dev, test, prod", mas o arquivo de prod nunca foi criado. Não bloqueante hoje (sem deploy prod), mas precisa ser criado quando deploy prod entrar no escopo. Resolver junto com a etapa de deploy.
 
