@@ -358,6 +358,22 @@ Próximas reavaliações:
 
 ADR-010 registra aceitação consciente: hooks e scripts PowerShell-specific. Migração avaliada ao entrar Camada 5 ou nascer 2ª fábrica em outro SO. Custo estimado: 1-3 dias.
 
+### Conventional Commits (Sub-etapa 4.1)
+
+**Tipos permitidos:** feat, fix, chore, docs, test, refactor, style, perf, build, ci.
+
+**Formato:** `<tipo>[(scope)][!]: <descricao>` com pelo menos 10 caracteres na descricao.
+
+**Scope:** opcional. Lowercase + digitos + hifen entre parenteses. Convencao do projeto usa nome do modulo (`feat(transacao):`, `chore(scripts):`).
+
+**Breaking change:** indicado por `!` apos scope (`feat!:` ou `feat(api)!:`).
+
+**Excecoes automaticas:** mensagens iniciadas por `Merge ` ou `Revert ` (geradas pelo git) passam sem validacao.
+
+**Override consciente:** `git commit --no-verify` e escape valido em emergencias (bug critico em producao, hotfix que justifica pular validacao). Cada invocacao deve ser registrada no PR body com motivo. Sem policia automatica — disciplina por norma.
+
+**Hook implementado em:** `.claude/hooks/universal/conventional-commits.ps1`, invocado por `.githooks/commit-msg` (entrypoint bash) -> `.githooks/commit-msg.ps1` (companheiro PowerShell).
+
 ### Claude Code hooks nativos
 
 Mecanismo `PreToolUse`/`Stop`/`UserPromptSubmit` em `.claude/settings.json` é tratado em sub-etapa própria após 4.2. Diferente de git hooks: atua sobre comportamento do agente, não validação de código.
@@ -387,6 +403,7 @@ Lembretes operacionais que regem decisões em chats futuros:
 
 ### Histórico de mudanças
 
+- **2026-05-10** — Sub-etapa 4.1 concluida: primeiro hook funcional do projeto. Conventional Commits implementado em 3 camadas (entrypoint bash `.githooks/commit-msg` -> companheiro `.githooks/commit-msg.ps1` -> hook `.claude/hooks/universal/conventional-commits.ps1`). Tipos permitidos: feat, fix, chore, docs, test, refactor, style, perf, build, ci. Scope opcional, breaking change via `!`, descricao minima 10 chars. Override `--no-verify` documentado como escape valido. Entrypoint usa `powershell` (Windows PowerShell 5.1, unico PS disponivel neste ambiente). Validacao destrutiva confirmou bloqueio de mensagem invalida + bypass por --no-verify. Mergeado via PR #40.
 - **2026-05-10** — Sub-etapa 4.0.1 concluída: fix de posição do bloco `core.hooksPath` em `setup.ps1`. Bloco movido de depois de `docker compose up -d` + `mvnw clean install` para entre validação de `.env` e `docker compose up -d`. Bug descoberto em smoke test destrutivo pós-merge da 4.0 (clone novo com Docker em conflito de nomes). Lição registrada com categoria "prescrição de prompt insuficientemente específica". Débito do `container_name:` fixo no `docker-compose.yml` registrado em `hooks-pendentes.md`. Mergeado via PR #39.
 - **2026-05-10** — Sub-etapa 4.0 concluída: abertura da Camada 3 com infraestrutura organizacional. Criada estrutura `.claude/{hooks,agents,skills}/{universal,java-spring,windows,next,local}` com pastas vazias (`.gitkeep`). `.githooks/` criado com README explicativo (sem entrypoints funcionais ainda — esperam 4.1+). `setup.ps1` configura `core.hooksPath=.githooks` automaticamente. ADR-009 (layout `.claude/` e mecanismo de hooks no Windows) e ADR-010 (débito de portabilidade aceito conscientemente) registrados. Triagem completa do `hooks-pendentes.md` mapeando cada item ao escopo de aplicabilidade. Sem hooks funcionais, sem subagents, sem skills. Mergeado via PR #38.
 - **2026-05-10** — Etapa 3.8 concluída: saldo derivado da Conta. `CalcularSaldoDaContaUseCase` em `conta/application/` cruza bounded context lendo de `TransacaoRepository.calcularTotaisPorConta` (porta no domain de Transacao). Query JPQL agregada com `SUM(CASE WHEN ...)` retornando record `TotaisTransacaoPorConta` via `SELECT new`. Endpoint `GET /api/contas/{id}/saldo` retorna `SaldoResponse` com breakdown completo (saldoInicial, 4 totais, saldoAtual, calculadoEm). Camada 2 fechada. Mergeado via PR #37.

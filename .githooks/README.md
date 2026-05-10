@@ -14,7 +14,7 @@ Arquivo sem extensao (ex: `pre-commit`):
 #!/usr/bin/env bash
 set -e
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-pwsh -NoProfile -ExecutionPolicy Bypass -File "$SCRIPT_DIR/pre-commit.ps1" "$@"
+powershell -NoProfile -ExecutionPolicy Bypass -File "$SCRIPT_DIR/pre-commit.ps1" "$@"
 ```
 
 Arquivo `.ps1` companherio (ex: `pre-commit.ps1`):
