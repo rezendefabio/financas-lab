@@ -3,7 +3,7 @@
 > Documento de tracking. Mostra **onde estamos** na construção da fábrica e do produto.
 > Atualizado conforme camadas avançam. Diferente do `decisoes.md` (que registra escolhas) e dos `adrs.md` (que registram porquês), este documento responde a pergunta: "em que ponto eu estou?".
 
-**Última atualização:** 2026-05-10 (Etapa 3.8 — saldo derivado, Camada 2 fechada)
+**Última atualização:** 2026-05-10 (Sub-etapa 4.0 — infraestrutura organizacional da Camada 3)
 
 ---
 
@@ -14,7 +14,7 @@
 | **0** | Discovery (visão, ADRs, decisões, ambiente) | ✅ Concluída |
 | **1** | Infraestrutura de confiança | ✅ Concluída |
 | **2** | Arquitetura otimizada para agentes | ✅ Concluída |
-| **3** | Configuração do Claude Code (subagents, skills, hooks) | ⏸️ Aguardando |
+| **3** | Configuração do Claude Code (subagents, skills, hooks) | 🟢 Em andamento |
 | **4** | Modelo operacional (tiers de autonomia ativados) | ⏸️ Aguardando |
 | **5** | Runtime de agentes (VPS) — opcional | ⏸️ Aguardando |
 | **6** | Gestão híbrida Max + API | 🟡 Parcial (configuração API pronta, sem uso) |
@@ -143,12 +143,16 @@ Implementar a estrutura de bounded contexts, primeiros agregados/use cases, valu
 
 ## Camada 3 — Configuração do Claude Code
 
-**Status:** ⏸️ Aguardando
+**Status:** 🟢 Em andamento
 **Pré-requisito:** Camada 2 com pelo menos um bounded context completo
 
 ### Objetivo
 
 Configurar `CLAUDE.md` rico, criar 3-5 subagents focados, criar 5-10 skills (slash commands) para workflows repetidos, configurar hooks que substituem revisão manual.
+
+### Sub-etapas concluídas
+
+- **4.0 — Infraestrutura organizacional** (2026-05-10): estrutura `.claude/` separada por escopo, `.githooks/` com `core.hooksPath` configurado por `setup.ps1`, ADR-009 e ADR-010, triagem do `hooks-pendentes.md`. Sem hooks/agents/skills funcionais. PR #XX.
 
 ### Critérios de "pronto" (preliminar)
 
@@ -246,6 +250,18 @@ Definir como capturar quando chegarmos na Camada 4 — não criar burocracia ago
 2. **PowerShell padrão sem `-Encoding UTF8` lê UTF-8 errado** — mostra `Ã³` no lugar de `ó`, `Ã§` no lugar de `ç`. Para validação confiável de arquivos com acentos, usar `Get-Content -Encoding UTF8` explícito.
 3. **`Measure-Object -Line` não conta linhas em branco** — o cmdlet conta apenas linhas com conteúdo. Para contagem real (incluindo vazias), usar `[System.IO.File]::ReadAllLines('<path>').Count`.
 4. **Premissas do orquestrador externo podem estar erradas** — validação independente com cálculo concreto resolve. O Claude Code acertou em pushback técnico contradizendo análise visual feita no chat externo. Reforça o princípio: dado concreto vence interpretação.
+
+---
+
+## Lições da Sub-etapa 4.0
+
+### Candidatos a hook (automatizar em etapas futuras)
+
+(Nenhum novo nesta etapa — etapa de infraestrutura, sem geração de código que produzisse lição.)
+
+### Lições de ambiente
+
+1. **`.gitignore` ignorava `.claude/` inteiramente** (linha adicionada na Camada 0 para excluir settings locais pessoais). Ao iniciar a Camada 3, a estrutura de projeto em `.claude/hooks/`, `.claude/agents/`, `.claude/skills/` precisava ser versionada. Resolução: substituir `.claude/` por `.claude/settings.local.json` e `.claude/settings.json` no `.gitignore`, preservando a intenção original (não versionar configs pessoais) sem bloquear a estrutura de projeto. Lição: ao decidir que `.claude/` vai hospedar artefatos de projeto, revisar o `.gitignore` é etapa obrigatória.
 
 ---
 
@@ -589,6 +605,7 @@ O segundo bounded context (`categoria`) foi implementado em etapa única, contra
 
 ## Histórico de mudanças deste documento
 
+- **2026-05-10** — Sub-etapa 4.0 concluída: abertura da Camada 3 com infraestrutura organizacional. Estrutura `.claude/` separada por escopo, `setup.ps1` configura `core.hooksPath`, ADR-009 e ADR-010 registrados, triagem do `hooks-pendentes.md`. Mergeado via PR #XX.
 - **2026-05-10** — Etapa 3.8 concluída: saldo derivado da Conta. Endpoint GET /api/contas/{id}/saldo, primeiro cruzamento entre bounded contexts via porta no domain, primeira query agregada JPQL. Camada 2 fechada. Mergeado via PR #37.
 - **2026-05-09** — Etapa 3.7 concluída: `transacao` ponta a ponta. 5 use cases, controller com paginação e 5 filtros, ~55 testes. Mergeado via PR #36.
 - **2026-05-09** — Etapa 3.6 concluída: domain + infra de `transacao`. Entidade com validações cruzadas, V4 com FKs e CHECK constraints, ~40 testes. Mergeado via PR #35.

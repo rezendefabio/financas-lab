@@ -342,6 +342,28 @@ Próximas reavaliações:
 
 ---
 
+## Camada 3 — Configuração do Claude Code
+
+**Início:** 2026-05-10 (Sub-etapa 4.0).
+
+### Layout de `.claude/`
+
+`.claude/` é a casa da fábrica no projeto. Organizada por escopo de aplicabilidade conforme ADR-009: `universal/`, `java-spring/`, `windows/`, `next/`, `local/` dentro de `hooks/`, `agents/` e `skills/`. Promoção entre escopos exige evidência explícita (segundo contexto + decisão consciente).
+
+### Mecanismo de git hooks no Windows
+
+`git config core.hooksPath .githooks` configurado automaticamente por `scripts/setup.ps1`. Entrypoints em `.githooks/` são wrappers bash sem extensão chamando companheiros `.ps1`. Lógica real fica em `.claude/hooks/<escopo>/`.
+
+### Débito de portabilidade
+
+ADR-010 registra aceitação consciente: hooks e scripts PowerShell-specific. Migração avaliada ao entrar Camada 5 ou nascer 2ª fábrica em outro SO. Custo estimado: 1-3 dias.
+
+### Claude Code hooks nativos
+
+Mecanismo `PreToolUse`/`Stop`/`UserPromptSubmit` em `.claude/settings.json` é tratado em sub-etapa própria após 4.2. Diferente de git hooks: atua sobre comportamento do agente, não validação de código.
+
+---
+
 ## Princípios herdados do blueprint
 
 Lembretes operacionais que regem decisões em chats futuros:
@@ -365,6 +387,7 @@ Lembretes operacionais que regem decisões em chats futuros:
 
 ### Histórico de mudanças
 
+- **2026-05-10** — Sub-etapa 4.0 concluída: abertura da Camada 3 com infraestrutura organizacional. Criada estrutura `.claude/{hooks,agents,skills}/{universal,java-spring,windows,next,local}` com pastas vazias (`.gitkeep`). `.githooks/` criado com README explicativo (sem entrypoints funcionais ainda — esperam 4.1+). `setup.ps1` configura `core.hooksPath=.githooks` automaticamente. ADR-009 (layout `.claude/` e mecanismo de hooks no Windows) e ADR-010 (débito de portabilidade aceito conscientemente) registrados. Triagem completa do `hooks-pendentes.md` mapeando cada item ao escopo de aplicabilidade. Sem hooks funcionais, sem subagents, sem skills. Mergeado via PR #XX.
 - **2026-05-10** — Etapa 3.8 concluída: saldo derivado da Conta. `CalcularSaldoDaContaUseCase` em `conta/application/` cruza bounded context lendo de `TransacaoRepository.calcularTotaisPorConta` (porta no domain de Transacao). Query JPQL agregada com `SUM(CASE WHEN ...)` retornando record `TotaisTransacaoPorConta` via `SELECT new`. Endpoint `GET /api/contas/{id}/saldo` retorna `SaldoResponse` com breakdown completo (saldoInicial, 4 totais, saldoAtual, calculadoEm). Camada 2 fechada. Mergeado via PR #37.
 - **2026-05-09** — Etapa 3.7 concluída: bounded context `transacao` finalizado ponta a ponta. 5 use cases (Criar/Listar/Buscar/Editar/Deletar), DTO único `TransacaoRequest` para POST e PUT, `TransacaoController` com paginação (`Pageable`) e 5 filtros opcionais combináveis, 2 novas exceções (`TransacaoNaoEncontradaException`, `TransacaoComReferenciaInvalidaException`), 3 handlers globais novos (incluindo `ConstraintViolationException`), whitelist atualizada. ~55 testes. Mergeado via PR #36.
 - **2026-05-09** — Etapa 3.6 concluída: bounded context `transacao` — domain + infra. Entidade `Transacao` (10 campos, validações cruzadas RECEITA/DESPESA/TRANSFERENCIA), enum `TipoTransacao`, repository (3 métodos básicos — filtros vêm na 3.7), `TransacaoEntity` (FKs por UUID, sem `@ManyToOne`), `TransacaoMapper` (MapStruct, `default` methods), `V4__cria_tabela_transacao.sql` (3 FKs + 2 CHECK constraints como defesa em profundidade), 40 testes. Application e interfaces ficam para 3.7. Mergeado via PR #35.
