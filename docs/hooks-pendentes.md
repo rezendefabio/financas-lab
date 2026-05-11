@@ -4,7 +4,7 @@
 > Input direto para a Camada 3 (Configuração do Claude Code), quando hooks formais entrarem.
 > Atualizado conforme novas lições aparecem.
 
-**Última atualização:** 2026-05-11 (Sub-etapa 4.7 — @Entity nova exige migration, modo conservador)
+**Última atualização:** 2026-05-11 (Sub-etapa 4.7.1 — registro de licoes da 4.7)
 
 ---
 
@@ -129,6 +129,7 @@ Itens que nao sao hooks automatizaveis mas precisam ser observados em scripts e 
 - **`[System.IO.File]::WriteAllText` com path relativo em PowerShell** grava em `[System.Environment]::CurrentDirectory`, nao em `$PWD`. Quando sessao fez `cd` para entrar no repo, esses caminhos divergem. Sincronizar previamente com `[System.Environment]::CurrentDirectory = (Get-Location).Path` ou usar path absoluto. Sem isso, arquivo vai parar em diretorio invisivel ao `git`. (Descoberto em smoke test pos-merge da 4.2, registrado na 4.2.1.)
 - **`git commit` retornando `nothing to commit, working tree clean`** em validacao destrutiva e sinal de falso positivo, nao de "cenario nao se aplica". Indica que `git add` falhou silenciosamente — arquivo nao foi staged. Rodar `git status` antes de cada `git commit` em cenarios destrutivos e padrao consolidado.
 - **`Test-Path` apos `WriteAllText`** e padrao obrigatorio para validacao destrutiva conforme ADR-011. Se retornar `False`, parar e investigar — nao prosseguir com `git add`/`git commit`.
+- **Hook entity-migration (4.7) tem regex fragil para Java single-line.** Regex atual `(?m)^\s*@Entity\b` em `.claude/hooks/java-spring/entity-migration.ps1` exige `@Entity` no inicio de linha (apos whitespace de indentacao). Nao detecta Java single-line com `@Entity` no meio da linha (ex: `package x; import y.Entity; @Entity public class Foo {}`). Caso edge improvavel em producao (IDEs formatam, devs quebram linha apos `package`/`import`). **Mitigacao quando tocar no hook por outro motivo:** trocar regex por `@Entity\b` (sem ancora de linha). Word boundary `\b` ainda evita match em `@EntityListeners`, `@EntityGraph`, etc. Descoberto no smoke test pos-merge da 4.7 (cenario B usou Java single-line sintetico).
 
 ## Hooks de processo
 

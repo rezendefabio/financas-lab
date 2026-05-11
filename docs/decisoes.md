@@ -512,6 +512,24 @@ Caso "modificacao de Entity existente requer migration" fica como **debito consc
 
 **Hook implementado em:** `.claude/hooks/java-spring/entity-migration.ps1`, quinto hook no orquestrador `pre-commit`, segundo em java-spring.
 
+### Smoke test pos-merge usa input idiomatico (Sub-etapa 4.7.1)
+
+**Regra:** smoke test pos-merge de hooks deve replicar **input idiomatico** -- codigo formatado como humanos com IDE escreveriam, nao sintetico.
+
+**Por que:** descoberto no smoke test pos-merge da 4.7. Cenario B usou Java single-line (`package x; import y.Entity; @Entity public class Foo {}`) que nao casou com a regex do hook entity-migration (`(?m)^\s*@Entity\b` exige `@Entity` em inicio de linha). Resultado: smoke aparentou falha do hook quando o problema era input sintetico.
+
+**Diagnostico:** hook funciona em producao real (Java idiomatico tem `@Entity` em linha propria). Smoke test sintetico mascarou falso negativo. Investigacao identificou bug no smoke, nao no hook.
+
+**Regra concreta para smoke tests futuros:**
+
+- **Java:** anotacoes em linha propria; `package` em uma linha; `import` cada um em linha propria; classe em linha propria; campos em linhas separadas.
+- **JSON:** formatado (indented), nao compactado.
+- **YAML / XML / Markdown:** formato padrao com quebras de linha.
+
+**Excecoes:** se o hook explicitamente trabalha com formato compactado (minifier, linter de minificacao), smoke usa o formato esperado. Hoje nao ha hooks assim no projeto.
+
+**Categoria de licao consolidada:** "smoke test deve replicar input idiomatico, nao sintetico". Adicionada como regra geral em smoke tests pos-merge de hooks daqui pra frente.
+
 ### Claude Code hooks nativos
 
 Mecanismo `PreToolUse`/`Stop`/`UserPromptSubmit` em `.claude/settings.json` é tratado em sub-etapa própria após 4.2. Diferente de git hooks: atua sobre comportamento do agente, não validação de código.
@@ -541,6 +559,7 @@ Lembretes operacionais que regem decisões em chats futuros:
 
 ### Histórico de mudanças
 
+- **2026-05-11** — Sub-etapa 4.7.1 concluida (doc-only): registro de duas licoes do smoke test pos-merge da 4.7. (1) Debito tecnico: regex `(?m)^\s*@Entity\b` do hook entity-migration e fragil para Java single-line -- mantida; ajuste para `@Entity\b` quando tocar no hook por outro motivo. (2) Regra operacional: smoke test pos-merge usa input idiomatico, nao sintetico. Categoria "sub-etapa doc-only de registro de licao apos smoke test falho" consolidada (analoga a 4.2.1). Mergeado via PR #XX.
 - **2026-05-11** — Sub-etapa 4.7 concluida: sexto hook funcional, segundo de stack java-spring. `@Entity` novo (status A) exige migration Flyway nova no mesmo commit. Modo conservador conscientemente reduzido vs licao original 2.1 (modificacao de Entity existente fica como debito explicito, registrado em hooks-pendentes.md). Hook preventivo -- projeto ja tem ratio coerente (3 Entities + 4 migrations). 6 cenarios destrutivos sob ADR-011, incluindo modificacao de Entity real (Categoria.java) para confirmar empiricamente que hook nao dispara em status M. Mergeado via PR #47.
 - **2026-05-11** — Sub-etapa 4.6 concluida: CLAUDE.md do projeto substituido (placeholder 21 linhas da Camada 1 -> versao estrutural 95 linhas, 7 secoes). Conteudo volatil delegado para `docs/` via links. Regra de atualizacao formalizada: editado apenas em sub-etapas que mudam stack/ambiente/convencoes/restricoes. Primeira sub-etapa de curadoria (nao de codigo). PR #46.
 - **2026-05-11** — Sub-etapa 4.5 concluida: quinto hook funcional, primeiro de stack (java-spring). Maven `<release>` em modo fail. `.claude/hooks/java-spring/` ativada (primeira ocupacao apos 4.0). Padrao consolidado: orquestrador `pre-commit` agnostico a escopo; cada hook filtra aplicabilidade internamente. Hook preventivo — `pom.xml` atual ja tem `<release>${java.version}</release>` (licao 1.4 aplicada na Camada 1). Mergeado via PR #45.
