@@ -4,7 +4,7 @@
 > Diferente dos ADRs, este documento não preserva contexto histórico — é a foto atual.
 > Atualizado quando uma decisão muda. Para entender o **porquê** de uma decisão, ver `adrs.md`.
 
-**Última atualização:** 2026-05-09
+**Última atualização:** 2026-05-10
 
 ---
 
@@ -398,6 +398,26 @@ O entrypoint companheiro `.githooks/pre-commit.ps1` e desenhado como **orquestra
 
 **Sem contrato compartilhado entre hooks** alem de: "exit 0 = ok, exit != 0 = bloqueia".
 
+### Padroes de validacao destrutiva (Sub-etapa 4.2.1)
+
+Ratificado em ADR-011. Toda validacao destrutiva — na branch da etapa ou em smoke test pos-merge — segue tres regras:
+
+1. **Pre-condicao explicita apos cada criacao de arquivo:** `Test-Path` (ou equivalente). Se `False`, parar.
+2. **`git status` antes de `git commit`** para confirmar arquivo staged. Se `nothing to commit`, parar.
+3. **Verificacao de exit code apos comando que deveria falhar.** Esperar codigo `!= 0`; se vier `0`, cenario nao reproduziu erro esperado.
+
+**Para PowerShell + `[System.IO.File]::WriteAllText` com path relativo:** sincronizar previamente:
+
+```powershell
+[System.Environment]::CurrentDirectory = (Get-Location).Path
+```
+
+Ou usar path absoluto (`"$PWD\arquivo"`). Sem isso, arquivo e gravado em diretorio que pode divergir do `$PWD` (gotcha confirmado em smoke test pos-merge da 4.2).
+
+**Reportar pre-condicoes verificadas no PR body** — nao basta listar "cenarios validados". Listar tambem o valor observado em cada pre-condicao. Falsos positivos silenciosos sao detectados apenas por verificacao explicita.
+
+**Aplica retroativamente:** sub-etapas 4.3+ devem incluir esses gates no roteiro de validacao destrutiva. Sub-etapas 4.0 a 4.2 ja mergeadas nao sao revistas — confirmacao empirica posterior (smoke test pos-merge da 4.2 corrigido) validou que o codigo dessas sub-etapas esta correto.
+
 ### Claude Code hooks nativos
 
 Mecanismo `PreToolUse`/`Stop`/`UserPromptSubmit` em `.claude/settings.json` é tratado em sub-etapa própria após 4.2. Diferente de git hooks: atua sobre comportamento do agente, não validação de código.
@@ -427,6 +447,7 @@ Lembretes operacionais que regem decisões em chats futuros:
 
 ### Histórico de mudanças
 
+- **2026-05-10** — Sub-etapa 4.2.1 concluida: registra padroes de validacao destrutiva. ADR-011 formalizado. Licao descoberta em smoke test pos-merge da 4.2 onde `[System.IO.File]::WriteAllText` com path relativo em PowerShell criou arquivos em `[System.Environment]::CurrentDirectory` (`C:\Users\rezen\`) em vez de `$PWD` (`C:\projetos\financas-lab\`). Hook nao foi invocado. Comando rodou sem erro visivel. Conferencia empirica (`Get-ChildItem C:\Users\rezen\test-*.*` vazio) confirmou que agente do Claude Code nao caiu nesse gotcha — risco existe apenas em sessoes onde `$PWD` e `Environment.CurrentDirectory` divergem. Sub-etapa doc-only — sem mudanca de codigo. Mergeado via PR #42.
 - **2026-05-10** — Sub-etapa 4.2 concluida: segundo hook funcional. Encoding UTF-8 implementado em 3 camadas (entrypoint bash `.githooks/pre-commit` -> orquestrador `.githooks/pre-commit.ps1` -> hook `.claude/hooks/universal/encoding-utf8.ps1`). Whitelist por extensao + nomes exatos. Regra adicional: `.ps1` rejeita BOM. Padrao orquestrador 1:N estabelecido para `pre-commit` (preparado para 4.3+). Validacao destrutiva confirmou 5 cenarios (md valido passa, ps1 com BOM bloqueia, java Latin-1 bloqueia, png ignorado, override --no-verify bypassa). Mergeado via PR #41.
 - **2026-05-10** — Sub-etapa 4.1 concluida: primeiro hook funcional do projeto. Conventional Commits implementado em 3 camadas (entrypoint bash `.githooks/commit-msg` -> companheiro `.githooks/commit-msg.ps1` -> hook `.claude/hooks/universal/conventional-commits.ps1`). Tipos permitidos: feat, fix, chore, docs, test, refactor, style, perf, build, ci. Scope opcional, breaking change via `!`, descricao minima 10 chars. Override `--no-verify` documentado como escape valido. Entrypoint usa `powershell` (Windows PowerShell 5.1, unico PS disponivel neste ambiente). Validacao destrutiva confirmou bloqueio de mensagem invalida + bypass por --no-verify. Mergeado via PR #40.
 - **2026-05-10** — Sub-etapa 4.0.1 concluída: fix de posição do bloco `core.hooksPath` em `setup.ps1`. Bloco movido de depois de `docker compose up -d` + `mvnw clean install` para entre validação de `.env` e `docker compose up -d`. Bug descoberto em smoke test destrutivo pós-merge da 4.0 (clone novo com Docker em conflito de nomes). Lição registrada com categoria "prescrição de prompt insuficientemente específica". Débito do `container_name:` fixo no `docker-compose.yml` registrado em `hooks-pendentes.md`. Mergeado via PR #39.
