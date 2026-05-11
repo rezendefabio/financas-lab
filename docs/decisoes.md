@@ -544,6 +544,29 @@ Caso "modificacao de Entity existente requer migration" fica como **debito consc
 
 **Quando invocado:** description proativa pos-abertura de PR. Para PRs **puramente doc-only**, revisao breve. Para PRs com codigo, revisao completa nas 6 categorias acima.
 
+### Refinamento do `pr-reviewer` pos-smoke (Sub-etapa 4.9.1)
+
+**Componente:** `.claude/agents/pr-reviewer.md` (criado na 4.9, refinado aqui).
+
+**O que mudou:** template de output explicitamente prescritivo + 2 exemplos few-shot.
+
+**Por que:** smoke test pos-merge da 4.9 confirmou que subagent existe, e invocado proativamente, e produz output util. Mas output divergiu do template prescrito: usou 4 secoes (Visao Geral, Analise, Itens Especificos, Conclusao) em vez das 3 prescritas (Bloqueadores, Sugestoes, Elogios). Subagent improvisou estrutura propria — comportamento valido mas indesejado para consistencia entre revisoes.
+
+**Como:**
+
+1. **Tom prescritivo.** Substituido "ver template abaixo" por "Voce DEVE usar exatamente as 3 secoes abaixo, nesta ordem, sem acrescentar outras". Lista explicita de secoes proibidas (Visao Geral, Analise, Conclusao, etc.).
+2. **Few-shot prompting.** 2 exemplos completos de output (PR doc-only sem problemas + PR de hook com sugestao real). Modelos menores como Haiku aderem melhor a estrutura via exemplos concretos vs descricao abstrata.
+
+**Sem mudanca de modelo.** Haiku permanece. Smoke confirmou que o problema era do prompt do subagent (descricao abstrata, tom sugestivo), nao da capacidade do modelo. Subir para Sonnet agora seria decisao sem evidencia.
+
+**Categoria nova: "refinamento de componente baseado em smoke empirico".** Diferente de:
+
+- "Registro pos-smoke falho" (4.2.1, 4.7.1): smoke falhou, sub-etapa doc-only documenta licao + decisao consciente (corrigir vs aceitar debito).
+- "Patch tecnico" (4.0.1): corrige bug do que foi entregue.
+- **Esta categoria:** smoke passou, mas revelou comportamento subotimo do componente; sub-etapa de refactor refina o componente. Padrao operacional: smoke pode ser positivo (componente funciona) E ainda gerar sub-etapa de refinamento (forma do output, aderencia ao prescrito).
+
+**Smoke test pos-merge da 4.9.1:** mesmo formato da 4.9 — abrir PR de teste, invocar revisao, conferir se output agora usa **exatamente** Bloqueadores → Sugestoes → Elogios, sem secoes extras.
+
 ### Claude Code hooks nativos
 
 Mecanismo `PreToolUse`/`Stop`/`UserPromptSubmit` em `.claude/settings.json` é tratado em sub-etapa própria após 4.2. Diferente de git hooks: atua sobre comportamento do agente, não validação de código.
@@ -573,6 +596,7 @@ Lembretes operacionais que regem decisões em chats futuros:
 
 ### Histórico de mudanças
 
+- **2026-05-11** — Sub-etapa 4.9.1 concluida (refactor): refinamento do `pr-reviewer` pos-smoke. Template de output endurecido (tom prescritivo "DEVE usar exatamente") + 2 exemplos few-shot adicionados. Haiku mantido. Categoria nova "refinamento de componente baseado em smoke empirico" — diferente de "registro pos-smoke falho" (smoke da 4.9 passou; subagent funciona, so improvisou estrutura). Padrao operacional: smoke positivo pode gerar sub-etapa de refinamento. Mergeado via PR #52.
 - **2026-05-11** — Sub-etapa 4.9 concluida: primeiro subagent do projeto — `pr-reviewer` em `.claude/agents/pr-reviewer.md`, modelo Haiku, tools restritas (read-only), invocacao proativa via description. Complementa hooks pre-commit: revisa decisoes de design, ADRs, coerencia com `decisoes.md`, logica do codigo, cobertura de testes, documentacao alinhada. Nao duplica verificacoes dos hooks 4.1-4.7. Output Markdown estruturado (Bloqueadores, Sugestoes, Elogios) — operador cola no PR se quiser. Descoberta: layout `.claude/agents/*.md` e flat por convencao Claude Code; estruturas assimetricas (hooks=5 subpastas, agents=3, skills=2). Mergeado via PR #50.
 - **2026-05-11** — Sub-etapa 4.7.1 concluida (doc-only): registro de duas licoes do smoke test pos-merge da 4.7. (1) Debito tecnico: regex `(?m)^\s*@Entity\b` do hook entity-migration e fragil para Java single-line -- mantida; ajuste para `@Entity\b` quando tocar no hook por outro motivo. (2) Regra operacional: smoke test pos-merge usa input idiomatico, nao sintetico. Categoria "sub-etapa doc-only de registro de licao apos smoke test falho" consolidada (analoga a 4.2.1). Mergeado via PR #48.
 - **2026-05-11** — Sub-etapa 4.7 concluida: sexto hook funcional, segundo de stack java-spring. `@Entity` novo (status A) exige migration Flyway nova no mesmo commit. Modo conservador conscientemente reduzido vs licao original 2.1 (modificacao de Entity existente fica como debito explicito, registrado em hooks-pendentes.md). Hook preventivo -- projeto ja tem ratio coerente (3 Entities + 4 migrations). 6 cenarios destrutivos sob ADR-011, incluindo modificacao de Entity real (Categoria.java) para confirmar empiricamente que hook nao dispara em status M. Mergeado via PR #47.
