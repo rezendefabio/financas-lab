@@ -1,20 +1,95 @@
 # financas-lab
 
-Projeto-laboratório para validar fábrica AI-native. Backend Java/Spring Boot, frontend Next.js PWA, Postgres.
+Laboratorio AI-native para construcao de fabrica de software replicavel.
+Domain: gestao financeira pessoal (proxy de estudo, nao produto final).
+Operador unico: Fabio Rezende. Sessoes via Claude Code em Windows nativo.
 
-## Antes de qualquer ação, leia em ordem:
-- docs/visao.md — propósito e escopo
-- docs/decisoes.md — stack, padrões e regras duras
-- docs/adrs.md — contexto histórico das decisões
-- docs/progresso.md — estado atual da fábrica e próximas camadas
-- docs/roadmap-camada-1.md — plano detalhado se estivermos na Camada 1
+Estado atual e camadas: `docs/progresso.md` (secao "Status geral por Camada").
 
-## Camada atual
+## Stack
 
-Camada 1 — Infraestrutura de confiança. **NÃO escrever código de feature.** Apenas configurações, esqueletos e infraestrutura de validação. Features só começam na Camada 2.
+- Java 21 + Spring Boot 3.x.
+- PostgreSQL em Docker (container `financas-lab-postgres`).
+- Migrations: Flyway (`src/main/resources/db/migration/V*.sql`).
+- Persistencia: JPA + Hibernate.
+- Mapeamento DTO: MapStruct + Lombok (ordem importa em `pom.xml`).
+- Build: Maven (`pom.xml` na raiz, modulo unico). `<release>${java.version}</release>` no maven-compiler-plugin.
+- Frontend: ainda nao implementado (planejado para Camada 5).
+- Sem Gradle. Sem Kotlin. Sem React ainda.
 
-## Regras duras
+## Ambiente
 
-- Toda mudança via PR. Sem push direto em main.
-- Conventional Commits obrigatórios.
-- Antes de propor PR, rode `.\scripts\check.ps1` (a ser criado nas etapas seguintes do roadmap).
+- SO: Windows nativo (nao WSL, nao Linux). Paths usam backslash em alguns contextos.
+- Shell: PowerShell 5.1 (nativo). **NAO usar `pwsh`** -- PowerShell Core 7 nao esta disponivel.
+- Git Bash disponivel (vem com Git for Windows).
+- Docker Desktop ativo. Compose: `docker compose up -d`.
+
+### Comandos do dia
+
+- Setup inicial: `.\scripts\setup.ps1` (idempotente).
+- Dev (start backend + deps): `.\scripts\dev.ps1`.
+- Validacao completa: `.\scripts\check.ps1` (mvn verify + verifica encoding).
+- Subir banco isolado: `docker compose up -d postgres`.
+
+## Hooks ativos
+
+Mecanismo: `core.hooksPath=.githooks`. Cada entrypoint em `.githooks/` (`commit-msg`, `pre-commit`) invoca companheiro `.ps1` que delega para hook real em `.claude/hooks/{escopo}/`. Detalhes em `.githooks/README.md`.
+
+Modos:
+
+- **`fail`** para regras objetivas -- bloqueia commit em violacao.
+- **`warn`** para regras subjetivas -- alerta no terminal sem bloquear.
+
+Decisao de modo registrada em `docs/decisoes.md` quando o hook nasce.
+
+Override: `git commit --no-verify` bypassa hooks. Uso documentado no PR body.
+
+Lista completa de hooks ativos e suas regras: `docs/hooks-pendentes.md` (secao "Hooks implementados").
+
+## Convencoes e padroes
+
+### Branches
+
+- `feat/etapa-X-Y-descricao` para sub-etapas que adicionam funcionalidade.
+- `fix/...` para correcoes.
+- `docs/...` para sub-etapas doc-only.
+
+### Commits
+
+Conventional Commits obrigatorio (hook ativo). Mensagens em portugues, sem acentos no codigo, ASCII apenas em strings de scripts `.ps1`.
+
+### Sub-etapas
+
+Trabalho organizado em sub-etapas pequenas dentro de Camadas. Cada sub-etapa: 1 branch, 3-4 commits, 1 PR, validacao destrutiva, smoke test pos-merge. Calibracao via D1-D5 antes do prompt. Padrao detalhado em `docs/progresso.md`.
+
+### Validacao destrutiva (ADR-011)
+
+Toda nova regra/hook exige validacao destrutiva com cenarios explicitos. Pre-condicoes obrigatorias: `Test-Path` apos criar arquivo, `git status` antes de `git commit`, verificacao de `$LASTEXITCODE`, sincronizacao de `[System.Environment]::CurrentDirectory = (Get-Location).Path` antes de `[System.IO.File]::WriteAllText` com path relativo.
+
+### Decisao silenciosa em zona limitrofe
+
+Padrao central vigiado. Em divergencia entre prescricao e ambiente real, parar e reportar, nunca adivinhar.
+
+## Onde buscar mais
+
+Documentos de referencia em `docs/`:
+
+- `progresso.md` -- onde estamos. Tracking de Camadas e sub-etapas. Licoes meta-operacionais.
+- `decisoes.md` -- escolhas tomadas. Por que cada regra existe.
+- `adrs.md` -- decisoes arquiteturais formais.
+- `hooks-pendentes.md` -- backlog de hooks + hooks implementados (lista completa).
+- `visao.md` -- direcao do projeto e Camadas planejadas.
+
+Prompts versionados de cada sub-etapa ficam em `docs/prompt-etapa-X-Y.md`. Nao listados individualmente; agente busca quando precisa.
+
+## O que NAO fazer
+
+- Usar `pwsh` em scripts. PowerShell 5.1 (`powershell`) e o unico disponivel.
+- Caracteres nao-ASCII em strings de hooks `.ps1`. Em-dash U+2014 quebra parse (licao 4.4).
+- `git commit --no-verify` sem documentar no PR body.
+- `git reset --hard` em main, ou sem confirmar `git branch --show-current` primeiro.
+- Tocar em `pom.xml` removendo `<release>` (hook bloqueia, e por bom motivo -- licao 1.4).
+- Criar arquivos `.md` em `docs/` sem linhas em branco antes/depois de headers (hook bloqueia).
+- Validacao destrutiva sem pre-condicoes ADR-011 -- produz falsos positivos silenciosos.
+- Assumir contexto sem ler arquivos vivos antes de editar (lista de "ler arquivos vivos" nos prompts).
+- Atualizar CLAUDE.md fora de uma sub-etapa que muda hook/padrao/stack. Sincronizacao e parte do escopo da sub-etapa causadora.
