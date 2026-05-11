@@ -111,6 +111,16 @@ A seção "Débitos de configuração" deste documento (`application-prod.yml` a
 
 - **`application-prod.yml` não existe.** (Descoberto na 3.3.1) `decisoes.md` prescreve "Profiles sempre explícitos: dev, test, prod", mas o arquivo de prod nunca foi criado. Não bloqueante hoje (sem deploy prod), mas precisa ser criado quando deploy prod entrar no escopo. Resolver junto com a etapa de deploy.
 
+## Debitos meta-operacionais
+
+Itens descobertos na Sub-etapa 4.10 (auditoria meta-operacional). Nao sao hooks tradicionais — sao investigacoes/mitigacoes do ambiente Claude Code que afetam credibilidade de smoke tests e determinismo de invocacao. Categoria "descoberta a aprofundar".
+
+- **Memoria global do Claude Code em `~/.claude/projects/<hash>/memory/`.** (Descoberto na 4.10.) 21 arquivos `.md` de feedback/sub-etapas, auto-memory ON, escreve sem confirmacao. Vetor de contaminacao cross-projeto opaco. Tres mitigacoes possiveis a avaliar: (1) desligar auto-memory globalmente em configuracao do Claude Code; (2) auditar conteudo dos 21 .md existentes para identificar o que veio do `financas-lab` vs outros projetos; (3) versionar politica de retencao no repo (ex: `docs/politica-memoria-claude.md`). Sem impacto em fluxo normal — afeta credibilidade de smoke tests onde determinismo de invocacao importa. Resolver antes do smoke da primeira skill orquestradora (4.11) se a credibilidade do smoke for criterio.
+
+- **Investigar built-in agents do Claude Code.** (Descoberto na 4.10.) Cinco built-ins identificados nominalmente: `Explore`, `Plan`, `general-purpose`, `claude-code-guide`, `statusline-setup`. Competem com subagents do projeto no espaco de delegacao do Claude principal. Investigar: (1) o que cada um faz; (2) quando dispara; (3) se pode ser desabilitado ou se compete sempre; (4) interacao com skills orquestradoras (ADR-012). Documentacao oficial: https://docs.claude.com/en/docs/claude-code/sub-agents (verificar antes de assumir comportamento). Resolver antes ou junto da 4.11 — afeta interpretacao do smoke do par skill+subagent.
+
+- **Auditar plugins globais instalados.** (Descoberto na 4.10.) `code-review` e `frontend-design` identificados na Camada 0; smoke da 4.9.1 confirmou que `code-review` desabilitado localmente ainda afeta comportamento. Investigar: (1) listar plugins instalados globalmente (`claude plugin list` ou equivalente); (2) decidir manter/desabilitar/desinstalar caso a caso; (3) versionar decisao no repo. Decisao sobre plugin `code-review` oficial (criterio aberto da Camada 3) e parcialmente bloqueada por esta investigacao.
+
 ## Hooks implementados
 
 Itens originalmente listados em "Hooks Markdown / docs" ou outras secoes, agora implementados e ativos no projeto. Mantidos aqui como historico de progresso da Camada 3.
