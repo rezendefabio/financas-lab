@@ -599,6 +599,39 @@ Sub-etapa doc-only que inaugura categoria "auditoria meta-operacional" — difer
 
 **CLAUDE.md NAO atualizado nesta sub-etapa.** Regra 4.6: CLAUDE.md sincronizado com sub-etapa causadora. A 4.10 decide a convencao; a 4.11 implementa a primeira skill e atualiza CLAUDE.md com a convencao em uso.
 
+### Primeira skill orquestradora: /review-pr (Sub-etapa 4.11)
+
+Primeira implementacao do padrao decidido em ADR-012 (Sub-etapa 4.10). Marco estrutural — Camada 3 do blueprint pede 5-10 skills, este e o primeiro.
+
+**Componente:** `.claude/skills/review-pr/SKILL.md`. Frontmatter declara:
+
+- `name: review-pr`, `description` clara.
+- `disable-model-invocation: true` — apenas operador invoca via `/review-pr <numero>`.
+- `context: fork` + `agent: pr-reviewer` — mecanismo nativo do Claude Code dispara contexto forkado no subagent `pr-reviewer`. **Sem instrucao textual** "use Task tool...". Determinismo arquitetural via frontmatter.
+- `argument-hint: [pr-number]` — autocomplete sugere argumento.
+- `allowed-tools: Bash(gh pr view *) Bash(gh pr diff *)` — pre-aprovacao para evitar prompt de permissao no smoke.
+
+**Conteudo curto.** System prompt do subagent (body de `pr-reviewer.md`) ja contem toda a logica de revisao (identidade, verificacoes, template, exemplos). A skill apenas entrega a tarefa concreta (`Revise o PR #$ARGUMENTS...`) + reforco do template (3 secoes). Evita duplicacao de fonte.
+
+**Errata ADR-012 acompanha esta sub-etapa.** Investigacao da doc oficial do Claude Code (https://code.claude.com/docs/en/skills) revelou que o mecanismo prescrito originalmente no ADR-012 ("skill contem instrucao textual: 'Use a Task tool...'") reproduzia o mesmo nao-determinismo que o ADR buscava eliminar. Mecanismo nativo `context: fork` substitui — decisao estrutural preservada, mecanismo literal refinado. Categoria nova: **"errata de ADR baseada em descoberta de documentacao oficial"**.
+
+**Cleanup de pastas orfas.** `.claude/skills/local/` e `.claude/skills/universal/` foram criadas pela 4.0 com expectativa de organizacao por escopo. Pelo padrao oficial, skills sao flat em `.claude/skills/<nome>/SKILL.md` — pastas intermediarias nao geram slash commands. Removidas via `git rm -r` na 4.11 para evitar confusao em sub-etapas futuras. **Estruturas `.claude/{hooks,agents,skills}` continuam assimetricas** (hooks=5 subpastas, agents=flat, skills=flat) — reflete decisoes especificas de cada mecanismo.
+
+**Smoke test pos-merge** valida o padrao ponta-a-ponta:
+
+1. Sessao nova do Claude Code.
+2. Abrir PR de teste trivial em branch nova.
+3. Invocar `/review-pr <numero>`.
+4. **Criterios de sucesso:**
+   - Skill dispara fork no agent `pr-reviewer` (Haiku) — sem execucao direta pelo Claude principal.
+   - Output usa exatamente as 3 secoes prescritas (Bloqueadores, Sugestoes, Elogios).
+   - Sem secoes extras (Visao Geral, Analise, Conclusao, etc.).
+5. **Risco residual reconhecido:** debitos meta-operacionais da 4.10 (memoria global em `~/.claude/projects/.../memory/`, plugins globais, built-in agents) ainda nao mitigados. Smoke positivo nao prova determinismo absoluto, mas evidencia funcional do par skill+subagent suficiente para validar padrao.
+
+**CLAUDE.md atualizado nesta sub-etapa** (regra 4.6 — 4.11 e a sub-etapa causadora da convencao "subagents+skills" entrar em uso). Subsecao "Subagents e skills" adicionada em "Convencoes e padroes" com 4 linhas resumindo o padrao do ADR-012 revisado.
+
+**Criterios de "pronto" da Camada 3 ajustados.** Padrao "skill orquestradora -> subagent validado com smoke" depende do smoke pos-merge da 4.11 — fica em pendente ate o smoke passar.
+
 ### Claude Code hooks nativos
 
 Mecanismo `PreToolUse`/`Stop`/`UserPromptSubmit` em `.claude/settings.json` é tratado em sub-etapa própria após 4.2. Diferente de git hooks: atua sobre comportamento do agente, não validação de código.

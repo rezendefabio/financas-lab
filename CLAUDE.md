@@ -62,6 +62,10 @@ Conventional Commits obrigatorio (hook ativo). Mensagens em portugues, sem acent
 
 Trabalho organizado em sub-etapas pequenas dentro de Camadas. Cada sub-etapa: 1 branch, 3-4 commits, 1 PR, validacao destrutiva, smoke test pos-merge. Calibracao via D1-D5 antes do prompt. Padrao detalhado em `docs/progresso.md`.
 
+### Subagents e skills
+
+Subagents do projeto vivem em `.claude/agents/<nome>.md` (flat); skills orquestradoras correspondentes em `.claude/skills/<nome>/SKILL.md` (flat). Skill usa `context: fork` + `agent: <nome>` no frontmatter para forkar contexto no subagent. Operador invoca via slash command (`/<nome> <args>`); skill com `disable-model-invocation: true` nao e invocada automaticamente. Invocacao proativa via campo `description` no subagent e considerada nao-deterministica e nao e mecanismo primario (ADR-012).
+
 ### Validacao destrutiva (ADR-011)
 
 Toda nova regra/hook exige validacao destrutiva com cenarios explicitos. Pre-condicoes obrigatorias: `Test-Path` apos criar arquivo, `git status` antes de `git commit`, verificacao de `$LASTEXITCODE`, sincronizacao de `[System.Environment]::CurrentDirectory = (Get-Location).Path` antes de `[System.IO.File]::WriteAllText` com path relativo.
