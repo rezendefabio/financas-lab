@@ -567,6 +567,38 @@ Caso "modificacao de Entity existente requer migration" fica como **debito consc
 
 **Smoke test pos-merge da 4.9.1:** mesmo formato da 4.9 — abrir PR de teste, invocar revisao, conferir se output agora usa **exatamente** Bloqueadores → Sugestoes → Elogios, sem secoes extras.
 
+### Auditoria meta-operacional (Sub-etapa 4.10)
+
+Sub-etapa doc-only que inaugura categoria "auditoria meta-operacional" — diferente de "registro pos-smoke falho" (4.2.1, 4.7.1) e de "refinamento pos-smoke empirico" (4.9.1), pois afeta varios componentes / estrategia de camada, nao 1 componente.
+
+**Quatro descobertas registradas:**
+
+1. **Memoria global do Claude Code em `~/.claude/projects/<hash>/memory/`.** 21 arquivos `.md` de feedback/sub-etapas, auto-memory ON, escreve sem confirmacao. Vetor de contaminacao cross-projeto opaco. Mitigacao detalhada (desligar auto-memory? auditar conteudo? versionar politica de retencao?) registrada como debito em `hooks-pendentes.md`.
+
+2. **Plugins instalados globalmente afetam comportamento sem aparecer no repo.** `code-review`, `frontend-design` (identificados na Camada 0) alteram heuristicas do Claude principal mesmo desabilitados localmente. Smoke da 4.9.1 confirmou comportamento alterado com plugin desabilitado.
+
+3. **Built-in agents do Claude Code competem com subagents do projeto.** Cinco built-ins identificados nominalmente: `Explore`, `Plan`, `general-purpose`, `claude-code-guide`, `statusline-setup`. Investigacao do que cada um faz e quando dispara fica como debito.
+
+4. **Heuristica de delegacao proativa via `description` nao e deterministica.** Smoke da 4.9.1 mostrou que description bem-formada e tom prescritivo (4.9.1 endureceu o subagent) nao garantem invocacao via Task tool. Claude principal optou por execucao direta em PR trivial. Premissa do blueprint (linha 76) precisa de reinterpretacao: description ajuda mas nao garante.
+
+**Decisao estrutural tomada:** Caminho B — **subagents do projeto sao invocados via skill orquestradora dedicada.** Formalizado em ADR-012.
+
+**Alternativas avaliadas e rejeitadas:**
+
+- **Caminho A** (description imperativa "ALWAYS delegate"): palpite sem evidencia, continua dependendo de heuristica caixa-preta.
+- **Caminho C** (re-pensar Camada 3 sem subagents): descarta `pr-reviewer` baseado em N=1.
+
+**Implicacoes para a Camada 3:**
+
+- Criterios de "pronto" ajustados em `progresso.md`: cada subagent vem com skill orquestradora correspondente.
+- `pr-reviewer` (4.9 + 4.9.1) **permanece valido**. Smoke confirmou que o componente funciona quando invocado.
+- Sub-etapa 4.11 implementa primeira skill orquestradora (`/review-pr` invocando `pr-reviewer`). Smoke da 4.11 valida o padrao ADR-012 ponta-a-ponta.
+- Subagents futuros (`architect-reviewer`, `test-writer`, `migration-writer`) nascem com skill correspondente — nunca isolados.
+
+**Evidencia empirica:** PR #53 (smoke da 4.9.1) e a evidencia que gerou esta auditoria. PR fechado sem merge — smoke e descoberta, nao codigo de producao. URL preservada no historico para referencia.
+
+**CLAUDE.md NAO atualizado nesta sub-etapa.** Regra 4.6: CLAUDE.md sincronizado com sub-etapa causadora. A 4.10 decide a convencao; a 4.11 implementa a primeira skill e atualiza CLAUDE.md com a convencao em uso.
+
 ### Claude Code hooks nativos
 
 Mecanismo `PreToolUse`/`Stop`/`UserPromptSubmit` em `.claude/settings.json` é tratado em sub-etapa própria após 4.2. Diferente de git hooks: atua sobre comportamento do agente, não validação de código.

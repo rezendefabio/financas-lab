@@ -488,3 +488,80 @@ Toda validacao destrutiva (na branch da etapa ou em smoke test pos-merge) **deve
 - Padrao replicavel para sub-etapas seguintes da Camada 3 (4.3, 4.4) e qualquer hook futuro.
 - Aprendizado registrado em ADR formal — nao se perde em prosa de retrospectiva.
 - Reforco do principio consolidado da Camada 1: "validacao destrutiva e instrumento de qualidade de primeira linha". O gotcha mostrou que o principio precisa de gates explicitos para ser eficaz.
+
+---
+
+## ADR-012 — Subagents do projeto invocados via skill orquestradora
+
+**Status:** Aceito
+**Data:** 2026-05-11
+
+### Contexto
+
+Camada 3 do blueprint do projeto prescreve 3-5 subagents focados, invocados proativamente pelo Claude principal via campo `description` no frontmatter. Sub-etapas 4.9 e 4.9.1 entregaram o primeiro subagent (`pr-reviewer`, Haiku, tools read-only). Smoke test pos-merge da 4.9.1 revelou que **invocacao proativa via `description` nao e deterministica**.
+
+Pedido "revisa este PR" foi executado pelo Claude principal direto (label visual "Skill(review)"), sem invocar o subagent via Task tool. Comportamento persistiu mesmo apos desabilitar o plugin global `code-review`. O subagent existe, esta bem-formado (template prescritivo + 2 exemplos few-shot apos a 4.9.1), e funcionou quando invocado explicitamente — mas o Claude principal nao o chamou.
+
+Investigacao identificou quatro fatores que contribuem para o nao-determinismo:
+
+1. **Memoria global do Claude Code em `~/.claude/projects/<hash>/memory/`** — 21 arquivos `.md` de feedback/sub-etapas, auto-memory ON, escreve sem confirmacao. Influencia heuristica de delegacao de formas opacas.
+2. **Plugins globais nao-versionados** (`code-review`, `frontend-design`) alteram comportamento do Claude principal mesmo desabilitados localmente.
+3. **Built-in agents do Claude Code** (`Explore`, `Plan`, `general-purpose`, `claude-code-guide`, `statusline-setup`) competem com subagents do projeto no espaco de delegacao.
+4. **Heuristica de delegacao** prefere execucao direta em tarefas que o Claude principal julga simples. Description "Use proactively" e instrucao fraca diante de pressao por simplicidade.
+
+O blueprint do projeto (linha 76) ja avisava: *"O ponto critico e o campo `description`: o Claude principal decide quando delegar baseado nele. Description vaga = subagent nunca chamado."* A descoberta empirica e mais forte: **description bem-formada tambem pode nao disparar delegacao** quando o Claude principal opta por execucao direta. A premissa "subagents invocados proativamente via description" e insuficiente.
+
+Esta nao e falha do `pr-reviewer` em particular. E limite arquitetural que afeta toda a Camada 3, e portanto a estrategia inteira de uso de subagents no projeto.
+
+### Decisao
+
+**Subagents do projeto sao invocados via skill orquestradora dedicada.** Cada subagent tem uma skill (`.claude/skills/<escopo>/<nome>.md`) que, quando invocada pelo operador via slash command, instrui o Claude principal a delegar ao subagent via Task tool.
+
+**Mecanismo:**
+
+1. Operador invoca a skill explicitamente (ex: `/review-pr <numero>`).
+2. A skill contem prompt direto: "Use a ferramenta Task para invocar o subagent `<nome>`. Repasse o input completo conforme o template."
+3. Claude principal executa a Task tool, que dispara o subagent.
+4. Subagent roda em contexto isolado (gatekeeping de contexto), com modelo barato e tools restritas conforme frontmatter.
+5. Output do subagent retorna para o Claude principal, que apresenta ao operador.
+
+**Nao mecanismo:**
+
+- Invocacao por heuristica de delegacao proativa via campo `description` e considerada **nao-determinismo arquitetural** e nao e mecanismo primario.
+- O campo `description` continua existindo nos subagents e e usado como documentacao + fallback, mas nao e a porta de entrada esperada.
+
+**Padroes obrigatorios:**
+
+1. **Todo subagent do projeto tem skill orquestradora correspondente.** Subagent sem skill e nao-acessivel deterministicamente — entra como debito ou e considerado nao-pronto.
+2. **A skill prescreve invocacao via Task tool em texto direto.** Tom imperativo ("Use a Task tool...", "Invoque o subagent..."), nao sugestivo.
+3. **A skill carrega contexto/input do operador.** Slash command pode receber argumentos (ex: numero do PR) que a skill repassa ao subagent via prompt.
+4. **Smoke test do par skill+subagent** valida o caminho ponta-a-ponta: invocacao da skill -> Task tool disparada -> subagent executado -> output retornado.
+
+### Alternativas consideradas
+
+- **Caminho A — Description imperativa.** Editar `description` do subagent para tom imperativo ("ALWAYS delegate via Task tool"). Rejeitada: continua dependendo de heuristica do Claude principal "ler" a description e respeitar. Caixa-preta. Mesmo se "passar" em smoke, atribuicao causal e fraca — nao se sabe se foi o "ALWAYS" ou outro fator. Nao escala para `architect-reviewer`, `test-writer` futuros.
+- **Caminho C — Re-pensar Camada 3 sem subagents.** Aceitar que invocacao proativa nao funciona e abandonar subagents em favor de CLAUDE.md + hooks + skills (linha 87 do blueprint cita esse padrao como "80% do ganho"). Rejeitada: descarta valor real do `pr-reviewer` (tools restritas read-only, gatekeeping de contexto, modelo barato) baseado em N=1. Decisao grande demais para a evidencia atual.
+- **Status quo** (manter description proativa e esperar mais amostras). Rejeitada: descobertas meta-operacionais (memoria global, plugins, built-ins) tornam smoke tests futuros nao-confiaveis sem mitigacao previa. Adiar e acumular custo opaco.
+
+### Consequencias
+
+**Aceitas:**
+
+- Operador invoca subagent explicitamente via slash command, nao "Claude principal" mediando.
+- Cada subagent custa 2 componentes (subagent + skill), nao 1.
+- Camada 3 ganha 1 criterio de "pronto" novo: padrao skill orquestradora validado com smoke.
+- `pr-reviewer` (4.9 + 4.9.1) **mantem-se valido** — o componente esta correto, so faltava o mecanismo de invocacao deterministico.
+
+**Ganhos:**
+
+- **Determinismo da invocacao.** Slash command e ato explicito do operador.
+- **Determinismo da delegacao.** Skill prescreve Task tool em texto direto.
+- **Preservacao de subagent como ferramenta.** Tools restritas, modelo barato, contexto isolado continuam valendo.
+- **Padrao escalavel.** `architect-reviewer`, `test-writer`, `migration-writer` futuros nascem com skill correspondente.
+- **Ensinavel.** Regra simples: "subagent sempre vem com skill". Sem zona limitrofe.
+
+**Custos reconhecidos:**
+
+- Plugin `code-review` (decidir manter, desativar ou reaproveitar — criterio de pronto da Camada 3) continua aberto. Independente do ADR-012.
+- Investigacao dos built-in agents (o que `Explore`, `Plan`, `general-purpose`, `claude-code-guide`, `statusline-setup` realmente fazem) fica como debito em `hooks-pendentes.md`.
+- Risco residual: skill pode tambem nao invocar Task tool deterministicamente. Smoke da 4.11 (primeira skill orquestradora) valida.
