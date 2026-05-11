@@ -430,6 +430,28 @@ Ou usar path absoluto (`"$PWD\arquivo"`). Sem isso, arquivo e gravado em diretor
 
 **Hook implementado em:** `.claude/hooks/universal/markdown-blank-lines.ps1`, segundo hook a viver dentro do orquestrador `pre-commit` (4.2). Apenas uma linha adicionada ao array `$hooks` em `.githooks/pre-commit.ps1` — sem refatorar arquitetura.
 
+### Tamanho de docs em modo warn (Sub-etapa 4.4)
+
+**Regra:** arquivos `.md` em `docs/` (qualquer nivel de profundidade) com mais de 800 linhas totais geram alerta visual no terminal durante o commit. **Commit prossegue normalmente — alerta nao bloqueia.**
+
+**Escopo:** apenas `docs/*.md`. Outros `.md` (README raiz, `.github/`, `frontend/`, etc.) sao ignorados.
+
+**Metrica:** linhas totais via `[System.IO.File]::ReadAllLines($path).Count`. Inclui linhas em branco — simples, alinhado com como o operador ve o arquivo.
+
+**Limite:** 800 linhas. Folga sobre o `progresso.md` atual (~680) e `decisoes.md` (~470), com espaco para crescimento natural ao longo das Camadas 3 a 6.
+
+**Padrao novo estabelecido — modo `warn` para regras subjetivas:**
+
+Tamanho de doc nao tem "valor errado". 600 linhas pode ser certo para um doc denso; 1500 pode ser certo para um indice completo. Bloquear forcaria split apressado em momentos inoportunos. Por isso, hooks de **regras subjetivas** seguem padrao `warn`: alertam no terminal mas saem com exit code 0, deixando ao operador a decisao de agir.
+
+Hooks de **regras objetivas** continuam em modo `fail` (Conventional Commits, encoding UTF-8, blank lines em Markdown). Modo do hook e parte do design, registrada em `decisoes.md` quando o hook nasce.
+
+**Override:** nao aplicavel — hook nao bloqueia. `--no-verify` continua valido se necessario para outros hooks da pipeline.
+
+**Hook implementado em:** `.claude/hooks/universal/docs-size.ps1`, terceiro hook no orquestrador `pre-commit` (1:N da 4.2). Apenas uma linha adicionada ao array `$hooks` em `.githooks/pre-commit.ps1`.
+
+**Fecha o lote universal de Markdown** — apos 4.4, proximas universais (se houver) entram por demanda, nao pelo plano. Proximas sub-etapas focam em hooks de stack (`java-spring/`), CLAUDE.md, subagents ou skills.
+
 ### Claude Code hooks nativos
 
 Mecanismo `PreToolUse`/`Stop`/`UserPromptSubmit` em `.claude/settings.json` é tratado em sub-etapa própria após 4.2. Diferente de git hooks: atua sobre comportamento do agente, não validação de código.
@@ -459,6 +481,7 @@ Lembretes operacionais que regem decisões em chats futuros:
 
 ### Histórico de mudanças
 
+- **2026-05-11** — Sub-etapa 4.4 concluida: quarto hook funcional. Tamanho de docs em modo warn (`.md` em `docs/` com mais de 800 linhas gera alerta sem bloquear). Estabelece padrao `warn` para regras subjetivas vs `fail` para regras objetivas. Lote universal de Markdown fechado (encoding, blank lines, tamanho). Mergeado via PR #44.
 - **2026-05-10** — Sub-etapa 4.3 concluida: terceiro hook funcional. Markdown blank lines validado em `pre-commit`. Regra: headers nivel 2-6 exigem linha em branco antes e depois; nivel 1 ignorado; fronteira do arquivo e linha em branco implicita; blocos de codigo sao ignorados. Segundo hook no orquestrador 1:N — extensao trivial por linha no array `$hooks` (sem refatoracao). Primeira aplicacao de ADR-011 desde a redacao do prompt — 7 cenarios destrutivos validados com pre-condicoes explicitas (`Test-Path`, `git status`, sincronizacao de `Environment.CurrentDirectory`). Mergeado via PR #43.
 - **2026-05-10** — Sub-etapa 4.2.1 concluida: registra padroes de validacao destrutiva. ADR-011 formalizado. Licao descoberta em smoke test pos-merge da 4.2 onde `[System.IO.File]::WriteAllText` com path relativo em PowerShell criou arquivos em `[System.Environment]::CurrentDirectory` (`C:\Users\rezen\`) em vez de `$PWD` (`C:\projetos\financas-lab\`). Hook nao foi invocado. Comando rodou sem erro visivel. Conferencia empirica (`Get-ChildItem C:\Users\rezen\test-*.*` vazio) confirmou que agente do Claude Code nao caiu nesse gotcha — risco existe apenas em sessoes onde `$PWD` e `Environment.CurrentDirectory` divergem. Sub-etapa doc-only — sem mudanca de codigo. Mergeado via PR #42.
 - **2026-05-10** — Sub-etapa 4.2 concluida: segundo hook funcional. Encoding UTF-8 implementado em 3 camadas (entrypoint bash `.githooks/pre-commit` -> orquestrador `.githooks/pre-commit.ps1` -> hook `.claude/hooks/universal/encoding-utf8.ps1`). Whitelist por extensao + nomes exatos. Regra adicional: `.ps1` rejeita BOM. Padrao orquestrador 1:N estabelecido para `pre-commit` (preparado para 4.3+). Validacao destrutiva confirmou 5 cenarios (md valido passa, ps1 com BOM bloqueia, java Latin-1 bloqueia, png ignorado, override --no-verify bypassa). Mergeado via PR #41.
