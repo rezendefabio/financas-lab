@@ -4,7 +4,7 @@
 > Input direto para a Camada 3 (Configuração do Claude Code), quando hooks formais entrarem.
 > Atualizado conforme novas lições aparecem.
 
-**Última atualização:** 2026-05-11 (Sub-etapa 4.5 — Maven release explicito em fail)
+**Última atualização:** 2026-05-11 (Sub-etapa 4.7 — @Entity nova exige migration, modo conservador)
 
 ---
 
@@ -83,7 +83,7 @@ A seção "Débitos de configuração" deste documento (`application-prod.yml` a
 
 - **Ordem "Lombok antes de MapStruct"** em `<annotationProcessorPaths>`. (Etapa 1.4) Inverter quebra build.
 - **Versão de plugin Maven validada via Maven Central** antes de ser fixada. (Etapa 1.4) Não usar memória do agente — versões podem estar desatualizadas.
-- **Modificação de `@Entity` JPA exige migration Flyway no mesmo PR.** (Etapa 2.1) Hook detecta diff em `@Entity` sem novo arquivo `Vn__*.sql`.
+- **Modificacao de `@Entity` JPA existente exige migration Flyway no mesmo PR.** (Etapa 2.1, caso edge -- modo conservador na 4.7 cobre apenas Entity nova/status A; modificacao/status M produz falso positivo alto e ficou como debito explicito). Avaliar implementacao sofisticada (parser de diff `git diff --cached -U0`) se aparecer dor real.
 - **Classe base de teste sem `abstract` em pacote de shared test.** (Etapa 2.1) Validar que classes base de teste em `src/test/java/.../shared/` têm modificador `abstract` — sem ele, JUnit tenta instanciar e duplica execuções.
 - **`baseline-on-migrate: true` apenas em profiles de teste/dev.** (Etapa 2.1) Nunca em `application.yml` defaults ou `application-prod.yml`.
 - **Sufixo de classe de teste segue padrão do projeto.** (Etapa 2.2) Sufixo `Test` (singular) para classes novas — `IT` não é usado neste projeto (Failsafe não configurado).
@@ -119,6 +119,7 @@ Itens originalmente listados em "Hooks Markdown / docs" ou outras secoes, agora 
 - **Encoding UTF-8** (Sub-etapa 4.2, PR #41). Implementado em `.claude/hooks/universal/encoding-utf8.ps1`, invocado via `.githooks/pre-commit` (orquestrador) no evento `pre-commit`. Whitelist por extensao e nome exato. Regra adicional: `.ps1` rejeita BOM (licao 2.6); outros tipos aceitam BOM. Binarios e tipos fora da whitelist sao ignorados.
 - **Blank lines em Markdown** (Sub-etapa 4.3, PR #43). Implementado em `.claude/hooks/universal/markdown-blank-lines.ps1`, invocado via `.githooks/pre-commit` (orquestrador) no evento `pre-commit`. Valida headers de nivel 2-6 em arquivos `.md` (qualquer pasta). Nivel 1 ignorado; fronteira do arquivo e linha em branco implicita; blocos de codigo sao ignorados.
 - **Maven release explicito** (Sub-etapa 4.5, PR #45). Implementado em `.claude/hooks/java-spring/maven-release.ps1`, invocado via `.githooks/pre-commit` (orquestrador) no evento `pre-commit`. Hook age apenas se `pom.xml` esta no diff staged. Valida presenca de pelo menos uma tag `<release>` no conteudo do `pom.xml` (qualquer valor interno aceito). Modo fail. Primeira ocupacao de `.claude/hooks/java-spring/`.
+- **@Entity nova sem migration Flyway (modo conservador)** (Sub-etapa 4.7, PR #47). Implementado em `.claude/hooks/java-spring/entity-migration.ps1`, invocado via `.githooks/pre-commit` (orquestrador) no evento `pre-commit`. Hook age apenas se ha `.java` novo (status A) sob `src/main/java/` contendo `@Entity`. Exige pelo menos um arquivo `src/main/resources/db/migration/V<n>__*.sql` novo no mesmo commit. Valida presenca, nao conteudo. Modo fail. Modificacao de Entity existente (status M) **nao dispara** o hook -- caso edge registrado como debito em "Pendentes".
 - **Tamanho de docs em `docs/` (modo warn)** (Sub-etapa 4.4, PR #44). Implementado em `.claude/hooks/universal/docs-size.ps1`, invocado via `.githooks/pre-commit` (orquestrador) no evento `pre-commit`. Limite: 800 linhas totais. Alerta visual em amarelo, **nao bloqueia commit**. Apenas `.md` em `docs/` — outros `.md` ignorados. Modo `warn` registrado como padrao para regras subjetivas em `decisoes.md`.
 
 ## Notas de cuidado para validacao destrutiva
