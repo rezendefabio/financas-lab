@@ -565,3 +565,44 @@ Esta nao e falha do `pr-reviewer` em particular. E limite arquitetural que afeta
 - Plugin `code-review` (decidir manter, desativar ou reaproveitar — criterio de pronto da Camada 3) continua aberto. Independente do ADR-012.
 - Investigacao dos built-in agents (o que `Explore`, `Plan`, `general-purpose`, `claude-code-guide`, `statusline-setup` realmente fazem) fica como debito em `hooks-pendentes.md`.
 - Risco residual: skill pode tambem nao invocar Task tool deterministicamente. Smoke da 4.11 (primeira skill orquestradora) valida.
+
+### Revisao 2026-05-11 (Sub-etapa 4.11)
+
+Investigacao da documentacao oficial do Claude Code durante a redacao da 4.11 revelou:
+
+1. **Estrutura de skills e flat.** `.claude/skills/<nome>/SKILL.md` direto sob `.claude/skills/`. Path original "`.claude/skills/<escopo>/<nome>.md`" mencionado no Contexto e Mecanismo deste ADR esta incorreto. Path correto: **`.claude/skills/<nome>/SKILL.md`**. Analogo a descoberta da 4.9 sobre subagents (flat em `.claude/agents/<nome>.md`).
+
+2. **Mecanismo nativo via frontmatter substitui invocacao textual via Task tool.** O Mecanismo descrito originalmente (passos 1-5 com "skill contem prompt direto: 'Use a ferramenta Task...'") depende de o Claude principal interpretar instrucao textual e disparar Task tool — reproduz o mesmo nao-determinismo que o ADR-012 buscava eliminar. A doc oficial (https://code.claude.com/docs/en/skills, secao "Run skills in a subagent") mostra mecanismo nativo via frontmatter:
+
+   ```yaml
+   ---
+   context: fork
+   agent: <nome>
+   ---
+   [conteudo da skill]
+   ```
+
+   Com `context: fork`, o Claude Code cria contexto isolado automaticamente; o `agent: <nome>` aponta para subagent custom em `.claude/agents/<nome>.md`; o conteudo da skill vira o prompt do subagent forkado **sem intermediacao** do Claude principal. Determinismo arquitetural superior.
+
+3. **Decisao estrutural preservada.** Skill orquestra subagent permanece valido. Apenas o **mecanismo literal** muda (frontmatter `context: fork` em vez de instrucao textual). Padroes obrigatorios 1, 3 e 4 da Decisao original permanecem. Padrao obrigatorio 2 reescrito abaixo.
+
+**Mecanismo revisado:**
+
+1. Operador invoca a skill explicitamente (ex: `/review-pr 53`).
+2. A skill em `.claude/skills/<nome>/SKILL.md` declara `context: fork` + `agent: <nome>` no frontmatter, apontando para o subagent custom em `.claude/agents/<nome>.md`.
+3. Claude Code cria contexto forkado e executa a skill content como prompt do subagent — sem intermediacao do Claude principal.
+4. Subagent roda em contexto isolado, com modelo, tools e permissoes definidas no frontmatter de `.claude/agents/<nome>.md` (system prompt vem do body do subagent; user prompt vem do SKILL.md).
+5. Output do subagent retorna para o Claude principal, que apresenta ao operador.
+
+**Padrao obrigatorio 2 revisado:**
+
+> A skill declara `context: fork` + `agent: <nome>` no frontmatter, apontando para o subagent custom. Conteudo da skill vira prompt do subagent forkado pelo mecanismo nativo do Claude Code.
+
+**Nao mecanismo (expandido):**
+
+- Invocacao por heuristica de delegacao proativa via campo `description` no subagent (descartado no ADR original).
+- **Invocacao via instrucao textual na skill** ("Use a Task tool..."): tambem descartado nesta revisao. Reproduz nao-determinismo do Claude principal interpretando texto.
+
+**Recomendacao adicional:** skills orquestradoras de subagent devem usar `disable-model-invocation: true` no frontmatter. Isso restringe invocacao apenas ao operador via slash command, eliminando auto-discovery via description matching da skill. Maximo determinismo: skill so dispara quando operador escreve `/<nome>`.
+
+**Categoria operacional:** "errata de ADR baseada em descoberta de documentacao oficial". Distinta de patch tecnico (corrige bug do entregue) e refinamento pos-smoke empirico (smoke revelou suboptimo). Aplicavel a futuros ADRs cuja prescricao se mostre tecnicamente incorreta apos consulta a fonte oficial.
