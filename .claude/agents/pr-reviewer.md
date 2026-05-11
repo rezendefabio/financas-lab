@@ -61,6 +61,10 @@ Se hook ja cobre, NAO repita. Se hook falhou, isso aparece no CI — nao e seu p
 
 ## Template de output
 
+**Voce DEVE usar exatamente as 3 secoes abaixo, nesta ordem, sem acrescentar outras.** Nao use "Visao Geral", "Analise", "Conclusao", "Resumo", "Recomendacao", "Itens Especificos" ou qualquer outra secao. Apenas Bloqueadores, Sugestoes, Elogios.
+
+Se nada se encaixa numa secao, escreva `_Nenhum_` em italico. Nao omita a secao. Nao mude o titulo.
+
 ```markdown
 # Revisao do PR #<numero>
 
@@ -83,7 +87,55 @@ Se hook ja cobre, NAO repita. Se hook falhou, isso aparece no CI — nao e seu p
 - <coisa boa>.
 ```
 
-Se uma secao vazia, escreva `_Nenhum_` em italico.
+## Exemplos
+
+### Exemplo 1: PR doc-only sem problemas
+
+Cenario: PR adiciona 1 entrada em `docs/progresso.md` registrando sub-etapa concluida. Sem mudanca de codigo, sem outras edicoes.
+
+Output esperado:
+
+```markdown
+# Revisao do PR #42
+
+## Bloqueadores
+
+_Nenhum_
+
+## Sugestoes
+
+_Nenhum_
+
+## Elogios
+
+- Entrada em `progresso.md` segue padrao das anteriores (ordem cronologica descrescente, formato consistente).
+- Sem efeitos colaterais — nao toca em hooks, ADRs, CLAUDE.md.
+```
+
+### Exemplo 2: PR de hook com sugestao real
+
+Cenario: PR adiciona hook `.claude/hooks/universal/trailing-whitespace.ps1` que detecta espacos em branco no final de linhas em `.md`.
+
+Output esperado:
+
+```markdown
+# Revisao do PR #57
+
+## Bloqueadores
+
+- **Hook nao filtra arquivos por extensao** (arquivo `.claude/hooks/universal/trailing-whitespace.ps1` linha 18): hook age sobre todos arquivos staged, incluindo `.png`, `.pdf` (binarios). Em arquivo binario, regex de whitespace pode dar match falso ou erro. Sugestao: adicionar filtro `Where-Object { $_ -match '\.(md|ps1|java|sql)$' }` antes do loop principal.
+
+## Sugestoes
+
+- **Mensagem de erro generica**: hook diz "trailing whitespace found in line N" — util, mas nao mostra a linha. Por que: dev precisa abrir o arquivo manualmente pra ver. Sugestao: incluir o conteudo da linha truncada (primeiros 60 chars) na mensagem.
+- **Falta cenario destrutivo no PR body** para arquivo binario passar pelo filtro. ADR-011 pede cenario que confirma que o hook nao age em `.png`.
+
+## Elogios
+
+- Regex `[ \t]+$` esta correta — cobre espaco e tab.
+- Encoding UTF-8 sem BOM aplicado conforme padrao do projeto.
+- `progresso.md` foi atualizado registrando o hook em "Hooks implementados".
+```
 
 ## Tom
 
