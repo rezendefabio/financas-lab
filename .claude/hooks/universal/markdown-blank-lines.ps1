@@ -95,7 +95,7 @@ foreach ($file in $stagedFiles) {
     $ext = [System.IO.Path]::GetExtension($file).ToLower()
     if ($ext -ne '.md') { continue }
 
-    $violations = Get-MarkdownViolations -FilePath $file
+    $violations = @(Get-MarkdownViolations -FilePath $file)
     if ($violations.Count -gt 0) {
         $allViolations += $violations
     }
