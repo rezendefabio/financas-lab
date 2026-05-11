@@ -1,4 +1,4 @@
-﻿# Decisões — Stack, Padrões e Convenções
+# Decisões — Stack, Padrões e Convenções
 
 > Documento operacional. Resume **o que foi decidido** para consulta rápida em qualquer chat.
 > Diferente dos ADRs, este documento não preserva contexto histórico — é a foto atual.
