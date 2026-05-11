@@ -632,6 +632,54 @@ Primeira implementacao do padrao decidido em ADR-012 (Sub-etapa 4.10). Marco est
 
 **Criterios de "pronto" da Camada 3 ajustados.** Padrao "skill orquestradora -> subagent validado com smoke" depende do smoke pos-merge da 4.11 — fica em pendente ate o smoke passar.
 
+### Segundo subagent: architect-reviewer + skill /review-arch (Sub-etapa 4.12)
+
+Segunda aplicacao do padrao decidido em ADR-012 (e refinado em 4.11). Marco estrutural — Camada 3 do blueprint pede 3-5 subagents focados, este e o segundo.
+
+**Subagent (`.claude/agents/architect-reviewer.md`):**
+
+- **Modelo: Sonnet.** Primeiro subagent do projeto com Sonnet — `pr-reviewer` (4.9) e Haiku. Padrao registrado: **Haiku para revisao de superficie (logica, padroes, encoding); Sonnet para revisao estrutural (dependencias, camadas, abstracoes)**.
+- **Tools restritas:** `Read, Grep, Glob, Bash` (read-only). Igual `pr-reviewer`.
+- **Escopo: subset arquitetural duro.** Valida contra ADR-004 (Clean Arch), ADR-005 (JWT), ADR-006 (Flyway), ADR-007 (testes). Demais ADRs (stack, layout, portabilidade, validacao destrutiva, etc.) sao cobertos pelo `pr-reviewer` no escopo do PR. Evita duplicacao entre subagents.
+- **Template de output:** mesmas 3 secoes do `pr-reviewer` (Bloqueadores, Sugestoes, Elogios). Consistencia operacional entre subagents-revisores.
+- **Exemplos few-shot:** 2 — caso happy (PR que respeita os 4 ADRs) + caso problema (PR que viola ADR-004 em multiplos pontos). Padrao consolidado pela 4.9.1 aplicado.
+- **Tom prescritivo.** "DEVE usar exatamente as 3 secoes". Padrao consolidado pela 4.9.1 aplicado.
+
+**Skill orquestradora (`.claude/skills/review-arch/SKILL.md`):**
+
+- Espelho da `review-pr/SKILL.md` com adaptacao de nome/agent/descricao.
+- `disable-model-invocation: true` + `context: fork` + `agent: architect-reviewer`. Mecanismo nativo do Claude Code (ADR-012 revisao 4.11).
+- Body curto — 5 linhas apos frontmatter. System prompt do subagent ja contem toda a logica de revisao arquitetural.
+
+**Categoria nova: "replicacao de padrao consolidado".** Distinta de:
+
+- **"Descoberta"** (4.10): identifica problema estrutural, decide padrao via ADR.
+- **"Primeira aplicacao"** (4.11): primeira implementacao do padrao, frequentemente revela imperfeicoes na prescricao original (errata ADR-012).
+- **"Replicacao":** segunda aplicacao do padrao validado. Sem refinamento — confirmacao de que padrao funciona em segundo caso. Util para fixar padrao antes de aplicacoes em escala.
+
+**Bifurcacao explicita entre revisores.** Dois subagents revisores convivem:
+
+- `pr-reviewer` (Haiku) cobre o **micro** — este PR especifico, logica/cobertura/docs/padroes. Invocado via `/review-pr <numero>`.
+- `architect-reviewer` (Sonnet) cobre o **estrutural** — decisoes fundamentais contra 4 ADRs duros. Invocado via `/review-arch <numero>`.
+
+Operador escolhe o adequado conforme tipo de mudanca. Padrao "delegacao por especialidade" — replicavel em revisores futuros (`security-reviewer`, `performance-reviewer` etc.) sem retrabalho de forma.
+
+**Variante A escolhida (revisor de PR com foco arquitetural).** Auditoria de codebase inteiro (`/review-arch` sem argumento) descartada — escopo aberto, smoke nao-controlado, output longo. Fica como sub-etapa separada se aparecer dor real ("preciso varrer projeto contra ADR-X").
+
+**CLAUDE.md NAO atualizado nesta sub-etapa.** Subsecao "Subagents e skills" da 4.11 ja registra o padrao generico. CLAUDE.md so muda quando convencao muda — 4.12 aplica convencao existente.
+
+**Smoke test pos-merge** (responsabilidade do operador apos autorizar merge):
+
+1. Sessao nova do Claude Code.
+2. Escolher PR com mudanca estrutural relevante (PRs antigos da Camada 2 que tocaram `src/main/java/.../domain/` ou `infrastructure/`, ex: PR #30 da etapa 3.2 conta-domain, PR #33 da 3.4 conta-ponta-a-ponta).
+3. Invocar `/review-arch <numero>`.
+4. **Criterios de sucesso:**
+   - Skill dispara fork no agent `architect-reviewer` (Sonnet) — sem execucao direta pelo Claude principal.
+   - Output usa exatamente as 3 secoes (Bloqueadores, Sugestoes, Elogios).
+   - Achados, se houver, ancoram em ADR-004/005/006/007 nominalmente.
+   - Sem violacao trivial detectada nos PRs ja mergeados (esses PRs foram revisados manualmente; `architect-reviewer` deve confirmar conformidade).
+5. **Comparativo com smoke da 4.11:** se tom/estrutura forem consistentes entre `pr-reviewer` e `architect-reviewer`, padrao skill+subagent fica estabilizado por replicacao. Se houver inconsistencia, abre 4.12.1 (refinamento).
+
 ### Claude Code hooks nativos
 
 Mecanismo `PreToolUse`/`Stop`/`UserPromptSubmit` em `.claude/settings.json` é tratado em sub-etapa própria após 4.2. Diferente de git hooks: atua sobre comportamento do agente, não validação de código.
