@@ -4,7 +4,7 @@
 > Input direto para a Camada 3 (Configuração do Claude Code), quando hooks formais entrarem.
 > Atualizado conforme novas lições aparecem.
 
-**Última atualização:** 2026-05-11 (Sub-etapa 4.4 — Tamanho de docs em modo warn)
+**Última atualização:** 2026-05-11 (Sub-etapa 4.5 — Maven release explicito em fail)
 
 ---
 
@@ -81,7 +81,6 @@ A seção "Débitos de configuração" deste documento (`application-prod.yml` a
 
 ## Hooks Maven / Java
 
-- **`<release>` em vez de `<source>` + `<target>`** no maven-compiler-plugin. (Etapa 1.4) Validar uso idiomático Java 9+.
 - **Ordem "Lombok antes de MapStruct"** em `<annotationProcessorPaths>`. (Etapa 1.4) Inverter quebra build.
 - **Versão de plugin Maven validada via Maven Central** antes de ser fixada. (Etapa 1.4) Não usar memória do agente — versões podem estar desatualizadas.
 - **Modificação de `@Entity` JPA exige migration Flyway no mesmo PR.** (Etapa 2.1) Hook detecta diff em `@Entity` sem novo arquivo `Vn__*.sql`.
@@ -119,6 +118,7 @@ Itens originalmente listados em "Hooks Markdown / docs" ou outras secoes, agora 
 - **Conventional Commits** (Sub-etapa 4.1, PR #40). Implementado em `.claude/hooks/universal/conventional-commits.ps1`, invocado via `.githooks/commit-msg` no evento `commit-msg`. Tipos: feat, fix, chore, docs, test, refactor, style, perf, build, ci. Scope opcional, breaking change via `!`, descricao minima 10 chars. Excecoes automaticas: merge e revert commits. Override consciente: `git commit --no-verify` documentado em `decisoes.md`. Entrypoint usa `powershell` (Windows PowerShell 5.1).
 - **Encoding UTF-8** (Sub-etapa 4.2, PR #41). Implementado em `.claude/hooks/universal/encoding-utf8.ps1`, invocado via `.githooks/pre-commit` (orquestrador) no evento `pre-commit`. Whitelist por extensao e nome exato. Regra adicional: `.ps1` rejeita BOM (licao 2.6); outros tipos aceitam BOM. Binarios e tipos fora da whitelist sao ignorados.
 - **Blank lines em Markdown** (Sub-etapa 4.3, PR #43). Implementado em `.claude/hooks/universal/markdown-blank-lines.ps1`, invocado via `.githooks/pre-commit` (orquestrador) no evento `pre-commit`. Valida headers de nivel 2-6 em arquivos `.md` (qualquer pasta). Nivel 1 ignorado; fronteira do arquivo e linha em branco implicita; blocos de codigo sao ignorados.
+- **Maven release explicito** (Sub-etapa 4.5, PR #XX). Implementado em `.claude/hooks/java-spring/maven-release.ps1`, invocado via `.githooks/pre-commit` (orquestrador) no evento `pre-commit`. Hook age apenas se `pom.xml` esta no diff staged. Valida presenca de pelo menos uma tag `<release>` no conteudo do `pom.xml` (qualquer valor interno aceito). Modo fail. Primeira ocupacao de `.claude/hooks/java-spring/`.
 - **Tamanho de docs em `docs/` (modo warn)** (Sub-etapa 4.4, PR #44). Implementado em `.claude/hooks/universal/docs-size.ps1`, invocado via `.githooks/pre-commit` (orquestrador) no evento `pre-commit`. Limite: 800 linhas totais. Alerta visual em amarelo, **nao bloqueia commit**. Apenas `.md` em `docs/` — outros `.md` ignorados. Modo `warn` registrado como padrao para regras subjetivas em `decisoes.md`.
 
 ## Notas de cuidado para validacao destrutiva
