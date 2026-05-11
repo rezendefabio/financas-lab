@@ -437,3 +437,54 @@ Estimativa intencionalmente otimista — assume que a logica e estavel e so o ve
 - Zero custo presente. Velocidade da Camada 3 nao e comprometida por abstracao defensiva.
 - Coerencia com decisoes anteriores do projeto (Camada 0 e 1).
 - Debito conhecido > ansiedade difusa. Decisao arquivada com criterio de revisao; sai do plano mental ativo.
+
+---
+
+## ADR-011 — Padroes de validacao destrutiva
+
+**Status:** Aceito
+**Data:** 2026-05-10
+
+### Contexto
+
+Validacao destrutiva (executada na branch da etapa ou em smoke test pos-merge) e instrumento de qualidade de primeira linha do projeto. Camada 1 estabeleceu o principio: "validacao destrutiva manual e nao-negociavel; encontrou 3 bugs que toda automacao validou como verde" (retrospectiva da Camada 1).
+
+Sub-etapa 4.2 expos uma armadilha do metodo: validacao que parece passar pode nao ter exercitado o hook. Em smoke test pos-merge da 4.2, operador executou tres cenarios destrutivos. Todos reportaram "comando rodou sem erro visivel" — mas `git status` mostrava working tree limpo em todos. Hook nao foi invocado em nenhum cenario. Causa raiz: `[System.IO.File]::WriteAllText` com path relativo em PowerShell grava em `[System.Environment]::CurrentDirectory`, nao em `$PWD`. Quando a sessao faz `cd` para entrar no repo, esses dois caminhos divergem. Arquivo e criado em `C:\Users\<user>\`, invisivel ao git rodando em `C:\projetos\...`.
+
+Investigacao posterior confirmou que o agente do Claude Code **nao caiu** nesse gotcha durante a validacao destrutiva da branch da 4.2 (provavel: agente foi spawnado ja dentro do diretorio do repo, sincronizando ambos automaticamente). Mas o operador caiu, evidenciando que o risco e real em sessoes onde `$PWD` e `Environment.CurrentDirectory` divergem.
+
+O ponto critico nao e o gotcha especifico do PowerShell. E o **principio mais geral**: "comando rodou sem erro" e premissa fraca para concluir "cenario foi exercitado". Sem verificacao explicita de pre-condicao, validacao destrutiva produz falsos positivos sem alerta.
+
+### Decisao
+
+Toda validacao destrutiva (na branch da etapa ou em smoke test pos-merge) **deve incluir verificacao explicita de pre-condicao** antes de cada cenario.
+
+**Padroes obrigatorios:**
+
+1. **Apos criar arquivo de teste:** `Test-Path .\arquivo` (ou equivalente). Esperado: `True`. Se `False`, parar e investigar — arquivo nao foi criado onde esperado.
+2. **Antes de `git commit`:** rodar `git status` e confirmar que ha arquivo staged. Se sair `nothing to commit, working tree clean`, parar — cenario nao tem entrada.
+3. **Apos comando que deveria falhar:** verificar `$LASTEXITCODE` (PowerShell) ou similar. Esperar codigo `!= 0`. Se vier `0`, cenario nao reproduziu o erro esperado.
+4. **Para `[System.IO.File]::WriteAllText` com path relativo em PowerShell:** sincronizar previamente `[System.Environment]::CurrentDirectory = (Get-Location).Path`, OU usar caminho absoluto (`"$PWD\arquivo"`). Sem sincronizacao, arquivo pode ser gravado em diretorio diferente do `git`.
+
+**Reportar resultado de cada pre-condicao no PR body** da sub-etapa. Nao basta listar "cenarios validados" — listar tambem as pre-condicoes verificadas e seus valores observados.
+
+### Alternativas consideradas
+
+- **Confiar em "o comando nao deu erro visivel"** — rejeitada. Foi exatamente a hipotese que falhou no smoke test pos-merge da 4.2. Falsos positivos sao silenciosos por natureza; nao ha mecanismo de detecao se nao houver verificacao explicita.
+- **Forcar uso de caminhos absolutos em todos os scripts de validacao** — considerada e parcialmente adotada. Mais robusto, mas verboso. Sincronizacao previa de `Environment.CurrentDirectory` resolve o caso PowerShell sem afetar legibilidade.
+- **Criar tooling automatico** (linter de scripts de validacao destrutiva) — rejeitada como prematura. Padrao primeiro, automacao depois quando justificar.
+- **Limitar validacao destrutiva a agente apenas** (que nao caiu no gotcha) — rejeitada. Operador precisa validar pos-merge em ambiente real; nao pode delegar essa responsabilidade.
+
+### Consequencias
+
+**Aceitas:**
+
+- Prompts de validacao destrutiva ficam mais verbose (cenarios com `Test-Path`, `git status` explicitos).
+- Operador e agente seguem o mesmo padrao — sem atalhos por familiaridade do operador com o ambiente.
+
+**Ganhos:**
+
+- Zero falsos positivos silenciosos em validacao destrutiva.
+- Padrao replicavel para sub-etapas seguintes da Camada 3 (4.3, 4.4) e qualquer hook futuro.
+- Aprendizado registrado em ADR formal — nao se perde em prosa de retrospectiva.
+- Reforco do principio consolidado da Camada 1: "validacao destrutiva e instrumento de qualidade de primeira linha". O gotcha mostrou que o principio precisa de gates explicitos para ser eficaz.
