@@ -530,6 +530,20 @@ Caso "modificacao de Entity existente requer migration" fica como **debito consc
 
 **Categoria de licao consolidada:** "smoke test deve replicar input idiomatico, nao sintetico". Adicionada como regra geral em smoke tests pos-merge de hooks daqui pra frente.
 
+### Primeiro subagent: `pr-reviewer` (Sub-etapa 4.9)
+
+**Componente:** `.claude/agents/pr-reviewer.md`. Modelo: **Haiku** (blueprint indica modelo barato para revisores). Tools restritas: `Read, Grep, Glob, Bash` (read-only). Invocacao **proativa via `description`** — Claude principal decide quando delegar baseado em descricao explicita de uso apos abertura de PR.
+
+**O que faz:** complementa os hooks pre-commit automaticos do projeto. Revisa **o que hooks nao pegam**: decisoes de design vs ADRs, coerencia com sub-etapas anteriores e `decisoes.md`, logica do codigo (edge cases, mensagens de erro), cobertura de testes, documentacao alinhada com mudanca, padroes do projeto (Conventional Commits substancia, nao sintaxe).
+
+**O que NAO faz** (delegado aos hooks 4.1-4.7): Conventional Commits sintaxe, encoding UTF-8, Markdown blank lines, tamanho de docs, Maven `<release>`, `@Entity` sem migration. Subagent que duplica hook e desperdicio.
+
+**Output:** Markdown estruturado em 3 secoes: **Bloqueadores**, **Sugestoes**, **Elogios**. Operador (humano) ve no chat e decide se cola no PR como comentario. Subagent **nao posta no PR** via `gh pr review` (limite consciente — adiciona risco de spam, deferido para sub-etapa futura quando confianca no subagent estiver consolidada).
+
+**Layout flat em `.claude/agents/`:** A estrutura criada na 4.0 em `.claude/agents/` tem 3 subpastas (`universal/`, `java-spring/`, `local/`), não 5 como em `.claude/hooks/` (que tem `java-spring`, `local`, `next`, `universal`, `windows`). A simetria entre `.claude/{hooks,agents,skills}/` é parcial; cada estrutura tem subpastas distintas refletindo decisões da 4.0. As subpastas de `.claude/agents/` foram prescritas por intenção de organização por escopo, mas Claude Code não reconhece subagents em subpastas — convenção é flat (`.claude/agents/*.md`). Pasta `.claude/agents/universal/` continua existindo (decisao da 4.0 nao revertida), mas **subagents vao em `.claude/agents/` direto**. Categoria: "convencao Claude Code descoberta apos prescricao do projeto" — registrada como licao na 4.9.
+
+**Quando invocado:** description proativa pos-abertura de PR. Para PRs **puramente doc-only**, revisao breve. Para PRs com codigo, revisao completa nas 6 categorias acima.
+
 ### Claude Code hooks nativos
 
 Mecanismo `PreToolUse`/`Stop`/`UserPromptSubmit` em `.claude/settings.json` é tratado em sub-etapa própria após 4.2. Diferente de git hooks: atua sobre comportamento do agente, não validação de código.
@@ -559,6 +573,7 @@ Lembretes operacionais que regem decisões em chats futuros:
 
 ### Histórico de mudanças
 
+- **2026-05-11** — Sub-etapa 4.9 concluida: primeiro subagent do projeto — `pr-reviewer` em `.claude/agents/pr-reviewer.md`, modelo Haiku, tools restritas (read-only), invocacao proativa via description. Complementa hooks pre-commit: revisa decisoes de design, ADRs, coerencia com `decisoes.md`, logica do codigo, cobertura de testes, documentacao alinhada. Nao duplica verificacoes dos hooks 4.1-4.7. Output Markdown estruturado (Bloqueadores, Sugestoes, Elogios) — operador cola no PR se quiser. Descoberta: layout `.claude/agents/*.md` e flat por convencao Claude Code; estruturas assimetricas (hooks=5 subpastas, agents=3, skills=2). Mergeado via PR #50.
 - **2026-05-11** — Sub-etapa 4.7.1 concluida (doc-only): registro de duas licoes do smoke test pos-merge da 4.7. (1) Debito tecnico: regex `(?m)^\s*@Entity\b` do hook entity-migration e fragil para Java single-line -- mantida; ajuste para `@Entity\b` quando tocar no hook por outro motivo. (2) Regra operacional: smoke test pos-merge usa input idiomatico, nao sintetico. Categoria "sub-etapa doc-only de registro de licao apos smoke test falho" consolidada (analoga a 4.2.1). Mergeado via PR #48.
 - **2026-05-11** — Sub-etapa 4.7 concluida: sexto hook funcional, segundo de stack java-spring. `@Entity` novo (status A) exige migration Flyway nova no mesmo commit. Modo conservador conscientemente reduzido vs licao original 2.1 (modificacao de Entity existente fica como debito explicito, registrado em hooks-pendentes.md). Hook preventivo -- projeto ja tem ratio coerente (3 Entities + 4 migrations). 6 cenarios destrutivos sob ADR-011, incluindo modificacao de Entity real (Categoria.java) para confirmar empiricamente que hook nao dispara em status M. Mergeado via PR #47.
 - **2026-05-11** — Sub-etapa 4.6 concluida: CLAUDE.md do projeto substituido (placeholder 21 linhas da Camada 1 -> versao estrutural 95 linhas, 7 secoes). Conteudo volatil delegado para `docs/` via links. Regra de atualizacao formalizada: editado apenas em sub-etapas que mudam stack/ambiente/convencoes/restricoes. Primeira sub-etapa de curadoria (nao de codigo). PR #46.
