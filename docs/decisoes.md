@@ -452,6 +452,24 @@ Hooks de **regras objetivas** continuam em modo `fail` (Conventional Commits, en
 
 **Fecha o lote universal de Markdown** — apos 4.4, proximas universais (se houver) entram por demanda, nao pelo plano. Proximas sub-etapas focam em hooks de stack (`java-spring/`), CLAUDE.md, subagents ou skills.
 
+### Maven release explicito (Sub-etapa 4.5)
+
+**Regra:** se `pom.xml` esta no diff staged, deve conter pelo menos uma ocorrencia da tag `<release>` com qualquer conteudo interno. Caso contrario, commit bloqueado.
+
+**Por que:** licao 1.4 — sem `<release>` explicito, Maven usa default que pode divergir entre dev local e CI, resultando em build inconsistente. Lab atual ja tem `<release>${java.version}</release>` configurado; hook arma regra para prevenir regressao.
+
+**Valor da tag e livre:** `<release>21</release>`, `<release>17</release>`, `<release>${java.version}</release>` — todos passam. Hook valida presenca, nao valor. Versao Java e decisao de projeto, nao decisao de hook.
+
+**Padrao novo estabelecido — hooks especificos de stack:**
+
+Esta e a primeira sub-etapa a ocupar `.claude/hooks/java-spring/`. Universais (`universal/`) e especificos de stack (`java-spring/`, `next/`, `windows/`, `local/`) coexistem no orquestrador `pre-commit` sem distincao sintatica. O array `$hooks` em `.githooks/pre-commit.ps1` lista todos os hooks na ordem de registro, agnostico a escopo.
+
+A diferenca e apenas o **criterio de aplicabilidade dentro do hook:** cada hook le `git diff --cached --name-only` e decide se vale agir. Hooks universais agem sempre (ou filtram por extensao generica como `.md`). Hooks de stack filtram por arquivos especificos da stack (`pom.xml`, `*.java`, `package.json`, etc.).
+
+**Decisao consciente (D2 calibrada com operador):** filtro de aplicabilidade fica dentro do hook, nao no orquestrador. Razao: consistencia com 4.2-4.4. Custo de invocar hook que sai imediato com `exit 0` (quando nao se aplica) e negligivel. Centralizar filtro no orquestrador seria otimizacao prematura — so faria sentido com 20+ hooks ou com hooks pesados (parser de arquivo grande, etc).
+
+**Hook implementado em:** `.claude/hooks/java-spring/maven-release.ps1`, quarto hook no orquestrador `pre-commit`.
+
 ### Claude Code hooks nativos
 
 Mecanismo `PreToolUse`/`Stop`/`UserPromptSubmit` em `.claude/settings.json` é tratado em sub-etapa própria após 4.2. Diferente de git hooks: atua sobre comportamento do agente, não validação de código.
@@ -481,6 +499,7 @@ Lembretes operacionais que regem decisões em chats futuros:
 
 ### Histórico de mudanças
 
+- **2026-05-11** — Sub-etapa 4.5 concluida: quinto hook funcional, primeiro de stack (java-spring). Maven `<release>` em modo fail. `.claude/hooks/java-spring/` ativada (primeira ocupacao apos 4.0). Padrao consolidado: orquestrador `pre-commit` agnostico a escopo; cada hook filtra aplicabilidade internamente. Hook preventivo — `pom.xml` atual ja tem `<release>${java.version}</release>` (licao 1.4 aplicada na Camada 1). Mergeado via PR #45.
 - **2026-05-11** — Sub-etapa 4.4 concluida: quarto hook funcional. Tamanho de docs em modo warn (`.md` em `docs/` com mais de 800 linhas gera alerta sem bloquear). Estabelece padrao `warn` para regras subjetivas vs `fail` para regras objetivas. Lote universal de Markdown fechado (encoding, blank lines, tamanho). Mergeado via PR #44.
 - **2026-05-10** — Sub-etapa 4.3 concluida: terceiro hook funcional. Markdown blank lines validado em `pre-commit`. Regra: headers nivel 2-6 exigem linha em branco antes e depois; nivel 1 ignorado; fronteira do arquivo e linha em branco implicita; blocos de codigo sao ignorados. Segundo hook no orquestrador 1:N — extensao trivial por linha no array `$hooks` (sem refatoracao). Primeira aplicacao de ADR-011 desde a redacao do prompt — 7 cenarios destrutivos validados com pre-condicoes explicitas (`Test-Path`, `git status`, sincronizacao de `Environment.CurrentDirectory`). Mergeado via PR #43.
 - **2026-05-10** — Sub-etapa 4.2.1 concluida: registra padroes de validacao destrutiva. ADR-011 formalizado. Licao descoberta em smoke test pos-merge da 4.2 onde `[System.IO.File]::WriteAllText` com path relativo em PowerShell criou arquivos em `[System.Environment]::CurrentDirectory` (`C:\Users\rezen\`) em vez de `$PWD` (`C:\projetos\financas-lab\`). Hook nao foi invocado. Comando rodou sem erro visivel. Conferencia empirica (`Get-ChildItem C:\Users\rezen\test-*.*` vazio) confirmou que agente do Claude Code nao caiu nesse gotcha — risco existe apenas em sessoes onde `$PWD` e `Environment.CurrentDirectory` divergem. Sub-etapa doc-only — sem mudanca de codigo. Mergeado via PR #42.
