@@ -17,6 +17,7 @@ $hooks = @(
     (Join-Path $repoRoot ".claude\hooks\universal\markdown-blank-lines.ps1")
     (Join-Path $repoRoot ".claude\hooks\universal\docs-size.ps1")
     (Join-Path $repoRoot ".claude\hooks\java-spring\maven-release.ps1")
+    (Join-Path $repoRoot ".claude\hooks\java-spring\entity-migration.ps1")
 )
 
 $failed = $false
