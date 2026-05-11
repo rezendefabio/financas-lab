@@ -4,7 +4,7 @@
 > Input direto para a Camada 3 (Configuração do Claude Code), quando hooks formais entrarem.
 > Atualizado conforme novas lições aparecem.
 
-**Última atualização:** 2026-05-10 (Sub-etapa 4.2.1 — padroes de validacao destrutiva)
+**Última atualização:** 2026-05-10 (Sub-etapa 4.3 — Markdown blank lines implementado)
 
 ---
 
@@ -77,7 +77,6 @@ A seção "Débitos de configuração" deste documento (`application-prod.yml` a
 
 ## Hooks Markdown / docs
 
-- **Linhas em branco em Markdown.** (Etapa 1.1) Validar que arquivos `.md` modificados têm linhas em branco antes e depois de headers (`##`, `###`). Sem isso, alguns renderers não reconhecem o header.
 - **Tamanho de docs em `docs/`.** (Etapa 1.1) Alertar se algum `.md` em `docs/` ultrapassa limite (anti-enciclopédia).
 
 ## Hooks Maven / Java
@@ -119,6 +118,7 @@ Itens originalmente listados em "Hooks Markdown / docs" ou outras secoes, agora 
 
 - **Conventional Commits** (Sub-etapa 4.1, PR #40). Implementado em `.claude/hooks/universal/conventional-commits.ps1`, invocado via `.githooks/commit-msg` no evento `commit-msg`. Tipos: feat, fix, chore, docs, test, refactor, style, perf, build, ci. Scope opcional, breaking change via `!`, descricao minima 10 chars. Excecoes automaticas: merge e revert commits. Override consciente: `git commit --no-verify` documentado em `decisoes.md`. Entrypoint usa `powershell` (Windows PowerShell 5.1).
 - **Encoding UTF-8** (Sub-etapa 4.2, PR #41). Implementado em `.claude/hooks/universal/encoding-utf8.ps1`, invocado via `.githooks/pre-commit` (orquestrador) no evento `pre-commit`. Whitelist por extensao e nome exato. Regra adicional: `.ps1` rejeita BOM (licao 2.6); outros tipos aceitam BOM. Binarios e tipos fora da whitelist sao ignorados.
+- **Blank lines em Markdown** (Sub-etapa 4.3, PR #43). Implementado em `.claude/hooks/universal/markdown-blank-lines.ps1`, invocado via `.githooks/pre-commit` (orquestrador) no evento `pre-commit`. Valida headers de nivel 2-6 em arquivos `.md` (qualquer pasta). Nivel 1 ignorado; fronteira do arquivo e linha em branco implicita; blocos de codigo sao ignorados.
 
 ## Notas de cuidado para validacao destrutiva
 

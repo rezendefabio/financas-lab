@@ -14,6 +14,7 @@ if ($LASTEXITCODE -ne 0) {
 # (4.3 Markdown blank lines, 4.4 tamanho de docs, etc).
 $hooks = @(
     (Join-Path $repoRoot ".claude\hooks\universal\encoding-utf8.ps1")
+    (Join-Path $repoRoot ".claude\hooks\universal\markdown-blank-lines.ps1")
 )
 
 $failed = $false
