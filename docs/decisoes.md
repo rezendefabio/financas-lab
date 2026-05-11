@@ -632,6 +632,26 @@ Primeira implementacao do padrao decidido em ADR-012 (Sub-etapa 4.10). Marco est
 
 **Criterios de "pronto" da Camada 3 ajustados.** Padrao "skill orquestradora -> subagent validado com smoke" depende do smoke pos-merge da 4.11 — fica em pendente ate o smoke passar.
 
+### Manutencao de docs por crescimento (Sub-etapa 4.13)
+
+Sub-etapa de manutencao que inaugura categoria "manutencao de docs por crescimento". Tratamento de dor real — `progresso.md` cresceu para ~891 linhas, hook 4.4 (modo warn) alertando em cada sub-etapa que toca o arquivo.
+
+**Split do `progresso.md`:** criterio "cortar por Camada concluida". Camadas 0 (Discovery), 1 (Infraestrutura), 2 (Arquitetura) — todas ✅ — movem para novo `docs/progresso-historico.md`. Camada 3 em andamento + Camadas 4-6 planejadas + Licoes 4.X + historico de mudancas permanecem no `progresso.md` vivo.
+
+**Por que cortar por Camada e nao por sub-etapa atomica:** mais coerente conceitualmente (Camada concluida = historico estavel), criterio simples de comunicar e replicar, evita splits artificiais. Alternativas avaliadas: cortar por tempo (ex: 30 dias) e cortar por bloco de licao individual — ambas rejeitadas por arbitrariedade ou fragmentacao.
+
+**Tabela "Status geral" do `progresso.md` vivo** ganha link para cada Camada concluida no historico arquivado. Operadores e agentes em sessoes futuras chegam ao detalhe historico via 1 clique.
+
+**Reorganizacao `docs/prompts/`:** `docs/` tinha 6 docs principais + ~13+ prompts versionados (`prompt-etapa-*.md`). Prompts dominavam visualmente o diretorio. Movidos para nova subpasta `docs/prompts/` via `git mv` (preserva historico via rename detection). `docs/` fica com hierarquia clara: 6 docs principais + 1 subpasta. Padrao para prompts futuros: `docs/prompts/prompt-etapa-X-Y.md`.
+
+**CLAUDE.md atualizado** (regra 4.6 — 4.13 e a sub-etapa causadora das convencoes "split por crescimento" + "prompts em `docs/prompts/`"). Duas linhas em "Onde buscar mais": uma para `progresso-historico.md`, outra ajustando a referencia de prompts para apontar para `docs/prompts/`.
+
+**Debito registrado em `hooks-pendentes.md`:** "Aplicar split analogo em `decisoes.md` quando cruzar 800 linhas. Padrao consolidado pela 4.13: split por secao funcional (subsecoes de sub-etapas antigas viram `decisoes-historico.md`). Tratar quando dor real aparecer — `decisoes.md` em ~600 linhas hoje, ainda navegavel."
+
+**Smoke 4.12 marcado como concluido nesta sub-etapa.** Relato do operador (PR #35 revisado via `/review-arch`): output usou as 3 secoes prescritas, ancoragem nominal em ADR-004/006/007, Sonnet articulou raciocinio arquitetural com profundidade qualitativamente diferente do Haiku. Padrao skill+subagent validado em 2 casos.
+
+**Categoria operacional "manutencao de docs por crescimento":** padrao replicavel para `decisoes.md`, `adrs.md`, outros docs futuros. Distinta de outras categorias operacionais ja consolidadas (auditoria meta-operacional, errata de ADR, replicacao de padrao, refinamento pos-smoke). Trata dor especifica de tamanho/legibilidade, nao de comportamento ou decisao estrutural.
+
 ### Segundo subagent: architect-reviewer + skill /review-arch (Sub-etapa 4.12)
 
 Segunda aplicacao do padrao decidido em ADR-012 (e refinado em 4.11). Marco estrutural — Camada 3 do blueprint pede 3-5 subagents focados, este e o segundo.
