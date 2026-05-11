@@ -270,7 +270,9 @@ Definir como capturar quando chegarmos na Camada 4 — não criar burocracia ago
 
 ### Licoes de ambiente
 
-(A preencher se houver durante execucao. Esperado pelo menos: padrao "decisao consciente de escopo reduzido vs licao original" formalizado -- hooks podem implementar fracao da regra quando caso completo produz falso positivo alto. Resto vira debito explicito em `hooks-pendentes.md`, nao decisao silenciosa.)
+1. **Padrao "decisao consciente de escopo reduzido vs licao original" formalizado.** Hooks podem implementar fracao da regra quando caso completo produz falso positivo alto (status M de Entity existente geraria falso positivo alto por refatoracao cosmetica). Restante vira debito explicito em `hooks-pendentes.md`, nao decisao silenciosa. Cobre o caso onde a licao original e mais ampla que o que e implementavel com confianca.
+
+2. **Heredoc PowerShell `@" ... "@` aninhado em `powershell -Command "..."` via Bash sofre conflito de escape e quebra com `TerminatorExpectedAtEndOfString`.** O shell Bash interpreta as aspas duplas dentro do heredoc antes de passar para o PowerShell, terminando a string prematuramente. Terceira recorrencia da categoria "ambiente PowerShell tem comportamento nao-obvio que quebra silenciosamente" (apos pwsh/powershell 4.1, array unwrapping 4.3, em-dash 4.4). **Fix operacional:** usar tool `Write` para criar arquivos com conteudo multi-linha em sub-etapas destrutivas; reservar `WriteAllText` para escrita simples sem heredoc em sub-etapas futuras.
 
 ## Licoes da Sub-etapa 4.6
 
