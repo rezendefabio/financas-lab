@@ -494,6 +494,24 @@ Sub-etapas que apenas adicionam hook **nao editam CLAUDE.md**. Hook entra na lis
 
 Esta regra entra nas Restricoes/freios dos prompts futuros: "verificar se a sub-etapa muda stack/ambiente/convencoes/restricoes. Se sim, atualizar CLAUDE.md no escopo da sub-etapa. Se nao, nao tocar em CLAUDE.md".
 
+### @Entity sem migration Flyway (Sub-etapa 4.7)
+
+**Regra:** se `.java` novo (status `A` no diff) sob `src/main/java/` contem `@Entity`, deve haver pelo menos um arquivo `.sql` novo em `src/main/resources/db/migration/V<n>__*.sql` no mesmo commit. Caso contrario, commit bloqueado.
+
+**Por que:** licao 2.1 -- nova `@Entity` sem migration cria divergencia entre codigo e schema. Hibernate pode tentar criar tabela em runtime, mas isso e proibido em producao (`ddl-auto=validate`). Build local passa, prod quebra ao subir.
+
+**Escopo reduzido conscientemente -- caso edge fora desta sub-etapa:**
+
+Texto original da licao 2.1 em `docs/hooks-pendentes.md` menciona: "Modificacao de `@Entity` JPA exige migration Flyway no mesmo PR". Esta sub-etapa implementa apenas o caso de Entity **nova** (status `A`), nao modificacao (status `M`).
+
+Razao: status `M` produziria falso positivo alto. Refatoracao cosmetica de Entity existente (rename de variavel Java sem `@Column(name=...)`, adicao de comentario, mudanca de formatacao) nao requer migration -- mas hook nao distingue isso sem parser de Java. Forcar criacao de migration vazia destruiria confianca no hook rapidamente.
+
+Caso "modificacao de Entity existente requer migration" fica como **debito conscientemente aceito**, registrado em `docs/hooks-pendentes.md` na lista "Pendentes". Hoje, modificacao depende de disciplina do dev + revisao de PR. Se aparecer dor real (CI quebrar por esquecimento), sub-etapa futura calibra implementacao mais sofisticada (talvez parsing de diff `git diff --cached -U0 <arquivo>` para detectar adicao de `@Column`).
+
+**Valor da migration e livre:** hook valida **presenca**, nao conteudo. Multiplas Entities + 1 migration consolidada = aceito (cobertura e responsabilidade do dev). Analogo ao Maven `<release>` (4.5) que valida presenca da tag, nao valor.
+
+**Hook implementado em:** `.claude/hooks/java-spring/entity-migration.ps1`, quinto hook no orquestrador `pre-commit`, segundo em java-spring.
+
 ### Claude Code hooks nativos
 
 Mecanismo `PreToolUse`/`Stop`/`UserPromptSubmit` em `.claude/settings.json` é tratado em sub-etapa própria após 4.2. Diferente de git hooks: atua sobre comportamento do agente, não validação de código.
@@ -523,6 +541,7 @@ Lembretes operacionais que regem decisões em chats futuros:
 
 ### Histórico de mudanças
 
+- **2026-05-11** — Sub-etapa 4.7 concluida: sexto hook funcional, segundo de stack java-spring. `@Entity` novo (status A) exige migration Flyway nova no mesmo commit. Modo conservador conscientemente reduzido vs licao original 2.1 (modificacao de Entity existente fica como debito explicito, registrado em hooks-pendentes.md). Hook preventivo -- projeto ja tem ratio coerente (3 Entities + 4 migrations). 6 cenarios destrutivos sob ADR-011, incluindo modificacao de Entity real (Categoria.java) para confirmar empiricamente que hook nao dispara em status M. Mergeado via PR #47.
 - **2026-05-11** — Sub-etapa 4.6 concluida: CLAUDE.md do projeto substituido (placeholder 21 linhas da Camada 1 -> versao estrutural 95 linhas, 7 secoes). Conteudo volatil delegado para `docs/` via links. Regra de atualizacao formalizada: editado apenas em sub-etapas que mudam stack/ambiente/convencoes/restricoes. Primeira sub-etapa de curadoria (nao de codigo). PR #46.
 - **2026-05-11** — Sub-etapa 4.5 concluida: quinto hook funcional, primeiro de stack (java-spring). Maven `<release>` em modo fail. `.claude/hooks/java-spring/` ativada (primeira ocupacao apos 4.0). Padrao consolidado: orquestrador `pre-commit` agnostico a escopo; cada hook filtra aplicabilidade internamente. Hook preventivo — `pom.xml` atual ja tem `<release>${java.version}</release>` (licao 1.4 aplicada na Camada 1). Mergeado via PR #45.
 - **2026-05-11** — Sub-etapa 4.4 concluida: quarto hook funcional. Tamanho de docs em modo warn (`.md` em `docs/` com mais de 800 linhas gera alerta sem bloquear). Estabelece padrao `warn` para regras subjetivas vs `fail` para regras objetivas. Lote universal de Markdown fechado (encoding, blank lines, tamanho). Mergeado via PR #44.
