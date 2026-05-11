@@ -418,6 +418,18 @@ Ou usar path absoluto (`"$PWD\arquivo"`). Sem isso, arquivo e gravado em diretor
 
 **Aplica retroativamente:** sub-etapas 4.3+ devem incluir esses gates no roteiro de validacao destrutiva. Sub-etapas 4.0 a 4.2 ja mergeadas nao sao revistas — confirmacao empirica posterior (smoke test pos-merge da 4.2 corrigido) validou que o codigo dessas sub-etapas esta correto.
 
+### Blank lines em Markdown (Sub-etapa 4.3)
+
+**Regra:** arquivos `.md` staged devem ter linha em branco antes E depois de cada header de nivel 2-6 (`##` ate `######`). Headers de nivel 1 (`#`) sao ignorados (tipicamente titulo do documento).
+
+**Escopo:** apenas `.md` (nao `.markdown`, nao `.mdx`). Qualquer pasta (nao restrito a `docs/`).
+
+**Fronteira do arquivo e linha em branco implicita:** header na primeira linha nao precisa de linha em branco antes. Header na ultima linha nao precisa de linha em branco depois.
+
+**Headers dentro de blocos de codigo (`` ``` ``)** sao ignorados — sao exemplos, nao headers reais. Blocos indentados com 4 espacos nao sao cobertos (limitacao consciente; raro em pratica moderna).
+
+**Hook implementado em:** `.claude/hooks/universal/markdown-blank-lines.ps1`, segundo hook a viver dentro do orquestrador `pre-commit` (4.2). Apenas uma linha adicionada ao array `$hooks` em `.githooks/pre-commit.ps1` — sem refatorar arquitetura.
+
 ### Claude Code hooks nativos
 
 Mecanismo `PreToolUse`/`Stop`/`UserPromptSubmit` em `.claude/settings.json` é tratado em sub-etapa própria após 4.2. Diferente de git hooks: atua sobre comportamento do agente, não validação de código.
@@ -447,6 +459,7 @@ Lembretes operacionais que regem decisões em chats futuros:
 
 ### Histórico de mudanças
 
+- **2026-05-10** — Sub-etapa 4.3 concluida: terceiro hook funcional. Markdown blank lines validado em `pre-commit`. Regra: headers nivel 2-6 exigem linha em branco antes e depois; nivel 1 ignorado; fronteira do arquivo e linha em branco implicita; blocos de codigo sao ignorados. Segundo hook no orquestrador 1:N — extensao trivial por linha no array `$hooks` (sem refatoracao). Primeira aplicacao de ADR-011 desde a redacao do prompt — 7 cenarios destrutivos validados com pre-condicoes explicitas (`Test-Path`, `git status`, sincronizacao de `Environment.CurrentDirectory`). Mergeado via PR #43.
 - **2026-05-10** — Sub-etapa 4.2.1 concluida: registra padroes de validacao destrutiva. ADR-011 formalizado. Licao descoberta em smoke test pos-merge da 4.2 onde `[System.IO.File]::WriteAllText` com path relativo em PowerShell criou arquivos em `[System.Environment]::CurrentDirectory` (`C:\Users\rezen\`) em vez de `$PWD` (`C:\projetos\financas-lab\`). Hook nao foi invocado. Comando rodou sem erro visivel. Conferencia empirica (`Get-ChildItem C:\Users\rezen\test-*.*` vazio) confirmou que agente do Claude Code nao caiu nesse gotcha — risco existe apenas em sessoes onde `$PWD` e `Environment.CurrentDirectory` divergem. Sub-etapa doc-only — sem mudanca de codigo. Mergeado via PR #42.
 - **2026-05-10** — Sub-etapa 4.2 concluida: segundo hook funcional. Encoding UTF-8 implementado em 3 camadas (entrypoint bash `.githooks/pre-commit` -> orquestrador `.githooks/pre-commit.ps1` -> hook `.claude/hooks/universal/encoding-utf8.ps1`). Whitelist por extensao + nomes exatos. Regra adicional: `.ps1` rejeita BOM. Padrao orquestrador 1:N estabelecido para `pre-commit` (preparado para 4.3+). Validacao destrutiva confirmou 5 cenarios (md valido passa, ps1 com BOM bloqueia, java Latin-1 bloqueia, png ignorado, override --no-verify bypassa). Mergeado via PR #41.
 - **2026-05-10** — Sub-etapa 4.1 concluida: primeiro hook funcional do projeto. Conventional Commits implementado em 3 camadas (entrypoint bash `.githooks/commit-msg` -> companheiro `.githooks/commit-msg.ps1` -> hook `.claude/hooks/universal/conventional-commits.ps1`). Tipos permitidos: feat, fix, chore, docs, test, refactor, style, perf, build, ci. Scope opcional, breaking change via `!`, descricao minima 10 chars. Override `--no-verify` documentado como escape valido. Entrypoint usa `powershell` (Windows PowerShell 5.1, unico PS disponivel neste ambiente). Validacao destrutiva confirmou bloqueio de mensagem invalida + bypass por --no-verify. Mergeado via PR #40.
