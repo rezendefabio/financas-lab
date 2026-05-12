@@ -788,8 +788,42 @@ Numeracao automatica (max das migrations existentes + 1). Colisao impossivel dur
 normal (um desenvolvedor, sem migrations paralelas). Se colisao ocorrer: migration-writer
 reporta o conflito e nao sobrescreve.
 
+## Sub-etapa 4.24 -- Skill `/migrate` orquestradora
+
+### Terceira categoria de skill
+
+O projeto agora tem tres categorias de skill:
+
+1. **Skill direta** (4.19-4.22): `disable-model-invocation: true`, sem `context: fork`.
+   Claude Code executa instrucoes que usam ferramentas (Bash, Write, Grep) diretamente.
+   Adequada para: sequencias procedurais de comandos shell.
+
+2. **Skill-com-fork** (4.17-4.18, 4.23): `context: fork` + `agent: <nome>`.
+   Claude Code forca novo contexto com subagent especializado.
+   Adequada para: raciocinio de dominio (geracao de codigo, SQL).
+
+3. **Skill orquestradora** (4.24): `disable-model-invocation: true`, sem fork proprio.
+   Claude Code invoca outras skills em sequencia via Skill tool.
+   Adequada para: composicao de workflows existentes sem logica propria.
+
+### Decisao: stop-on-first-failure
+
+`/migrate` para se a migration falhar -- nao invoca `/write-test` se SQL nao foi gerado.
+Racional: unit test de domain POJO pode existir independentemente da migration (a migracao
+e que precisa existir antes do commit com @Entity). Reversao da migration nao e prescrita
+(operador decide).
+
+### Decisao: sem logica propria
+
+`/migrate` nao duplica logica dos subagents. Toda geracao e responsabilidade de
+`migration-writer` e `test-writer`. `/migrate` e apenas um script de orquestracao.
+
+---
+
 ## Historico de mudancas deste documento
 
+- **2026-05-12** -- Sub-etapa 4.24 concluida: skill `/migrate` orquestradora (terceira
+  categoria). Taxonomia de skills do projeto consolidada em 3 categorias. PR #70.
 - **2026-05-12** -- Sub-etapa 4.23 concluida: subagent `migration-writer` (segundo gerador
   do projeto). Derivacao Java -> SQL de anotacoes JPA. Escopo deliberadamente basico
   (sem FK/CHECK/indexes). Numeracao Flyway automatica. Pre-requisito para 4.24. PR #69.
