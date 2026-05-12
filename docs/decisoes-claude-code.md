@@ -648,3 +648,65 @@ Diferente da 4.17 (sem cobaia legitima -> smoke parcial honesto), a 4.18 tem **c
 
 Mecanismo `PreToolUse`/`Stop`/`UserPromptSubmit` em `.claude/settings.json` é tratado em sub-etapa própria após 4.2. Diferente de git hooks: atua sobre comportamento do agente, não validação de código.
 
+## Sub-etapa 4.19 -- Skill `/feature` sem subagent
+
+### Decisao: skill direta vs skill-com-fork
+
+ADR-012 (4.10/4.11) prescreveu o padrao `skill orquestradora -> subagent dedicado`
+para tarefas que exigem fork de contexto. A 4.19 introduz variante nova: **skill
+direta sem subagent**. Claude Code principal le o `SKILL.md` e executa as instrucoes
+com seus proprios tools (Write + Bash), sem fork.
+
+Criterio de escolha entre os dois padroes:
+
+| Padrao | Quando usar |
+|---|---|
+| Skill com fork (ADR-012) | Tarefa exige isolamento de contexto, modelo diferente do principal, ou tools mais restritas |
+| Skill direta (4.19) | Tarefa e procedural (sequencia de Write + Bash), sem necessidade de isolamento, sem logica de negocio emergente |
+
+`/feature` e claramente procedural: valida argumento, cria diretorios, escreve 11
+arquivos de template fixo, reporta resultado. Nao ha raciocinio de dominio que
+justifique isolamento em subagent.
+
+### Frontmatter da skill direta
+
+```yaml
+name: feature
+disable-model-invocation: true
+argument-hint: [nome-do-bounded-context]
+```
+
+Ausencia de `context: fork` e `agent:` e intencional e distingue a skill direta das
+skills-com-fork existentes. Sem `allowed-tools` restrito -- Claude Code usa seus tools
+normais (Write, Bash) conforme prescrito pelo corpo do SKILL.md.
+
+### Categoria operacional
+
+"Primeira aplicacao de padrao em eixo novo" -- mesma da 4.17 (primeiro subagent
+gerador). A 4.19 estreia o eixo "skill sem subagent", distinto de:
+
+- skills-com-fork (review-pr 4.11, review-arch 4.12, write-test 4.17)
+- subagents revisores (pr-reviewer 4.9, architect-reviewer 4.12)
+- subagents geradores (test-writer 4.17)
+
+### Smoke parcial honesto
+
+Cobaia natural nao disponivel (operador nao tem bounded context novo para produzir
+agora). Smoke verifica: (1) skill executa sem erro; (2) 11 arquivos criados com
+conteudo correto; (3) `mvn compile` passa. `mvn verify` e responsabilidade do
+desenvolvedor apos criar migration Flyway para a Entity gerada (hook 4.7 bloqueia
+commit sem migration). Padrao registrado pela segunda vez (primeira: 4.17).
+
+### Aviso para uso real
+
+O skeleton gerado inclui `@Entity` em `NOMEEntity.java`. Hook 4.7 bloqueia commit de
+arquivo Java novo com `@Entity` sem migration Flyway correspondente. Desenvolvedor
+deve criar `V<n>__create_ARG_table.sql` antes de commitar o bounded context.
+
+## Historico de mudancas deste documento
+
+- **2026-05-12** -- Sub-etapa 4.19 concluida: skill `/feature <nome>` direta (sem
+  subagent). Padrao novo: skill procedural usa Write + Bash sem fork. Criterio de
+  escolha entre skill-com-fork e skill-direta registrado. Categoria "primeira aplicacao
+  de padrao em eixo novo". Smoke parcial honesto (segunda aplicacao do padrao). PR #65.
+
