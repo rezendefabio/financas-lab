@@ -81,7 +81,7 @@ Documentos de referencia em `docs/`:
 - `progresso.md` -- onde estamos. Tracking de Camadas e sub-etapas. Licoes meta-operacionais.
 - `progresso-historico.md` -- historico arquivado de Camadas concluidas (Camadas 0, 1, 2 ate sub-etapa 3.8).
 - `decisoes.md` -- escolhas tomadas. Por que cada regra existe (decisoes fundacionais: stack, arquitetura, convencoes).
-- `decisoes-claude-code.md` -- decisoes operacionais da Camada 3 (hooks, subagents, skills, padroes de validacao destrutiva).
+- `decisoes-claude-code.md` -- decisoes operacionais da Camada 3 (sub-etapas 4.19+). Historico arquivado em `decisoes-claude-code-historico.md` (4.0-4.18).
 - `adrs.md` -- decisoes arquiteturais formais.
 - `hooks-pendentes.md` -- backlog de hooks + hooks implementados (lista completa).
 - `visao.md` -- direcao do projeto e Camadas planejadas.
