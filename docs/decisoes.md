@@ -652,6 +652,33 @@ Sub-etapa de manutencao que inaugura categoria "manutencao de docs por crescimen
 
 **Categoria operacional "manutencao de docs por crescimento":** padrao replicavel para `decisoes.md`, `adrs.md`, outros docs futuros. Distinta de outras categorias operacionais ja consolidadas (auditoria meta-operacional, errata de ADR, replicacao de padrao, refinamento pos-smoke). Trata dor especifica de tamanho/legibilidade, nao de comportamento ou decisao estrutural.
 
+### Hook 4.4 exclui `docs/prompts/` (Sub-etapa 4.14)
+
+Sub-etapa de refactor de hook existente — primeira do projeto. Categoria nova: **"ajuste de hook por contexto novo"**. Hook `docs-size.ps1` (4.4, modo warn) modificado para ignorar `.md` em `docs/prompts/`.
+
+**Por que:** a 4.13 (manutencao de docs por crescimento) criou `docs/prompts/` movendo 43 prompts versionados para la via `git mv`. Hook 4.4 passou a alertar em prompts antigos longos (4.11 ~870 linhas, 4.12 953, 4.13 1018) — falso positivo. Prompts versionados sao **registros historicos por natureza**; tamanho nao e criterio de qualidade.
+
+**Mudanca cirurgica:** filtro de path do hook ganha exclusao `docs/prompts/`. Comportamento original (alerta para `.md` em `docs/` >800 linhas) preservado para `docs/` raiz e qualquer subpasta futura que nao seja `docs/prompts/`. Modo `warn` mantido, limite 800 mantido, extensao `.md` mantida.
+
+**Outros hooks que tocam `.md` permanecem inalterados:**
+
+- **Hook 4.2** (encoding UTF-8): continua atuando em `docs/prompts/`. Encoding e convencao de qualidade que vale para qualquer `.md` no repo.
+- **Hook 4.3** (Markdown blank lines): continua atuando em `docs/prompts/`. Mesma justificativa.
+
+Hook 4.4 isenta `docs/prompts/` **porque tamanho e fenomeno emergente** de sub-etapas complexas, nao desvio de qualidade.
+
+**Categoria operacional nova: "ajuste de hook por contexto novo".** Hook cumpre regra original; sub-etapa posterior (aqui 4.13) cria contexto onde regra original gera falso positivo. Refactor ajusta hook ao contexto sem reverter intencao. Distinta de:
+
+- **"Patch tecnico"** (4.0.1): corrige bug do entregue.
+- **"Refinamento pos-smoke empirico"** (4.9.1): componente funcional mas output divergente.
+- **"Errata de ADR baseada em descoberta de documentacao oficial"** (4.11): decisao estrutural preservada, mecanismo literal refinado.
+
+Aplicavel a futuros casos onde subpasta criada por sub-etapa posterior introduz contexto que invalida regra de hook existente.
+
+**Validacao destrutiva sob ADR-011:** 6 cenarios cobrindo comportamento original preservado + comportamento novo introduzido. Detalhes no PR body da 4.14.
+
+**Debito da 4.13 resolvido:** item "modificar hook 4.4 para excluir docs/prompts/" removido de `hooks-pendentes.md`. Padrao operacional: debito originario de sub-etapa anterior resolvido em sub-etapa subsequente — cadeia "X cria contexto -> X+N resolve debito de contexto".
+
 ### Segundo subagent: architect-reviewer + skill /review-arch (Sub-etapa 4.12)
 
 Segunda aplicacao do padrao decidido em ADR-012 (e refinado em 4.11). Marco estrutural — Camada 3 do blueprint pede 3-5 subagents focados, este e o segundo.
