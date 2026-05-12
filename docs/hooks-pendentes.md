@@ -121,8 +121,6 @@ Itens descobertos na Sub-etapa 4.10 (auditoria meta-operacional). Nao sao hooks 
 
 - **Transcripts em `~/.claude/projects/<hash>/<conversa-hash>/` sem rotina de expiracao.** (Achado 4.15 via auditoria empirica.) ~427 MB acumulados em 17 projetos do operador. Maior conversa unica: 90 MB. Sem mecanismo automatico de expiracao por idade ou limpeza. **Fora do escopo do projeto `financas-lab`** -- gestao de storage do Claude Code e decisao pessoal sobre setup, nao do projeto. Registrado para visibilidade. Acao: nenhuma do lado do projeto. Operador pode considerar limpeza periodica de transcripts antigos no proprio fluxo (fora desta sub-etapa).
 
-- **Aplicar split analogo em `decisoes.md` quando cruzar 800 linhas.** (Descoberto na 4.13.) `decisoes.md` em ~600 linhas hoje, ainda navegavel. Padrao consolidado pela 4.13: split por secao funcional — subsecoes de sub-etapas antigas (`### <decisao> (Sub-etapa X.Y)`) movem para `decisoes-historico.md` quando dor real aparecer. Criterio paralelo ao do `progresso.md`: agrupar por Camada cobertas pelas subsecoes (ex: subsecoes 4.0-4.7 se decisao agrupar bem por sub-etapas iniciais; ou por bloco conceitual: stack, convencoes operacionais, decisoes de Claude Code). Resolver quando hook 4.4 alertar consistentemente em `decisoes.md`.
-
 ## Hooks implementados
 
 Itens originalmente listados em "Hooks Markdown / docs" ou outras secoes, agora implementados e ativos no projeto. Mantidos aqui como historico de progresso da Camada 3.
