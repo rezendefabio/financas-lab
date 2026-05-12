@@ -526,6 +526,51 @@ Categoria distinta de subagent dentro do padrao ADR-012:
 
 **Atencao especial:** o smoke da 4.17 e qualitativamente diferente dos smokes anteriores. Anteriores validavam "output e texto bem-formatado". 4.17 valida "output e codigo que compila e passa nos testes". Falha aqui e visivelmente quantificavel (`./mvnw test` reporta).
 
+### Refinamento pos-smoke do test-writer: comportamento "arquivo ja existe" (Sub-etapa 4.17.1)
+
+Sub-etapa de **refinamento pos-smoke empirico** — segunda aplicacao da categoria 4.9.1. Smoke da 4.17 (conduzido em `Conta.java`) revelou borda nao-coberta pelo system prompt do `test-writer`: o arquivo de teste alvo (`ContaTest.java`) ja existia no projeto, com cobertura cuidadosa manual.
+
+**Comportamento improvisado no smoke da 4.17:**
+
+Subagent percebeu que `ContaTest.java` ja existia, decidiu nao sobrescrever, e conduziu **auditoria minuciosa** da cobertura existente — analise organizada por escopo (construtor "novo", construtor de reconstrucao, metodos, equals/hashCode, toString), com identificacao de cobertura tautologica omitida deliberadamente. Output tecnicamente de alta qualidade, **mas comportamento improvisado** (nao prescrito no system prompt).
+
+**Por que improvisacao precisa virar prescricao:**
+
+Smoke validou que Sonnet toma decisoes sensatas em borda nao-coberta (escolheu auditar em vez de sobrescrever destrutivamente — opcao menos destrutiva entre as disponiveis). Mas confiar em improvisacao recorrente e risco — proxima invocacao pode improvisar diferente (pior — ex: sobrescrever sem confirmar). Padrao operacional: **improvisacao bem-sucedida em smoke vira prescricao em refinamento subsequente**.
+
+**Prescricao adicionada ao system prompt:**
+
+Passo "0" inserido no fluxo (renumera demais para 2+):
+
+> Antes de gerar, verifique se o arquivo de teste alvo ja existe. Se existir: NAO sobrescreva. Rode `./mvnw test -Dtest=<NomeDoTest>` para confirmar que o existente passa. Reporte usando template padrao (Arquivo gerado: "Nenhum"). Cobertura: resumo em ate 3 linhas, sem bullets. Decisao: 2 opcoes ao operador — (a) remover arquivo e re-invocar, ou (b) aceitar existente. NAO faca analise minuciosa de cobertura.
+
+**Razao da restricao "max 3 linhas, sem bullets" no resumo:**
+
+Analise minuciosa e responsabilidade de comando separado (`/review-test` se entregue no futuro), nao do `test-writer`. Geradores entregam artefato + meta-informacao curta; revisores entregam analise estruturada. Manter limite de escopo entre eles.
+
+**Exemplo few-shot 3 adicionado** ilustrando "arquivo ja existe":
+
+- Cenario: invocacao em `Conta.java`, `ContaTest.java` existe com 28/28 testes passando.
+- Output: 5 secoes do template, Secao "Arquivo gerado" indica "Nenhum", Secao "Cobertura" em 1 linha curta, Secao "Decisao" lista as 2 opcoes.
+
+**2 restricoes novas em "O que NAO fazer":**
+
+- NAO faca analise minuciosa de cobertura quando arquivo de teste ja existe (resumo em ate 3 linhas, sem bullets).
+- NAO sobrescreva arquivo de teste pre-existente.
+
+**Smoke da 4.17 mantido como "validacao parcial" honestamente.** `progresso.md` mantem `[ ] Smoke pos-merge da 4.17` com nota explicativa: subagent invocado via fork OK, template OK, validacao via mvnw OK, mas geracao propriamente dita nao exercitada. Smoke completo aguarda primeiro uso real em contexto da Camada 4 (quando feature nova trouxer classe de domain sem teste ainda).
+
+**Padrao operacional novo: smoke parcial registrado honestamente.** Em vez de marcar `[x]` (mentira parcial) ou abandonar (perda de info), padrao "manter como `[ ]` com nota explicativa" formalizado. Aplicavel a futuros smokes que tropecem em contexto que invalida validacao completa — inventario empirico das 11 classes de domain sem teste no projeto (todas eram boilerplate: interfaces, exceptions, enums, records sem logica) confirmou que cobaia legitima exigiria classe nova com comportamento real, que so virá na Camada 4.
+
+**CLAUDE.md NAO atualizado nesta sub-etapa.** Refinamento de comportamento de subagent nao muda convencao do projeto. Regra 4.6 preservada.
+
+**Categoria operacional consolidada por dupla aplicacao: "refinamento pos-smoke empirico".** Primeira foi a 4.9.1 (refinamento do `pr-reviewer` pos-smoke). Distinta de:
+
+- **"Patch tecnico"** (4.0.1): corrige bug do entregue.
+- **"Ajuste de hook por contexto novo"** (4.14): hook cumpre regra, contexto invalida.
+- **"Errata de auditoria meta-operacional"** (4.15): auditoria com premissa errada.
+- **Esta categoria:** smoke empirico revela borda nao-coberta pelo system prompt; sub-etapa cirurgica adiciona prescricao explicita sem mudar o resto do componente. Padrao replicavel para qualquer subagent ou skill futuro cujo smoke revele borda similar.
+
 ### Claude Code hooks nativos
 
 Mecanismo `PreToolUse`/`Stop`/`UserPromptSubmit` em `.claude/settings.json` é tratado em sub-etapa própria após 4.2. Diferente de git hooks: atua sobre comportamento do agente, não validação de código.

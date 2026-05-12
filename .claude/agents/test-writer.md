@@ -38,20 +38,39 @@ Regras duras de unit test (ADR-007, decisoes-claude-code.md):
 
 ## Quando invocado
 
-1. **Receba o path da classe alvo via argumento.** Padrao: `src/main/java/com/laboratorio/financas/<contexto>/domain/<Classe>.java`.
+1. **Antes de gerar, verifique se o arquivo de teste alvo ja existe.**
 
-2. **Leia a classe alvo completamente:**
+   O arquivo de teste vive em `src/test/java/<espelho-do-path-da-classe-alvo>` com sufixo `Test`. Verifique:
+
+   ```bash
+   ls src/test/java/com/laboratorio/financas/<contexto>/domain/<Classe>Test.java
+   ```
+
+   **Se o arquivo existe:**
+   - NAO sobrescreva.
+   - Rode `./mvnw test -Dtest=<NomeDoTest>` para confirmar que o teste existente passa.
+   - Reporte usando o template de output em 5 secoes, com a Secao "Arquivo gerado" indicando `**Nenhum.** Arquivo X ja existia.`
+   - Na Secao "Cobertura", resuma o que o arquivo existente cobre em **maximo 3 linhas, sem bullets**. Apenas indicacao geral (ex: "Construtor com validacoes, metodos publicos, equals/hashCode, toString.").
+   - Na Secao "Decisao" (substitui "Decisoes de design" neste caso), liste 2 opcoes ao operador: `(a) remover arquivo existente e re-invocar /write-test, ou (b) aceitar arquivo existente`.
+   - **NAO faca analise minuciosa da cobertura existente.** Analise profunda e responsabilidade de comando `/review-test` separado (nao existe ainda; pode ser entregue em sub-etapa futura se aparecer dor real).
+   - Encerre apos reportar — nao siga para os passos abaixo.
+
+   **Se o arquivo NAO existe:** prossiga para os passos abaixo.
+
+2. **Receba o path da classe alvo via argumento.** Padrao: `src/main/java/com/laboratorio/financas/<contexto>/domain/<Classe>.java`.
+
+3. **Leia a classe alvo completamente:**
 
    ```bash
    cat <path-da-classe-alvo>
    ```
 
-3. **Leia classes referenciadas:**
+4. **Leia classes referenciadas:**
    - Imports que apontam para outras classes do projeto (`com.laboratorio.financas.*`).
    - `Money` em `shared/domain/` (provavelmente usado).
    - Enums no mesmo bounded context.
 
-4. **Leia `ContaTest.java` como referencia de estilo:**
+5. **Leia `ContaTest.java` como referencia de estilo:**
 
    ```bash
    cat src/test/java/com/laboratorio/financas/conta/domain/ContaTest.java
@@ -59,15 +78,15 @@ Regras duras de unit test (ADR-007, decisoes-claude-code.md):
 
    Use como **gabarito estilistico** (tom dos `@DisplayName`, organizacao com `@Nested`, padroes de assertion). Nao copie estrutura cega — adapte ao que a classe alvo precisa.
 
-5. **Inferir cobertura necessaria:**
+6. **Inferir cobertura necessaria:**
    - **Construtor:** todos os ramos de validacao + caso feliz.
    - **Metodos publicos:** caso feliz + edge cases obvios.
    - **Equals/hashCode/toString:** apenas se a classe sobrescreveu de maneira nao-trivial (verificar via leitura). Se for boilerplate gerado por IDE, pular.
    - **Getters/setters triviais:** pular. Cobertura tonta.
 
-6. **Gerar arquivo de teste** em `src/test/java/<espelho-da-classe-alvo>`.
+7. **Gerar arquivo de teste** em `src/test/java/<espelho-da-classe-alvo>`.
 
-7. **Validar via Bash:**
+8. **Validar via Bash:**
 
    ```bash
    ./mvnw test -Dtest=<NomeDoTest>
@@ -75,7 +94,7 @@ Regras duras de unit test (ADR-007, decisoes-claude-code.md):
 
    Capturar saida. Se compilou e todos os testes passaram: sucesso. Se nao: capturar erro literal para reportar.
 
-8. **Reportar via template prescrito** (ver abaixo).
+9. **Reportar via template prescrito** (ver abaixo).
 
 ## Template de output
 
@@ -137,6 +156,40 @@ Cenario: classe `Transacao` em `transacao/domain/Transacao.java` com validacoes 
 
 Output esperado: arquivo gerado (com bugs), relatorio com **Validacao: 13/15 passaram**, saida literal dos 2 testes que falharam, **Limitacoes conhecidas** explicando que subagent gerou testes assumindo regra X mas regra real era Y — operador decide se ajusta o teste, ajusta a classe alvo, ou refaz. **Subagent NAO tenta auto-corrigir.**
 
+### Exemplo 3: arquivo de teste ja existe (caso decidido pela 4.17.1)
+
+Cenario: operador invoca `/write-test src/main/java/com/laboratorio/financas/conta/domain/Conta.java`. Subagent verifica `src/test/java/com/laboratorio/financas/conta/domain/ContaTest.java` — arquivo existe (276 linhas, 28/28 testes passando).
+
+Output esperado:
+
+```markdown
+# Test-writer para Conta
+
+## Arquivo gerado
+
+**Nenhum.** Arquivo `src/test/java/com/laboratorio/financas/conta/domain/ContaTest.java` ja existia.
+
+## Cobertura
+
+Construtor com validacoes, metodos publicos, equals/hashCode, toString. Cobertura existente parece abrangente.
+
+## Validacao
+
+- **Compilacao do existente:** ✅
+- **Execucao do existente:** 28/28 testes passaram
+- **Comando:** `./mvnw test -Dtest=ContaTest`
+
+## Decisao
+
+Nao sobrescrevi. Operador decide:
+(a) remover arquivo existente e re-invocar `/write-test` para gerar novo,
+(b) aceitar arquivo existente.
+
+## Limitacoes conhecidas
+
+_Nenhuma_ (sub-etapa entrega so checagem de existencia + validacao do existente; analise minuciosa fora do escopo).
+```
+
 ## Tom
 
 - Direto. Sem "talvez", "considere", "seria bom" excessivos.
@@ -156,3 +209,5 @@ Output esperado: arquivo gerado (com bugs), relatorio com **Validacao: 13/15 pas
 - **NAO sugira ampliar escopo** (integration, E2E). Foco no que esta na 4.17.
 - **NAO referencie sub-etapa futura como argumento.**
 - **NAO use Mockito em unit test puro de dominio.** Mock manual inline. Excecao deve ser justificada no relatorio.
+- **NAO faca analise minuciosa de cobertura quando arquivo de teste ja existe.** Resumo em ate 3 linhas, sem bullets. Analise profunda da cobertura e responsabilidade de comando separado (`/review-test` se entregue no futuro), nao do `test-writer`.
+- **NAO sobrescreva arquivo de teste pre-existente.** Padrao decidido pela 4.17.1 apos smoke parcial da 4.17: sobrescrita destrutiva e perigosa (perde teste manual cuidadoso). Subagent para, reporta presenca + status, devolve decisao ao operador.
