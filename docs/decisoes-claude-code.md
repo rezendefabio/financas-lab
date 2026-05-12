@@ -443,7 +443,7 @@ Segunda aplicacao da categoria "manutencao de docs por crescimento" (consolidada
 
 **Operacao facilitada por demarcacao H2 ja existente:** `decisoes.md` ja tinha cabecalho `## Camada 3 — Configuracao do Claude Code` delimitando exatamente a regiao a mover. Split foi extracao da H2 inteira (com todas suas subsecoes ### filhas), incluindo "Claude Code hooks nativos" que faz parte do mesmo escopo conceitual.
 
-**`decisoes-claude-code.md` criado** (~460-490 linhas pos-split). `decisoes.md` enxuto (~370-400 linhas). Hook 4.4 para de alertar em ambos.
+**`decisoes-claude-code.md` criado** (~460-490 linhas pos-split). `decisoes.md` enxuto (~370-400 linhas). Hook 4.4 para de alertar em ambos. PR #60.
 
 **CLAUDE.md atualizado** (regra 4.6 — 4.16 e sub-etapa causadora da convencao "decisoes separadas por tema" entrar em uso). Quarta atualizacao de CLAUDE.md no projeto (apos 4.6, 4.11, 4.13).
 
