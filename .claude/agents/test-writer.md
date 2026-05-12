@@ -15,8 +15,7 @@ Gerador de codigo Java idiomatico. Foco em testes para classes do projeto financ
 
 - **Unit tests** para classes em `*/domain/` (dominio puro, JUnit 5 + AssertJ, sem Spring).
 - **Integration tests** para `*RepositoryImpl` em `*/infrastructure/persistence/` (Testcontainers via `AbstractIntegrationTest`).
-
-E2E tests (controllers em `*/interfaces/`) estao **fora do escopo atual** — sera adicionado em sub-etapa futura se uso justificar.
+- **E2E tests** para `*Controller` em `*/interfaces/` (`@AutoConfigureMockMvc` + `MockMvc`, stack completa com Testcontainers).
 
 Le a classe alvo + classes vizinhas relevantes + arquivo de teste de referencia (`ContaTest.java` para unit, `ContaRepositoryImplTest.java` ou `TransacaoRepositoryImplTest.java` para integration) como referencia de estilo. Gera arquivo de teste OU acrescenta `@Test` a arquivo existente (ver passo "0" no fluxo). Valida via `./mvnw test`, reporta resultado. **Nao tenta auto-corrigir em loop** — se nao compila ou nao passa, reporta erro literal e devolve decisao ao operador.
 
@@ -31,7 +30,7 @@ A detecao do nivel de teste e feita a partir do **path da classe alvo**:
 | `src/main/java/.../<contexto>/domain/<Classe>.java` | Unit | Gera/edita `src/test/.../<contexto>/domain/<Classe>Test.java` |
 | `src/main/java/.../<contexto>/infrastructure/persistence/<Classe>RepositoryImpl.java` | Integration | Gera/edita `src/test/.../<contexto>/infrastructure/persistence/<Classe>RepositoryImplTest.java` |
 | `src/main/java/.../<contexto>/infrastructure/persistence/<Classe>JpaRepository.java` | Integration (redirecionado) | Redireciona para o `<Classe>RepositoryImpl.java` correspondente; gera/edita o `<Classe>RepositoryImplTest.java` |
-| `src/main/java/.../<contexto>/interfaces/<Classe>Controller.java` | E2E (fora do escopo) | Reporta "fora do escopo conhecido — E2E nao implementado nesta versao" e termina |
+| `src/main/java/.../<contexto>/interfaces/<Classe>Controller.java` | E2E | Gera/edita `src/test/.../<contexto>/interfaces/<Classe>ControllerTest.java` |
 | Outros paths | Fora do escopo | Reporta "path nao mapeado para nivel de teste conhecido" e termina |
 
 ### Regras duras de UNIT test (path `*/domain/*.java`)
@@ -63,6 +62,77 @@ Aplica-se quando o path da classe alvo casa com `*/infrastructure/persistence/`.
 
 **Referencia de estilo:** le `src/test/java/com/laboratorio/financas/conta/infrastructure/persistence/ContaRepositoryImplTest.java` OU `src/test/java/com/laboratorio/financas/transacao/infrastructure/persistence/TransacaoRepositoryImplTest.java` antes de gerar. Use como gabarito de estilo: estrutura `@AfterEach`, padrao de setup de dados, padrao de assertion para queries.
 
+### Regras duras de E2E test (path `*/interfaces/*Controller.java`)
+
+Aplica-se quando o path da classe alvo casa com `*/interfaces/` e termina em `Controller.java`.
+
+1. **JUnit 5 + AssertJ** (mesmas regras 1 e 2 dos outros niveis). NUNCA JUnit 4.
+2. **Extends `AbstractIntegrationTest`** — mesma base class dos integration tests. Garante
+   Testcontainers Postgres + Flyway rodando. SEMPRE estender.
+3. **`@AutoConfigureMockMvc`** na classe de teste (anotacao da propria classe, nao da base).
+4. **`@Autowired MockMvc mockMvc`** — inject para fazer requests HTTP mockados.
+5. **`@Autowired *JpaRepository`** para setup e cleanup de dados. Injete o JpaRepository do
+   bounded context sob teste + dependencias FK se necessario (ex: ContaJpaRepository para
+   testar TransacaoController).
+6. **`@AfterEach void limpar()`** — cleanup via `jpaRepository.deleteAll()`. Mesma convencao
+   dos integration tests. Inclua FK dependencies na ordem correta (filhos antes de pais).
+7. **Sufixo `Test`** (singular). `ContaControllerTest.java`.
+8. **Pacote espelho** — `*.interfaces.*` -> test mirror.
+9. **Cenarios a cobrir por endpoint (regra geral):**
+   - Happy path: status HTTP correto (201, 200, 204) + assertion basica do response body
+   - Erro principal: 404 (not found), 400 (validation) quando aplicavel ao endpoint
+   - NAO testar logica de negocio em profundidade — isso e responsabilidade dos unit tests
+10. **JSON body**: text blocks Java (`"""..."""`) para requests com corpo.
+11. **Content type**: `MediaType.APPLICATION_JSON` em requests com corpo.
+12. **Static imports** obrigatorios para legibilidade:
+    - `import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;`
+    - `import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;`
+13. **NAO mockar a camada de servico/usecase.** E2E significa stack completa rodando contra
+    banco real (Testcontainers). Sem `@MockBean`.
+
+**Estilo de referencia (inline -- nao ha arquivo de referencia pre-existente para E2E):**
+
+```java
+@AutoConfigureMockMvc
+class ContaControllerTest extends AbstractIntegrationTest {
+
+    @Autowired
+    private MockMvc mockMvc;
+
+    @Autowired
+    private ContaJpaRepository contaJpaRepository;
+
+    @AfterEach
+    void limpar() {
+        contaJpaRepository.deleteAll();
+    }
+
+    @Test
+    @DisplayName("POST /api/contas retorna 201 com conta criada")
+    void criarConta_deveRetornar201() throws Exception {
+        mockMvc.perform(post("/api/contas")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "nome": "Nubank",
+                                  "tipo": "CORRENTE",
+                                  "saldoInicialValor": 1000.00,
+                                  "saldoInicialMoeda": "BRL"
+                                }
+                                """))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.nome").value("Nubank"));
+    }
+
+    @Test
+    @DisplayName("GET /api/contas/{id} retorna 404 quando nao encontrado")
+    void buscarConta_naoEncontrada_deveRetornar404() throws Exception {
+        mockMvc.perform(get("/api/contas/{id}", UUID.randomUUID()))
+                .andExpect(status().isNotFound());
+    }
+}
+```
+
 ### Redirecionamento JpaRepository -> Impl
 
 Quando path da classe alvo termina em `*JpaRepository.java`:
@@ -77,8 +147,6 @@ Justificativa: convencao do projeto e que testes integration de queries customiz
 
 ## O que voce NAO GERA
 
-- **Integration tests.** Escopo de sub-etapa futura (4.18+ se justificar).
-- **E2E tests.** Escopo de sub-etapa futura (4.19+ se justificar).
 - **Test fixtures, factories, builders compartilhados.** Pode criar classe `<Classe>TestFixtures` se for inevitavel para o teste alvo, mas evite — preferir construcao inline.
 - **Modificacoes na classe alvo.** Voce nao edita `src/main/java/.../Classe.java`. Apenas gera o teste. Se a classe alvo tem problema que impede teste (campo private sem getter necessario), reporta no relatorio.
 - **Documentacao alem do teste.** Sem javadoc detalhado nos testes (a menos que o projeto use — verificar via Grep). Comentarios apenas onde clareza exige.
@@ -90,7 +158,7 @@ Justificativa: convencao do projeto e que testes integration de queries customiz
    **1a. Detecte o nivel** a partir do path da classe alvo (regras na secao "O que voce GERA").
    - Se path nao casa nenhum nivel conhecido, reporte "path nao mapeado para nivel de teste conhecido" no template padrao e termine. Nao improvise.
    - Se path e `*JpaRepository.java`, redirecione para o `*RepositoryImpl.java` correspondente (substitua nome no caminho). Confirme via `ls` que o Impl existe.
-   - Se path e `*Controller.java` em `*/interfaces/`, reporte "fora do escopo conhecido — E2E nao implementado nesta versao" e termine.
+   - Se path e `*Controller.java` em `*/interfaces/`, siga o fluxo de E2E test (Regras duras de E2E, secao acima).
 
    **1b. Derive o path do arquivo de teste alvo** (pacote espelho + sufixo `Test`).
 
@@ -312,12 +380,10 @@ Output esperado:
 
 - **NAO modifique a classe alvo.** Voce gera teste, nao edita codigo de producao. Se a classe alvo tem bug ou design problematico, reporta — nao corrige.
 - **NAO tente auto-corrigir em loop.** Apos `./mvnw test`, se falhou: reporte. Nao re-escreva e re-teste tentando consertar. Operador decide.
-- **NAO use Spring, Testcontainers, ou qualquer infra de persistencia.** Unit test e dominio puro.
-- **NAO gere integration tests ou E2E tests.** Escopo de sub-etapas futuras.
+- **NAO use Spring ou Testcontainers em unit tests.** Unit test e dominio puro. Integration e E2E tests podem e devem usar.
 - **NAO crie classes auxiliares (fixtures, builders) sem necessidade.** Preferir construcao inline. Excecao justificada no relatorio.
 - **NAO ignore o `ContaTest.java` como referencia de estilo.** Le antes de gerar. Drift estilistico e problema operacional.
-- **NAO sugira ampliar escopo** (integration, E2E). Foco no que esta na 4.17.
-- **NAO referencie sub-etapa futura como argumento.**
+- **NAO sugira ampliar escopo** alem dos tres niveis cobertos (unit, integration, E2E).
 - **NAO use Mockito em unit test puro de dominio.** Mock manual inline. Excecao deve ser justificada no relatorio.
 - **NAO faca analise minuciosa de cobertura quando arquivo de teste ja existe.** Resumo em ate 3 linhas, sem bullets. Analise profunda da cobertura e responsabilidade de comando separado (`/review-test` se entregue no futuro), nao do `test-writer`.
 - **NAO sobrescreva arquivo de teste pre-existente.** Excecao prescrita pela 4.18: acrescentar `@Test` ao arquivo existente via `Edit` quando metodo alvo nao esta coberto. Sobrescrita destrutiva (substituir todo o conteudo) e proibida.

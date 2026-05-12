@@ -818,10 +818,47 @@ e que precisa existir antes do commit com @Entity). Reversao da migration nao e 
 `/migrate` nao duplica logica dos subagents. Toda geracao e responsabilidade de
 `migration-writer` e `test-writer`. `/migrate` e apenas um script de orquestracao.
 
+## Sub-etapa 4.25 -- E2E tests e fechamento da Camada 3
+
+### Terceiro nivel de teste no test-writer
+
+Taxonomia de niveis de teste consolidada:
+
+| Nivel | Path | Framework | Infra |
+|-------|------|-----------|-------|
+| Unit | `*/domain/*.java` | JUnit 5 + AssertJ | Nenhuma |
+| Integration | `*/infrastructure/persistence/*RepositoryImpl.java` | JUnit 5 + AssertJ + Testcontainers | AbstractIntegrationTest |
+| E2E | `*/interfaces/*Controller.java` | JUnit 5 + AssertJ + MockMvc + Testcontainers | AbstractIntegrationTest + @AutoConfigureMockMvc |
+
+### Decisao: AbstractIntegrationTest como base para E2E
+
+E2E tests estendem `AbstractIntegrationTest` (mesma base dos integration tests) porque
+precisam do banco Testcontainers para o stack completo. A diferenca e so `@AutoConfigureMockMvc`
+na classe de teste para habilitar MockMvc -- `@SpringBootTest` da base ja usa webEnvironment
+MOCK por default, compativel com MockMvc.
+
+### Decisao: escopo de E2E (happy path + erro principal)
+
+E2E tests cobrem status HTTP e body minimo -- nao testam logica de negocio em profundidade.
+Racional: logica de negocio ja e coberta por unit tests de dominio; E2E serve para validar
+que o wiring (controller -> use case -> repositorio -> banco) esta correto.
+
+### Fechamento da Camada 3
+
+Camada 3 concluida com 4.25. Entregou:
+- Git hooks (4.1-4.7, 4.14): lint, encoding, markdown, stack, docs-size, post-edit
+- Subagents (4.9, 4.9.1, 4.17, 4.17.1, 4.18, 4.23): pr-reviewer, test-writer (3 niveis), migration-writer
+- Skills (4.11, 4.19-4.24): /review-pr, /review-arch, /feature, /ship, /audit, /write-test, /write-migration, /migrate
+- Hook nativo Claude Code (4.22): PostToolUse post-edit
+
+Debito aberto para Camada 4: split de `decisoes-claude-code.md` (808 linhas, hook warn).
+
 ---
 
 ## Historico de mudancas deste documento
 
+- **2026-05-12** -- Sub-etapa 4.25 concluida: test-writer E2E (terceiro nivel).
+  Camada 3 fechada. Debito: split decisoes-claude-code.md (808 linhas). PR #71.
 - **2026-05-12** -- Sub-etapa 4.24 concluida: skill `/migrate` orquestradora (terceira
   categoria). Taxonomia de skills do projeto consolidada em 3 categorias. PR #70.
 - **2026-05-12** -- Sub-etapa 4.23 concluida: subagent `migration-writer` (segundo gerador
