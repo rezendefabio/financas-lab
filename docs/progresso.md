@@ -3,7 +3,7 @@
 > Documento de tracking. Mostra **onde estamos** na construção da fábrica e do produto.
 > Atualizado conforme camadas avançam. Diferente do `decisoes.md` (que registra escolhas) e dos `adrs.md` (que registram porquês), este documento responde a pergunta: "em que ponto eu estou?".
 
-**Última atualização:** 2026-05-12 (Sub-etapa 4.21 -- Skill /audit para varredura de padroes)
+**Última atualização:** 2026-05-12 (Sub-etapa 4.22 -- Hook post-edit para unit tests)
 
 ---
 
@@ -42,6 +42,14 @@ Configurar `CLAUDE.md` rico, criar 3-5 subagents focados, criar 5-10 skills (sla
 - **4.2 — Hook universal de encoding UTF-8** (2026-05-10): segundo hook funcional. Estreia o entrypoint `pre-commit` no padrao de 3 camadas, primeira validacao multi-arquivo via `git diff --cached`, e padrao orquestrador 1:N no companheiro `pre-commit.ps1` (preparado para 4.3+). Whitelist por extensao + nomes exatos. Regra: `.ps1` rejeita BOM (licao 2.6); outros tipos aceitam BOM. 5 cenarios destrutivos validados (md ok, ps1+BOM bloqueia, java Latin-1 bloqueia, png ignorado, --no-verify bypassa). PR #41.
 - **4.2.1 — Padroes de validacao destrutiva** (2026-05-10): sub-etapa doc-only registrando licao descoberta em smoke test pos-merge da 4.2. `[System.IO.File]::WriteAllText` com path relativo em PowerShell grava em `[System.Environment]::CurrentDirectory` (nao em `$PWD`), produzindo falso positivo silencioso quando sessao fez `cd`. ADR-011 formaliza padroes de validacao destrutiva: `Test-Path` apos criar arquivo, `git status` antes de `git commit`, verificacao de exit code, sincronizacao de `Environment.CurrentDirectory`. Aplica retroativamente a sub-etapas 4.3+; 4.0-4.2 nao sao revistas (smoke test corrigido confirmou codigo correto). PR #42.
 - **4.7 — Hook Java/Spring de @Entity sem migration Flyway (modo conservador)** (2026-05-11): sexto hook funcional, segundo de stack. Bloqueia commit com `.java` novo (status A) contendo `@Entity` em `src/main/java/` se nao houver migration nova em `src/main/resources/db/migration/V<n>__*.sql`. Modo fail. Escopo conscientemente reduzido vs licao 2.1 -- modificacao de Entity existente (status M) **nao dispara** o hook, ficou como debito explicito em `hooks-pendentes.md`. Hook preventivo: projeto ja tem ratio coerente (3 Entities + 4 migrations). Padrao agnostico a escopo reforcado: orquestrador `pre-commit` continua sem distincao sintatica entre universal e stack. 6 cenarios destrutivos sob ADR-011 incluindo modificacao de Entity real (Categoria.java) para confirmar empiricamente que hook nao dispara em status M. PR #47.
+- **4.22 -- Hook post-edit para unit tests em domain** (2026-05-12): primeiro hook
+  nativo do Claude Code no projeto (`PostToolUse`, evento pos-edicao). Dispara apos
+  uso de `Edit` ou `Write` em `*/domain/*.java`; roda unit test correspondente via
+  `mvnw test -Dtest=<Classe>Test`; silencioso quando sem teste ou arquivo fora do
+  escopo. Nunca bloqueia (PostToolUse e non-blocking por design). Configuracao em
+  `.claude/settings.json` (gitignored, gerado pelo `setup.ps1`). Script versionado
+  em `.claude/hooks/post-edit/run-tests.ps1`. Timeout 60s. Padrao novo: hook nativo
+  Claude Code vs git hook (4.1-4.7). PR #68.
 - **4.21 -- Skill `/audit` (skill direta sem subagent, terceira aplicacao)** (2026-05-12):
   varredura de padroes em `src/main/java/`. Recebe string ou regex como argumento,
   usa ferramenta Grep do Claude Code, reporta matches agrupados por arquivo com numero
@@ -108,7 +116,7 @@ Configurar `CLAUDE.md` rico, criar 3-5 subagents focados, criar 5-10 skills (sla
 - [x] Skill `/audit` (varre modulos buscando padrao especifico) -- concluido 4.21
 - [ ] Ampliacao do `test-writer` para E2E tests (sub-etapa futura se uso justificar)
 - [x] Hook pre-commit funcionando -- concluido 4.1-4.7, refinado 4.14
-- [ ] Hook post-edit rodando testes do arquivo mexido
+- [x] Hook post-edit rodando testes do arquivo mexido -- concluido 4.22
 - [ ] Decisao sobre plugin `code-review` oficial: nao e debito do projeto (re-classificado 4.15)
 
 ---
@@ -539,6 +547,10 @@ Definir como capturar quando chegarmos na Camada 4 — não criar burocracia ago
 
 ## Histórico de mudanças deste documento
 
+- **2026-05-12** -- Sub-etapa 4.22 concluida: hook post-edit (`PostToolUse`) para unit
+  tests em `*/domain/*.java`. Primeiro hook nativo Claude Code do projeto. `setup.ps1`
+  ampliado para gerar `.claude/settings.json`. Script em `.claude/hooks/post-edit/`.
+  CLAUDE.md NAO atualizado. PR #68.
 - **2026-05-12** -- Sub-etapa 4.21 concluida: skill `/audit` em
   `.claude/skills/audit/SKILL.md`. Terceira skill direta sem subagent. Grep em
   `src/main/java/` com padrao livre. Smoke via `/audit "@Entity"` (3 matches). PR #67.
