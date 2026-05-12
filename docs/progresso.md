@@ -3,7 +3,7 @@
 > Documento de tracking. Mostra **onde estamos** na construção da fábrica e do produto.
 > Atualizado conforme camadas avançam. Diferente do `decisoes.md` (que registra escolhas) e dos `adrs.md` (que registram porquês), este documento responde a pergunta: "em que ponto eu estou?".
 
-**Última atualização:** 2026-05-12 (Sub-etapa 4.24 -- Skill /migrate orquestradora)
+**Última atualização:** 2026-05-12 (Sub-etapa 4.25 -- test-writer E2E + fechamento Camada 3)
 
 ---
 
@@ -14,7 +14,7 @@
 | **0** | Discovery (visão, ADRs, decisões, ambiente) | ✅ Concluída ([historico](progresso-historico.md#camada-0--discovery)) |
 | **1** | Infraestrutura de confiança | ✅ Concluída ([historico](progresso-historico.md#camada-1--infraestrutura-de-confianca)) |
 | **2** | Arquitetura otimizada para agentes | ✅ Concluída ([historico](progresso-historico.md#camada-2--arquitetura-otimizada-para-agentes)) |
-| **3** | Configuração do Claude Code (subagents, skills, hooks) | 🟢 Em andamento |
+| **3** | Configuração do Claude Code (subagents, skills, hooks) | ✅ Concluída |
 | **4** | Modelo operacional (tiers de autonomia ativados) | ⏸️ Aguardando |
 | **5** | Runtime de agentes (VPS) — opcional | ⏸️ Aguardando |
 | **6** | Gestão híbrida Max + API | 🟡 Parcial (configuração API pronta, sem uso) |
@@ -27,7 +27,7 @@
 
 ## Camada 3 — Configuração do Claude Code
 
-**Status:** 🟢 Em andamento
+**Status:** ✅ Concluída
 **Pré-requisito:** Camada 2 com pelo menos um bounded context completo
 
 ### Objetivo
@@ -42,6 +42,11 @@ Configurar `CLAUDE.md` rico, criar 3-5 subagents focados, criar 5-10 skills (sla
 - **4.2 — Hook universal de encoding UTF-8** (2026-05-10): segundo hook funcional. Estreia o entrypoint `pre-commit` no padrao de 3 camadas, primeira validacao multi-arquivo via `git diff --cached`, e padrao orquestrador 1:N no companheiro `pre-commit.ps1` (preparado para 4.3+). Whitelist por extensao + nomes exatos. Regra: `.ps1` rejeita BOM (licao 2.6); outros tipos aceitam BOM. 5 cenarios destrutivos validados (md ok, ps1+BOM bloqueia, java Latin-1 bloqueia, png ignorado, --no-verify bypassa). PR #41.
 - **4.2.1 — Padroes de validacao destrutiva** (2026-05-10): sub-etapa doc-only registrando licao descoberta em smoke test pos-merge da 4.2. `[System.IO.File]::WriteAllText` com path relativo em PowerShell grava em `[System.Environment]::CurrentDirectory` (nao em `$PWD`), produzindo falso positivo silencioso quando sessao fez `cd`. ADR-011 formaliza padroes de validacao destrutiva: `Test-Path` apos criar arquivo, `git status` antes de `git commit`, verificacao de exit code, sincronizacao de `Environment.CurrentDirectory`. Aplica retroativamente a sub-etapas 4.3+; 4.0-4.2 nao sao revistas (smoke test corrigido confirmou codigo correto). PR #42.
 - **4.7 — Hook Java/Spring de @Entity sem migration Flyway (modo conservador)** (2026-05-11): sexto hook funcional, segundo de stack. Bloqueia commit com `.java` novo (status A) contendo `@Entity` em `src/main/java/` se nao houver migration nova em `src/main/resources/db/migration/V<n>__*.sql`. Modo fail. Escopo conscientemente reduzido vs licao 2.1 -- modificacao de Entity existente (status M) **nao dispara** o hook, ficou como debito explicito em `hooks-pendentes.md`. Hook preventivo: projeto ja tem ratio coerente (3 Entities + 4 migrations). Padrao agnostico a escopo reforcado: orquestrador `pre-commit` continua sem distincao sintatica entre universal e stack. 6 cenarios destrutivos sob ADR-011 incluindo modificacao de Entity real (Categoria.java) para confirmar empiricamente que hook nao dispara em status M. PR #47.
+- **4.25 -- Ampliacao do test-writer para E2E tests** (2026-05-12): terceiro nivel
+  de teste no subagent test-writer. Cobre `*/interfaces/*Controller.java` com
+  `@AutoConfigureMockMvc` + `MockMvc`, stack completa com Testcontainers (AbstractIntegrationTest).
+  Smoke: `/write-test ContaController.java` gerou `ContaControllerTest.java` com testes
+  de todos os 5 endpoints; BUILD SUCCESS. Ultima sub-etapa da Camada 3. PR #71.
 - **4.24 -- Skill `/migrate` (orquestradora de skills)** (2026-05-12): terceira categoria
   de skill do projeto. Encadeia `/write-migration` (subagent migration-writer) e `/write-test`
   (subagent test-writer) em sequencia para um bounded context. Para se migration falhar, nao
@@ -131,7 +136,7 @@ Configurar `CLAUDE.md` rico, criar 3-5 subagents focados, criar 5-10 skills (sla
 - [x] Skill `/ship` (lint + test + build + push + PR) -- concluido 4.20
 - [x] Skill `/migrate` (encadeia migration-writer + test-writer) -- concluido 4.24
 - [x] Skill `/audit` (varre modulos buscando padrao especifico) -- concluido 4.21
-- [ ] Ampliacao do `test-writer` para E2E tests (sub-etapa futura se uso justificar)
+- [x] Ampliacao do `test-writer` para E2E tests (controllers) -- concluido 4.25
 - [x] Hook pre-commit funcionando -- concluido 4.1-4.7, refinado 4.14
 - [x] Hook post-edit rodando testes do arquivo mexido -- concluido 4.22
 - [ ] Decisao sobre plugin `code-review` oficial: nao e debito do projeto (re-classificado 4.15)
@@ -564,6 +569,8 @@ Definir como capturar quando chegarmos na Camada 4 — não criar burocracia ago
 
 ## Histórico de mudanças deste documento
 
+- **2026-05-12** -- Sub-etapa 4.25 concluida: test-writer ampliado para E2E tests.
+  Terceiro nivel de teste (unit + integration + E2E). Camada 3 fechada. PR #71.
 - **2026-05-12** -- Sub-etapa 4.24 concluida: skill `/migrate` orquestradora em
   `.claude/skills/migrate/SKILL.md`. Terceira categoria de skill (orquestradora de skills).
   Encadeia /write-migration + /write-test. CLAUDE.md NAO atualizado. PR #70.
