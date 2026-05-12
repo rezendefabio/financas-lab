@@ -3,7 +3,7 @@
 > Documento de tracking. Mostra **onde estamos** na construção da fábrica e do produto.
 > Atualizado conforme camadas avançam. Diferente do `decisoes.md` (que registra escolhas) e dos `adrs.md` (que registram porquês), este documento responde a pergunta: "em que ponto eu estou?".
 
-**Última atualização:** 2026-05-12 (Sub-etapa 4.25 -- test-writer E2E + fechamento Camada 3)
+**Última atualização:** 2026-05-12 (Sub-etapa 4.26 -- Split de decisoes-claude-code.md)
 
 ---
 
@@ -42,6 +42,12 @@ Configurar `CLAUDE.md` rico, criar 3-5 subagents focados, criar 5-10 skills (sla
 - **4.2 — Hook universal de encoding UTF-8** (2026-05-10): segundo hook funcional. Estreia o entrypoint `pre-commit` no padrao de 3 camadas, primeira validacao multi-arquivo via `git diff --cached`, e padrao orquestrador 1:N no companheiro `pre-commit.ps1` (preparado para 4.3+). Whitelist por extensao + nomes exatos. Regra: `.ps1` rejeita BOM (licao 2.6); outros tipos aceitam BOM. 5 cenarios destrutivos validados (md ok, ps1+BOM bloqueia, java Latin-1 bloqueia, png ignorado, --no-verify bypassa). PR #41.
 - **4.2.1 — Padroes de validacao destrutiva** (2026-05-10): sub-etapa doc-only registrando licao descoberta em smoke test pos-merge da 4.2. `[System.IO.File]::WriteAllText` com path relativo em PowerShell grava em `[System.Environment]::CurrentDirectory` (nao em `$PWD`), produzindo falso positivo silencioso quando sessao fez `cd`. ADR-011 formaliza padroes de validacao destrutiva: `Test-Path` apos criar arquivo, `git status` antes de `git commit`, verificacao de exit code, sincronizacao de `Environment.CurrentDirectory`. Aplica retroativamente a sub-etapas 4.3+; 4.0-4.2 nao sao revistas (smoke test corrigido confirmou codigo correto). PR #42.
 - **4.7 — Hook Java/Spring de @Entity sem migration Flyway (modo conservador)** (2026-05-11): sexto hook funcional, segundo de stack. Bloqueia commit com `.java` novo (status A) contendo `@Entity` em `src/main/java/` se nao houver migration nova em `src/main/resources/db/migration/V<n>__*.sql`. Modo fail. Escopo conscientemente reduzido vs licao 2.1 -- modificacao de Entity existente (status M) **nao dispara** o hook, ficou como debito explicito em `hooks-pendentes.md`. Hook preventivo: projeto ja tem ratio coerente (3 Entities + 4 migrations). Padrao agnostico a escopo reforcado: orquestrador `pre-commit` continua sem distincao sintatica entre universal e stack. 6 cenarios destrutivos sob ADR-011 incluindo modificacao de Entity real (Categoria.java) para confirmar empiricamente que hook nao dispara em status M. PR #47.
+- **4.26 -- Split de `decisoes-claude-code.md`** (2026-05-12): terceira aplicacao da
+  categoria "manutencao de docs por crescimento" (apos 4.13 e 4.16). Criterio de corte:
+  tematico/historico (identico a 4.16 para decisoes.md). Secao 4.0-4.18 arquivada em
+  `decisoes-claude-code-historico.md`; sub-etapas 4.19+ permanecem no arquivo ativo.
+  `decisoes-claude-code.md` reduz de ~880 para ~171 linhas. CLAUDE.md atualizado com
+  link para historico. Debito da 4.25 (hook warn ~880 linhas) resolvido. PR #72.
 - **4.25 -- Ampliacao do test-writer para E2E tests** (2026-05-12): terceiro nivel
   de teste no subagent test-writer. Cobre `*/interfaces/*Controller.java` com
   `@AutoConfigureMockMvc` + `MockMvc`, stack completa com Testcontainers (AbstractIntegrationTest).
@@ -569,6 +575,8 @@ Definir como capturar quando chegarmos na Camada 4 — não criar burocracia ago
 
 ## Histórico de mudanças deste documento
 
+- **2026-05-12** -- Sub-etapa 4.26 concluida: split de `decisoes-claude-code.md`.
+  Historico 4.0-4.18 arquivado. Arquivo ativo reduzido. CLAUDE.md atualizado. PR #72.
 - **2026-05-12** -- Sub-etapa 4.25 concluida: test-writer ampliado para E2E tests.
   Terceiro nivel de teste (unit + integration + E2E). Camada 3 fechada. PR #71.
 - **2026-05-12** -- Sub-etapa 4.24 concluida: skill `/migrate` orquestradora em
