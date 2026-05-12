@@ -528,6 +528,8 @@ Categoria distinta de subagent dentro do padrao ADR-012:
 
 ### Refinamento pos-smoke do test-writer: comportamento "arquivo ja existe" (Sub-etapa 4.17.1)
 
+> **Revisao (Sub-etapa 4.18):** O passo "0" prescrito aqui foi reformulado pela 4.18 para incluir excecao "metodo alvo nao coberto" — quando arquivo de teste existe MAS algum metodo publico da classe alvo nao tem `@Test` correspondente, subagent ACRESCENTA via `Edit` (nao sobrescreve, nao Write). Comportamento "ja coberto" da 4.17.1 preservado para caso onde todos os metodos ja tem teste. Ver subsecao "Ampliacao do test-writer para integration tests (Sub-etapa 4.18)" abaixo para detalhes. Registro original desta subsecao preservado integralmente.
+
 Sub-etapa de **refinamento pos-smoke empirico** — segunda aplicacao da categoria 4.9.1. Smoke da 4.17 (conduzido em `Conta.java`) revelou borda nao-coberta pelo system prompt do `test-writer`: o arquivo de teste alvo (`ContaTest.java`) ja existia no projeto, com cobertura cuidadosa manual.
 
 **Comportamento improvisado no smoke da 4.17:**
@@ -570,6 +572,77 @@ Analise minuciosa e responsabilidade de comando separado (`/review-test` se entr
 - **"Ajuste de hook por contexto novo"** (4.14): hook cumpre regra, contexto invalida.
 - **"Errata de auditoria meta-operacional"** (4.15): auditoria com premissa errada.
 - **Esta categoria:** smoke empirico revela borda nao-coberta pelo system prompt; sub-etapa cirurgica adiciona prescricao explicita sem mudar o resto do componente. Padrao replicavel para qualquer subagent ou skill futuro cujo smoke revele borda similar.
+
+### Ampliacao do test-writer para integration tests (Sub-etapa 4.18)
+
+Sub-etapa de **ampliacao de subagent por escopo prescrito** (refactor categoria 4.14). A ADR-007 prescreve tres niveis de teste (unit, integration, E2E); a 4.17 entregou apenas unit; a 4.18 completa integration. E2E fica para sub-etapa futura.
+
+**Tambem revisa o passo "0" da 4.17.1** ("arquivo ja existe" ganha excecao "metodo alvo nao coberto" -> acrescenta via `Edit`). Padrao identico ao da errata da 4.10 pela 4.15: nota de revisao adicionada a subsecao 4.17.1 apontando para esta subsecao 4.18; registro original da 4.17.1 preservado integralmente.
+
+**Gap arquitetural concreto descoberto na auditoria empirica:**
+
+Antes de calibrar a 4.18, foi conduzida auditoria via PowerShell aplicando a licao da 4.17.1 ("auditar antes de calibrar"). Resultado revelou que:
+
+- 3 `*JpaRepository.java` do projeto tem queries customizadas (derived queries + `@Query` JPQL).
+- A query `calcularTotaisPorConta` no `TransacaoJpaRepository` e particularmente complexa: JPQL com `CASE WHEN` aninhado, `COALESCE`, constructor expression para record do domain.
+- **Nenhuma das 4 queries customizadas tem teste integration especifico.** Os `*RepositoryImplTest` cobrem `salvar`/`buscar`/`deletar`/constraints, nao as queries. Use cases que consomem as queries mockam o repository.
+
+Diferente da 4.17 (sem cobaia legitima -> smoke parcial honesto), a 4.18 tem **cobaia obvia** (`calcularTotaisPorConta`) e **gap real** a fechar. Smoke binario, criterio determinavel.
+
+**Modificacoes no `test-writer.md`:**
+
+1. **Tools:** ganham `Edit` (alem do `Write` ja existente). Necessario para acrescentar `@Test` a arquivo existente sem sobrescrever.
+
+2. **`description`:** atualizada para refletir os dois niveis cobertos + redirecionamento.
+
+3. **`## Identidade`:** ampliada para reconhecer unit e integration. E2E declarado explicitamente fora do escopo.
+
+4. **`## O que voce GERA`:** substituida integralmente. Agora prescreve:
+   - **Detecao de nivel por path** (tabela: domain -> unit, infrastructure/persistence/Impl -> integration, JpaRepository -> redireciona, Controller -> E2E fora do escopo, outros -> fora do escopo conhecido).
+   - **Regras duras de unit** (preservadas da 4.17).
+   - **Regras duras de integration:** JUnit 5 + AssertJ; extends `AbstractIntegrationTest`; @Autowired do `*RepositoryImpl` + `*JpaRepository`; @AfterEach `limpar()`; sem mock; sufixo `Test`; pacote espelho. Referencia de estilo: `ContaRepositoryImplTest.java` ou `TransacaoRepositoryImplTest.java`.
+   - **Redirecionamento JpaRepository -> Impl:** convencao do projeto e que testes de queries customizadas vivem no `*RepositoryImplTest.java`. Subagent precisa fazer a traducao implicitamente e reportar nas "Decisoes de design".
+
+5. **Passo "0" do fluxo `## Quando invocado`:** reformulado. Detecta nivel + verifica existencia + decide acao:
+   - Path nao mapeado -> reporta "fora do escopo" e termina (sem improvisar).
+   - Arquivo de teste nao existe -> proceda com fluxo de criacao (passos 2+).
+   - Arquivo existe + todos os metodos cobertos -> reporta "ja coberto" (comportamento 4.17.1).
+   - Arquivo existe + metodo nao coberto -> ACRESCENTE via `Edit`, sem mexer nos testes ja presentes (excecao nova 4.18).
+   - NAO sobrescreva (destruir trabalho manual e proibido).
+
+6. **Exemplo few-shot 4** adicionado: integration test acrescentado a `TransacaoRepositoryImplTest.java` existente para cobrir `calcularTotaisPorConta`. Output mostra estrutura do relatorio para o caso "metodo nao coberto -> acrescenta via Edit".
+
+7. **Restricoes em "O que NAO fazer":**
+   - Restricao "NAO sobrescreva arquivo pre-existente" (4.17.1) refinada com a excecao da 4.18.
+   - Restricao nova: NAO improvise nivel quando path nao casa regra mapeada.
+
+**Smoke pos-merge prescrito** (responsabilidade do operador apos autorizar merge):
+
+```
+/write-test src/main/java/com/laboratorio/financas/transacao/infrastructure/persistence/TransacaoJpaRepository.java
+```
+
+**Criterios de sucesso:**
+
+1. Subagent detecta path = `*JpaRepository.java` e **redireciona para o `TransacaoRepositoryImpl.java`** correspondente. Reporta o redirecionamento em "Decisoes de design".
+2. Subagent verifica que `TransacaoRepositoryImplTest.java` existe e passa (11/11 testes atuais).
+3. Subagent identifica que `calcularTotaisPorConta` e `findComFiltros` nao tem `@Test` correspondente no arquivo existente.
+4. Subagent **acrescenta `@Test` para `calcularTotaisPorConta`** ao arquivo existente via `Edit`. Nao sobrescreve; nao mexe nos 11 testes ja presentes.
+5. `./mvnw test -Dtest=TransacaoRepositoryImplTest` compila e passa (todos os testes — antigos + novos).
+6. Teste gerado e integration real (extends `AbstractIntegrationTest`, Testcontainers, sem mock).
+7. Cobertura razoavel da query: cenarios com dados reais (conta com receitas/despesas, conta sem transacoes, conta destino de transferencia, etc.).
+
+**Se algum criterio falhar:** abrir 4.18.1 (refinamento pos-smoke empirico, categoria 4.9.1/4.17.1).
+
+**Padrao operacional adotado:** "implementa e roda, ajusta se precisar" (formalizado pelo operador na sessao de calibracao). Smoke obrigatorio no fim da sub-etapa; ajuste minimo se aparecer borda; proximo item sem buscar perfeicao preventiva.
+
+**Revisao da 4.17.1** registrada via nota na subsecao 4.17.1 (logo apos o titulo, antes do corpo):
+
+> O passo "0" prescrito aqui foi reformulado pela 4.18 para incluir excecao "metodo alvo nao coberto" — quando arquivo de teste existe MAS algum metodo publico da classe alvo nao tem `@Test` correspondente, subagent ACRESCENTA via `Edit` (nao sobrescreve, nao Write). Comportamento "ja coberto" da 4.17.1 preservado para caso onde todos os metodos ja tem teste. Registro original da 4.17.1 preservado integralmente.
+
+**Categoria operacional: combina duas.** "Ajuste de subagent por contexto novo" (analogo a 4.14 — escopo prescrito pela ADR-007 cumprido nominalmente parcial, completa agora) **+** revisao da prescricao 4.17.1.
+
+**CLAUDE.md NAO atualizado.** Ampliacao de comportamento de subagent nao muda convencao do projeto. Convencao "subagents e skills" (4.11) preservada.
 
 ### Claude Code hooks nativos
 
