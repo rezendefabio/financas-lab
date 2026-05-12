@@ -14,13 +14,17 @@ import com.laboratorio.financas.conta.infrastructure.persistence.ContaRepository
 import com.laboratorio.financas.shared.AbstractIntegrationTest;
 import com.laboratorio.financas.shared.domain.Money;
 import com.laboratorio.financas.shared.infrastructure.persistence.MoneyEmbeddable;
+import com.laboratorio.financas.transacao.domain.FiltrosTransacao;
 import com.laboratorio.financas.transacao.domain.Transacao;
 import com.laboratorio.financas.transacao.domain.TipoTransacao;
+import com.laboratorio.financas.transacao.domain.TotaisTransacaoPorConta;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.Currency;
 import java.util.Optional;
 import java.util.UUID;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -243,5 +247,232 @@ class TransacaoRepositoryImplTest extends AbstractIntegrationTest {
         // Then — banco rejeita violacao de CHECK constraint (defesa em profundidade)
         assertThatThrownBy(() -> jpaRepository.saveAndFlush(entityInvalida))
                 .isInstanceOf(DataIntegrityViolationException.class);
+    }
+
+    // --- calcularTotaisPorConta ---
+
+    @Test
+    void calcularTotaisRetornaReceitasDespesasCorretasParaConta() {
+        // Given
+        UUID contaId = criarContaPersistida();
+        UUID categoriaReceita = criarCategoriaPersistida(TipoCategoria.RECEITA);
+        UUID categoriaDespesa = criarCategoriaPersistida(TipoCategoria.DESPESA);
+
+        repository.salvar(new Transacao(
+                TipoTransacao.RECEITA, new Money(new BigDecimal("500.00"), BRL), HOJE, "Salario", contaId, null, categoriaReceita));
+        repository.salvar(new Transacao(
+                TipoTransacao.RECEITA, new Money(new BigDecimal("200.00"), BRL), HOJE, "Freelance", contaId, null, categoriaReceita));
+        repository.salvar(new Transacao(
+                TipoTransacao.DESPESA, new Money(new BigDecimal("150.00"), BRL), HOJE, "Aluguel", contaId, null, categoriaDespesa));
+
+        // When
+        TotaisTransacaoPorConta totais = repository.calcularTotaisPorConta(contaId);
+
+        // Then
+        assertThat(totais.totalReceitas()).isEqualByComparingTo(new BigDecimal("700.00"));
+        assertThat(totais.totalDespesas()).isEqualByComparingTo(new BigDecimal("150.00"));
+        assertThat(totais.totalTransferenciasEnviadas()).isEqualByComparingTo(BigDecimal.ZERO);
+        assertThat(totais.totalTransferenciasRecebidas()).isEqualByComparingTo(BigDecimal.ZERO);
+    }
+
+    @Test
+    void calcularTotaisRetornaZerosParaContaSemTransacoes() {
+        // Given
+        UUID contaId = criarContaPersistida();
+
+        // When
+        TotaisTransacaoPorConta totais = repository.calcularTotaisPorConta(contaId);
+
+        // Then — Hibernate com agregacao sem GROUP BY retorna linha com zeros (COALESCE), nunca null
+        assertThat(totais).isNotNull();
+        assertThat(totais.totalReceitas()).isEqualByComparingTo(BigDecimal.ZERO);
+        assertThat(totais.totalDespesas()).isEqualByComparingTo(BigDecimal.ZERO);
+        assertThat(totais.totalTransferenciasEnviadas()).isEqualByComparingTo(BigDecimal.ZERO);
+        assertThat(totais.totalTransferenciasRecebidas()).isEqualByComparingTo(BigDecimal.ZERO);
+    }
+
+    @Test
+    void calcularTotaisContabilizaTransferenciaEnviadaERecebidaSeparadamente() {
+        // Given
+        UUID contaOrigemId = criarContaPersistida();
+        UUID contaDestinoId = criarContaPersistida();
+
+        repository.salvar(new Transacao(
+                TipoTransacao.TRANSFERENCIA, new Money(new BigDecimal("300.00"), BRL), HOJE, "TED", contaOrigemId, contaDestinoId, null));
+
+        // When — totais da conta de origem
+        TotaisTransacaoPorConta totaisOrigem = repository.calcularTotaisPorConta(contaOrigemId);
+
+        // Then
+        assertThat(totaisOrigem.totalTransferenciasEnviadas()).isEqualByComparingTo(new BigDecimal("300.00"));
+        assertThat(totaisOrigem.totalTransferenciasRecebidas()).isEqualByComparingTo(BigDecimal.ZERO);
+        assertThat(totaisOrigem.totalReceitas()).isEqualByComparingTo(BigDecimal.ZERO);
+        assertThat(totaisOrigem.totalDespesas()).isEqualByComparingTo(BigDecimal.ZERO);
+
+        // When — totais da conta de destino
+        TotaisTransacaoPorConta totaisDestino = repository.calcularTotaisPorConta(contaDestinoId);
+
+        // Then
+        assertThat(totaisDestino.totalTransferenciasRecebidas()).isEqualByComparingTo(new BigDecimal("300.00"));
+        assertThat(totaisDestino.totalTransferenciasEnviadas()).isEqualByComparingTo(BigDecimal.ZERO);
+    }
+
+    @Test
+    void calcularTotaisNaoMisturaDadosDeContasDiferentes() {
+        // Given
+        UUID contaAlvoId = criarContaPersistida();
+        UUID outraContaId = criarContaPersistida();
+        UUID categoriaId = criarCategoriaPersistida(TipoCategoria.RECEITA);
+
+        repository.salvar(new Transacao(
+                TipoTransacao.RECEITA, new Money(new BigDecimal("1000.00"), BRL), HOJE, "Receita alvo", contaAlvoId, null, categoriaId));
+        repository.salvar(new Transacao(
+                TipoTransacao.RECEITA, new Money(new BigDecimal("9999.00"), BRL), HOJE, "Receita outra", outraContaId, null, categoriaId));
+
+        // When
+        TotaisTransacaoPorConta totais = repository.calcularTotaisPorConta(contaAlvoId);
+
+        // Then — apenas transacoes da contaAlvo devem ser somadas
+        assertThat(totais.totalReceitas()).isEqualByComparingTo(new BigDecimal("1000.00"));
+    }
+
+    // --- listarComFiltros ---
+
+    @Test
+    void listarComFiltrosRetornaTodosQuandoFiltrosNulos() {
+        // Given
+        UUID contaId = criarContaPersistida();
+        UUID categoriaId = criarCategoriaPersistida(TipoCategoria.RECEITA);
+
+        repository.salvar(new Transacao(TipoTransacao.RECEITA, VALOR_100, HOJE, "T1", contaId, null, categoriaId));
+        repository.salvar(new Transacao(TipoTransacao.DESPESA, VALOR_100, HOJE, "T2", contaId, null, null));
+
+        FiltrosTransacao filtros = new FiltrosTransacao(null, null, null, null, null);
+
+        // When
+        Page<Transacao> resultado = repository.listarComFiltros(filtros, PageRequest.of(0, 10));
+
+        // Then
+        assertThat(resultado.getTotalElements()).isEqualTo(2);
+    }
+
+    @Test
+    void listarComFiltrosPorContaRetornaApenasTransacoesDaquelaConta() {
+        // Given
+        UUID contaAlvoId = criarContaPersistida();
+        UUID outraContaId = criarContaPersistida();
+        UUID categoriaId = criarCategoriaPersistida(TipoCategoria.RECEITA);
+
+        repository.salvar(new Transacao(TipoTransacao.RECEITA, VALOR_100, HOJE, "Alvo", contaAlvoId, null, categoriaId));
+        repository.salvar(new Transacao(TipoTransacao.RECEITA, VALOR_100, HOJE, "Outra", outraContaId, null, categoriaId));
+
+        FiltrosTransacao filtros = new FiltrosTransacao(contaAlvoId, null, null, null, null);
+
+        // When
+        Page<Transacao> resultado = repository.listarComFiltros(filtros, PageRequest.of(0, 10));
+
+        // Then
+        assertThat(resultado.getTotalElements()).isEqualTo(1);
+        assertThat(resultado.getContent().get(0).getDescricao()).isEqualTo("Alvo");
+    }
+
+    @Test
+    void listarComFiltrosPorTipoRetornaApenasDoTipoFiltrado() {
+        // Given
+        UUID contaId = criarContaPersistida();
+        UUID categoriaId = criarCategoriaPersistida(TipoCategoria.RECEITA);
+
+        repository.salvar(new Transacao(TipoTransacao.RECEITA, VALOR_100, HOJE, "Receita", contaId, null, categoriaId));
+        repository.salvar(new Transacao(TipoTransacao.DESPESA, VALOR_100, HOJE, "Despesa", contaId, null, null));
+
+        FiltrosTransacao filtros = new FiltrosTransacao(null, null, null, TipoTransacao.RECEITA, null);
+
+        // When
+        Page<Transacao> resultado = repository.listarComFiltros(filtros, PageRequest.of(0, 10));
+
+        // Then
+        assertThat(resultado.getTotalElements()).isEqualTo(1);
+        assertThat(resultado.getContent().get(0).getTipo()).isEqualTo(TipoTransacao.RECEITA);
+    }
+
+    @Test
+    void listarComFiltrosPorIntervaloDeDataRetornaApenasNoPeriodo() {
+        // Given
+        UUID contaId = criarContaPersistida();
+        LocalDate dataPassada = LocalDate.of(2026, 1, 10);
+        LocalDate dataRecente = LocalDate.of(2026, 5, 10);
+        UUID categoriaId = criarCategoriaPersistida(TipoCategoria.RECEITA);
+
+        repository.salvar(new Transacao(TipoTransacao.RECEITA, VALOR_100, dataPassada, "Janeiro", contaId, null, categoriaId));
+        repository.salvar(new Transacao(TipoTransacao.RECEITA, VALOR_100, dataRecente, "Maio", contaId, null, categoriaId));
+
+        FiltrosTransacao filtros = new FiltrosTransacao(null, LocalDate.of(2026, 5, 1), LocalDate.of(2026, 5, 31), null, null);
+
+        // When
+        Page<Transacao> resultado = repository.listarComFiltros(filtros, PageRequest.of(0, 10));
+
+        // Then
+        assertThat(resultado.getTotalElements()).isEqualTo(1);
+        assertThat(resultado.getContent().get(0).getDescricao()).isEqualTo("Maio");
+    }
+
+    @Test
+    void listarComFiltrosPorCategoriaRetornaApenasComAquelaCategoria() {
+        // Given
+        UUID contaId = criarContaPersistida();
+        UUID categoriaAlvoId = criarCategoriaPersistida(TipoCategoria.RECEITA);
+        UUID outraCategoriaId = criarCategoriaPersistida(TipoCategoria.RECEITA);
+
+        repository.salvar(new Transacao(TipoTransacao.RECEITA, VALOR_100, HOJE, "Com categoria alvo", contaId, null, categoriaAlvoId));
+        repository.salvar(new Transacao(TipoTransacao.RECEITA, VALOR_100, HOJE, "Com outra categoria", contaId, null, outraCategoriaId));
+
+        FiltrosTransacao filtros = new FiltrosTransacao(null, null, null, null, categoriaAlvoId);
+
+        // When
+        Page<Transacao> resultado = repository.listarComFiltros(filtros, PageRequest.of(0, 10));
+
+        // Then
+        assertThat(resultado.getTotalElements()).isEqualTo(1);
+        assertThat(resultado.getContent().get(0).getCategoriaId()).isEqualTo(categoriaAlvoId);
+    }
+
+    @Test
+    void listarComFiltrosPaginacaoRetornaSubconjuntoCorreto() {
+        // Given
+        UUID contaId = criarContaPersistida();
+        UUID categoriaId = criarCategoriaPersistida(TipoCategoria.RECEITA);
+
+        for (int i = 1; i <= 5; i++) {
+            repository.salvar(new Transacao(TipoTransacao.RECEITA, VALOR_100, HOJE, "T" + i, contaId, null, categoriaId));
+        }
+
+        FiltrosTransacao filtros = new FiltrosTransacao(null, null, null, null, null);
+
+        // When
+        Page<Transacao> pagina0 = repository.listarComFiltros(filtros, PageRequest.of(0, 2));
+        Page<Transacao> pagina1 = repository.listarComFiltros(filtros, PageRequest.of(1, 2));
+
+        // Then
+        assertThat(pagina0.getTotalElements()).isEqualTo(5);
+        assertThat(pagina0.getContent()).hasSize(2);
+        assertThat(pagina1.getContent()).hasSize(2);
+        assertThat(pagina0.getTotalPages()).isEqualTo(3);
+    }
+
+    @Test
+    void listarComFiltrosTransferenciaApareceComotransferenciaDaContaOrigem() {
+        // Given — transferencia deve aparecer quando filtrado pela conta origem OU destino
+        UUID contaOrigemId = criarContaPersistida();
+        UUID contaDestinoId = criarContaPersistida();
+
+        repository.salvar(new Transacao(TipoTransacao.TRANSFERENCIA, VALOR_100, HOJE, "TED", contaOrigemId, contaDestinoId, null));
+
+        // When — filtrando pela conta destino
+        FiltrosTransacao filtrosDestino = new FiltrosTransacao(contaDestinoId, null, null, null, null);
+        Page<Transacao> resultadoDestino = repository.listarComFiltros(filtrosDestino, PageRequest.of(0, 10));
+
+        // Then
+        assertThat(resultadoDestino.getTotalElements()).isEqualTo(1);
+        assertThat(resultadoDestino.getContent().get(0).getContaDestinoId()).isEqualTo(contaDestinoId);
     }
 }
