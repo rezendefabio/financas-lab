@@ -761,8 +761,38 @@ run-tests.ps1`) e versionado -- apenas o `settings.json` que o referencia e loca
   demais para hook post-edit.
 - Arquivos sem teste: hook silencioso (sem ruido).
 
+## Sub-etapa 4.23 -- Subagent migration-writer
+
+### Subagent vs skill direta
+
+Decisao: subagent (mesmo padrao do test-writer, 4.17) -- nao skill direta (padrao da 4.19).
+Criterio confirmado na calibracao da 4.23: derivacao Java -> SQL exige raciocinio sobre tipos
+e anotacoes, nao e sequencia procedural simples. Skill direta e adequada para sequencias
+de comandos shell com logica simples; subagent e adequado para raciocinio de dominio.
+
+### Escopo do SQL gerado
+
+Decisao deliberada: migration-writer gera apenas `CREATE TABLE` basico.
+
+- **FK constraints:** NAO geradas. Dependem de ordem de criacao de tabelas e de conhecimento
+  do schema completo -- informacao que o subagent nao tem de forma confiavel.
+- **Indexes:** NAO gerados. Domain-specific; o desenvolvedor conhece os padroes de query.
+- **CHECK constraints:** NAO geradas. Logica de negocio; risco de erro silencioso alto.
+
+Resultado: SQL gerado e sempre correto (sem FK/CHECK errados), mas incompleto (exige
+complemento manual). Trade-off aceito: corretude > completude automatica.
+
+### Versao Flyway
+
+Numeracao automatica (max das migrations existentes + 1). Colisao impossivel durante uso
+normal (um desenvolvedor, sem migrations paralelas). Se colisao ocorrer: migration-writer
+reporta o conflito e nao sobrescreve.
+
 ## Historico de mudancas deste documento
 
+- **2026-05-12** -- Sub-etapa 4.23 concluida: subagent `migration-writer` (segundo gerador
+  do projeto). Derivacao Java -> SQL de anotacoes JPA. Escopo deliberadamente basico
+  (sem FK/CHECK/indexes). Numeracao Flyway automatica. Pre-requisito para 4.24. PR #69.
 - **2026-05-12** -- Sub-etapa 4.22 concluida: primeiro hook nativo Claude Code
   (`PostToolUse`). Git hook vs hook nativo documentado. `setup.ps1` como gestor de
   `settings.json`. Escopo domain-only. PR #68.
