@@ -716,8 +716,23 @@ Nota de smoke: `/ship` testou a si propria ao criar o PR #66. Primeiro smoke
 verdadeiramente automatico e completo do projeto (sem cobaia artificial e sem
 parcialidade -- gate real, push real, PR real).
 
+## Sub-etapa 4.21 -- Skill `/audit` sem subagent
+
+Terceira replicacao do padrao skill direta (4.19, 4.20, 4.21). Nenhuma decisao
+estrutural nova.
+
+SKILL.md mais curto que os anteriores: a skill instrui Claude Code a usar o tool
+`Grep` diretamente, sem scripting PowerShell. O trabalho pesado (regex, indexacao
+de arquivos, formatacao de output) e feito pelo Grep nativo do Claude Code.
+
+Padrao consolidado: skills procedurais de baixa complexidade delegam para tools
+nativos do Claude Code (Grep, Glob, Write, Bash) conforme necessidade -- sem
+overhead de subagent.
+
 ## Historico de mudancas deste documento
 
+- **2026-05-12** -- Sub-etapa 4.21 concluida: skill `/audit` direta. Terceira
+  replicacao do padrao 4.19. Grep nativo, output estruturado. PR #67.
 - **2026-05-12** -- Sub-etapa 4.20 concluida: skill `/ship` direta (sem subagent).
   Replicacao pura do padrao 4.19. Smoke natural completo (skill criou o proprio PR).
   PR #66.
