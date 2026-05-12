@@ -3,7 +3,7 @@
 > Documento de tracking. Mostra **onde estamos** na construção da fábrica e do produto.
 > Atualizado conforme camadas avançam. Diferente do `decisoes.md` (que registra escolhas) e dos `adrs.md` (que registram porquês), este documento responde a pergunta: "em que ponto eu estou?".
 
-**Última atualização:** 2026-05-12 (Sub-etapa 4.23 -- Subagent migration-writer + skill /write-migration)
+**Última atualização:** 2026-05-12 (Sub-etapa 4.24 -- Skill /migrate orquestradora)
 
 ---
 
@@ -42,6 +42,14 @@ Configurar `CLAUDE.md` rico, criar 3-5 subagents focados, criar 5-10 skills (sla
 - **4.2 — Hook universal de encoding UTF-8** (2026-05-10): segundo hook funcional. Estreia o entrypoint `pre-commit` no padrao de 3 camadas, primeira validacao multi-arquivo via `git diff --cached`, e padrao orquestrador 1:N no companheiro `pre-commit.ps1` (preparado para 4.3+). Whitelist por extensao + nomes exatos. Regra: `.ps1` rejeita BOM (licao 2.6); outros tipos aceitam BOM. 5 cenarios destrutivos validados (md ok, ps1+BOM bloqueia, java Latin-1 bloqueia, png ignorado, --no-verify bypassa). PR #41.
 - **4.2.1 — Padroes de validacao destrutiva** (2026-05-10): sub-etapa doc-only registrando licao descoberta em smoke test pos-merge da 4.2. `[System.IO.File]::WriteAllText` com path relativo em PowerShell grava em `[System.Environment]::CurrentDirectory` (nao em `$PWD`), produzindo falso positivo silencioso quando sessao fez `cd`. ADR-011 formaliza padroes de validacao destrutiva: `Test-Path` apos criar arquivo, `git status` antes de `git commit`, verificacao de exit code, sincronizacao de `Environment.CurrentDirectory`. Aplica retroativamente a sub-etapas 4.3+; 4.0-4.2 nao sao revistas (smoke test corrigido confirmou codigo correto). PR #42.
 - **4.7 — Hook Java/Spring de @Entity sem migration Flyway (modo conservador)** (2026-05-11): sexto hook funcional, segundo de stack. Bloqueia commit com `.java` novo (status A) contendo `@Entity` em `src/main/java/` se nao houver migration nova em `src/main/resources/db/migration/V<n>__*.sql`. Modo fail. Escopo conscientemente reduzido vs licao 2.1 -- modificacao de Entity existente (status M) **nao dispara** o hook, ficou como debito explicito em `hooks-pendentes.md`. Hook preventivo: projeto ja tem ratio coerente (3 Entities + 4 migrations). Padrao agnostico a escopo reforcado: orquestrador `pre-commit` continua sem distincao sintatica entre universal e stack. 6 cenarios destrutivos sob ADR-011 incluindo modificacao de Entity real (Categoria.java) para confirmar empiricamente que hook nao dispara em status M. PR #47.
+- **4.24 -- Skill `/migrate` (orquestradora de skills)** (2026-05-12): terceira categoria
+  de skill do projeto. Encadeia `/write-migration` (subagent migration-writer) e `/write-test`
+  (subagent test-writer) em sequencia para um bounded context. Para se migration falhar, nao
+  propaga para testes. Relatorio combinado com status de cada passo. Sem logica propria --
+  toda geracao delegada para os subagents ja existentes. Smoke parcial honesto: `/migrate conta`
+  validou orquestramento e propagacao de erro (V2 ja existe; /write-test nao foi invocado).
+  Happy path aguarda primeiro bounded context novo (Camada 4). PR #70.
+
 - **4.23 -- Subagent migration-writer + skill `/write-migration`** (2026-05-12):
   segundo subagent gerador do projeto (primeiro: test-writer, 4.17). Le `*Entity.java`,
   interpreta anotacoes JPA (`@Column`, `@Id`, `@Embedded`, `@AttributeOverride`,
@@ -121,7 +129,7 @@ Configurar `CLAUDE.md` rico, criar 3-5 subagents focados, criar 5-10 skills (sla
 - [x] Subagent migration-writer + skill `/write-migration` -- concluido 4.23
 - [x] Skill `/feature <nome>` (cria estrutura de bounded context) -- concluido 4.19
 - [x] Skill `/ship` (lint + test + build + push + PR) -- concluido 4.20
-- [ ] Skill `/migrate` (gera migration + atualiza schema + escreve teste)
+- [x] Skill `/migrate` (encadeia migration-writer + test-writer) -- concluido 4.24
 - [x] Skill `/audit` (varre modulos buscando padrao especifico) -- concluido 4.21
 - [ ] Ampliacao do `test-writer` para E2E tests (sub-etapa futura se uso justificar)
 - [x] Hook pre-commit funcionando -- concluido 4.1-4.7, refinado 4.14
@@ -556,6 +564,9 @@ Definir como capturar quando chegarmos na Camada 4 — não criar burocracia ago
 
 ## Histórico de mudanças deste documento
 
+- **2026-05-12** -- Sub-etapa 4.24 concluida: skill `/migrate` orquestradora em
+  `.claude/skills/migrate/SKILL.md`. Terceira categoria de skill (orquestradora de skills).
+  Encadeia /write-migration + /write-test. CLAUDE.md NAO atualizado. PR #70.
 - **2026-05-12** -- Sub-etapa 4.23 concluida: subagent `migration-writer` em
   `.claude/agents/migration-writer.md` + skill `/write-migration` em
   `.claude/skills/write-migration/SKILL.md`. Derivacao SQL de anotacoes JPA.
