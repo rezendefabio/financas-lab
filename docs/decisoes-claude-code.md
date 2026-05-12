@@ -703,8 +703,24 @@ O skeleton gerado inclui `@Entity` em `NOMEEntity.java`. Hook 4.7 bloqueia commi
 arquivo Java novo com `@Entity` sem migration Flyway correspondente. Desenvolvedor
 deve criar `V<n>__create_ARG_table.sql` antes de commitar o bounded context.
 
+## Sub-etapa 4.20 -- Skill `/ship` sem subagent
+
+Segunda aplicacao do padrao inaugurado na 4.19 (skill direta sem `context: fork`).
+Nenhuma decisao estrutural nova -- replicacao pura. Detalhes em [[project-scope-claude-dot]].
+
+Criterio de escolha confirmado: skill direta e adequada quando a tarefa e
+puramente procedural (sequencia de comandos shell com logica de fluxo simples).
+`/ship` confirma o padrao: 5 passos bem definidos, sem raciocinio de dominio.
+
+Nota de smoke: `/ship` testou a si propria ao criar o PR #66. Primeiro smoke
+verdadeiramente automatico e completo do projeto (sem cobaia artificial e sem
+parcialidade -- gate real, push real, PR real).
+
 ## Historico de mudancas deste documento
 
+- **2026-05-12** -- Sub-etapa 4.20 concluida: skill `/ship` direta (sem subagent).
+  Replicacao pura do padrao 4.19. Smoke natural completo (skill criou o proprio PR).
+  PR #66.
 - **2026-05-12** -- Sub-etapa 4.19 concluida: skill `/feature <nome>` direta (sem
   subagent). Padrao novo: skill procedural usa Write + Bash sem fork. Criterio de
   escolha entre skill-com-fork e skill-direta registrado. Categoria "primeira aplicacao

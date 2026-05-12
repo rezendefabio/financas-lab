@@ -3,7 +3,7 @@
 > Documento de tracking. Mostra **onde estamos** na construção da fábrica e do produto.
 > Atualizado conforme camadas avançam. Diferente do `decisoes.md` (que registra escolhas) e dos `adrs.md` (que registram porquês), este documento responde a pergunta: "em que ponto eu estou?".
 
-**Última atualização:** 2026-05-12 (Sub-etapa 4.19 -- Skill /feature para criacao de bounded context)
+**Última atualização:** 2026-05-12 (Sub-etapa 4.20 -- Skill /ship para entrega de PR)
 
 ---
 
@@ -42,6 +42,14 @@ Configurar `CLAUDE.md` rico, criar 3-5 subagents focados, criar 5-10 skills (sla
 - **4.2 — Hook universal de encoding UTF-8** (2026-05-10): segundo hook funcional. Estreia o entrypoint `pre-commit` no padrao de 3 camadas, primeira validacao multi-arquivo via `git diff --cached`, e padrao orquestrador 1:N no companheiro `pre-commit.ps1` (preparado para 4.3+). Whitelist por extensao + nomes exatos. Regra: `.ps1` rejeita BOM (licao 2.6); outros tipos aceitam BOM. 5 cenarios destrutivos validados (md ok, ps1+BOM bloqueia, java Latin-1 bloqueia, png ignorado, --no-verify bypassa). PR #41.
 - **4.2.1 — Padroes de validacao destrutiva** (2026-05-10): sub-etapa doc-only registrando licao descoberta em smoke test pos-merge da 4.2. `[System.IO.File]::WriteAllText` com path relativo em PowerShell grava em `[System.Environment]::CurrentDirectory` (nao em `$PWD`), produzindo falso positivo silencioso quando sessao fez `cd`. ADR-011 formaliza padroes de validacao destrutiva: `Test-Path` apos criar arquivo, `git status` antes de `git commit`, verificacao de exit code, sincronizacao de `Environment.CurrentDirectory`. Aplica retroativamente a sub-etapas 4.3+; 4.0-4.2 nao sao revistas (smoke test corrigido confirmou codigo correto). PR #42.
 - **4.7 — Hook Java/Spring de @Entity sem migration Flyway (modo conservador)** (2026-05-11): sexto hook funcional, segundo de stack. Bloqueia commit com `.java` novo (status A) contendo `@Entity` em `src/main/java/` se nao houver migration nova em `src/main/resources/db/migration/V<n>__*.sql`. Modo fail. Escopo conscientemente reduzido vs licao 2.1 -- modificacao de Entity existente (status M) **nao dispara** o hook, ficou como debito explicito em `hooks-pendentes.md`. Hook preventivo: projeto ja tem ratio coerente (3 Entities + 4 migrations). Padrao agnostico a escopo reforcado: orquestrador `pre-commit` continua sem distincao sintatica entre universal e stack. 6 cenarios destrutivos sob ADR-011 incluindo modificacao de Entity real (Categoria.java) para confirmar empiricamente que hook nao dispara em status M. PR #47.
+- **4.20 -- Skill `/ship` (skill direta sem subagent, segunda aplicacao)** (2026-05-12):
+  segunda skill sem `context: fork` e sem `agent:` do projeto. Orquestra entrega de PR:
+  4 verificacoes de seguranca (branch != main, working tree limpa, commits acima de main,
+  gh autenticado), gate `check.ps1` (mvn clean verify + Docker), push com `-u origin`,
+  criacao de PR via `gh pr create` com titulo extraido do ultimo commit e lista de commits
+  da branch no body. Para em qualquer falha, sem push ou PR criado. Smoke natural e
+  completo: a propria skill criou o PR #66 da sub-etapa 4.20. Categoria: "replicacao de
+  padrao consolidado" (segunda skill direta, mesma estrutura da 4.19). PR #66.
 - **4.19 -- Skill `/feature <nome>` (skill geradora direta sem subagent)** (2026-05-12):
   primeira skill sem `context: fork` e sem `agent:` do projeto. Claude Code principal
   segue as instrucoes do `.claude/skills/feature/SKILL.md` diretamente, usando Write +
@@ -88,7 +96,7 @@ Configurar `CLAUDE.md` rico, criar 3-5 subagents focados, criar 5-10 skills (sla
 - [x] Smoke pos-merge da 4.18 validando integration tests com cobaia real (`calcularTotaisPorConta`) -- concluido 2026-05-12 via PR #64. 11 novos @Test acrescentados (4 para calcularTotaisPorConta + 7 para listarComFiltros), 21/21 passando. Uma assertion corrigida (COALESCE retorna zero, nao null). Fix entregue em PR separado (fix cirurgico de smoke).
 - [ ] Subagent (opcional) `migration-writer` + skill `/write-migration` (par ADR-012)
 - [x] Skill `/feature <nome>` (cria estrutura de bounded context) -- concluido 4.19
-- [ ] Skill `/ship` (lint + test + build + push + PR)
+- [x] Skill `/ship` (lint + test + build + push + PR) -- concluido 4.20
 - [ ] Skill `/migrate` (gera migration + atualiza schema + escreve teste)
 - [ ] Skill `/audit` (varre modulos buscando padrao especifico)
 - [ ] Ampliacao do `test-writer` para E2E tests (sub-etapa futura se uso justificar)
@@ -524,6 +532,11 @@ Definir como capturar quando chegarmos na Camada 4 — não criar burocracia ago
 
 ## Histórico de mudanças deste documento
 
+- **2026-05-12** -- Sub-etapa 4.20 concluida: skill `/ship` em
+  `.claude/skills/ship/SKILL.md`. Segunda skill direta sem subagent. Gate integrado
+  (check.ps1), 4 verificacoes de seguranca, push + PR automaticos. Smoke natural
+  completo (skill criou o proprio PR). Categoria "replicacao de padrao consolidado".
+  CLAUDE.md NAO atualizado. PR #66.
 - **2026-05-12** -- Sub-etapa 4.19 concluida: skill `/feature <nome>` em
   `.claude/skills/feature/SKILL.md`. Primeira skill sem subagent do projeto. Gera
   estrutura de bounded context (4 dirs + 11 arquivos Java stub). Validacao de
