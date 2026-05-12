@@ -26,6 +26,44 @@ if ($LASTEXITCODE -ne 0) {
 Write-Host "[OK] core.hooksPath configurado para .githooks/" -ForegroundColor Green
 Write-Host ""
 
+Write-Host "==> Configurando hook post-edit do Claude Code..." -ForegroundColor Cyan
+$settingsPath = ".claude/settings.json"
+if (-not (Test-Path $settingsPath)) {
+    [System.Environment]::CurrentDirectory = (Get-Location).Path
+    $settingsContent = @'
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "powershell.exe",
+            "args": ["-NoProfile", "-File", ".claude/hooks/post-edit/run-tests.ps1"],
+            "timeout": 60
+          }
+        ]
+      }
+    ]
+  }
+}
+'@
+    [System.IO.File]::WriteAllText(
+        $settingsPath,
+        $settingsContent,
+        (New-Object System.Text.UTF8Encoding $false)
+    )
+    if (-not (Test-Path $settingsPath)) {
+        Write-Host "[ERRO] Falha ao criar .claude/settings.json." -ForegroundColor Red
+        exit 1
+    }
+    Write-Host "[OK] .claude/settings.json criado com hook post-edit." -ForegroundColor Green
+} else {
+    Write-Host "[OK] .claude/settings.json ja existe -- nao sobrescrito." -ForegroundColor Green
+}
+Write-Host ""
+
 Write-Host "==> Subindo servicos Docker Compose..." -ForegroundColor Cyan
 docker compose up -d
 if ($LASTEXITCODE -ne 0) {
