@@ -569,6 +569,8 @@ Caso "modificacao de Entity existente requer migration" fica como **debito consc
 
 ### Auditoria meta-operacional (Sub-etapa 4.10)
 
+> **Errata (Sub-etapa 4.15):** auditoria empirica posterior revelou que dois dos tres debitos registrados aqui estavam baseados em premissas equivocadas. "Plugins globais" sao plugins oficiais cacheados (nao instalacoes manuais -- debito removido do backlog). "Memoria global" foi confundida com "transcripts" (memoria real ~85 KB; transcripts ~427 MB). "Built-ins competindo" e teorico (sem dor pratica observada). Ver subsecao "Errata de auditoria meta-operacional (Sub-etapa 4.15)" abaixo para detalhes. Registro original desta subsecao preservado integralmente -- auditoria registra o que sabiamos no momento.
+
 Sub-etapa doc-only que inaugura categoria "auditoria meta-operacional" — diferente de "registro pos-smoke falho" (4.2.1, 4.7.1) e de "refinamento pos-smoke empirico" (4.9.1), pois afeta varios componentes / estrategia de camada, nao 1 componente.
 
 **Quatro descobertas registradas:**
@@ -726,6 +728,41 @@ Operador escolhe o adequado conforme tipo de mudanca. Padrao "delegacao por espe
    - Achados, se houver, ancoram em ADR-004/005/006/007 nominalmente.
    - Sem violacao trivial detectada nos PRs ja mergeados (esses PRs foram revisados manualmente; `architect-reviewer` deve confirmar conformidade).
 5. **Comparativo com smoke da 4.11:** se tom/estrutura forem consistentes entre `pr-reviewer` e `architect-reviewer`, padrao skill+subagent fica estabilizado por replicacao. Se houver inconsistencia, abre 4.12.1 (refinamento).
+
+### Errata de auditoria meta-operacional (Sub-etapa 4.15)
+
+Sub-etapa de errata documental. Auditoria empirica de `~/.claude/` em maio/2026 revelou que **dois dos tres debitos meta-operacionais registrados na 4.10 estavam baseados em premissas equivocadas**. Esta sub-etapa corrige o registro sem alterar o conteudo original da 4.10 (preservacao historica).
+
+**Verificacao empirica conduzida** via PowerShell em `~/.claude/projects/` e `~/.claude/plugins/`:
+
+- `~/.claude/projects/` tem 17 diretorios de projeto totalizando ~427 MB em 853 arquivos.
+- A pasta `memory/` (memoria derivada) aparece apenas em UM projeto e ocupa ~85 KB total.
+- Os ~427 MB restantes sao transcripts de conversa -- logs brutos das sessoes, distribuidos diretamente sob cada hash de projeto.
+- Plugins `code-review` e `frontend-design` ficam em `~/.claude/plugins/cache/claude-plugins-official/` -- plugins oficiais cacheados pelo marketplace `claude-plugins-official`, nao instalacoes manuais.
+
+**Re-classificacao dos 3 debitos da 4.10:**
+
+1. **"Memoria global auto-ON sem confirmacao"** -> **debito real, mas magnitude muito menor que o suposto.** Memoria derivada total: ~85 KB. A 4.10 confundiu memoria (resumos curtos) com transcripts (logs brutos de conversa). Questao de principio ("auto-ON sem confirmacao") permanece valida; impacto pratico minimo. Acao: reescrito em `hooks-pendentes.md` com dimensionamento real.
+
+2. **"Plugins globais nao-versionados"** -> **nao e debito do projeto.** `code-review` e `frontend-design` sao plugins oficiais distribuidos pelo Claude Code, cacheados pelo marketplace `claude-plugins-official`. Equivalentes a built-ins. Decisao sobre eles e decisao sobre setup pessoal do Claude Code, nao sobre `financas-lab`. Acao: **removido do backlog do projeto** em `hooks-pendentes.md`.
+
+3. **"Built-in agents competindo com subagents custom"** -> **sob observacao, sem dor pratica relatada.** Operador nao observou em sessoes recentes (maio/2026) delegacao para built-ins (`Explore`, `Plan`, `general-purpose`, `claude-code-guide`, `statusline-setup`) nem interferencia com `pr-reviewer` ou `architect-reviewer`. Debito teorico, nao pratico. Acao: reescrito em `hooks-pendentes.md` como "sob observacao".
+
+**Achado novo (nao registrado pela 4.10):**
+
+4. **Transcripts em `~/.claude/projects/<hash>/<conversa-hash>/` ocupam ~427 MB em 17 projetos.** Sem rotina de expiracao automatica. Maior conversa unica: 90 MB. **Fenomeno fora do escopo do projeto** -- gestao de storage do Claude Code e decisao pessoal sobre setup, nao do `financas-lab`. Acao: registrado em `hooks-pendentes.md` para visibilidade, sem prescricao de acao.
+
+**Categoria operacional nova: "errata de auditoria meta-operacional".** Distinta de:
+
+- **"Auditoria meta-operacional"** (4.10): identifica debitos baseado em observacao inicial.
+- **"Errata de ADR baseada em descoberta de documentacao oficial"** (4.11): corrige decisao estrutural via doc oficial.
+- **Esta categoria:** corrige auditoria anterior baseada em **verificacao empirica posterior**. Aplicavel a casos onde auditoria inicial categoriza fenomeno mal, dimensiona errado, ou inclui itens fora do escopo real.
+
+**Padrao "auditar antes de mitigar" demonstrado em segunda aplicacao.** A 4.13 dimensionou `progresso.md` antes de cortar (descobriu 891 linhas reais e cortou por Camada concluida). A 4.15 auditou `~/.claude/` antes de mitigar (descobriu que dois debitos da 4.10 estavam baseados em premissa errada). Em ambos os casos, auditoria empirica ajustou o escopo da sub-etapa. **Recomendacao operacional consolidada:** antes de mitigar territorio opaco, auditar empiricamente. Custo da auditoria e baixo (3-5 comandos de inspecao); risco de pular auditoria e alto (mitigacao baseada em premissa errada).
+
+**Nota de errata adicionada a subsecao da 4.10** em `decisoes.md` apontando para esta subsecao. Padrao identico a ADR-012 que recebeu errata via 4.11. Registro historico da 4.10 preservado integralmente.
+
+**Nada modificado em `~/.claude/`.** Decisoes sobre desligar auto-memory, limpar transcripts, ou desinstalar plugins ficam **fora do escopo** -- sao decisoes pessoais do operador sobre seu setup do Claude Code, nao do projeto `financas-lab`.
 
 ### Claude Code hooks nativos
 
