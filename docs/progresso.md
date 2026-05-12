@@ -3,7 +3,7 @@
 > Documento de tracking. Mostra **onde estamos** na construção da fábrica e do produto.
 > Atualizado conforme camadas avançam. Diferente do `decisoes.md` (que registra escolhas) e dos `adrs.md` (que registram porquês), este documento responde a pergunta: "em que ponto eu estou?".
 
-**Última atualização:** 2026-05-12 (Sub-etapa 4.22 -- Hook post-edit para unit tests)
+**Última atualização:** 2026-05-12 (Sub-etapa 4.23 -- Subagent migration-writer + skill /write-migration)
 
 ---
 
@@ -42,6 +42,15 @@ Configurar `CLAUDE.md` rico, criar 3-5 subagents focados, criar 5-10 skills (sla
 - **4.2 — Hook universal de encoding UTF-8** (2026-05-10): segundo hook funcional. Estreia o entrypoint `pre-commit` no padrao de 3 camadas, primeira validacao multi-arquivo via `git diff --cached`, e padrao orquestrador 1:N no companheiro `pre-commit.ps1` (preparado para 4.3+). Whitelist por extensao + nomes exatos. Regra: `.ps1` rejeita BOM (licao 2.6); outros tipos aceitam BOM. 5 cenarios destrutivos validados (md ok, ps1+BOM bloqueia, java Latin-1 bloqueia, png ignorado, --no-verify bypassa). PR #41.
 - **4.2.1 — Padroes de validacao destrutiva** (2026-05-10): sub-etapa doc-only registrando licao descoberta em smoke test pos-merge da 4.2. `[System.IO.File]::WriteAllText` com path relativo em PowerShell grava em `[System.Environment]::CurrentDirectory` (nao em `$PWD`), produzindo falso positivo silencioso quando sessao fez `cd`. ADR-011 formaliza padroes de validacao destrutiva: `Test-Path` apos criar arquivo, `git status` antes de `git commit`, verificacao de exit code, sincronizacao de `Environment.CurrentDirectory`. Aplica retroativamente a sub-etapas 4.3+; 4.0-4.2 nao sao revistas (smoke test corrigido confirmou codigo correto). PR #42.
 - **4.7 — Hook Java/Spring de @Entity sem migration Flyway (modo conservador)** (2026-05-11): sexto hook funcional, segundo de stack. Bloqueia commit com `.java` novo (status A) contendo `@Entity` em `src/main/java/` se nao houver migration nova em `src/main/resources/db/migration/V<n>__*.sql`. Modo fail. Escopo conscientemente reduzido vs licao 2.1 -- modificacao de Entity existente (status M) **nao dispara** o hook, ficou como debito explicito em `hooks-pendentes.md`. Hook preventivo: projeto ja tem ratio coerente (3 Entities + 4 migrations). Padrao agnostico a escopo reforcado: orquestrador `pre-commit` continua sem distincao sintatica entre universal e stack. 6 cenarios destrutivos sob ADR-011 incluindo modificacao de Entity real (Categoria.java) para confirmar empiricamente que hook nao dispara em status M. PR #47.
+- **4.23 -- Subagent migration-writer + skill `/write-migration`** (2026-05-12):
+  segundo subagent gerador do projeto (primeiro: test-writer, 4.17). Le `*Entity.java`,
+  interpreta anotacoes JPA (`@Column`, `@Id`, `@Embedded`, `@AttributeOverride`,
+  `@Enumerated`), descobre proximo numero Flyway via Glob, gera `V<N>__cria_tabela_<name>.sql`.
+  Nao gera FK constraints nem indexes (domain-specific). Padrao: subagent Sonnet com
+  `context: fork` (mesma categoria do test-writer). Pre-requisito para a 4.24 (`/migrate`
+  encadeia migration-writer + test-writer). Smoke parcial honesto: logica de parsing e
+  conflito validadas; write path nao exercida por ausencia de bounded context sem migration.
+  PR #69.
 - **4.22 -- Hook post-edit para unit tests em domain** (2026-05-12): primeiro hook
   nativo do Claude Code no projeto (`PostToolUse`, evento pos-edicao). Dispara apos
   uso de `Edit` ou `Write` em `*/domain/*.java`; roda unit test correspondente via
@@ -109,7 +118,7 @@ Configurar `CLAUDE.md` rico, criar 3-5 subagents focados, criar 5-10 skills (sla
 - [x] Subagent `test-writer` + skill `/write-test` (par ADR-012, primeiro gerador) -- concluido 4.17 (escopo: unit tests). **Refinado pela 4.17.1** (comportamento "arquivo ja existe"). **Ampliado pela 4.18 para integration tests** (cobertura ADR-007 parcial -> completa unit + integration; E2E fica para sub-etapa futura).
 - [ ] Smoke pos-merge da 4.17 (unit tests) -- **validacao parcial em 2026-05-12** (componentes OK; cobaia tinha teste pre-existente; geracao propriamente dita aguarda primeiro uso real na Camada 4).
 - [x] Smoke pos-merge da 4.18 validando integration tests com cobaia real (`calcularTotaisPorConta`) -- concluido 2026-05-12 via PR #64. 11 novos @Test acrescentados (4 para calcularTotaisPorConta + 7 para listarComFiltros), 21/21 passando. Uma assertion corrigida (COALESCE retorna zero, nao null). Fix entregue em PR separado (fix cirurgico de smoke).
-- [ ] Subagent (opcional) `migration-writer` + skill `/write-migration` (par ADR-012)
+- [x] Subagent migration-writer + skill `/write-migration` -- concluido 4.23
 - [x] Skill `/feature <nome>` (cria estrutura de bounded context) -- concluido 4.19
 - [x] Skill `/ship` (lint + test + build + push + PR) -- concluido 4.20
 - [ ] Skill `/migrate` (gera migration + atualiza schema + escreve teste)
@@ -547,6 +556,10 @@ Definir como capturar quando chegarmos na Camada 4 — não criar burocracia ago
 
 ## Histórico de mudanças deste documento
 
+- **2026-05-12** -- Sub-etapa 4.23 concluida: subagent `migration-writer` em
+  `.claude/agents/migration-writer.md` + skill `/write-migration` em
+  `.claude/skills/write-migration/SKILL.md`. Derivacao SQL de anotacoes JPA.
+  Pre-requisito para 4.24. CLAUDE.md NAO atualizado. PR #69.
 - **2026-05-12** -- Sub-etapa 4.22 concluida: hook post-edit (`PostToolUse`) para unit
   tests em `*/domain/*.java`. Primeiro hook nativo Claude Code do projeto. `setup.ps1`
   ampliado para gerar `.claude/settings.json`. Script em `.claude/hooks/post-edit/`.
