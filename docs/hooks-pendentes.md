@@ -131,6 +131,13 @@ Itens originalmente listados em "Hooks Markdown / docs" ou outras secoes, agora 
 - **Maven release explicito** (Sub-etapa 4.5, PR #45). Implementado em `.claude/hooks/java-spring/maven-release.ps1`, invocado via `.githooks/pre-commit` (orquestrador) no evento `pre-commit`. Hook age apenas se `pom.xml` esta no diff staged. Valida presenca de pelo menos uma tag `<release>` no conteudo do `pom.xml` (qualquer valor interno aceito). Modo fail. Primeira ocupacao de `.claude/hooks/java-spring/`.
 - **@Entity nova sem migration Flyway (modo conservador)** (Sub-etapa 4.7, PR #47). Implementado em `.claude/hooks/java-spring/entity-migration.ps1`, invocado via `.githooks/pre-commit` (orquestrador) no evento `pre-commit`. Hook age apenas se ha `.java` novo (status A) sob `src/main/java/` contendo `@Entity`. Exige pelo menos um arquivo `src/main/resources/db/migration/V<n>__*.sql` novo no mesmo commit. Valida presenca, nao conteudo. Modo fail. Modificacao de Entity existente (status M) **nao dispara** o hook -- caso edge registrado como debito em "Pendentes".
 - **Tamanho de docs em `docs/` (modo warn)** (Sub-etapa 4.4, PR #44; refinado pela 4.14 em PR #58). Implementado em `.claude/hooks/universal/docs-size.ps1`, invocado via `.githooks/pre-commit` (orquestrador) no evento `pre-commit`. Limite: 800 linhas totais. Alerta visual em amarelo, **nao bloqueia commit**. Apenas `.md` em `docs/` — outros `.md` ignorados. **A partir da 4.14:** `docs/prompts/` excluido da verificacao (prompts versionados sao registros historicos por natureza; tamanho nao e criterio de qualidade). Modo `warn` registrado como padrao para regras subjetivas em `decisoes.md`.
+- **Hook post-edit unit tests** (Sub-etapa 4.22, PR #68). Hook nativo Claude Code
+  (`PostToolUse`) em `.claude/hooks/post-edit/run-tests.ps1`, referenciado por
+  `.claude/settings.json` (gitignored, gerado pelo `setup.ps1`). Dispara apos `Edit`
+  ou `Write` em `*/domain/*.java` dentro de `src/main/java/`. Roda `mvnw test
+  -Dtest=<Classe>Test` se arquivo de teste existir; silencioso caso contrario.
+  Timeout 60s. Non-blocking (PostToolUse nao bloqueia por design). Escopo futuro:
+  integration tests para `*RepositoryImpl.java` se performance permitir.
 
 ## Notas de cuidado para validacao destrutiva
 
