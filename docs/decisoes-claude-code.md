@@ -729,8 +729,43 @@ Padrao consolidado: skills procedurais de baixa complexidade delegam para tools
 nativos do Claude Code (Grep, Glob, Write, Bash) conforme necessidade -- sem
 overhead de subagent.
 
+## Sub-etapa 4.22 -- Hook post-edit (hook nativo Claude Code)
+
+### Git hook vs hook nativo Claude Code
+
+Hooks anteriores (4.1-4.7) sao **git hooks**: disparam em eventos do git
+(`pre-commit`, `commit-msg`), configurados via `core.hooksPath=.githooks`.
+Vivem em `.githooks/` (entrypoints) e `.claude/hooks/` (logica).
+
+O hook post-edit (4.22) e um **hook nativo do Claude Code**: dispara em eventos
+do harness (`PostToolUse`), configurado em `.claude/settings.json`. Vive em
+`.claude/hooks/post-edit/run-tests.ps1`.
+
+### Decisao: PostToolUse e non-blocking
+
+PostToolUse nunca bloqueia a execucao do Claude Code -- a tool (Edit/Write) ja
+rodou quando o hook e chamado. O hook fornece feedback (testes passando/falhando)
+mas nao impede nenhuma acao. Modo equivalente a `warn` dos git hooks.
+
+### Decisao: settings.json via setup.ps1
+
+`.claude/settings.json` e gitignored (decisao da 4.0 -- configs locais pessoais
+nao versionadas). A configuracao do hook e gerada pelo `setup.ps1` (idempotente:
+cria se nao existe, pula se ja existe). Script do hook (`.claude/hooks/post-edit/
+run-tests.ps1`) e versionado -- apenas o `settings.json` que o referencia e local.
+
+### Escopo: apenas domain, apenas unit
+
+- Domain files (`*/domain/*.java`): unit tests rapidos, sem Docker, sem Testcontainers.
+- Infrastructure files (`*RepositoryImpl.java`): EXCLUIDOS -- integration tests lentos
+  demais para hook post-edit.
+- Arquivos sem teste: hook silencioso (sem ruido).
+
 ## Historico de mudancas deste documento
 
+- **2026-05-12** -- Sub-etapa 4.22 concluida: primeiro hook nativo Claude Code
+  (`PostToolUse`). Git hook vs hook nativo documentado. `setup.ps1` como gestor de
+  `settings.json`. Escopo domain-only. PR #68.
 - **2026-05-12** -- Sub-etapa 4.21 concluida: skill `/audit` direta. Terceira
   replicacao do padrao 4.19. Grep nativo, output estruturado. PR #67.
 - **2026-05-12** -- Sub-etapa 4.20 concluida: skill `/ship` direta (sem subagent).
