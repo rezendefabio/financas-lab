@@ -677,7 +677,7 @@ Aplicavel a futuros casos onde subpasta criada por sub-etapa posterior introduz 
 
 **Validacao destrutiva sob ADR-011:** 6 cenarios cobrindo comportamento original preservado + comportamento novo introduzido. Detalhes no PR body da 4.14.
 
-**Debito da 4.13 resolvido:** item "modificar hook 4.4 para excluir docs/prompts/" removido de `hooks-pendentes.md`. Padrao operacional: debito originario de sub-etapa anterior resolvido em sub-etapa subsequente — cadeia "X cria contexto -> X+N resolve debito de contexto".
+**Debito da 4.13 resolvido:** item "modificar hook 4.4 para excluir docs/prompts/" removido de `hooks-pendentes.md`. Padrao operacional: debito originario de sub-etapa anterior resolvido em sub-etapa subsequente — cadeia "X cria contexto -> X+N resolve debito de contexto". PR #58.
 
 ### Segundo subagent: architect-reviewer + skill /review-arch (Sub-etapa 4.12)
 
