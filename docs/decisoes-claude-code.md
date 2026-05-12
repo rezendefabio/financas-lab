@@ -460,6 +460,72 @@ Segunda aplicacao da categoria "manutencao de docs por crescimento" (consolidada
 
 **Recomendacao operacional registrada nas licoes 4.16:** antes de splittar documento que cruza limite de tamanho, identificar **criterio natural de corte conforme o que o documento e**. Replicar padrao cego (sempre por idade, ou sempre por tema) pode gerar split artificial.
 
+### Primeiro subagent gerador: test-writer + skill /write-test (Sub-etapa 4.17)
+
+Terceiro par skill+subagent do projeto, **primeiro gerador** (vs `pr-reviewer` e `architect-reviewer` que sao revisores read-only). Aplica padrao ADR-012 em **eixo qualitativamente novo**.
+
+**Subagent (`.claude/agents/test-writer.md`):**
+
+- **Modelo: Sonnet.** Consistente com `architect-reviewer` (4.12). Haiku descartado para geracao de codigo idiomatico Java + Clean Architecture.
+- **Tools:** `Read, Grep, Glob, Bash, Write`. Primeiro subagent do projeto com `Write` — necessario para gerar arquivo de teste. `Edit` deliberadamente fora (geracao cria arquivo novo; ampliacao de teste existente e caso de uso diferente, fora desta sub-etapa).
+- **Escopo: apenas unit tests para classes em `*/domain/`.** Subset focado da ADR-007 (3 niveis). Integration e E2E ficam para sub-etapas futuras (4.18+) **se uso justificar** — sub-etapa de refactor do mesmo subagent (categoria 4.14), nao novos subagents especialistas. Decisao operacional: "infraestrutura segue necessidade".
+- **Regras duras enumeradas:** JUnit 5, AssertJ, sem Spring, sem mock de DB, sufixo Test, pacote espelho, sem classe base abstract (que e para integration), mock manual inline (Mockito so com justificativa).
+- **Referencia de estilo:** subagent le `ContaTest.java` antes de gerar — evita drift estilistico.
+- **Validacao via Bash:** apos `Write`, subagent roda `./mvnw test -Dtest=<NomeDoTest>` para validar.
+- **Sem auto-correcao em loop:** se nao compila ou testes falham, subagent **reporta erro literal e devolve decisao ao operador**. Padrao "subagent reporta, operador decide" coerente com revisores.
+- **Template de output: arquivo + relatorio em 5 secoes** (Arquivo gerado, Cobertura, Validacao, Decisoes de design, Limitacoes conhecidas). Diferente dos revisores (3 secoes de texto) — geradores entregam artefato + meta-informacao.
+- **Exemplos few-shot:** 2 — caso happy (Conta simples) + caso validacao falhando (subagent gerou bugs, reporta sem tentar consertar).
+
+**Skill orquestradora (`.claude/skills/write-test/SKILL.md`):**
+
+- Espelho da `review-arch/SKILL.md` com adaptacao de nome/agent/descricao.
+- `disable-model-invocation: true` + `context: fork` + `agent: test-writer`. Mecanismo nativo do Claude Code (ADR-012 revisao 4.11).
+- Argumento explicito: path da classe alvo (`/write-test src/main/.../Transacao.java`). Padrao consolidado dos revisores (`/review-pr <numero>`, `/review-arch <numero>`).
+- `allowed-tools` declara comandos Bash usados (`./mvnw *`, `cat *`, `ls *`).
+
+**Sub-padrao operacional novo: subagent gerador vs revisor.**
+
+Categoria distinta de subagent dentro do padrao ADR-012:
+
+| Dimensao | Subagent revisor (4.9, 4.12) | Subagent gerador (4.17) |
+|---|---|---|
+| Tools | `Read, Grep, Glob, Bash` (read-only) | `Read, Grep, Glob, Bash, Write` |
+| Output | Relatorio em 3 secoes (texto) | Arquivo + relatorio em 5 secoes |
+| Validacao | Sem validacao explicita (output e prosa) | `Bash` rodando comando do projeto antes de reportar |
+| Smoke | "Tem 3 secoes? Cita ADRs?" | "Output compila? Testes passam?" |
+| Risco | Baixo (read-only) | Medio (cria arquivos no projeto) |
+
+**Sem ADR novo** — refinamento taxonomico da ADR-012, nao decisao estrutural. Sub-padrao registrado nesta subsecao + nas licoes 4.17.
+
+**Categoria operacional nova: "primeira aplicacao de padrao em eixo novo".** Distinta de:
+
+- **"Primeira aplicacao"** (4.11): primeira implementacao do padrao recem-decidido.
+- **"Replicacao de padrao consolidado"** (4.12): segunda aplicacao do padrao validado em caso equivalente.
+- **Esta categoria:** primeira aplicacao do padrao em **eixo qualitativamente novo** (gerador em vez de revisor). Padrao base (skill orquestradora + `context: fork` + `agent: <nome>`) preservado; especifico de geracao (tools com `Write`, validacao via `Bash`, template arquivo+relatorio) inaugura sub-padrao.
+
+**Arquitetura incremental escolhida deliberadamente.** Alternativas avaliadas:
+
+- **Arquitetura A — 3 subagents especialistas** (`test-writer-unit`, `test-writer-integration`, `test-writer-e2e`): rejeitada por decidir estrutura antes do uso real.
+- **Arquitetura B — 1 subagent generalista cobrindo 3 niveis ja**: rejeitada por system prompt longo demais (300+ linhas estimadas) e risco de confundir niveis no output.
+- **Arquitetura C (escolhida) — 1 subagent que cresce por refactor**: comeca focado em unit, amplia em sub-etapas seguintes se uso justificar. Coerente com principios "infraestrutura segue necessidade" e "estrutura emerge do uso".
+
+**CLAUDE.md NAO atualizado nesta sub-etapa.** Subsecao "Subagents e skills" da 4.11 ja registra o padrao generico. 4.17 aplica convencao existente em eixo novo — distincao revisor/gerador fica documentada aqui em `decisoes-claude-code.md`, nao em CLAUDE.md (CLAUDE.md cobre convencoes do projeto, nao taxonomia interna de subagents).
+
+**Smoke test pos-merge** (responsabilidade do operador apos autorizar merge):
+
+1. Sessao nova do Claude Code.
+2. Cobaia primaria: `Conta.java` (etapa 3.2). Domain puro, simples. Comando: `/write-test src/main/java/com/laboratorio/financas/conta/domain/Conta.java`.
+3. **Criterios de sucesso:**
+   - Skill dispara fork no agent `test-writer` (Sonnet) — sem execucao direta pelo Claude principal.
+   - Arquivo `ContaTest.java` gerado em `src/test/java/.../conta/domain/`.
+   - `./mvnw test -Dtest=ContaTest` compila e passa (todos os testes).
+   - Output respeita convencoes: JUnit 5, AssertJ, sem Spring, sufixo `Test`.
+   - Cobertura razoavel (nao precisa de paridade com `ContaTest` manual existente — referencia de estilo, nao gabarito a copiar).
+4. **Se smoke primario OK:** cobaia secundaria `Transacao.java` (etapa 3.6, mais complexa). Se ambos OK, padrao validado.
+5. **Se smoke primario falhar:** abrir 4.17.1 (refinamento pos-smoke empirico, categoria 4.9.1).
+
+**Atencao especial:** o smoke da 4.17 e qualitativamente diferente dos smokes anteriores. Anteriores validavam "output e texto bem-formatado". 4.17 valida "output e codigo que compila e passa nos testes". Falha aqui e visivelmente quantificavel (`./mvnw test` reporta).
+
 ### Claude Code hooks nativos
 
 Mecanismo `PreToolUse`/`Stop`/`UserPromptSubmit` em `.claude/settings.json` é tratado em sub-etapa própria após 4.2. Diferente de git hooks: atua sobre comportamento do agente, não validação de código.
