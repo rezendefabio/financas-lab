@@ -12,6 +12,7 @@ function Test-IsDocsMarkdown {
 
     if ($ext -ne '.md') { return $false }
     if (-not ($pathNorm -like 'docs/*')) { return $false }
+    if ($pathNorm -like 'docs/prompts/*') { return $false }
 
     return $true
 }
