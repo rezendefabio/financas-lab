@@ -189,7 +189,7 @@ public class ImportarTransacoesCsvUseCase {
     }
 
     @Transactional
-    int persistir(List<LinhaValida> linhas, List<ErroImportacao> erros) {
+    public int persistir(List<LinhaValida> linhas, List<ErroImportacao> erros) {
         int importadas = 0;
         for (LinhaValida lv : linhas) {
             try {
