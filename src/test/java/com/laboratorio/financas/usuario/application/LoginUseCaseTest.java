@@ -7,7 +7,6 @@ import static org.mockito.Mockito.when;
 import com.laboratorio.financas.usuario.domain.CredenciaisInvalidasException;
 import com.laboratorio.financas.usuario.domain.Usuario;
 import com.laboratorio.financas.usuario.domain.UsuarioRepository;
-import com.laboratorio.financas.usuario.infrastructure.security.JwtService;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -26,13 +25,13 @@ class LoginUseCaseTest {
     private PasswordEncoder passwordEncoder;
 
     @Mock
-    private JwtService jwtService;
+    private TokenService tokenService;
 
     private LoginUseCase useCase;
 
     @BeforeEach
     void setUp() {
-        useCase = new LoginUseCase(usuarioRepository, passwordEncoder, jwtService);
+        useCase = new LoginUseCase(usuarioRepository, passwordEncoder, tokenService);
     }
 
     @Test
@@ -40,14 +39,14 @@ class LoginUseCaseTest {
         Usuario usuario = new Usuario("user@email.com", "bcrypt_hash");
         when(usuarioRepository.buscarPorEmail("user@email.com")).thenReturn(Optional.of(usuario));
         when(passwordEncoder.matches("senha123", "bcrypt_hash")).thenReturn(true);
-        when(jwtService.gerarToken("user@email.com")).thenReturn("jwt_token");
-        when(jwtService.getExpirationSeconds()).thenReturn(86400L);
+        when(tokenService.gerarToken("user@email.com")).thenReturn("jwt_token");
+        when(tokenService.getExpirationSeconds()).thenReturn(900L);
 
         LoginUseCase.Resultado resultado = useCase.executar("user@email.com", "senha123");
 
         assertThat(resultado.token()).isEqualTo("jwt_token");
         assertThat(resultado.tipo()).isEqualTo("Bearer");
-        assertThat(resultado.expiresIn()).isEqualTo(86400L);
+        assertThat(resultado.expiresIn()).isEqualTo(900L);
     }
 
     @Test

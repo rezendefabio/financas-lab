@@ -37,4 +37,4 @@ springdoc:
 app:
   jwt:
     secret: dGhpcy1pcy1hLXZlcnktbG9uZy1zZWNyZXQta2V5LWZvci1obWFjLXNoYTI1Ni1hbHdheXM=
-    expiration-seconds: 86400
+    expiration-seconds: 900

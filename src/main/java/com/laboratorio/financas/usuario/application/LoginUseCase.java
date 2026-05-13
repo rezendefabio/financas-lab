@@ -3,7 +3,6 @@ package com.laboratorio.financas.usuario.application;
 import com.laboratorio.financas.usuario.domain.CredenciaisInvalidasException;
 import com.laboratorio.financas.usuario.domain.Usuario;
 import com.laboratorio.financas.usuario.domain.UsuarioRepository;
-import com.laboratorio.financas.usuario.infrastructure.security.JwtService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -13,14 +12,14 @@ public class LoginUseCase {
 
     private final UsuarioRepository usuarioRepository;
     private final PasswordEncoder passwordEncoder;
-    private final JwtService jwtService;
+    private final TokenService tokenService;
 
     public LoginUseCase(UsuarioRepository usuarioRepository,
                         PasswordEncoder passwordEncoder,
-                        JwtService jwtService) {
+                        TokenService tokenService) {
         this.usuarioRepository = usuarioRepository;
         this.passwordEncoder = passwordEncoder;
-        this.jwtService = jwtService;
+        this.tokenService = tokenService;
     }
 
     public record Resultado(String token, String tipo, long expiresIn) { }
@@ -32,7 +31,7 @@ public class LoginUseCase {
         if (!passwordEncoder.matches(senha, usuario.getSenhaHash())) {
             throw new CredenciaisInvalidasException();
         }
-        String token = jwtService.gerarToken(email);
-        return new Resultado(token, "Bearer", jwtService.getExpirationSeconds());
+        String token = tokenService.gerarToken(email);
+        return new Resultado(token, "Bearer", tokenService.getExpirationSeconds());
     }
 }

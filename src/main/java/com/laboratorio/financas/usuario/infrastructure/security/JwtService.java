@@ -7,16 +7,17 @@ import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import java.util.Date;
 import javax.crypto.SecretKey;
+import com.laboratorio.financas.usuario.application.TokenService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 @Component
-public class JwtService {
+public class JwtService implements TokenService {
 
     @Value("${app.jwt.secret}")
     private String secret;
 
-    @Value("${app.jwt.expiration-seconds:86400}")
+    @Value("${app.jwt.expiration-seconds:900}")
     private long expirationSeconds;
 
     public String gerarToken(String email) {

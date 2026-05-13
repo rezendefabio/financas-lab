@@ -95,7 +95,7 @@ class AuthControllerTest extends AbstractIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.token", notNullValue()))
                 .andExpect(jsonPath("$.tipo", equalTo("Bearer")))
-                .andExpect(jsonPath("$.expiresIn", equalTo(86400)));
+                .andExpect(jsonPath("$.expiresIn", equalTo(900)));
     }
 
     @Test
