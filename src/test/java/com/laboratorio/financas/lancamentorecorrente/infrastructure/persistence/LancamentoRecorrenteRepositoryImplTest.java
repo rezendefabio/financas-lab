@@ -149,14 +149,7 @@ class LancamentoRecorrenteRepositoryImplTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void salvarPersisteComCategoriaId() {
-        UUID categoriaId = UUID.randomUUID();
-        LancamentoRecorrente com = new LancamentoRecorrente(
-                "Supermercado", TipoTransacao.DESPESA, VALOR_500,
-                contaId, categoriaId, Periodicidade.SEMANAL, PROXIMA);
-
-        // categoriaId sem FK real — apenas verificar que o campo persiste
-        // (a tabela permite categoria_id NULL, mas nao tem FK deferred; omitir para evitar violacao)
+    void salvarPersisteComCategoriaIdNulo() {
         LancamentoRecorrente semCategoria = new LancamentoRecorrente(
                 "Supermercado", TipoTransacao.DESPESA, VALOR_500,
                 contaId, null, Periodicidade.SEMANAL, PROXIMA);

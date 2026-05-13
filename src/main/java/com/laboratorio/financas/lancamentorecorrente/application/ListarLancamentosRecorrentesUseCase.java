@@ -4,6 +4,7 @@ import com.laboratorio.financas.lancamentorecorrente.domain.LancamentoRecorrente
 import com.laboratorio.financas.lancamentorecorrente.domain.LancamentoRecorrenteRepository;
 import java.util.List;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 @Component
 public class ListarLancamentosRecorrentesUseCase {
@@ -14,6 +15,7 @@ public class ListarLancamentosRecorrentesUseCase {
         this.repository = repository;
     }
 
+    @Transactional(readOnly = true)
     public List<LancamentoRecorrente> executar() {
         return repository.listar();
     }

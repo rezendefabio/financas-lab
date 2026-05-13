@@ -5,6 +5,7 @@ import com.laboratorio.financas.lancamentorecorrente.domain.LancamentoRecorrente
 import com.laboratorio.financas.lancamentorecorrente.domain.LancamentoRecorrenteRepository;
 import java.util.UUID;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 @Component
 public class BuscarLancamentoRecorrentePorIdUseCase {
@@ -15,6 +16,7 @@ public class BuscarLancamentoRecorrentePorIdUseCase {
         this.repository = repository;
     }
 
+    @Transactional(readOnly = true)
     public LancamentoRecorrente executar(UUID id) {
         return repository.buscarPorId(id)
                 .orElseThrow(() -> new LancamentoRecorrenteNaoEncontradoException(id));
