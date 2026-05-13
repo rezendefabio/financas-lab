@@ -3,7 +3,7 @@
 > Documento de tracking. Mostra **onde estamos** na construção da fábrica e do produto.
 > Atualizado conforme camadas avançam. Diferente do `decisoes.md` (que registra escolhas) e dos `adrs.md` (que registram porquês), este documento responde a pergunta: "em que ponto eu estou?".
 
-**Última atualização:** 2026-05-13 (Sub-etapa 5.20 -- Skill /batch para execucao paralela)
+**Última atualização:** 2026-05-13 (Sub-etapa 5.19 -- Transacoes frontend)
 
 ---
 
@@ -159,6 +159,19 @@ Configurar `CLAUDE.md` rico, criar 3-5 subagents focados, criar 5-10 skills (sla
 Ativar a fábrica de fato: rodar features no Tier 2, configurar 3 routines Tier 1, validar paralelismo se necessário.
 
 ### Sub-etapas concluídas
+
+- **5.19 -- Transacoes frontend (listagem e criacao)** (2026-05-13): paginas
+  `/transacoes` e `/transacoes/novo` no frontend. **(1) Fix B6:** `CriarTransacaoRequest`
+  corrigido no servico -- `valorValor`/`valorMoeda` renomeados para `valor`/`moeda`
+  espelhando `TransacaoRequest.java`. **(2) Formatadores:** `formatTipoTransacao` e
+  `formatDate` adicionados em `shared/lib/formatters.ts` com testes colocados.
+  **(3) Listagem:** cards com badge por tipo (`default`=Receita, `destructive`=Despesa,
+  `secondary`=Transferencia), skeleton, estado vazio, aviso se >20 registros.
+  **(4) Formulario:** schema Zod espelhando `TransacaoRequest.java` (tipo enum,
+  valor coerce.number, moeda length(3), data min(1), descricao min/max, contaId uuid);
+  campos condicionais: `contaDestinoId` visivel apenas em TRANSFERENCIA, `categoriaId`
+  oculto em TRANSFERENCIA e filtrado pelo tipo da transacao. `check-front.ps1` verde
+  (55 testes, lint, build). PR aberto.
 
 - **5.20 -- Skill `/batch` (execucao paralela de tasks)** (2026-05-13): primeira
   sub-etapa de infraestrutura de fabrica da Camada A (modelo Boris Cherny). Skill
