@@ -6,9 +6,11 @@ import java.util.UUID;
 
 public interface OrcamentoRepository {
 
-    Orcamento salvar(Orcamento domain);
+    Orcamento salvar(Orcamento orcamento);
 
     Optional<Orcamento> buscarPorId(UUID id);
 
-    List<Orcamento> listarTodos();
+    List<Orcamento> listar();
+
+    Orcamento atualizar(Orcamento orcamento);
 }

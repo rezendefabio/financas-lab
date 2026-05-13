@@ -1,61 +1,84 @@
 package com.laboratorio.financas.orcamento.domain;
 
+import com.laboratorio.financas.shared.domain.Money;
+import java.math.BigDecimal;
 import java.time.Instant;
-import java.util.Objects;
+import java.time.LocalDate;
 import java.util.UUID;
 
 public final class Orcamento {
 
     private final UUID id;
-    private final String nome;
+    private final UUID categoriaId;
+    private final Money valorLimite;
+    private LocalDate mesAno;
+    private boolean ativo;
     private final Instant criadoEm;
+    private Instant atualizadoEm;
 
-    public Orcamento(String nome) {
-        this(UUID.randomUUID(), nome, Instant.now());
+    public Orcamento(UUID categoriaId, Money valorLimite, LocalDate mesAno) {
+        if (categoriaId == null) {
+            throw new IllegalArgumentException("categoriaId nao pode ser nulo");
+        }
+        if (valorLimite == null) {
+            throw new IllegalArgumentException("valorLimite nao pode ser nulo");
+        }
+        if (valorLimite.valor().compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException("valorLimite deve ser maior que zero");
+        }
+        if (mesAno == null) {
+            throw new IllegalArgumentException("mesAno nao pode ser nulo");
+        }
+        this.id = UUID.randomUUID();
+        this.categoriaId = categoriaId;
+        this.valorLimite = valorLimite;
+        this.mesAno = mesAno.getDayOfMonth() != 1 ? mesAno.withDayOfMonth(1) : mesAno;
+        this.ativo = true;
+        this.criadoEm = Instant.now();
+        this.atualizadoEm = Instant.now();
     }
 
-    public Orcamento(UUID id, String nome, Instant criadoEm) {
-        Objects.requireNonNull(id, "id nao pode ser nulo");
-        Objects.requireNonNull(nome, "nome nao pode ser nulo");
-        Objects.requireNonNull(criadoEm, "criadoEm nao pode ser nulo");
-        if (nome.isBlank()) {
-            throw new IllegalArgumentException("nome nao pode ser vazio");
-        }
+    public Orcamento(UUID id, UUID categoriaId, Money valorLimite, LocalDate mesAno,
+                     boolean ativo, Instant criadoEm, Instant atualizadoEm) {
         this.id = id;
-        this.nome = nome;
+        this.categoriaId = categoriaId;
+        this.valorLimite = valorLimite;
+        this.mesAno = mesAno;
+        this.ativo = ativo;
         this.criadoEm = criadoEm;
+        this.atualizadoEm = atualizadoEm;
+    }
+
+    public void desativar() {
+        this.ativo = false;
+        this.atualizadoEm = Instant.now();
     }
 
     public UUID getId() {
         return id;
     }
 
-    public String getNome() {
-        return nome;
+    public UUID getCategoriaId() {
+        return categoriaId;
+    }
+
+    public Money getValorLimite() {
+        return valorLimite;
+    }
+
+    public LocalDate getMesAno() {
+        return mesAno;
+    }
+
+    public boolean isAtivo() {
+        return ativo;
     }
 
     public Instant getCriadoEm() {
         return criadoEm;
     }
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (!(o instanceof Orcamento other)) {
-            return false;
-        }
-        return this.id.equals(other.id);
-    }
-
-    @Override
-    public int hashCode() {
-        return id.hashCode();
-    }
-
-    @Override
-    public String toString() {
-        return "Orcamento{id=" + id + ", nome='" + nome + "'}";
+    public Instant getAtualizadoEm() {
+        return atualizadoEm;
     }
 }

@@ -7,7 +7,7 @@ public class OrcamentoNaoEncontradoException extends RuntimeException {
     private final UUID id;
 
     public OrcamentoNaoEncontradoException(UUID id) {
-        super("orcamento nao encontrado: " + id);
+        super("Orcamento nao encontrado: " + id);
         this.id = id;
     }
 
