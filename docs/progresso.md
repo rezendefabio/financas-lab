@@ -3,7 +3,7 @@
 > Documento de tracking. Mostra **onde estamos** na construção da fábrica e do produto.
 > Atualizado conforme camadas avançam. Diferente do `decisoes.md` (que registra escolhas) e dos `adrs.md` (que registram porquês), este documento responde a pergunta: "em que ponto eu estou?".
 
-**Última atualização:** 2026-05-13 (Sub-etapa 5.16 -- Tema Fintech-Clean + validacao espelhada + B6)
+**Última atualização:** 2026-05-13 (Sub-etapa 5.17 -- Redesign visual Fintech-Clean)
 
 ---
 
@@ -159,6 +159,20 @@ Configurar `CLAUDE.md` rico, criar 3-5 subagents focados, criar 5-10 skills (sla
 Ativar a fábrica de fato: rodar features no Tier 2, configurar 3 routines Tier 1, validar paralelismo se necessário.
 
 ### Sub-etapas concluídas
+
+- **5.17 -- Redesign visual Fintech-Clean (polimento)** (2026-05-13): polimento visual
+  das paginas existentes sem mudanca de logica. **(1) Fix de fonte:** auto-referencia
+  circular `--font-sans: var(--font-sans)` corrigida para `var(--font-geist-sans)` --
+  Geist Sans agora aplicado em toda a tipografia. **(2) Login split-layout:** painel
+  esquerdo emerald com identidade visual (oculto em mobile) + formulario no painel direito.
+  **(3) Sidebar ativo:** `usePathname` + prop `isActive` no `SidebarMenuButton` -- item
+  selecionado recebe destaque visual. **(4) Dashboard:** 3 cards (saldo total com
+  `border-l-primary` + icone `TrendingUp` + 2 placeholders `border-dashed`). **(5) Contas:**
+  `ContaCard` com `border-l-4 border-l-primary` (ativa) ou `border-l-border` (inativa),
+  saldo em `text-xl font-bold`. **(6) Botao Desativar:** `variant="outline"` com
+  `border-destructive text-destructive` em vez de `variant="destructive"`. **(7) Radius:**
+  `--radius` reduzido de 0.625rem para 0.5rem -- visual mais profissional. 53 testes,
+  `check-front.ps1` verde. PR aberto.
 
 - **5.16 -- Tema Fintech-Clean + validacao espelhada + B6** (2026-05-13): tres entregas
   visuais e de convencao. **(1) Tema:** paleta Fintech-Clean aplicada em `globals.css`

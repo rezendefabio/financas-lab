@@ -108,7 +108,8 @@ export default function ContaDetalhePage() {
               <div className="pt-2">
                 {!confirmando ? (
                   <Button
-                    variant="destructive"
+                    variant="outline"
+                    className="border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground"
                     onClick={() => setConfirmando(true)}
                   >
                     Desativar conta

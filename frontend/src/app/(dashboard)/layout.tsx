@@ -1,6 +1,6 @@
 'use client'
 import { useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, usePathname } from 'next/navigation'
 import { useAuth } from '@/features/auth/hooks/use-auth'
 import {
   SidebarProvider,
@@ -28,6 +28,7 @@ const navItems = [
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter()
   const auth = useAuth()
+  const pathname = usePathname()
 
   useEffect(() => {
     if (!auth.loggedIn) {
@@ -43,14 +44,23 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </SidebarHeader>
         <SidebarContent>
           <SidebarMenu>
-            {navItems.map((item) => (
-              <SidebarMenuItem key={item.href}>
-                <SidebarMenuButton render={<Link href={item.href} />}>
-                  <item.icon className="h-4 w-4" />
-                  <span>{item.label}</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            ))}
+            {navItems.map((item) => {
+              const isActive = item.href === '/'
+                ? pathname === '/'
+                : pathname.startsWith(item.href)
+
+              return (
+                <SidebarMenuItem key={item.href}>
+                  <SidebarMenuButton
+                    render={<Link href={item.href} />}
+                    isActive={isActive}
+                  >
+                    <item.icon className="h-4 w-4" />
+                    <span>{item.label}</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              )
+            })}
           </SidebarMenu>
         </SidebarContent>
         <SidebarFooter className="px-4 py-3">
