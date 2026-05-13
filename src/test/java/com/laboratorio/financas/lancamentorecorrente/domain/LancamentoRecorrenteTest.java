@@ -163,7 +163,7 @@ class LancamentoRecorrenteTest {
     class AvancarProximaOcorrencia {
 
         @Test
-        void mensal_avancaUmMes() {
+        void mensalAvancaUmMes() {
             LancamentoRecorrente l = new LancamentoRecorrente(
                     "Mensal", TipoTransacao.DESPESA, VALOR_100,
                     UUID.randomUUID(), null, Periodicidade.MENSAL, LocalDate.of(2026, 1, 1));
@@ -174,7 +174,7 @@ class LancamentoRecorrenteTest {
         }
 
         @Test
-        void semanal_avancaUmaSemana() {
+        void semanalAvancaUmaSemana() {
             LancamentoRecorrente l = new LancamentoRecorrente(
                     "Semanal", TipoTransacao.DESPESA, VALOR_100,
                     UUID.randomUUID(), null, Periodicidade.SEMANAL, LocalDate.of(2026, 1, 1));
@@ -185,7 +185,7 @@ class LancamentoRecorrenteTest {
         }
 
         @Test
-        void anual_avancaUmAno() {
+        void anualAvancaUmAno() {
             LancamentoRecorrente l = new LancamentoRecorrente(
                     "Anual", TipoTransacao.DESPESA, VALOR_100,
                     UUID.randomUUID(), null, Periodicidade.ANUAL, LocalDate.of(2026, 1, 1));

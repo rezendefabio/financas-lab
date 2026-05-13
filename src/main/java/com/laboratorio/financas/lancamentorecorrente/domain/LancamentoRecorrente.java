@@ -4,7 +4,6 @@ import com.laboratorio.financas.shared.domain.Money;
 import com.laboratorio.financas.transacao.domain.TipoTransacao;
 import java.time.Instant;
 import java.time.LocalDate;
-import java.util.Objects;
 import java.util.UUID;
 
 public final class LancamentoRecorrente {
@@ -60,8 +59,12 @@ public final class LancamentoRecorrente {
             Instant criadoEm,
             Instant atualizadoEm
     ) {
-        Objects.requireNonNull(id, "id nao pode ser nulo");
-        Objects.requireNonNull(descricao, "descricao nao pode ser nula");
+        if (id == null) {
+            throw new IllegalArgumentException("id nao pode ser nulo");
+        }
+        if (descricao == null) {
+            throw new IllegalArgumentException("descricao nao pode ser nula");
+        }
         String trimmed = descricao.trim();
         if (trimmed.isEmpty()) {
             throw new IllegalArgumentException("descricao nao pode ser vazia");
@@ -71,17 +74,27 @@ public final class LancamentoRecorrente {
                 "descricao nao pode ter mais de " + DESCRICAO_MAX_LENGTH + " caracteres"
             );
         }
-        Objects.requireNonNull(tipo, "tipo nao pode ser nulo");
+        if (tipo == null) {
+            throw new IllegalArgumentException("tipo nao pode ser nulo");
+        }
         if (tipo == TipoTransacao.TRANSFERENCIA) {
             throw new IllegalArgumentException("TRANSFERENCIA nao e suportada em lancamentos recorrentes");
         }
-        Objects.requireNonNull(valor, "valor nao pode ser nulo");
+        if (valor == null) {
+            throw new IllegalArgumentException("valor nao pode ser nulo");
+        }
         if (!valor.ehPositivo()) {
             throw new IllegalArgumentException("valor deve ser positivo");
         }
-        Objects.requireNonNull(contaId, "contaId nao pode ser nulo");
-        Objects.requireNonNull(periodicidade, "periodicidade nao pode ser nula");
-        Objects.requireNonNull(proximaOcorrencia, "proximaOcorrencia nao pode ser nula");
+        if (contaId == null) {
+            throw new IllegalArgumentException("contaId nao pode ser nulo");
+        }
+        if (periodicidade == null) {
+            throw new IllegalArgumentException("periodicidade nao pode ser nula");
+        }
+        if (proximaOcorrencia == null) {
+            throw new IllegalArgumentException("proximaOcorrencia nao pode ser nula");
+        }
 
         this.id = id;
         this.descricao = trimmed;
