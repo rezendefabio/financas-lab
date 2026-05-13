@@ -3,7 +3,7 @@
 > Documento de tracking. Mostra **onde estamos** na construção da fábrica e do produto.
 > Atualizado conforme camadas avançam. Diferente do `decisoes.md` (que registra escolhas) e dos `adrs.md` (que registram porquês), este documento responde a pergunta: "em que ponto eu estou?".
 
-**Última atualização:** 2026-05-13 (Sub-etapa 5.12 -- Agente front-reviewer e skill /review-front)
+**Última atualização:** 2026-05-13 (Sub-etapa 5.13 -- test-writer estendido para frontend)
 
 ---
 
@@ -159,6 +159,19 @@ Configurar `CLAUDE.md` rico, criar 3-5 subagents focados, criar 5-10 skills (sla
 Ativar a fábrica de fato: rodar features no Tier 2, configurar 3 routines Tier 1, validar paralelismo se necessário.
 
 ### Sub-etapas concluídas
+
+- **5.13 -- test-writer estendido para frontend (Vitest + Testing Library)** (2026-05-13):
+  extensao aditiva do subagent `test-writer` para detectar paths `frontend/` e gerar testes
+  Vitest + Testing Library no lugar de JUnit. Tres categorias cobertas: componente
+  (`src/app/**/*.tsx`, `src/components/**/*.tsx`), hook (`src/hooks/**/*.ts`) e
+  service/utility (`src/services/**/*.ts`, `src/lib/**/*.ts`). Arquivo de teste colocado
+  no mesmo diretorio do arquivo alvo (colocated). Deteccao inserida no inicio do fluxo do
+  agente (`## Deteccao de frontend` antes da logica Java). Validacao via Push-Location/Pop-Location
+  + `npm run test:run` em `frontend/`. Recusa explicitamente se arquivo de teste ja existir.
+  Logica Java intacta (extensao e aditiva, nao substitutiva). CLAUDE.md atualizado com
+  convencao de `/write-test` para frontend. Smoke C1: recusa de `auth.service.test.ts`
+  ja existente confirmada. Smoke C2: `NomeDisplay.tsx` temporario gerou 2 testes + 17/17
+  passando. Arquivos temporarios removidos apos validacao. PR a abrir.
 
 - **5.12 -- Agente front-reviewer e skill /review-front** (2026-05-13): revisor de codigo
   frontend especializado nas convencoes do projeto. Agente `.claude/agents/front-reviewer.md`
