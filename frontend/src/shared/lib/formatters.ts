@@ -14,3 +14,11 @@ export function formatTipoConta(tipo: string): string {
   }
   return labels[tipo] ?? tipo
 }
+
+export function formatTipoCategoria(tipo: string): string {
+  const labels: Record<string, string> = {
+    RECEITA: 'Receita',
+    DESPESA: 'Despesa',
+  }
+  return labels[tipo] ?? tipo
+}
