@@ -40,7 +40,7 @@ foreach ($file in $stagedFiles) {
     # Exclusoes
     if ($fileNorm -like "*/src/test/*" -or $fileNorm -like "src/test/*") { continue }
     $fileName = [System.IO.Path]::GetFileName($file)
-    if ($fileName -like "*.example" -or $fileName -like "*-example.*" -or $fileName -eq "*.env.example") { continue }
+    if ($fileName -like "*.example" -or $fileName -like "*-example.*" -or $fileName -like "*.env.example") { continue }
 
     $prev = $ErrorActionPreference
     $ErrorActionPreference = "Continue"
