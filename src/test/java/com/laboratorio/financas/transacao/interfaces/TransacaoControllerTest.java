@@ -18,7 +18,7 @@ import com.laboratorio.financas.conta.domain.Conta;
 import com.laboratorio.financas.conta.domain.TipoConta;
 import com.laboratorio.financas.conta.infrastructure.persistence.ContaJpaRepository;
 import com.laboratorio.financas.conta.infrastructure.persistence.ContaRepositoryImpl;
-import com.laboratorio.financas.shared.AbstractIntegrationTest;
+import com.laboratorio.financas.shared.AbstractAuthenticatedIntegrationTest;
 import com.laboratorio.financas.shared.domain.Money;
 import com.laboratorio.financas.transacao.infrastructure.persistence.TransacaoJpaRepository;
 import java.math.BigDecimal;
@@ -31,17 +31,13 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
-import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
 @AutoConfigureMockMvc
-class TransacaoControllerTest extends AbstractIntegrationTest {
+class TransacaoControllerTest extends AbstractAuthenticatedIntegrationTest {
 
     private static final Currency BRL = Currency.getInstance("BRL");
     private static final String DATA = "2025-01-15";
-
-    @Autowired
-    private MockMvc mockMvc;
 
     @Autowired
     private ObjectMapper objectMapper;
@@ -107,15 +103,13 @@ class TransacaoControllerTest extends AbstractIntegrationTest {
         return body;
     }
 
-    // POST tests
-
     @Test
     void postTransacaoReceitaValidaRetorna201() throws Exception {
         UUID contaId = criarContaPersistida();
 
-        mockMvc.perform(post("/api/transacoes")
+        mockMvc.perform(comAuth(post("/api/transacoes")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(requestReceita(contaId))))
+                        .content(objectMapper.writeValueAsString(requestReceita(contaId)))))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id", notNullValue()))
                 .andExpect(jsonPath("$.tipo", equalTo("RECEITA")))
@@ -127,9 +121,9 @@ class TransacaoControllerTest extends AbstractIntegrationTest {
         UUID contaId = criarContaPersistida();
         UUID contaDestinoId = criarContaPersistida();
 
-        mockMvc.perform(post("/api/transacoes")
+        mockMvc.perform(comAuth(post("/api/transacoes")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(requestTransferencia(contaId, contaDestinoId))))
+                        .content(objectMapper.writeValueAsString(requestTransferencia(contaId, contaDestinoId)))))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.tipo", equalTo("TRANSFERENCIA")));
     }
@@ -140,9 +134,9 @@ class TransacaoControllerTest extends AbstractIntegrationTest {
         Map<String, Object> body = requestReceita(contaId);
         body.put("descricao", "   ");
 
-        mockMvc.perform(post("/api/transacoes")
+        mockMvc.perform(comAuth(post("/api/transacoes")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(body)))
+                        .content(objectMapper.writeValueAsString(body))))
                 .andExpect(status().isBadRequest());
     }
 
@@ -152,9 +146,9 @@ class TransacaoControllerTest extends AbstractIntegrationTest {
         Map<String, Object> body = requestReceita(contaId);
         body.put("valor", BigDecimal.ZERO);
 
-        mockMvc.perform(post("/api/transacoes")
+        mockMvc.perform(comAuth(post("/api/transacoes")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(body)))
+                        .content(objectMapper.writeValueAsString(body))))
                 .andExpect(status().isBadRequest());
     }
 
@@ -162,9 +156,9 @@ class TransacaoControllerTest extends AbstractIntegrationTest {
     void postTransacaoComContaIdInexistenteRetorna400ComRecurso() throws Exception {
         Map<String, Object> body = requestReceita(UUID.randomUUID());
 
-        mockMvc.perform(post("/api/transacoes")
+        mockMvc.perform(comAuth(post("/api/transacoes")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(body)))
+                        .content(objectMapper.writeValueAsString(body))))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.recurso", equalTo("conta")));
     }
@@ -174,9 +168,9 @@ class TransacaoControllerTest extends AbstractIntegrationTest {
         UUID contaId = criarContaPersistida();
         Map<String, Object> body = requestTransferencia(contaId, UUID.randomUUID());
 
-        mockMvc.perform(post("/api/transacoes")
+        mockMvc.perform(comAuth(post("/api/transacoes")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(body)))
+                        .content(objectMapper.writeValueAsString(body))))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.recurso", equalTo("contaDestino")));
     }
@@ -187,9 +181,9 @@ class TransacaoControllerTest extends AbstractIntegrationTest {
         Map<String, Object> body = requestReceita(contaId);
         body.put("categoriaId", UUID.randomUUID().toString());
 
-        mockMvc.perform(post("/api/transacoes")
+        mockMvc.perform(comAuth(post("/api/transacoes")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(body)))
+                        .content(objectMapper.writeValueAsString(body))))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.recurso", equalTo("categoria")));
     }
@@ -205,22 +199,20 @@ class TransacaoControllerTest extends AbstractIntegrationTest {
         body.put("descricao", "Transferencia invalida");
         body.put("contaId", contaId.toString());
 
-        mockMvc.perform(post("/api/transacoes")
+        mockMvc.perform(comAuth(post("/api/transacoes")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(body)))
+                        .content(objectMapper.writeValueAsString(body))))
                 .andExpect(status().isBadRequest());
     }
-
-    // GET tests
 
     @Test
     void getTransacoesSemFiltrosRetorna200Paginado() throws Exception {
         UUID contaId = criarContaPersistida();
-        mockMvc.perform(post("/api/transacoes")
+        mockMvc.perform(comAuth(post("/api/transacoes")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(requestReceita(contaId))));
+                .content(objectMapper.writeValueAsString(requestReceita(contaId)))));
 
-        mockMvc.perform(get("/api/transacoes"))
+        mockMvc.perform(comAuth(get("/api/transacoes")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content", notNullValue()))
                 .andExpect(jsonPath("$.totalElements", equalTo(1)));
@@ -228,13 +220,13 @@ class TransacaoControllerTest extends AbstractIntegrationTest {
 
     @Test
     void getTransacoesComSizeMaiorQueMaxRetorna400() throws Exception {
-        mockMvc.perform(get("/api/transacoes").param("size", "200"))
+        mockMvc.perform(comAuth(get("/api/transacoes").param("size", "200")))
                 .andExpect(status().isBadRequest());
     }
 
     @Test
     void getTransacoesComSizeZeroRetorna400() throws Exception {
-        mockMvc.perform(get("/api/transacoes").param("size", "0"))
+        mockMvc.perform(comAuth(get("/api/transacoes").param("size", "0")))
                 .andExpect(status().isBadRequest());
     }
 
@@ -242,14 +234,14 @@ class TransacaoControllerTest extends AbstractIntegrationTest {
     void getTransacoesComFiltroContaIdFiltraOrigem() throws Exception {
         UUID contaId = criarContaPersistida();
         UUID outraContaId = criarContaPersistida();
-        mockMvc.perform(post("/api/transacoes")
+        mockMvc.perform(comAuth(post("/api/transacoes")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(requestReceita(contaId))));
-        mockMvc.perform(post("/api/transacoes")
+                .content(objectMapper.writeValueAsString(requestReceita(contaId)))));
+        mockMvc.perform(comAuth(post("/api/transacoes")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(requestReceita(outraContaId))));
+                .content(objectMapper.writeValueAsString(requestReceita(outraContaId)))));
 
-        mockMvc.perform(get("/api/transacoes").param("contaId", contaId.toString()))
+        mockMvc.perform(comAuth(get("/api/transacoes").param("contaId", contaId.toString())))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.totalElements", equalTo(1)))
                 .andExpect(jsonPath("$.content[0].contaId", equalTo(contaId.toString())));
@@ -259,11 +251,11 @@ class TransacaoControllerTest extends AbstractIntegrationTest {
     void getTransacoesComFiltroContaIdFiltraDestinoEmTransferencia() throws Exception {
         UUID contaId = criarContaPersistida();
         UUID contaDestinoId = criarContaPersistida();
-        mockMvc.perform(post("/api/transacoes")
+        mockMvc.perform(comAuth(post("/api/transacoes")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(requestTransferencia(contaId, contaDestinoId))));
+                .content(objectMapper.writeValueAsString(requestTransferencia(contaId, contaDestinoId)))));
 
-        mockMvc.perform(get("/api/transacoes").param("contaId", contaDestinoId.toString()))
+        mockMvc.perform(comAuth(get("/api/transacoes").param("contaId", contaDestinoId.toString())))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.totalElements", equalTo(1)));
     }
@@ -271,13 +263,13 @@ class TransacaoControllerTest extends AbstractIntegrationTest {
     @Test
     void getTransacoesComFiltroPeriodoFiltraData() throws Exception {
         UUID contaId = criarContaPersistida();
-        mockMvc.perform(post("/api/transacoes")
+        mockMvc.perform(comAuth(post("/api/transacoes")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(requestReceita(contaId))));
+                .content(objectMapper.writeValueAsString(requestReceita(contaId)))));
 
-        mockMvc.perform(get("/api/transacoes")
+        mockMvc.perform(comAuth(get("/api/transacoes")
                         .param("dataInicio", "2025-01-01")
-                        .param("dataFim", "2025-01-31"))
+                        .param("dataFim", "2025-01-31")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.totalElements", equalTo(1)));
     }
@@ -285,17 +277,17 @@ class TransacaoControllerTest extends AbstractIntegrationTest {
     @Test
     void getTransacoesSemFiltroDeDateRetornaTodasIndependenteDaData() throws Exception {
         UUID contaId = criarContaPersistida();
-        mockMvc.perform(post("/api/transacoes")
+        mockMvc.perform(comAuth(post("/api/transacoes")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(requestReceita(contaId))));
+                .content(objectMapper.writeValueAsString(requestReceita(contaId)))));
 
         Map<String, Object> outraData = requestReceita(contaId);
         outraData.put("data", "2024-06-01");
-        mockMvc.perform(post("/api/transacoes")
+        mockMvc.perform(comAuth(post("/api/transacoes")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(outraData)));
+                .content(objectMapper.writeValueAsString(outraData))));
 
-        mockMvc.perform(get("/api/transacoes"))
+        mockMvc.perform(comAuth(get("/api/transacoes")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.totalElements", equalTo(2)));
     }
@@ -303,17 +295,17 @@ class TransacaoControllerTest extends AbstractIntegrationTest {
     @Test
     void getTransacoesSemDataInicioPegaTransacoesAnterioresAoFim() throws Exception {
         UUID contaId = criarContaPersistida();
-        mockMvc.perform(post("/api/transacoes")
+        mockMvc.perform(comAuth(post("/api/transacoes")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(requestReceita(contaId))));
+                .content(objectMapper.writeValueAsString(requestReceita(contaId)))));
 
         Map<String, Object> outraData = requestReceita(contaId);
         outraData.put("data", "2024-06-01");
-        mockMvc.perform(post("/api/transacoes")
+        mockMvc.perform(comAuth(post("/api/transacoes")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(outraData)));
+                .content(objectMapper.writeValueAsString(outraData))));
 
-        mockMvc.perform(get("/api/transacoes").param("dataFim", "2025-01-31"))
+        mockMvc.perform(comAuth(get("/api/transacoes").param("dataFim", "2025-01-31")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.totalElements", equalTo(2)));
     }
@@ -321,17 +313,17 @@ class TransacaoControllerTest extends AbstractIntegrationTest {
     @Test
     void getTransacoesSemDataFimPegaTransacoesAposInicio() throws Exception {
         UUID contaId = criarContaPersistida();
-        mockMvc.perform(post("/api/transacoes")
+        mockMvc.perform(comAuth(post("/api/transacoes")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(requestReceita(contaId))));
+                .content(objectMapper.writeValueAsString(requestReceita(contaId)))));
 
         Map<String, Object> outraData = requestReceita(contaId);
         outraData.put("data", "2024-06-01");
-        mockMvc.perform(post("/api/transacoes")
+        mockMvc.perform(comAuth(post("/api/transacoes")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(outraData)));
+                .content(objectMapper.writeValueAsString(outraData))));
 
-        mockMvc.perform(get("/api/transacoes").param("dataInicio", "2025-01-01"))
+        mockMvc.perform(comAuth(get("/api/transacoes").param("dataInicio", "2025-01-01")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.totalElements", equalTo(1)));
     }
@@ -339,18 +331,18 @@ class TransacaoControllerTest extends AbstractIntegrationTest {
     @Test
     void getTransacoesComFiltroTipoFiltraTipo() throws Exception {
         UUID contaId = criarContaPersistida();
-        mockMvc.perform(post("/api/transacoes")
+        mockMvc.perform(comAuth(post("/api/transacoes")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(requestReceita(contaId))));
+                .content(objectMapper.writeValueAsString(requestReceita(contaId)))));
 
         Map<String, Object> despesa = requestReceita(contaId);
         despesa.put("tipo", "DESPESA");
         despesa.put("descricao", "Compra");
-        mockMvc.perform(post("/api/transacoes")
+        mockMvc.perform(comAuth(post("/api/transacoes")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(despesa)));
+                .content(objectMapper.writeValueAsString(despesa))));
 
-        mockMvc.perform(get("/api/transacoes").param("tipo", "RECEITA"))
+        mockMvc.perform(comAuth(get("/api/transacoes").param("tipo", "RECEITA")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.totalElements", equalTo(1)));
     }
@@ -362,15 +354,15 @@ class TransacaoControllerTest extends AbstractIntegrationTest {
 
         Map<String, Object> body = requestReceita(contaId);
         body.put("categoriaId", categoriaId.toString());
-        mockMvc.perform(post("/api/transacoes")
+        mockMvc.perform(comAuth(post("/api/transacoes")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(body)));
+                .content(objectMapper.writeValueAsString(body))));
 
-        mockMvc.perform(post("/api/transacoes")
+        mockMvc.perform(comAuth(post("/api/transacoes")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(requestReceita(contaId))));
+                .content(objectMapper.writeValueAsString(requestReceita(contaId)))));
 
-        mockMvc.perform(get("/api/transacoes").param("categoriaId", categoriaId.toString()))
+        mockMvc.perform(comAuth(get("/api/transacoes").param("categoriaId", categoriaId.toString())))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.totalElements", equalTo(1)));
     }
@@ -378,56 +370,54 @@ class TransacaoControllerTest extends AbstractIntegrationTest {
     @Test
     void getTransacoesComFiltrosCombinados() throws Exception {
         UUID contaId = criarContaPersistida();
-        mockMvc.perform(post("/api/transacoes")
+        mockMvc.perform(comAuth(post("/api/transacoes")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(requestReceita(contaId))));
+                .content(objectMapper.writeValueAsString(requestReceita(contaId)))));
 
-        mockMvc.perform(get("/api/transacoes")
+        mockMvc.perform(comAuth(get("/api/transacoes")
                         .param("contaId", contaId.toString())
                         .param("tipo", "RECEITA")
                         .param("dataInicio", "2025-01-01")
-                        .param("dataFim", "2025-01-31"))
+                        .param("dataFim", "2025-01-31")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.totalElements", equalTo(1)));
     }
 
     @Test
     void getTransacoesComTipoInvalidoRetorna400() throws Exception {
-        mockMvc.perform(get("/api/transacoes").param("tipo", "INVALIDO"))
+        mockMvc.perform(comAuth(get("/api/transacoes").param("tipo", "INVALIDO")))
                 .andExpect(status().isBadRequest());
     }
 
     @Test
     void getTransacaoPorIdExistenteRetorna200() throws Exception {
         UUID contaId = criarContaPersistida();
-        MvcResult resultado = mockMvc.perform(post("/api/transacoes")
+        MvcResult resultado = mockMvc.perform(comAuth(post("/api/transacoes")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(requestReceita(contaId))))
+                        .content(objectMapper.writeValueAsString(requestReceita(contaId)))))
                 .andExpect(status().isCreated())
                 .andReturn();
         String idStr = objectMapper.readTree(resultado.getResponse().getContentAsString())
                 .get("id").asText();
 
-        mockMvc.perform(get("/api/transacoes/" + idStr))
+        mockMvc.perform(comAuth(get("/api/transacoes/" + idStr)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id", equalTo(idStr)));
     }
 
     @Test
     void getTransacaoPorIdInexistenteRetorna404() throws Exception {
-        mockMvc.perform(get("/api/transacoes/" + UUID.randomUUID()))
+        mockMvc.perform(comAuth(get("/api/transacoes/" + UUID.randomUUID())))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.status", equalTo(404)));
     }
 
-    // PUT tests
-
     @Test
     void putAtualizaTransacaoExistenteRetorna200() throws Exception {
         UUID contaId = criarContaPersistida();
-        MvcResult resultado = mockMvc.perform(post("/api/transacoes")
+        MvcResult resultado = mockMvc.perform(comAuth(post("/api/transacoes")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(requestReceita(contaId))))
+                        .content(objectMapper.writeValueAsString(requestReceita(contaId)))))
                 .andExpect(status().isCreated())
                 .andReturn();
         String idStr = objectMapper.readTree(resultado.getResponse().getContentAsString())
@@ -437,9 +427,9 @@ class TransacaoControllerTest extends AbstractIntegrationTest {
         update.put("descricao", "Salario atualizado");
         update.put("valor", BigDecimal.valueOf(200));
 
-        mockMvc.perform(put("/api/transacoes/" + idStr)
+        mockMvc.perform(comAuth(put("/api/transacoes/" + idStr)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(update)))
+                        .content(objectMapper.writeValueAsString(update))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.descricao", equalTo("Salario atualizado")))
                 .andExpect(jsonPath("$.criadoEm", notNullValue()))
@@ -450,18 +440,18 @@ class TransacaoControllerTest extends AbstractIntegrationTest {
     void putEmIdInexistenteRetorna404() throws Exception {
         UUID contaId = criarContaPersistida();
 
-        mockMvc.perform(put("/api/transacoes/" + UUID.randomUUID())
+        mockMvc.perform(comAuth(put("/api/transacoes/" + UUID.randomUUID())
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(requestReceita(contaId))))
+                        .content(objectMapper.writeValueAsString(requestReceita(contaId)))))
                 .andExpect(status().isNotFound());
     }
 
     @Test
     void putComFkInvalidaRetorna400() throws Exception {
         UUID contaId = criarContaPersistida();
-        MvcResult resultado = mockMvc.perform(post("/api/transacoes")
+        MvcResult resultado = mockMvc.perform(comAuth(post("/api/transacoes")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(requestReceita(contaId))))
+                        .content(objectMapper.writeValueAsString(requestReceita(contaId)))))
                 .andExpect(status().isCreated())
                 .andReturn();
         String idStr = objectMapper.readTree(resultado.getResponse().getContentAsString())
@@ -469,75 +459,65 @@ class TransacaoControllerTest extends AbstractIntegrationTest {
 
         Map<String, Object> update = requestReceita(UUID.randomUUID());
 
-        mockMvc.perform(put("/api/transacoes/" + idStr)
+        mockMvc.perform(comAuth(put("/api/transacoes/" + idStr)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(update)))
+                        .content(objectMapper.writeValueAsString(update))))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.recurso", equalTo("conta")));
     }
 
-    // DELETE tests
-
     @Test
     void deleteExistenteRetorna204() throws Exception {
         UUID contaId = criarContaPersistida();
-        MvcResult resultado = mockMvc.perform(post("/api/transacoes")
+        MvcResult resultado = mockMvc.perform(comAuth(post("/api/transacoes")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(requestReceita(contaId))))
+                        .content(objectMapper.writeValueAsString(requestReceita(contaId)))))
                 .andReturn();
         String idStr = objectMapper.readTree(resultado.getResponse().getContentAsString())
                 .get("id").asText();
 
-        mockMvc.perform(delete("/api/transacoes/" + idStr))
+        mockMvc.perform(comAuth(delete("/api/transacoes/" + idStr)))
                 .andExpect(status().isNoContent());
     }
 
     @Test
     void deleteInexistenteRetorna404() throws Exception {
-        mockMvc.perform(delete("/api/transacoes/" + UUID.randomUUID()))
+        mockMvc.perform(comAuth(delete("/api/transacoes/" + UUID.randomUUID())))
                 .andExpect(status().isNotFound());
     }
-
-    // Ciclo completo
 
     @Test
     void cicloCompletoPostGetPutGetDeleteGet() throws Exception {
         UUID contaId = criarContaPersistida();
 
-        // POST
-        MvcResult postResult = mockMvc.perform(post("/api/transacoes")
+        MvcResult postResult = mockMvc.perform(comAuth(post("/api/transacoes")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(requestReceita(contaId))))
+                        .content(objectMapper.writeValueAsString(requestReceita(contaId)))))
                 .andExpect(status().isCreated())
                 .andReturn();
         String idStr = objectMapper.readTree(postResult.getResponse().getContentAsString())
                 .get("id").asText();
 
-        // GET por id
-        mockMvc.perform(get("/api/transacoes/" + idStr))
+        mockMvc.perform(comAuth(get("/api/transacoes/" + idStr)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.descricao", equalTo("Salario")));
 
-        // PUT
         Map<String, Object> update = requestReceita(contaId);
         update.put("descricao", "Salario revisado");
-        mockMvc.perform(put("/api/transacoes/" + idStr)
+        mockMvc.perform(comAuth(put("/api/transacoes/" + idStr)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(update)))
+                        .content(objectMapper.writeValueAsString(update))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.descricao", equalTo("Salario revisado")));
 
-        // GET mostra atualizacao
-        mockMvc.perform(get("/api/transacoes/" + idStr))
+        mockMvc.perform(comAuth(get("/api/transacoes/" + idStr)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.descricao", equalTo("Salario revisado")));
 
-        // DELETE
-        mockMvc.perform(delete("/api/transacoes/" + idStr))
+        mockMvc.perform(comAuth(delete("/api/transacoes/" + idStr)))
                 .andExpect(status().isNoContent());
 
-        // GET retorna 404
-        mockMvc.perform(get("/api/transacoes/" + idStr))
+        mockMvc.perform(comAuth(get("/api/transacoes/" + idStr)))
                 .andExpect(status().isNotFound());
     }
 }

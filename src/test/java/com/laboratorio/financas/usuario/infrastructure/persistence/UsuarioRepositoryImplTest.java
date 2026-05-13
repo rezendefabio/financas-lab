@@ -26,7 +26,7 @@ class UsuarioRepositoryImplTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void salvar_usuarioValido_persisteERetorna() {
+    void salvarUsuarioValidoPersistERetorna() {
         Usuario usuario = new Usuario("test@email.com", "hash_bcrypt");
 
         Usuario salvo = repository.salvar(usuario);
@@ -38,7 +38,7 @@ class UsuarioRepositoryImplTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void buscarPorEmail_usuarioExiste_retornaOptionalPresente() {
+    void buscarPorEmailUsuarioExisteRetornaOptionalPresente() {
         repository.salvar(new Usuario("find@email.com", "hash"));
 
         Optional<Usuario> encontrado = repository.buscarPorEmail("find@email.com");
@@ -48,21 +48,21 @@ class UsuarioRepositoryImplTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void buscarPorEmail_usuarioNaoExiste_retornaEmpty() {
+    void buscarPorEmailUsuarioNaoExisteRetornaEmpty() {
         Optional<Usuario> encontrado = repository.buscarPorEmail("nao@existe.com");
 
         assertThat(encontrado).isEmpty();
     }
 
     @Test
-    void existePorEmail_emailCadastrado_retornaTrue() {
+    void existePorEmailEmailCadastradoRetornaTrue() {
         repository.salvar(new Usuario("existe@email.com", "hash"));
 
         assertThat(repository.existePorEmail("existe@email.com")).isTrue();
     }
 
     @Test
-    void existePorEmail_emailNaoCadastrado_retornaFalse() {
+    void existePorEmailEmailNaoCadastradoRetornaFalse() {
         assertThat(repository.existePorEmail("nao@email.com")).isFalse();
     }
 }

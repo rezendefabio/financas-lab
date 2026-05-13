@@ -11,7 +11,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.laboratorio.financas.categoria.infrastructure.persistence.CategoriaJpaRepository;
-import com.laboratorio.financas.shared.AbstractIntegrationTest;
+import com.laboratorio.financas.shared.AbstractAuthenticatedIntegrationTest;
 import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.AfterEach;
@@ -19,14 +19,10 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
-import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
 @AutoConfigureMockMvc
-class CategoriaControllerTest extends AbstractIntegrationTest {
-
-    @Autowired
-    private MockMvc mockMvc;
+class CategoriaControllerTest extends AbstractAuthenticatedIntegrationTest {
 
     @Autowired
     private ObjectMapper objectMapper;
@@ -48,9 +44,9 @@ class CategoriaControllerTest extends AbstractIntegrationTest {
 
     @Test
     void postCategoriaValidaRetorna201() throws Exception {
-        mockMvc.perform(post("/api/categorias")
+        mockMvc.perform(comAuth(post("/api/categorias")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(requestValido())))
+                        .content(objectMapper.writeValueAsString(requestValido()))))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id", notNullValue()))
                 .andExpect(jsonPath("$.nome", equalTo("Salario")))
@@ -60,9 +56,9 @@ class CategoriaControllerTest extends AbstractIntegrationTest {
     @Test
     void postCategoriaNomeBlankRetorna400() throws Exception {
         Map<String, Object> body = Map.of("nome", "   ", "tipo", "RECEITA");
-        mockMvc.perform(post("/api/categorias")
+        mockMvc.perform(comAuth(post("/api/categorias")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(body)))
+                        .content(objectMapper.writeValueAsString(body))))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.erros.nome", notNullValue()));
     }
@@ -72,49 +68,45 @@ class CategoriaControllerTest extends AbstractIntegrationTest {
         Map<String, Object> body = new java.util.HashMap<>();
         body.put("nome", "Salario");
         body.put("tipo", null);
-        mockMvc.perform(post("/api/categorias")
+        mockMvc.perform(comAuth(post("/api/categorias")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(body)))
+                        .content(objectMapper.writeValueAsString(body))))
                 .andExpect(status().isBadRequest());
     }
 
     @Test
     void postCategoriaTipoInvalidoRetorna400() throws Exception {
         String body = "{\"nome\":\"Salario\",\"tipo\":\"XYZ\"}";
-        mockMvc.perform(post("/api/categorias")
+        mockMvc.perform(comAuth(post("/api/categorias")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(body))
+                        .content(body)))
                 .andExpect(status().isBadRequest());
     }
 
     @Test
     void getCategoriasRetornaTodasSemParam() throws Exception {
-        // Given
-        mockMvc.perform(post("/api/categorias")
+        mockMvc.perform(comAuth(post("/api/categorias")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(requestValido())));
-        mockMvc.perform(post("/api/categorias")
+                .content(objectMapper.writeValueAsString(requestValido()))));
+        mockMvc.perform(comAuth(post("/api/categorias")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(Map.of("nome", "Aluguel", "tipo", "DESPESA"))));
+                .content(objectMapper.writeValueAsString(Map.of("nome", "Aluguel", "tipo", "DESPESA")))));
 
-        // When / Then
-        mockMvc.perform(get("/api/categorias"))
+        mockMvc.perform(comAuth(get("/api/categorias")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", hasSize(2)));
     }
 
     @Test
     void getCategoriasComParamTipoFiltra() throws Exception {
-        // Given
-        mockMvc.perform(post("/api/categorias")
+        mockMvc.perform(comAuth(post("/api/categorias")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(requestValido())));
-        mockMvc.perform(post("/api/categorias")
+                .content(objectMapper.writeValueAsString(requestValido()))));
+        mockMvc.perform(comAuth(post("/api/categorias")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(Map.of("nome", "Aluguel", "tipo", "DESPESA"))));
+                .content(objectMapper.writeValueAsString(Map.of("nome", "Aluguel", "tipo", "DESPESA")))));
 
-        // When / Then
-        mockMvc.perform(get("/api/categorias").param("tipo", "RECEITA"))
+        mockMvc.perform(comAuth(get("/api/categorias").param("tipo", "RECEITA")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", hasSize(1)))
                 .andExpect(jsonPath("$[0].tipo", equalTo("RECEITA")));
@@ -122,22 +114,20 @@ class CategoriaControllerTest extends AbstractIntegrationTest {
 
     @Test
     void getCategoriasComTipoInvalidoRetorna400() throws Exception {
-        mockMvc.perform(get("/api/categorias").param("tipo", "XYZ"))
+        mockMvc.perform(comAuth(get("/api/categorias").param("tipo", "XYZ")))
                 .andExpect(status().isBadRequest());
     }
 
     @Test
     void getCategoriaPorIdExistenteRetorna200() throws Exception {
-        // Given
-        MvcResult resultado = mockMvc.perform(post("/api/categorias")
+        MvcResult resultado = mockMvc.perform(comAuth(post("/api/categorias")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(requestValido())))
+                        .content(objectMapper.writeValueAsString(requestValido()))))
                 .andExpect(status().isCreated())
                 .andReturn();
         String idStr = objectMapper.readTree(resultado.getResponse().getContentAsString()).get("id").asText();
 
-        // When / Then
-        mockMvc.perform(get("/api/categorias/" + idStr))
+        mockMvc.perform(comAuth(get("/api/categorias/" + idStr)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id", equalTo(idStr)));
     }
@@ -145,53 +135,47 @@ class CategoriaControllerTest extends AbstractIntegrationTest {
     @Test
     void getCategoriaPorIdInexistenteRetorna404() throws Exception {
         UUID idInexistente = UUID.randomUUID();
-        mockMvc.perform(get("/api/categorias/" + idInexistente))
+        mockMvc.perform(comAuth(get("/api/categorias/" + idInexistente)))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.status", equalTo(404)));
     }
 
     @Test
     void deleteCategoriaExistenteRetorna204() throws Exception {
-        // Given
-        MvcResult resultado = mockMvc.perform(post("/api/categorias")
+        MvcResult resultado = mockMvc.perform(comAuth(post("/api/categorias")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(requestValido())))
+                        .content(objectMapper.writeValueAsString(requestValido()))))
                 .andReturn();
         String idStr = objectMapper.readTree(resultado.getResponse().getContentAsString()).get("id").asText();
 
-        // When / Then
-        mockMvc.perform(delete("/api/categorias/" + idStr))
+        mockMvc.perform(comAuth(delete("/api/categorias/" + idStr)))
                 .andExpect(status().isNoContent());
     }
 
     @Test
     void deleteCategoriaInexistenteRetorna404() throws Exception {
         UUID idInexistente = UUID.randomUUID();
-        mockMvc.perform(delete("/api/categorias/" + idInexistente))
+        mockMvc.perform(comAuth(delete("/api/categorias/" + idInexistente)))
                 .andExpect(status().isNotFound());
     }
 
     @Test
     void cicloCompletoPostGetDeleteGet404() throws Exception {
-        // POST
-        MvcResult resultado = mockMvc.perform(post("/api/categorias")
+        MvcResult resultado = mockMvc.perform(comAuth(post("/api/categorias")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(requestValido())))
+                        .content(objectMapper.writeValueAsString(requestValido()))))
                 .andExpect(status().isCreated())
                 .andReturn();
         String idStr = objectMapper.readTree(resultado.getResponse().getContentAsString()).get("id").asText();
 
-        // GET por id — existe
-        mockMvc.perform(get("/api/categorias/" + idStr))
+        mockMvc.perform(comAuth(get("/api/categorias/" + idStr)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.nome", equalTo("Salario")));
 
-        // DELETE
-        mockMvc.perform(delete("/api/categorias/" + idStr))
+        mockMvc.perform(comAuth(delete("/api/categorias/" + idStr)))
                 .andExpect(status().isNoContent());
 
-        // GET por id — nao existe mais (hard delete)
-        mockMvc.perform(get("/api/categorias/" + idStr))
+        mockMvc.perform(comAuth(get("/api/categorias/" + idStr)))
                 .andExpect(status().isNotFound());
     }
 }

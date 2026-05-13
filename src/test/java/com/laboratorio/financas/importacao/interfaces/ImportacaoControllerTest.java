@@ -9,7 +9,7 @@ import com.laboratorio.financas.conta.domain.Conta;
 import com.laboratorio.financas.conta.domain.TipoConta;
 import com.laboratorio.financas.conta.infrastructure.persistence.ContaJpaRepository;
 import com.laboratorio.financas.conta.infrastructure.persistence.ContaRepositoryImpl;
-import com.laboratorio.financas.shared.AbstractIntegrationTest;
+import com.laboratorio.financas.shared.AbstractAuthenticatedIntegrationTest;
 import com.laboratorio.financas.shared.domain.Money;
 import com.laboratorio.financas.transacao.infrastructure.persistence.TransacaoJpaRepository;
 import java.math.BigDecimal;
@@ -21,16 +21,12 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.mock.web.MockMultipartFile;
-import org.springframework.test.web.servlet.MockMvc;
 
 @AutoConfigureMockMvc
-class ImportacaoControllerTest extends AbstractIntegrationTest {
+class ImportacaoControllerTest extends AbstractAuthenticatedIntegrationTest {
 
     private static final Currency BRL = Currency.getInstance("BRL");
     private static final String CABECALHO = "tipo,valor,moeda,data,descricao,contaId,contaDestinoId,categoriaId";
-
-    @Autowired
-    private MockMvc mockMvc;
 
     @Autowired
     private TransacaoJpaRepository transacaoJpaRepository;
@@ -72,7 +68,7 @@ class ImportacaoControllerTest extends AbstractIntegrationTest {
                 + "DESPESA,150.00,BRL,2026-05-01,Supermercado," + contaId + ",,\n"
                 + "TRANSFERENCIA,500.00,BRL,2026-05-01,Reserva," + contaId + "," + contaDestinoId + ",\n";
 
-        mockMvc.perform(multipart("/api/importacoes/csv").file(csvFile(csv)))
+        mockMvc.perform(comAuth(multipart("/api/importacoes/csv").file(csvFile(csv))))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.totalLinhas", equalTo(3)))
                 .andExpect(jsonPath("$.importadas", equalTo(3)))
@@ -87,7 +83,7 @@ class ImportacaoControllerTest extends AbstractIntegrationTest {
                 + "TIPO_INVALIDO,100.00,BRL,2026-05-01,Erro," + contaId + ",,\n"
                 + "RECEITA,200.00,BRL,2026-05-01,Salario," + contaId + ",,\n";
 
-        mockMvc.perform(multipart("/api/importacoes/csv").file(csvFile(csv)))
+        mockMvc.perform(comAuth(multipart("/api/importacoes/csv").file(csvFile(csv))))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.totalLinhas", equalTo(2)))
                 .andExpect(jsonPath("$.importadas", equalTo(1)))
@@ -99,7 +95,7 @@ class ImportacaoControllerTest extends AbstractIntegrationTest {
     void postCsvComCabecalhoInvalidoRetorna400() throws Exception {
         String csv = "cabecalho,errado\nDESPESA,100.00\n";
 
-        mockMvc.perform(multipart("/api/importacoes/csv").file(csvFile(csv)))
+        mockMvc.perform(comAuth(multipart("/api/importacoes/csv").file(csvFile(csv))))
                 .andExpect(status().isBadRequest());
     }
 
@@ -107,7 +103,7 @@ class ImportacaoControllerTest extends AbstractIntegrationTest {
     void postCsvSomenteHeaderRetorna201ComZeroLinhas() throws Exception {
         String csv = CABECALHO + "\n";
 
-        mockMvc.perform(multipart("/api/importacoes/csv").file(csvFile(csv)))
+        mockMvc.perform(comAuth(multipart("/api/importacoes/csv").file(csvFile(csv))))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.totalLinhas", equalTo(0)))
                 .andExpect(jsonPath("$.importadas", equalTo(0)))

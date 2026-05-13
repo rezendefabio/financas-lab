@@ -35,7 +35,7 @@ class RegistrarUsuarioUseCaseTest {
     }
 
     @Test
-    void executar_emailNovo_criaCodifica_eSalva() {
+    void executarEmailNovoCriaCodificaESalva() {
         when(usuarioRepository.existePorEmail("user@email.com")).thenReturn(false);
         when(passwordEncoder.encode("senha123")).thenReturn("bcrypt_hash");
         when(usuarioRepository.salvar(any(Usuario.class)))
@@ -50,7 +50,7 @@ class RegistrarUsuarioUseCaseTest {
     }
 
     @Test
-    void executar_emailJaExiste_lancaEmailJaExisteException() {
+    void executarEmailJaExisteLancaEmailJaExisteException() {
         when(usuarioRepository.existePorEmail("dup@email.com")).thenReturn(true);
 
         assertThatThrownBy(() ->

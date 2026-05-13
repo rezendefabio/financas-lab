@@ -3,7 +3,7 @@
 > Documento de tracking. Mostra **onde estamos** na construção da fábrica e do produto.
 > Atualizado conforme camadas avançam. Diferente do `decisoes.md` (que registra escolhas) e dos `adrs.md` (que registram porquês), este documento responde a pergunta: "em que ponto eu estou?".
 
-**Última atualização:** 2026-05-13 (Sub-etapa 5.6 -- Bounded context importacao)
+**Última atualização:** 2026-05-13 (Sub-etapa 5.7 -- Bounded context usuario + autenticacao JWT)
 
 ---
 
@@ -160,6 +160,19 @@ Ativar a fábrica de fato: rodar features no Tier 2, configurar 3 routines Tier 
 
 ### Sub-etapas concluídas
 
+- **5.7 -- Bounded context `usuario` + autenticacao JWT** (2026-05-13): sexto feature Tier 2.
+  Padrao novo: **JWT stateless + BCrypt** -- primeira ocorrencia no projeto.
+  `JwtAuthenticationFilter` (`OncePerRequestFilter`) valida Bearer token a cada request.
+  `SecurityConfig` configurado para stateless (sem sessao HTTP). `PasswordEncoder` via
+  `BCryptPasswordEncoder` bean no `SecurityConfig`. Dois endpoints publicos:
+  `POST /api/auth/registrar` e `POST /api/auth/login`; todos os demais `/api/**`
+  passam a exigir token valido (retornam 401 sem auth). `AbstractAuthenticatedIntegrationTest`
+  criado como base padrao para todos os testes E2E de endpoints protegidos: registra
+  usuario de teste, faz login, guarda token, expoe `comAuth()` para envolver requests.
+  8 *ControllerTest existentes atualizados para `extends AbstractAuthenticatedIntegrationTest`
+  com `comAuth(...)` em cada `mockMvc.perform`. `AuthControllerTest` mantem
+  `extends AbstractIntegrationTest` (testa os proprios endpoints de auth, que sao publicos).
+  Migration V8 (tabela usuario com constraint unique em email). 4 commits. PR a abrir.
 - **5.6 -- Bounded context `importacao`** (2026-05-13): quinto feature Tier 2.
   Padrao novo: **file upload + batch cross-BC** -- primeira ocorrencia no projeto.
   `ImportacaoController` recebe multipart/form-data (`POST /api/importacoes/csv`).

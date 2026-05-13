@@ -11,7 +11,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.laboratorio.financas.meta.infrastructure.persistence.MetaJpaRepository;
-import com.laboratorio.financas.shared.AbstractIntegrationTest;
+import com.laboratorio.financas.shared.AbstractAuthenticatedIntegrationTest;
 import java.time.LocalDate;
 import java.util.UUID;
 import org.junit.jupiter.api.AfterEach;
@@ -19,14 +19,10 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
-import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
 @AutoConfigureMockMvc
-class MetaControllerTest extends AbstractIntegrationTest {
-
-    @Autowired
-    private MockMvc mockMvc;
+class MetaControllerTest extends AbstractAuthenticatedIntegrationTest {
 
     @Autowired
     private ObjectMapper objectMapper;
@@ -53,20 +49,18 @@ class MetaControllerTest extends AbstractIntegrationTest {
     }
 
     private String criarMetaRetornaId() throws Exception {
-        MvcResult resultado = mockMvc.perform(post("/api/metas")
+        MvcResult resultado = mockMvc.perform(comAuth(post("/api/metas")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(requestValido()))
+                        .content(requestValido())))
                 .andReturn();
         return objectMapper.readTree(resultado.getResponse().getContentAsString()).get("id").asText();
     }
 
-    // --- POST /api/metas ---
-
     @Test
     void postMetaCriaMetaValidaRetorna201() throws Exception {
-        mockMvc.perform(post("/api/metas")
+        mockMvc.perform(comAuth(post("/api/metas")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(requestValido()))
+                        .content(requestValido())))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id", notNullValue()))
                 .andExpect(jsonPath("$.nome", equalTo("Viagem Europa")))
@@ -87,9 +81,9 @@ class MetaControllerTest extends AbstractIntegrationTest {
                   "prazo": "%s"
                 }
                 """.formatted(PRAZO_FUTURO);
-        mockMvc.perform(post("/api/metas")
+        mockMvc.perform(comAuth(post("/api/metas")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(body))
+                        .content(body)))
                 .andExpect(status().isBadRequest());
     }
 
@@ -103,9 +97,9 @@ class MetaControllerTest extends AbstractIntegrationTest {
                   "prazo": "%s"
                 }
                 """.formatted(PRAZO_FUTURO);
-        mockMvc.perform(post("/api/metas")
+        mockMvc.perform(comAuth(post("/api/metas")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(body))
+                        .content(body)))
                 .andExpect(status().isBadRequest());
     }
 
@@ -119,9 +113,9 @@ class MetaControllerTest extends AbstractIntegrationTest {
                   "prazo": "%s"
                 }
                 """.formatted(PRAZO_FUTURO);
-        mockMvc.perform(post("/api/metas")
+        mockMvc.perform(comAuth(post("/api/metas")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(body))
+                        .content(body)))
                 .andExpect(status().isBadRequest());
     }
 
@@ -135,27 +129,24 @@ class MetaControllerTest extends AbstractIntegrationTest {
                   "prazo": null
                 }
                 """;
-        mockMvc.perform(post("/api/metas")
+        mockMvc.perform(comAuth(post("/api/metas")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(body))
+                        .content(body)))
                 .andExpect(status().isBadRequest());
     }
 
-    // --- GET /api/metas ---
-
     @Test
     void getMetasRetornaListaVaziaQuandoNenhumaMeta() throws Exception {
-        mockMvc.perform(get("/api/metas"))
+        mockMvc.perform(comAuth(get("/api/metas")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", hasSize(0)));
     }
 
     @Test
     void getMetasRetornaTodasAsMetasCriadas() throws Exception {
-        // Given
-        mockMvc.perform(post("/api/metas")
+        mockMvc.perform(comAuth(post("/api/metas")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(requestValido()));
+                .content(requestValido())));
         String body2 = """
                 {
                   "nome": "Fundo Emergencia",
@@ -164,25 +155,20 @@ class MetaControllerTest extends AbstractIntegrationTest {
                   "prazo": "%s"
                 }
                 """.formatted(PRAZO_FUTURO);
-        mockMvc.perform(post("/api/metas")
+        mockMvc.perform(comAuth(post("/api/metas")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(body2));
+                .content(body2)));
 
-        // When / Then
-        mockMvc.perform(get("/api/metas"))
+        mockMvc.perform(comAuth(get("/api/metas")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", hasSize(2)));
     }
 
-    // --- GET /api/metas/{id} ---
-
     @Test
     void getMetaPorIdRetornaMetaExistente() throws Exception {
-        // Given
         String id = criarMetaRetornaId();
 
-        // When / Then
-        mockMvc.perform(get("/api/metas/" + id))
+        mockMvc.perform(comAuth(get("/api/metas/" + id)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id", equalTo(id)))
                 .andExpect(jsonPath("$.nome", equalTo("Viagem Europa")));
@@ -190,38 +176,30 @@ class MetaControllerTest extends AbstractIntegrationTest {
 
     @Test
     void getMetaPorIdInexistenteRetorna404() throws Exception {
-        mockMvc.perform(get("/api/metas/" + UUID.randomUUID()))
+        mockMvc.perform(comAuth(get("/api/metas/" + UUID.randomUUID())))
                 .andExpect(status().isNotFound());
     }
 
-    // --- DELETE /api/metas/{id} ---
-
     @Test
     void deleteMetaCancelaMetaEmAndamentoRetorna204() throws Exception {
-        // Given
         String id = criarMetaRetornaId();
 
-        // When
-        mockMvc.perform(delete("/api/metas/" + id))
+        mockMvc.perform(comAuth(delete("/api/metas/" + id)))
                 .andExpect(status().isNoContent());
 
-        // Then — meta deve ter status CANCELADA
-        mockMvc.perform(get("/api/metas/" + id))
+        mockMvc.perform(comAuth(get("/api/metas/" + id)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status", equalTo("CANCELADA")));
     }
 
     @Test
     void deleteMetaInexistenteRetorna404() throws Exception {
-        mockMvc.perform(delete("/api/metas/" + UUID.randomUUID()))
+        mockMvc.perform(comAuth(delete("/api/metas/" + UUID.randomUUID())))
                 .andExpect(status().isNotFound());
     }
 
-    // --- POST /api/metas/{id}/depositos ---
-
     @Test
     void postDepositoIncrementaValorAtualRetorna200() throws Exception {
-        // Given
         String id = criarMetaRetornaId();
         String deposito = """
                 {
@@ -230,10 +208,9 @@ class MetaControllerTest extends AbstractIntegrationTest {
                 }
                 """;
 
-        // When / Then
-        mockMvc.perform(post("/api/metas/" + id + "/depositos")
+        mockMvc.perform(comAuth(post("/api/metas/" + id + "/depositos")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(deposito))
+                        .content(deposito)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.valorAtual.valor", equalTo(2500.0)))
                 .andExpect(jsonPath("$.status", equalTo("EM_ANDAMENTO")))
@@ -242,7 +219,6 @@ class MetaControllerTest extends AbstractIntegrationTest {
 
     @Test
     void postDepositoQueAtingeValorAlvoMarcaComoConcluida() throws Exception {
-        // Given
         String id = criarMetaRetornaId();
         String deposito = """
                 {
@@ -251,10 +227,9 @@ class MetaControllerTest extends AbstractIntegrationTest {
                 }
                 """;
 
-        // When / Then
-        mockMvc.perform(post("/api/metas/" + id + "/depositos")
+        mockMvc.perform(comAuth(post("/api/metas/" + id + "/depositos")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(deposito))
+                        .content(deposito)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status", equalTo("CONCLUIDA")))
                 .andExpect(jsonPath("$.percentualConcluido", equalTo(100.0)));
@@ -262,7 +237,6 @@ class MetaControllerTest extends AbstractIntegrationTest {
 
     @Test
     void postDepositoComValorNaoPositivoRetorna400() throws Exception {
-        // Given
         String id = criarMetaRetornaId();
         String deposito = """
                 {
@@ -271,9 +245,9 @@ class MetaControllerTest extends AbstractIntegrationTest {
                 }
                 """;
 
-        mockMvc.perform(post("/api/metas/" + id + "/depositos")
+        mockMvc.perform(comAuth(post("/api/metas/" + id + "/depositos")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(deposito))
+                        .content(deposito)))
                 .andExpect(status().isBadRequest());
     }
 
@@ -286,9 +260,9 @@ class MetaControllerTest extends AbstractIntegrationTest {
                 }
                 """;
 
-        mockMvc.perform(post("/api/metas/" + UUID.randomUUID() + "/depositos")
+        mockMvc.perform(comAuth(post("/api/metas/" + UUID.randomUUID() + "/depositos")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(deposito))
+                        .content(deposito)))
                 .andExpect(status().isNotFound());
     }
 }

@@ -36,7 +36,7 @@ class LoginUseCaseTest {
     }
 
     @Test
-    void executar_credenciaisValidas_retornaToken() {
+    void executarCredenciaisValidasRetornaToken() {
         Usuario usuario = new Usuario("user@email.com", "bcrypt_hash");
         when(usuarioRepository.buscarPorEmail("user@email.com")).thenReturn(Optional.of(usuario));
         when(passwordEncoder.matches("senha123", "bcrypt_hash")).thenReturn(true);
@@ -51,7 +51,7 @@ class LoginUseCaseTest {
     }
 
     @Test
-    void executar_emailNaoEncontrado_lancaCredenciaisInvalidasException() {
+    void executarEmailNaoEncontradoLancaCredenciaisInvalidasException() {
         when(usuarioRepository.buscarPorEmail("nao@existe.com")).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> useCase.executar("nao@existe.com", "qualquersenha"))
@@ -60,7 +60,7 @@ class LoginUseCaseTest {
     }
 
     @Test
-    void executar_senhaErrada_lancaCredenciaisInvalidasException() {
+    void executarSenhaErradaLancaCredenciaisInvalidasException() {
         Usuario usuario = new Usuario("user@email.com", "bcrypt_hash");
         when(usuarioRepository.buscarPorEmail("user@email.com")).thenReturn(Optional.of(usuario));
         when(passwordEncoder.matches("errada", "bcrypt_hash")).thenReturn(false);

@@ -10,7 +10,7 @@ import org.junit.jupiter.api.Test;
 class UsuarioTest {
 
     @Test
-    void construtorCriacao_emailNormalizado_setaCamposCorretos() {
+    void construtorCriacaoEmailNormalizadoSetaCamposCorretos() {
         Usuario usuario = new Usuario("  Test@Email.COM  ", "hash123");
 
         assertThat(usuario.getId()).isNotNull();
@@ -21,28 +21,28 @@ class UsuarioTest {
     }
 
     @Test
-    void construtorCriacao_emailNulo_lancaException() {
+    void construtorCriacaoEmailNuloLancaException() {
         assertThatThrownBy(() -> new Usuario(null, "hash"))
                 .isInstanceOf(NullPointerException.class)
                 .hasMessageContaining("email nao pode ser nulo");
     }
 
     @Test
-    void construtorCriacao_emailVazio_lancaException() {
+    void construtorCriacaoEmailVazioLancaException() {
         assertThatThrownBy(() -> new Usuario("   ", "hash"))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("email nao pode ser vazio");
     }
 
     @Test
-    void construtorCriacao_senhaHashNula_lancaException() {
+    void construtorCriacaoSenhaHashNulaLancaException() {
         assertThatThrownBy(() -> new Usuario("user@email.com", null))
                 .isInstanceOf(NullPointerException.class)
                 .hasMessageContaining("senhaHash nao pode ser nulo");
     }
 
     @Test
-    void construtorReconstrucao_todosOsCampos_setaCorretamente() {
+    void construtorReconstrucaoTodosOsCamposSetaCorretamente() {
         UUID id = UUID.randomUUID();
         Instant criadoEm = Instant.now();
 
@@ -56,21 +56,21 @@ class UsuarioTest {
     }
 
     @Test
-    void construtorReconstrucao_idNulo_lancaException() {
+    void construtorReconstrucaoIdNuloLancaException() {
         assertThatThrownBy(() -> new Usuario(null, "user@test.com", "hash", true, Instant.now()))
                 .isInstanceOf(NullPointerException.class)
                 .hasMessageContaining("id nao pode ser nulo");
     }
 
     @Test
-    void construtorReconstrucao_criadoEmNulo_lancaException() {
+    void construtorReconstrucaoCriadoEmNuloLancaException() {
         assertThatThrownBy(() -> new Usuario(UUID.randomUUID(), "user@test.com", "hash", true, null))
                 .isInstanceOf(NullPointerException.class)
                 .hasMessageContaining("criadoEm nao pode ser nulo");
     }
 
     @Test
-    void equals_mesmoid_retornaTrue() {
+    void equalsMesmoIdRetornaTrue() {
         UUID id = UUID.randomUUID();
         Usuario u1 = new Usuario(id, "a@a.com", "hash1", true, Instant.now());
         Usuario u2 = new Usuario(id, "b@b.com", "hash2", false, Instant.now());
@@ -79,7 +79,7 @@ class UsuarioTest {
     }
 
     @Test
-    void equals_idsdiferentes_retornaFalse() {
+    void equalsIdsDiferentesRetornaFalse() {
         Usuario u1 = new Usuario("a@a.com", "hash1");
         Usuario u2 = new Usuario("b@b.com", "hash2");
 
@@ -87,7 +87,7 @@ class UsuarioTest {
     }
 
     @Test
-    void toString_contem_id_email_ativo() {
+    void toStringContemIdEmailAtivo() {
         Usuario usuario = new Usuario("x@x.com", "hash");
 
         assertThat(usuario.toString())
