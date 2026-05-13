@@ -25,6 +25,20 @@ class CategoriaTest {
         assertThat(categoria.getId()).isNotNull();
         assertThat(categoria.getCriadoEm()).isBetween(antes, depois);
         assertThat(categoria.getAtualizadoEm()).isEqualTo(categoria.getCriadoEm());
+        assertThat(categoria.getCategoriaPaiId()).isNull();
+    }
+
+    @Test
+    void construtorNovoComCategoriaPaiIdPreservaCampo() {
+        UUID paiId = UUID.randomUUID();
+        Categoria categoria = new Categoria("Mercado", TipoCategoria.DESPESA, paiId);
+        assertThat(categoria.getCategoriaPaiId()).isEqualTo(paiId);
+    }
+
+    @Test
+    void construtorNovoSemCategoriaPaiIdRetornaNull() {
+        Categoria categoria = new Categoria("Salario", TipoCategoria.RECEITA, null);
+        assertThat(categoria.getCategoriaPaiId()).isNull();
     }
 
     @Test
@@ -102,6 +116,16 @@ class CategoriaTest {
         assertThat(categoria.getTipo()).isEqualTo(TipoCategoria.DESPESA);
         assertThat(categoria.getCriadoEm()).isEqualTo(criadoEm);
         assertThat(categoria.getAtualizadoEm()).isEqualTo(atualizadoEm);
+        assertThat(categoria.getCategoriaPaiId()).isNull();
+    }
+
+    @Test
+    void construtorReconstrucaoComCategoriaPaiIdPreservaCampo() {
+        UUID id = UUID.randomUUID();
+        UUID paiId = UUID.randomUUID();
+        Instant criadoEm = Instant.parse("2026-01-01T10:00:00Z");
+        Categoria categoria = new Categoria(id, "Mercado", TipoCategoria.DESPESA, paiId, criadoEm, null);
+        assertThat(categoria.getCategoriaPaiId()).isEqualTo(paiId);
     }
 
     @Test

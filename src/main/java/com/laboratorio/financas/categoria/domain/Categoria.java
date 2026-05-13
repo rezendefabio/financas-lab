@@ -11,29 +11,33 @@ public final class Categoria {
     private final UUID id;
     private final String nome;
     private final TipoCategoria tipo;
+    private final UUID categoriaPaiId;
     private final Instant criadoEm;
     private final Instant atualizadoEm;
 
-    /**
-     * Construtor para criar nova Categoria. Gera id, define criadoEm=atualizadoEm=now.
-     */
     public Categoria(String nome, TipoCategoria tipo) {
-        this(
-                UUID.randomUUID(),
-                nome,
-                tipo,
-                Instant.now(),
-                null
-        );
+        this(nome, tipo, null);
     }
 
-    /**
-     * Construtor de reconstrucao. Usado pelo repository para hidratar instancia persistida.
-     */
+    public Categoria(String nome, TipoCategoria tipo, UUID categoriaPaiId) {
+        this(UUID.randomUUID(), nome, tipo, categoriaPaiId, Instant.now(), null);
+    }
+
     public Categoria(
             UUID id,
             String nome,
             TipoCategoria tipo,
+            Instant criadoEm,
+            Instant atualizadoEm
+    ) {
+        this(id, nome, tipo, null, criadoEm, atualizadoEm);
+    }
+
+    public Categoria(
+            UUID id,
+            String nome,
+            TipoCategoria tipo,
+            UUID categoriaPaiId,
             Instant criadoEm,
             Instant atualizadoEm
     ) {
@@ -45,6 +49,7 @@ public final class Categoria {
         this.id = id;
         this.nome = nome.trim();
         this.tipo = tipo;
+        this.categoriaPaiId = categoriaPaiId;
         this.criadoEm = criadoEm;
         this.atualizadoEm = (atualizadoEm != null) ? atualizadoEm : criadoEm;
     }
@@ -72,6 +77,10 @@ public final class Categoria {
 
     public TipoCategoria getTipo() {
         return tipo;
+    }
+
+    public UUID getCategoriaPaiId() {
+        return categoriaPaiId;
     }
 
     public Instant getCriadoEm() {

@@ -46,6 +46,20 @@ public class CategoriaRepositoryImpl implements CategoriaRepository {
     }
 
     @Override
+    public List<Categoria> listarRaiz() {
+        return jpaRepository.findByCategoriaPaiIdIsNull().stream()
+                .map(mapper::toDomain)
+                .toList();
+    }
+
+    @Override
+    public List<Categoria> listarFilhosDe(UUID categoriaPaiId) {
+        return jpaRepository.findByCategoriaPaiId(categoriaPaiId).stream()
+                .map(mapper::toDomain)
+                .toList();
+    }
+
+    @Override
     public void deletar(UUID id) {
         jpaRepository.deleteById(id);
     }

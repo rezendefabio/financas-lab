@@ -8,4 +8,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 public interface CategoriaJpaRepository extends JpaRepository<CategoriaEntity, UUID> {
 
     List<CategoriaEntity> findByTipo(TipoCategoria tipo);
+
+    List<CategoriaEntity> findByCategoriaPaiIdIsNull();
+
+    List<CategoriaEntity> findByCategoriaPaiId(UUID categoriaPaiId);
 }

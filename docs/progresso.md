@@ -3,7 +3,7 @@
 > Documento de tracking. Mostra **onde estamos** na construção da fábrica e do produto.
 > Atualizado conforme camadas avançam. Diferente do `decisoes.md` (que registra escolhas) e dos `adrs.md` (que registram porquês), este documento responde a pergunta: "em que ponto eu estou?".
 
-**Última atualização:** 2026-05-13 (Sub-etapa 5.7 -- Bounded context usuario + autenticacao JWT)
+**Última atualização:** 2026-05-13 (Sub-etapa 5.8 -- Gaps pre-frontend: hierarquia categoria + seed + saldo total)
 
 ---
 
@@ -160,6 +160,16 @@ Ativar a fábrica de fato: rodar features no Tier 2, configurar 3 routines Tier 
 
 ### Sub-etapas concluídas
 
+- **5.8 -- Gaps pre-frontend: hierarquia categoria + seed + saldo total** (2026-05-13): tres gaps
+  identificados por auditoria antes do frontend. **Gap 1:** hierarquia pai/filho em Categoria --
+  campo `categoriaPaiId` (UUID nullable) + FK com ON DELETE SET NULL + validacao na use case
+  (so 1 nivel: subcategoria nao pode ter filhos). Novos metodos no repositorio: `listarRaiz()`
+  e `listarFilhosDe()`. **Gap 2:** seed de 11 categorias iniciais (8 DESPESA + 3 RECEITA) via
+  migration V10 com UUIDs fixos determinísticos. `@BeforeEach` adicionado aos testes de
+  categoria para neutralizar o seed. **Gap 3:** `CalcularSaldoTotalUseCase` soma saldos de
+  todas as contas ativas; endpoint `GET /api/contas/saldo-total` retorna `{valor, moeda,
+  totalContas}`. Nenhum novo bounded context -- todas as mudancas sao extensoes de codigo
+  existente. 527 testes, BUILD SUCCESS. 4 commits, PR a abrir.
 - **5.7 -- Bounded context `usuario` + autenticacao JWT** (2026-05-13): sexto feature Tier 2.
   Padrao novo: **JWT stateless + BCrypt** -- primeira ocorrencia no projeto.
   `JwtAuthenticationFilter` (`OncePerRequestFilter`) valida Bearer token a cada request.

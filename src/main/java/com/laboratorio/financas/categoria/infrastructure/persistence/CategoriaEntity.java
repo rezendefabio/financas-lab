@@ -36,6 +36,9 @@ public class CategoriaEntity {
     @Column(name = "atualizado_em", nullable = false)
     private Instant atualizadoEm;
 
+    @Column(name = "categoria_pai_id")
+    private UUID categoriaPaiId;
+
     protected CategoriaEntity() {
         // Construtor protected exigido pelo JPA.
     }
@@ -45,13 +48,15 @@ public class CategoriaEntity {
             String nome,
             TipoCategoria tipo,
             Instant criadoEm,
-            Instant atualizadoEm
+            Instant atualizadoEm,
+            UUID categoriaPaiId
     ) {
         this.id = id;
         this.nome = nome;
         this.tipo = tipo;
         this.criadoEm = criadoEm;
         this.atualizadoEm = atualizadoEm;
+        this.categoriaPaiId = categoriaPaiId;
     }
 
     public UUID getId() {
@@ -72,5 +77,9 @@ public class CategoriaEntity {
 
     public Instant getAtualizadoEm() {
         return atualizadoEm;
+    }
+
+    public UUID getCategoriaPaiId() {
+        return categoriaPaiId;
     }
 }
