@@ -66,8 +66,15 @@ Trabalho organizado em sub-etapas pequenas dentro de Camadas. Cada sub-etapa: 1 
 
 A partir da Camada 4 o trabalho segue o modelo orquestrador/executor:
 
-- **Orquestrador** (esta sessao): gera o prompt da sub-etapa em `docs/prompts/prompt-etapa-X-Y.md` e commita o `.md` manualmente apos o PR abrir.
-- **Executor** (sessao nova): recebe o prompt como texto e entrega o PR de forma autonoma.
+- **Orquestrador** (esta sessao): gera o prompt da sub-etapa em `docs/prompts/prompt-etapa-X-Y.md` e abre PR do `.md` antes de o executor iniciar.
+- **Executor** (sessao nova): le o arquivo de prompt do disco e entrega o PR de forma autonoma.
+
+Fluxo:
+1. Orquestrador gera `docs/prompts/prompt-etapa-X-Y.md` (arquivo fica untracked no disco)
+2. Operador abre terminal novo e roda: `claude --dangerously-skip-permissions`
+3. Operador instrui o executor: `"leia docs/prompts/prompt-etapa-X-Y.md e execute"`
+4. Executor le o arquivo, executa todas as tarefas, commita o `.md` junto com os docs
+   no ultimo commit da branch e entrega o PR autonomamente
 
 Para execucao sem interrupcao de aprovacao de ferramentas, o executor deve ser iniciado com:
 
