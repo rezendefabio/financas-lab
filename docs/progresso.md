@@ -3,7 +3,7 @@
 > Documento de tracking. Mostra **onde estamos** na construção da fábrica e do produto.
 > Atualizado conforme camadas avançam. Diferente do `decisoes.md` (que registra escolhas) e dos `adrs.md` (que registram porquês), este documento responde a pergunta: "em que ponto eu estou?".
 
-**Última atualização:** 2026-05-13 (Sub-etapa 5.13 -- test-writer estendido para frontend)
+**Última atualização:** 2026-05-13 (Sub-etapa 5.14 -- CRUD de Contas no frontend)
 
 ---
 
@@ -159,6 +159,20 @@ Configurar `CLAUDE.md` rico, criar 3-5 subagents focados, criar 5-10 skills (sla
 Ativar a fábrica de fato: rodar features no Tier 2, configurar 3 routines Tier 1, validar paralelismo se necessário.
 
 ### Sub-etapas concluídas
+
+- **5.14 -- CRUD de Contas no frontend** (2026-05-13): primeira feature de dominio no
+  frontend. Tres paginas criadas na rota `/contas`: listagem (cards com badge ativa/inativa,
+  skeleton, estado vazio), criacao (React Hook Form + Zod 4, select de tipo via base-ui,
+  saldo inicial com `z.number()` + `parseFloat` no onChange), detalhe (saldo atual via
+  `calcularSaldo`, desativacao com confirmacao inline de dois botoes). Tipos `conta.ts`
+  corrigidos para bater com ContaResponse do backend: `TipoConta` atualizado para
+  `CORRENTE | POUPANCA | DINHEIRO | CARTAO_CREDITO` (enum Java real), campos `ativa`,
+  `saldoInicialValor`, `saldoInicialMoeda` (flat, nao ValorMonetario); `SaldoResponse`
+  expandido com todos os campos do backend. Testes Vitest para cada pagina gerados via
+  `test-writer`: 46 testes passando (7 arquivos). `check-front.ps1` verde (lint + testes +
+  build). Licao: `z.coerce.number()` e `z.string().default()` causam incompatibilidade de
+  tipos com `zodResolver` no Zod 4 -- usar `z.number()` com conversao no onChange e sem
+  `.default()` no schema (usar apenas em `defaultValues` do `useForm`). PR a abrir.
 
 - **5.13 -- test-writer estendido para frontend (Vitest + Testing Library)** (2026-05-13):
   extensao aditiva do subagent `test-writer` para detectar paths `frontend/` e gerar testes
