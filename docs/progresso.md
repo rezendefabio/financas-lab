@@ -3,7 +3,7 @@
 > Documento de tracking. Mostra **onde estamos** na construção da fábrica e do produto.
 > Atualizado conforme camadas avançam. Diferente do `decisoes.md` (que registra escolhas) e dos `adrs.md` (que registram porquês), este documento responde a pergunta: "em que ponto eu estou?".
 
-**Última atualização:** 2026-05-13 (Sub-etapa 5.9 -- Frontend foundation: Vitest + Storybook + api-client + dashboard)
+**Última atualização:** 2026-05-13 (Sub-etapa 5.10 -- Hook secret-scanning pre-commit)
 
 ---
 
@@ -159,6 +159,16 @@ Configurar `CLAUDE.md` rico, criar 3-5 subagents focados, criar 5-10 skills (sla
 Ativar a fábrica de fato: rodar features no Tier 2, configurar 3 routines Tier 1, validar paralelismo se necessário.
 
 ### Sub-etapas concluídas
+
+- **5.10 -- Hook secret-scanning pre-commit** (2026-05-13): hook universal que bloqueia
+  commits com credenciais literais em codigo-fonte. Modo fail. Extensoes monitoradas:
+  `.java`, `.ts`, `.tsx`, `.js`, `.jsx`, `.properties`, `.yml`, `.yaml`, `.json`. Seis
+  padroes: P1 chave PEM privada, P2 AWS Access Key ID, P3 GitHub token, P4 OpenAI/Anthropic
+  API key, P5 password literal (>= 8 chars), P6 secret/apiKey literal. Exclusoes: `src/test/`
+  (senhas de teste esperadas), arquivos `*.example` e `*-example.*`. Placeholders Spring
+  (`${...}`) e prefixos de variavel de ambiente (`$`) nao sao bloqueados. 5 cenarios de
+  validacao destrutiva: C1 chave PEM bloqueada, C2 password literal bloqueada, C3 placeholder
+  Spring passou, C4 arquivo em src/test/ passou, C5 API key em TypeScript bloqueada. PR a abrir.
 
 - **5.9 -- Frontend foundation: Vitest, Storybook, api-client, dashboard** (2026-05-13): fundacao
   de desenvolvimento do frontend Next.js 16. Vitest 4 + Testing Library (jsdom) com globals;
@@ -654,6 +664,8 @@ Definir como capturar quando chegarmos na Camada 4 — não criar burocracia ago
 
 ## Histórico de mudanças deste documento
 
+- **2026-05-13** -- Sub-etapa 5.10 concluida: hook secret-scanning pre-commit. 6 padroes
+  (PEM, AWS, GitHub, OpenAI, password, secret). 5 cenarios destrutivos validados. PR a abrir.
 - **2026-05-12** -- Sub-etapa 5.3 concluida: bounded context `meta`. Segundo Tier 2. PR #76.
 - **2026-05-12** -- Sub-etapa 5.2 concluida: test-writer ampliado para application use cases.
   CalcularProgressoDoOrcamentoUseCaseTest gerado. PR #75.
