@@ -3,7 +3,7 @@
 > Documento de tracking. Mostra **onde estamos** na construção da fábrica e do produto.
 > Atualizado conforme camadas avançam. Diferente do `decisoes.md` (que registra escolhas) e dos `adrs.md` (que registram porquês), este documento responde a pergunta: "em que ponto eu estou?".
 
-**Última atualização:** 2026-05-13 (Sub-etapa 5.8 -- Gaps pre-frontend: hierarquia categoria + seed + saldo total)
+**Última atualização:** 2026-05-13 (Sub-etapa 5.9 -- Frontend foundation: Vitest + Storybook + api-client + dashboard)
 
 ---
 
@@ -160,6 +160,18 @@ Ativar a fábrica de fato: rodar features no Tier 2, configurar 3 routines Tier 
 
 ### Sub-etapas concluídas
 
+- **5.9 -- Frontend foundation: Vitest, Storybook, api-client, dashboard** (2026-05-13): fundacao
+  de desenvolvimento do frontend Next.js 16. Vitest 4 + Testing Library (jsdom) com globals;
+  Storybook 10 com framework `@storybook/nextjs-vite` (compativel com Next.js 16). Estrutura de
+  pastas: types/, lib/, services/, providers/, hooks/, components/ui/. api-client.ts com JWT
+  automatico em Authorization header; servicos base para auth, contas, categorias, transacoes.
+  Providers: QueryProvider (TanStack Query) + AuthProvider (JWT context). Paginas: login (React
+  Hook Form + Zod 4 + shadcn), (dashboard)/layout.tsx (sidebar shadcn com protecao de rota),
+  (dashboard)/page.tsx (saldo total via TanStack Query). Componentes shadcn/ui 14x instalados
+  via `npx shadcn@latest add`; form.tsx implementado manualmente (nao disponivel no base-nova).
+  Decisao base-nova: usa @base-ui/react (nao @radix-ui); SidebarMenuButton usa prop `render`
+  em vez de `asChild`. Storybook detectou framework nextjs-vite automaticamente. 12 testes,
+  BUILD SUCCESS (npm run build), lint limpo. scripts/dev-front.ps1 criado. PR a abrir.
 - **5.8 -- Gaps pre-frontend: hierarquia categoria + seed + saldo total** (2026-05-13): tres gaps
   identificados por auditoria antes do frontend. **Gap 1:** hierarquia pai/filho em Categoria --
   campo `categoriaPaiId` (UUID nullable) + FK com ON DELETE SET NULL + validacao na use case
