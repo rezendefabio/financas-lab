@@ -2,6 +2,7 @@ package com.laboratorio.financas.shared.infrastructure.web;
 
 import com.laboratorio.financas.categoria.domain.CategoriaNaoEncontradaException;
 import com.laboratorio.financas.conta.domain.ContaNaoEncontradaException;
+import com.laboratorio.financas.lancamentorecorrente.domain.LancamentoRecorrenteNaoEncontradoException;
 import com.laboratorio.financas.meta.domain.MetaNaoEncontradaException;
 import com.laboratorio.financas.orcamento.domain.OrcamentoNaoEncontradoException;
 import com.laboratorio.financas.transacao.domain.TransacaoComReferenciaInvalidaException;
@@ -112,6 +113,16 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(MetaNaoEncontradaException.class)
     public ProblemDetail handleMetaNaoEncontrada(MetaNaoEncontradaException ex) {
+        ProblemDetail problem = ProblemDetail.forStatus(HttpStatus.NOT_FOUND);
+        problem.setTitle("Not Found");
+        problem.setDetail(ex.getMessage());
+        problem.setProperty("id", ex.getId().toString());
+        return problem;
+    }
+
+    @ExceptionHandler(LancamentoRecorrenteNaoEncontradoException.class)
+    public ProblemDetail handleLancamentoRecorrenteNaoEncontrado(
+            LancamentoRecorrenteNaoEncontradoException ex) {
         ProblemDetail problem = ProblemDetail.forStatus(HttpStatus.NOT_FOUND);
         problem.setTitle("Not Found");
         problem.setDetail(ex.getMessage());
