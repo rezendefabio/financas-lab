@@ -3,7 +3,7 @@
 > Documento de tracking. Mostra **onde estamos** na construção da fábrica e do produto.
 > Atualizado conforme camadas avançam. Diferente do `decisoes.md` (que registra escolhas) e dos `adrs.md` (que registram porquês), este documento responde a pergunta: "em que ponto eu estou?".
 
-**Última atualização:** 2026-05-12 (Sub-etapa 4.26 -- Split de decisoes-claude-code.md)
+**Última atualização:** 2026-05-12 (Sub-etapa 5.1 -- Bounded context orcamento)
 
 ---
 
@@ -15,7 +15,7 @@
 | **1** | Infraestrutura de confiança | ✅ Concluída ([historico](progresso-historico.md#camada-1--infraestrutura-de-confianca)) |
 | **2** | Arquitetura otimizada para agentes | ✅ Concluída ([historico](progresso-historico.md#camada-2--arquitetura-otimizada-para-agentes)) |
 | **3** | Configuração do Claude Code (subagents, skills, hooks) | ✅ Concluída |
-| **4** | Modelo operacional (tiers de autonomia ativados) | ⏸️ Aguardando |
+| **4** | Modelo operacional (tiers de autonomia ativados) | 🟢 Em andamento |
 | **5** | Runtime de agentes (VPS) — opcional | ⏸️ Aguardando |
 | **6** | Gestão híbrida Max + API | 🟡 Parcial (configuração API pronta, sem uso) |
 
@@ -151,12 +151,21 @@ Configurar `CLAUDE.md` rico, criar 3-5 subagents focados, criar 5-10 skills (sla
 
 ## Camada 4 — Modelo operacional
 
-**Status:** ⏸️ Aguardando
+**Status:** 🟢 Em andamento
 **Pré-requisito:** Camada 3 funcional
 
 ### Objetivo
 
 Ativar a fábrica de fato: rodar features no Tier 2, configurar 3 routines Tier 1, validar paralelismo se necessário.
+
+### Sub-etapas concluídas
+
+- **5.1 -- Bounded context `orcamento`** (2026-05-12): primeiro feature Tier 2 completo.
+  Fluxo exercitado: /feature -> domain -> /migrate -> application + infra + interfaces -> /ship.
+  CRUD (criar, listar, buscar, desativar) + endpoint de progresso por categoria/mes.
+  Cross-bounded-context: CalcularProgressoDoOrcamentoUseCase injeta TransacaoRepository.
+  StatusProgresso enum (ABAIXO/ATENCAO/ATINGIDO/EXCEDIDO) inaugurado no domain. 5 endpoints,
+  4 commits, ~22 arquivos. Camada 4 inaugurada. PR #73.
 
 ### Critérios de "pronto" (preliminar)
 
@@ -575,6 +584,8 @@ Definir como capturar quando chegarmos na Camada 4 — não criar burocracia ago
 
 ## Histórico de mudanças deste documento
 
+- **2026-05-12** -- Sub-etapa 5.1 concluida: bounded context `orcamento`. Camada 4
+  inaugurada. Primeiro feature Tier 2 completo. PR #73.
 - **2026-05-12** -- Sub-etapa 4.26 concluida: split de `decisoes-claude-code.md`.
   Historico 4.0-4.18 arquivado. Arquivo ativo reduzido. CLAUDE.md atualizado. PR #72.
 - **2026-05-12** -- Sub-etapa 4.25 concluida: test-writer ampliado para E2E tests.

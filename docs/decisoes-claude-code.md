@@ -215,8 +215,32 @@ Camada 3 concluida com 4.25. Entregou:
 
 ---
 
+## Sub-etapa 5.1 -- Bounded context `orcamento` (Camada 4 inaugurada)
+
+### Camada 4: primeiro feature Tier 2
+
+Fluxo Tier 2 exercitado pela primeira vez: /feature -> domain -> /migrate -> application
++ infra + interfaces -> /ship. Bounded context `orcamento` entrega CRUD + progresso
+por categoria/mes.
+
+### Decisao: cross-bounded-context no use case de progresso
+
+`CalcularProgressoDoOrcamentoUseCase` injeta `TransacaoRepository` diretamente,
+seguindo o padrao estabelecido por `CalcularSaldoDaContaUseCase` (Camada 2). Sem
+wrapper ou porta intermediaria entre bounded contexts.
+
+### Decisao: StatusProgresso enum no domain
+
+`StatusProgresso` (ABAIXO, ATENCAO, ATINGIDO, EXCEDIDO) criado manualmente em
+`orcamento/domain/` -- nao gerado pelo /feature (geradores criam apenas o minimo
+estrutural, nao enums de dominio especificos).
+
+---
+
 ## Historico de mudancas deste documento
 
+- **2026-05-12** -- Sub-etapa 5.1 concluida: bounded context `orcamento`. Camada 4
+  inaugurada. Primeiro feature Tier 2 completo. PR #73.
 - **2026-05-12** -- Sub-etapa 4.26 concluida: split de `decisoes-claude-code.md`.
   Historico 4.0-4.18 arquivado em `decisoes-claude-code-historico.md`. Arquivo ativo
   reduzido de ~880 para ~250 linhas. CLAUDE.md atualizado com link para historico. PR #72.

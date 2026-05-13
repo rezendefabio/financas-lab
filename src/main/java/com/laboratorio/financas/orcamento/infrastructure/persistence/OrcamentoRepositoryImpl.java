@@ -19,21 +19,26 @@ public class OrcamentoRepositoryImpl implements OrcamentoRepository {
     }
 
     @Override
-    public Orcamento salvar(Orcamento domain) {
-        OrcamentoEntity entity = mapper.toEntity(domain);
-        OrcamentoEntity salva = jpaRepository.save(entity);
-        return mapper.toDomain(salva);
+    public Orcamento salvar(Orcamento orcamento) {
+        OrcamentoEntity entity = mapper.toEntity(orcamento);
+        OrcamentoEntity salvo = jpaRepository.save(entity);
+        return mapper.toOrcamento(salvo);
     }
 
     @Override
     public Optional<Orcamento> buscarPorId(UUID id) {
-        return jpaRepository.findById(id).map(mapper::toDomain);
+        return jpaRepository.findById(id).map(mapper::toOrcamento);
     }
 
     @Override
-    public List<Orcamento> listarTodos() {
-        return jpaRepository.findAll().stream()
-                .map(mapper::toDomain)
-                .toList();
+    public List<Orcamento> listar() {
+        return jpaRepository.findAll().stream().map(mapper::toOrcamento).toList();
+    }
+
+    @Override
+    public Orcamento atualizar(Orcamento orcamento) {
+        OrcamentoEntity entity = mapper.toEntity(orcamento);
+        OrcamentoEntity salvo = jpaRepository.save(entity);
+        return mapper.toOrcamento(salvo);
     }
 }
