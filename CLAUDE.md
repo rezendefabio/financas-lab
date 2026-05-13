@@ -84,6 +84,27 @@ claude --dangerously-skip-permissions
 
 Sem esse flag o executor para em cada tool call (Bash, Write, Edit, git) aguardando aprovacao manual -- o que quebra o ciclo autonomo da fabrica.
 
+### Convencoes implícitas do executor (bounded context)
+
+Ao implementar um bounded context, o executor deve executar os itens abaixo
+**independentemente de estarem listados no prompt**. Se o prompt omitir algum,
+o executor preenche a lacuna sem reportar como bloqueador.
+
+**Testes (invocar `/write-test` para cada arquivo criado):**
+
+- `*/domain/<Entidade>.java` -- unit test sem Spring, sem mocks.
+- `*/application/*UseCase.java` -- unit test com Mockito (`@BeforeEach` setUp, sem Spring).
+- `*/infrastructure/persistence/*RepositoryImpl.java` -- integration test com Testcontainers.
+- `*/interfaces/*Controller.java` -- E2E test com MockMvc.
+
+**Entrega:**
+
+- Rodar `./mvnw verify` antes de `/ship` -- BUILD SUCCESS obrigatorio.
+- Commitar `docs/prompts/prompt-etapa-X-Y.md` no ultimo commit da branch (executor nao abre PR separado para o prompt).
+
+**Skills com `disable-model-invocation: true`** (`/feature`, `/migrate`, `/write-test`, `/ship`):
+nao podem ser invocadas via Skill tool -- executor le a skill, entende o padrao e executa manualmente.
+
 ### Subagents e skills
 
 Subagents do projeto vivem em `.claude/agents/<nome>.md` (flat); skills orquestradoras correspondentes em `.claude/skills/<nome>/SKILL.md` (flat). Skill usa `context: fork` + `agent: <nome>` no frontmatter para forkar contexto no subagent. Operador invoca via slash command (`/<nome> <args>`); skill com `disable-model-invocation: true` nao e invocada automaticamente. Invocacao proativa via campo `description` no subagent e considerada nao-deterministica e nao e mecanismo primario (ADR-012).
