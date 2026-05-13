@@ -3,7 +3,7 @@
 > Documento de tracking. Mostra **onde estamos** na construção da fábrica e do produto.
 > Atualizado conforme camadas avançam. Diferente do `decisoes.md` (que registra escolhas) e dos `adrs.md` (que registram porquês), este documento responde a pergunta: "em que ponto eu estou?".
 
-**Última atualização:** 2026-05-13 (Sub-etapa 5.10 -- Hook secret-scanning pre-commit)
+**Última atualização:** 2026-05-13 (Sub-etapa 5.11 -- check-front.ps1 e integracao ao /ship)
 
 ---
 
@@ -159,6 +159,13 @@ Configurar `CLAUDE.md` rico, criar 3-5 subagents focados, criar 5-10 skills (sla
 Ativar a fábrica de fato: rodar features no Tier 2, configurar 3 routines Tier 1, validar paralelismo se necessário.
 
 ### Sub-etapas concluídas
+
+- **5.11 -- check-front.ps1 e integracao ao /ship** (2026-05-13): gate de qualidade do
+  frontend: lint + test:run + build em `frontend/`, fail-fast (mais rapido primeiro). Script
+  `scripts/check-front.ps1` standalone com exit 0. Integrado ao /ship como Passo 1.1 condicional:
+  so roda se ha arquivos `frontend/` na branch (PRs backend-only nao sao penalizados). 3 cenarios
+  de validacao destrutiva: C1 script standalone passou (lint OK, 15 testes OK, build OK), C2 branch
+  sem frontend detectou skip corretamente, C3 npm run test:run confirmado com 15 testes passando. PR aberto.
 
 - **5.10 -- Hook secret-scanning pre-commit** (2026-05-13): hook universal que bloqueia
   commits com credenciais literais em codigo-fonte. Modo fail. Extensoes monitoradas:
@@ -664,6 +671,8 @@ Definir como capturar quando chegarmos na Camada 4 — não criar burocracia ago
 
 ## Histórico de mudanças deste documento
 
+- **2026-05-13** -- Sub-etapa 5.11 concluida: check-front.ps1 + Passo 1.1 condicional no /ship.
+  3 cenarios destrutivos validados. PR aberto.
 - **2026-05-13** -- Sub-etapa 5.10 concluida: hook secret-scanning pre-commit. 6 padroes
   (PEM, AWS, GitHub, OpenAI, password, secret). 5 cenarios destrutivos validados. PR a abrir.
 - **2026-05-12** -- Sub-etapa 5.3 concluida: bounded context `meta`. Segundo Tier 2. PR #76.
