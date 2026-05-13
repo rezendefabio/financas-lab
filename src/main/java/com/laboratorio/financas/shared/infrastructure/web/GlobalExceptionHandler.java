@@ -2,6 +2,7 @@ package com.laboratorio.financas.shared.infrastructure.web;
 
 import com.laboratorio.financas.categoria.domain.CategoriaNaoEncontradaException;
 import com.laboratorio.financas.conta.domain.ContaNaoEncontradaException;
+import com.laboratorio.financas.meta.domain.MetaNaoEncontradaException;
 import com.laboratorio.financas.orcamento.domain.OrcamentoNaoEncontradoException;
 import com.laboratorio.financas.transacao.domain.TransacaoComReferenciaInvalidaException;
 import com.laboratorio.financas.transacao.domain.TransacaoNaoEncontradaException;
@@ -106,6 +107,23 @@ public class GlobalExceptionHandler {
         problem.setProperty("violacoes", ex.getConstraintViolations().stream()
                 .map(v -> v.getPropertyPath() + ": " + v.getMessage())
                 .toList());
+        return problem;
+    }
+
+    @ExceptionHandler(MetaNaoEncontradaException.class)
+    public ProblemDetail handleMetaNaoEncontrada(MetaNaoEncontradaException ex) {
+        ProblemDetail problem = ProblemDetail.forStatus(HttpStatus.NOT_FOUND);
+        problem.setTitle("Not Found");
+        problem.setDetail(ex.getMessage());
+        problem.setProperty("id", ex.getId().toString());
+        return problem;
+    }
+
+    @ExceptionHandler(IllegalStateException.class)
+    public ProblemDetail handleEstadoInvalido(IllegalStateException ex) {
+        ProblemDetail problem = ProblemDetail.forStatus(HttpStatus.BAD_REQUEST);
+        problem.setTitle("Bad Request");
+        problem.setDetail(ex.getMessage());
         return problem;
     }
 
