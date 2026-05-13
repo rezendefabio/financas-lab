@@ -9,8 +9,9 @@ vi.mock('@/features/contas/services/contas.service', () => ({
 }))
 
 const mockPush = vi.fn()
+const mockBack = vi.fn()
 vi.mock('next/navigation', () => ({
-  useRouter: () => ({ push: mockPush }),
+  useRouter: () => ({ push: mockPush, back: mockBack }),
 }))
 
 const mockInvalidateQueries = vi.fn()

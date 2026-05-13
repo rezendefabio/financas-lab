@@ -6,18 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui
 import { Badge } from '@/shared/components/ui/badge'
 import { Button } from '@/shared/components/ui/button'
 import { Skeleton } from '@/shared/components/ui/skeleton'
+import { formatBRL, formatTipoConta } from '@/shared/lib/formatters'
 import type { Conta } from '@/features/contas/types/conta'
-
-function formatBRL(valor: number): string {
-  return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(valor)
-}
-
-const TIPO_LABEL: Record<string, string> = {
-  CORRENTE: 'Corrente',
-  POUPANCA: 'Poupanca',
-  DINHEIRO: 'Dinheiro',
-  CARTAO_CREDITO: 'Cartao de Credito',
-}
 
 function ContaCard({ conta, onClick }: { conta: Conta; onClick: () => void }) {
   return (
@@ -34,9 +24,9 @@ function ContaCard({ conta, onClick }: { conta: Conta; onClick: () => void }) {
         </div>
       </CardHeader>
       <CardContent>
-        <p className="text-sm text-muted-foreground">{TIPO_LABEL[conta.tipo] ?? conta.tipo}</p>
-        <p className="text-lg font-semibold mt-1">
-          {formatBRL(conta.saldoInicialValor)}
+        <p className="text-sm text-muted-foreground">{formatTipoConta(conta.tipo)}</p>
+        <p className="text-lg font-semibold mt-1 tabular-nums">
+          <span className="tabular-nums font-medium">{formatBRL(conta.saldoInicialValor)}</span>
         </p>
         <p className="text-xs text-muted-foreground">saldo inicial</p>
       </CardContent>
@@ -54,12 +44,12 @@ export default function ContasPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Contas</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">Contas</h1>
         <Button onClick={() => router.push('/contas/novo')}>Nova Conta</Button>
       </div>
 
       {isLoading && (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {[1, 2, 3].map((i) => (
             <Card key={i}>
               <CardHeader>
@@ -86,7 +76,7 @@ export default function ContasPage() {
       )}
 
       {data && data.length > 0 && (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {data.map((conta) => (
             <ContaCard
               key={conta.id}

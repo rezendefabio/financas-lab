@@ -17,9 +17,10 @@ vi.mock('@/features/contas/services/contas.service', () => ({
 }))
 
 const mockPush = vi.fn()
+const mockBack = vi.fn()
 vi.mock('next/navigation', () => ({
   useParams: () => ({ id: 'conta-123' }),
-  useRouter: () => ({ push: mockPush }),
+  useRouter: () => ({ push: mockPush, back: mockBack }),
 }))
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
@@ -137,13 +138,13 @@ describe('ContaDetalhePage', () => {
     it('exibe nome da conta', () => {
       mockQueryConta(contaAtiva, saldoResponse)
       render(<ContaDetalhePage />)
-      expect(screen.getByText('Nubank')).toBeTruthy()
+      expect(screen.getAllByText('Nubank').length).toBeGreaterThan(0)
     })
 
     it('exibe tipo formatado', () => {
       mockQueryConta(contaAtiva, saldoResponse)
       render(<ContaDetalhePage />)
-      expect(screen.getByText('Corrente')).toBeTruthy()
+      expect(screen.getByText('Conta Corrente')).toBeTruthy()
     })
 
     it('exibe badge Ativa para conta ativa', () => {
@@ -164,12 +165,12 @@ describe('ContaDetalhePage', () => {
       expect(screen.getByText(/1\.300/)).toBeTruthy()
     })
 
-    it('exibe botao Voltar que navega para /contas', async () => {
+    it('exibe botao Voltar que chama router.back()', async () => {
       mockQueryConta(contaAtiva, saldoResponse)
       render(<ContaDetalhePage />)
       const botoes = screen.getAllByRole('button', { name: /voltar/i })
       await userEvent.click(botoes[0])
-      expect(mockPush).toHaveBeenCalledWith('/contas')
+      expect(mockBack).toHaveBeenCalled()
     })
 
     it('exibe botao Desativar conta para conta ativa', () => {
