@@ -7,7 +7,7 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-sans);
+  --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
   --font-heading: var(--font-sans);
   --color-sidebar-ring: var(--sidebar-ring);
@@ -73,7 +73,7 @@
   --chart-3: oklch(0.444 0.119 163.225);
   --chart-4: oklch(0.792 0.122 163.225);
   --chart-5: oklch(0.870 0.072 163.225);
-  --radius: 0.625rem;
+  --radius: 0.5rem;
   --sidebar: oklch(0.21 0.006 285.885);            /* zinc-900 */
   --sidebar-foreground: oklch(0.985 0.001 286.375);/* zinc-50 */
   --sidebar-primary: oklch(0.596 0.145 163.225);   /* emerald-600 */

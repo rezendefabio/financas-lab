@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 import { contasService } from '@/features/contas/services/contas.service'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card'
 import { Badge } from '@/shared/components/ui/badge'
+import { cn } from '@/shared/lib/utils'
 import { Button } from '@/shared/components/ui/button'
 import { Skeleton } from '@/shared/components/ui/skeleton'
 import { formatBRL, formatTipoConta } from '@/shared/lib/formatters'
@@ -12,7 +13,10 @@ import type { Conta } from '@/features/contas/types/conta'
 function ContaCard({ conta, onClick }: { conta: Conta; onClick: () => void }) {
   return (
     <Card
-      className="cursor-pointer hover:bg-muted/50 transition-colors"
+      className={cn(
+        "cursor-pointer transition-colors hover:bg-muted/50 border-l-4",
+        conta.ativa ? "border-l-primary" : "border-l-border"
+      )}
       onClick={onClick}
     >
       <CardHeader className="pb-2">
@@ -25,8 +29,8 @@ function ContaCard({ conta, onClick }: { conta: Conta; onClick: () => void }) {
       </CardHeader>
       <CardContent>
         <p className="text-sm text-muted-foreground">{formatTipoConta(conta.tipo)}</p>
-        <p className="text-lg font-semibold mt-1 tabular-nums">
-          <span className="tabular-nums font-medium">{formatBRL(conta.saldoInicialValor)}</span>
+        <p className="text-xl font-bold tabular-nums mt-2">
+          {formatBRL(conta.saldoInicialValor)}
         </p>
         <p className="text-xs text-muted-foreground">saldo inicial</p>
       </CardContent>
