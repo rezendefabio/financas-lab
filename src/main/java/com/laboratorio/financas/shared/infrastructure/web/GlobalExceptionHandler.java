@@ -2,6 +2,7 @@ package com.laboratorio.financas.shared.infrastructure.web;
 
 import com.laboratorio.financas.categoria.domain.CategoriaNaoEncontradaException;
 import com.laboratorio.financas.conta.domain.ContaNaoEncontradaException;
+import com.laboratorio.financas.orcamento.domain.OrcamentoNaoEncontradoException;
 import com.laboratorio.financas.transacao.domain.TransacaoComReferenciaInvalidaException;
 import com.laboratorio.financas.transacao.domain.TransacaoNaoEncontradaException;
 import jakarta.validation.ConstraintViolationException;
@@ -62,6 +63,15 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(CategoriaNaoEncontradaException.class)
     public ProblemDetail handleCategoriaNaoEncontrada(CategoriaNaoEncontradaException ex) {
+        ProblemDetail problem = ProblemDetail.forStatus(HttpStatus.NOT_FOUND);
+        problem.setTitle("Not Found");
+        problem.setDetail(ex.getMessage());
+        problem.setProperty("id", ex.getId().toString());
+        return problem;
+    }
+
+    @ExceptionHandler(OrcamentoNaoEncontradoException.class)
+    public ProblemDetail handleOrcamentoNaoEncontrado(OrcamentoNaoEncontradoException ex) {
         ProblemDetail problem = ProblemDetail.forStatus(HttpStatus.NOT_FOUND);
         problem.setTitle("Not Found");
         problem.setDetail(ex.getMessage());

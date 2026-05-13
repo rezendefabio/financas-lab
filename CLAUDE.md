@@ -62,6 +62,21 @@ Conventional Commits obrigatorio (hook ativo). Mensagens em portugues, sem acent
 
 Trabalho organizado em sub-etapas pequenas dentro de Camadas. Cada sub-etapa: 1 branch, 3-4 commits, 1 PR, validacao destrutiva, smoke test pos-merge. Calibracao via D1-D5 antes do prompt. Padrao detalhado em `docs/progresso.md`.
 
+### Modelo executor (Camada 4+)
+
+A partir da Camada 4 o trabalho segue o modelo orquestrador/executor:
+
+- **Orquestrador** (esta sessao): gera o prompt da sub-etapa em `docs/prompts/prompt-etapa-X-Y.md` e commita o `.md` manualmente apos o PR abrir.
+- **Executor** (sessao nova): recebe o prompt como texto e entrega o PR de forma autonoma.
+
+Para execucao sem interrupcao de aprovacao de ferramentas, o executor deve ser iniciado com:
+
+```
+claude --dangerously-skip-permissions
+```
+
+Sem esse flag o executor para em cada tool call (Bash, Write, Edit, git) aguardando aprovacao manual -- o que quebra o ciclo autonomo da fabrica.
+
 ### Subagents e skills
 
 Subagents do projeto vivem em `.claude/agents/<nome>.md` (flat); skills orquestradoras correspondentes em `.claude/skills/<nome>/SKILL.md` (flat). Skill usa `context: fork` + `agent: <nome>` no frontmatter para forkar contexto no subagent. Operador invoca via slash command (`/<nome> <args>`); skill com `disable-model-invocation: true` nao e invocada automaticamente. Invocacao proativa via campo `description` no subagent e considerada nao-deterministica e nao e mecanismo primario (ADR-012).
