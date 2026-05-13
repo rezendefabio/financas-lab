@@ -28,6 +28,7 @@ public class SecurityConfig {
                                 "/api/transacoes/**",   // TODO Etapa Auth (futura): remover quando JWT estiver pronto
                                 "/api/orcamentos/**",   // TODO Etapa Auth (futura): remover quando JWT estiver pronto
                                 "/api/metas/**",        // TODO Etapa Auth (futura): remover quando JWT estiver pronto
+                                "/api/lancamentos-recorrentes/**", // TODO Etapa Auth (futura): remover quando JWT estiver pronto
                                 "/actuator/health",
                                 "/v3/api-docs/**",
                                 "/swagger-ui/**",
