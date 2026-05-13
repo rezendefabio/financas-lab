@@ -20,9 +20,9 @@ Gerador de testes para o projeto financas-lab. Opera em dois modos: **Java** (JU
 
 **Niveis de teste cobertos (modo frontend):**
 
-- **Componente** (`src/app/**/*.tsx`, `src/components/**/*.tsx`) -- Vitest + Testing Library + userEvent.
-- **Hook** (`src/hooks/**/*.ts`) -- `renderHook` + `act`.
-- **Service/utility** (`src/services/**/*.ts`, `src/lib/**/*.ts`) -- `vi.mock` de `api-client`.
+- **Componente** (`src/app/**/*.tsx`, `src/shared/components/**/*.tsx`, `src/features/*/components/**/*.tsx`) -- Vitest + Testing Library + userEvent.
+- **Hook** (`src/features/*/hooks/**/*.ts`, `src/shared/hooks/**/*.ts`) -- `renderHook` + `act`.
+- **Service/utility** (`src/features/*/services/**/*.ts`, `src/services/**/*.ts`, `src/shared/lib/**/*.ts`) -- `vi.mock` de `api-client`.
 
 Le a classe alvo + classes vizinhas relevantes + arquivo de teste de referencia (`ContaTest.java` para unit, `ContaRepositoryImplTest.java` ou `TransacaoRepositoryImplTest.java` para integration) como referencia de estilo. Gera arquivo de teste OU acrescenta `@Test` a arquivo existente (ver passo "0" no fluxo). Valida via `./mvnw test`, reporta resultado. **Nao tenta auto-corrigir em loop** — se nao compila ou nao passa, reporta erro literal e devolve decisao ao operador.
 

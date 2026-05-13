@@ -614,15 +614,15 @@ Investigacao da documentacao oficial do Claude Code durante a redacao da 4.11 re
 o escopo de um dominio. A mesma limitacao que levou o backend a bounded contexts.
 
 **Decisao:** Adotar estrutura feature-first espelhando os bounded contexts do
-backend. Cada dominio vive em  com suas proprias pastas
-, , ,  e um  de barrel exports.
+backend. Cada dominio vive em `src/features/<dominio>/` com suas proprias pastas
+`services/`, `types/`, `hooks/`, `components/` e um `index.ts` de barrel exports.
 Codigo genuinamente compartilhado (shadcn components, auth utils, api types) fica
-em . O unico ponto de  e .
+em `src/shared/`. O unico ponto de `fetch` e `src/services/api-client.ts`.
 
 **Consequencias:**
 - Facil localizar tudo de um dominio sem buscar em multiplas pastas raiz.
-- Espelha mentalmente o backend:  = bounded context .
-- Adicionar novo dominio = criar pasta  com estrutura padrao.
-- Remover dominio = deletar  sem impacto em outros.
-- Imports mais longos () mitigados por
-  barrel exports ().
+- Espelha mentalmente o backend: `features/contas/` = bounded context `conta`.
+- Adicionar novo dominio = criar pasta `features/<dominio>/` com estrutura padrao.
+- Remover dominio = deletar `features/<dominio>/` sem impacto em outros.
+- Imports mais longos (`@/features/contas/services/contas.service`) mitigados por
+  barrel exports (`@/features/contas`).

@@ -45,7 +45,7 @@ Revisor senior de frontend. Pragmatico — nao implica em estilo, implica em vio
 |----|-------|
 | S1 | `console.log` em componente ou hook de producao (remover antes de producao) |
 | S2 | Hook ou componente novo sem teste correspondente na PR |
-| S3 | Acesso a token fora de `src/lib/auth.ts` ou `src/providers/auth-provider.tsx` |
+| S3 | Acesso a token fora de `src/shared/lib/auth.ts` ou `src/providers/auth-provider.tsx` |
 | S4 | Props de componente sem tipo explicito (interface ou type alias) |
 
 ## Regras -- Elogios (reforcar bom padrao)
