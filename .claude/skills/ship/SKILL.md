@@ -141,6 +141,25 @@ e sinalize ao operador. Nao cancele o /ship -- o PR ja foi aberto.
 
 Aguarde o resultado. Inclua o sumario de cada review no relatorio final.
 
+**Review 3 -- front-reviewer (condicional):**
+
+Verifique se ha arquivos em `frontend/` entre os commits da branch:
+
+```powershell
+$frontendChanged = git diff --name-only main..HEAD | Where-Object { $_ -like "frontend/*" }
+```
+
+Se `$frontendChanged` for nao-nulo e nao-vazio:
+
+- subagent_type: `front-reviewer`
+- prompt: `Revise as mudancas de frontend do PR #<numero> do repositorio financas-lab.`
+
+Aguarde o resultado. Se o front-reviewer reportar bloqueador: inclua no relatorio
+final e sinalize ao operador.
+
+Se `$frontendChanged` for nulo ou vazio: pule este review (sem arquivos frontend
+na branch).
+
 ## Passo 5.1 -- Correcao autonoma de apontamentos
 
 Apos receber os resultados dos dois reviews, avalie cada apontamento:
@@ -177,6 +196,7 @@ Titulo:   <titulo>
 Commits:  <numero> acima de main
 
 Reviews:
-  pr-reviewer:       <OK / BLOQUEADOR: <motivo>>
+  pr-reviewer:        <OK / BLOQUEADOR: <motivo>>
   architect-reviewer: <OK / BLOQUEADOR: <motivo>>
+  front-reviewer:     <OK / BLOQUEADOR: <motivo> / N/A (sem frontend)>
 ```

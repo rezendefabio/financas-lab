@@ -3,7 +3,7 @@
 > Documento de tracking. Mostra **onde estamos** na construção da fábrica e do produto.
 > Atualizado conforme camadas avançam. Diferente do `decisoes.md` (que registra escolhas) e dos `adrs.md` (que registram porquês), este documento responde a pergunta: "em que ponto eu estou?".
 
-**Última atualização:** 2026-05-13 (Sub-etapa 5.11 -- check-front.ps1 e integracao ao /ship)
+**Última atualização:** 2026-05-13 (Sub-etapa 5.12 -- Agente front-reviewer e skill /review-front)
 
 ---
 
@@ -159,6 +159,15 @@ Configurar `CLAUDE.md` rico, criar 3-5 subagents focados, criar 5-10 skills (sla
 Ativar a fábrica de fato: rodar features no Tier 2, configurar 3 routines Tier 1, validar paralelismo se necessário.
 
 ### Sub-etapas concluídas
+
+- **5.12 -- Agente front-reviewer e skill /review-front** (2026-05-13): revisor de codigo
+  frontend especializado nas convencoes do projeto. Agente `.claude/agents/front-reviewer.md`
+  (modelo haiku, read-only). 5 bloqueadores (B1 fetch fora de services/, B2 asChild em
+  base-nova, B3 URL hardcoded, B4 `any` em tipos de API, B5 credencial literal), 4 sugestoes
+  (S1-S4), 3 elogios (E1-E3). Skill `/review-front` invocavel. Review 3 condicional integrado
+  ao /ship (Passo 5): so invocado se ha arquivos `frontend/` na branch. Smoke contra PR #84:
+  detectou B3 (http://localhost:8080 hardcoded em api-client.ts), S2 (hooks sem testes),
+  E2 (apiFetch) e E3 (ApiError) -- validou motivacao e escopo correto do agente. PR aberto.
 
 - **5.11 -- check-front.ps1 e integracao ao /ship** (2026-05-13): gate de qualidade do
   frontend: lint + test:run + build em `frontend/`, fail-fast (mais rapido primeiro). Script
@@ -671,6 +680,8 @@ Definir como capturar quando chegarmos na Camada 4 — não criar burocracia ago
 
 ## Histórico de mudanças deste documento
 
+- **2026-05-13** -- Sub-etapa 5.12 concluida: agente front-reviewer + skill /review-front.
+  Review 3 condicional no /ship. Smoke validou B3 (URL hardcoded) contra PR #84. PR aberto.
 - **2026-05-13** -- Sub-etapa 5.11 concluida: check-front.ps1 + Passo 1.1 condicional no /ship.
   3 cenarios destrutivos validados. PR aberto.
 - **2026-05-13** -- Sub-etapa 5.10 concluida: hook secret-scanning pre-commit. 6 padroes
