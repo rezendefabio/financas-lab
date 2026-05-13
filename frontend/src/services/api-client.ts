@@ -1,4 +1,4 @@
-import { getToken } from '@/lib/auth'
+import { getToken, clearToken } from '@/lib/auth'
 import { ApiError } from '@/types/api'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8080'
@@ -14,6 +14,13 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
     },
   })
   if (res.status === 204) return undefined as T
+  if (res.status === 401) {
+    clearToken()
+    if (typeof window !== 'undefined') {
+      window.location.href = '/login'
+    }
+    throw new ApiError(401, 'Sessao expirada. Faca login novamente.')
+  }
   if (!res.ok) {
     const body = await res.json().catch(() => ({}))
     throw new ApiError(res.status, body.message ?? res.statusText)

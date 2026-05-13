@@ -51,12 +51,32 @@ describe('apiFetch', () => {
     vi.mocked(authModule.getToken).mockReturnValue(null)
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
       ok: false,
+      status: 500,
+      statusText: 'Internal Server Error',
+      json: async () => ({ message: 'Erro interno' }),
+    }))
+
+    await expect(apiFetch('/protected')).rejects.toBeInstanceOf(ApiError)
+
+    vi.unstubAllGlobals()
+  })
+
+  it('on 401: clears token and redirects to /login', async () => {
+    vi.spyOn(authModule, 'clearToken')
+    vi.mocked(authModule.getToken).mockReturnValue('expired-token')
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: false,
       status: 401,
       statusText: 'Unauthorized',
       json: async () => ({ message: 'Nao autorizado' }),
     }))
 
+    const location = { href: '' }
+    Object.defineProperty(window, 'location', { value: location, writable: true })
+
     await expect(apiFetch('/protected')).rejects.toBeInstanceOf(ApiError)
+    expect(authModule.clearToken).toHaveBeenCalledOnce()
+    expect(location.href).toBe('/login')
 
     vi.unstubAllGlobals()
   })
