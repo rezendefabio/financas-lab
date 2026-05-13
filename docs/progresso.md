@@ -3,7 +3,7 @@
 > Documento de tracking. Mostra **onde estamos** na construção da fábrica e do produto.
 > Atualizado conforme camadas avançam. Diferente do `decisoes.md` (que registra escolhas) e dos `adrs.md` (que registram porquês), este documento responde a pergunta: "em que ponto eu estou?".
 
-**Última atualização:** 2026-05-13 (Sub-etapa 5.17 -- Redesign visual Fintech-Clean)
+**Última atualização:** 2026-05-13 (Sub-etapa 5.20 -- Skill /batch para execucao paralela)
 
 ---
 
@@ -159,6 +159,19 @@ Configurar `CLAUDE.md` rico, criar 3-5 subagents focados, criar 5-10 skills (sla
 Ativar a fábrica de fato: rodar features no Tier 2, configurar 3 routines Tier 1, validar paralelismo se necessário.
 
 ### Sub-etapas concluídas
+
+- **5.20 -- Skill `/batch` (execucao paralela de tasks)** (2026-05-13): primeira
+  sub-etapa de infraestrutura de fabrica da Camada A (modelo Boris Cherny). Skill
+  direta sem subagent, sem produto. `/batch etapa-5-18 etapa-5-19` resolve os paths
+  dos prompts, valida existencia de cada arquivo, exibe lista de tasks ao operador e
+  spawna todos os Agent tool calls em uma unica mensagem (garantindo paralelismo real).
+  Cada sub-agente roda em worktree isolado (`isolation: worktree`), le o prompt da task,
+  executa todos os passos autonomamente (incluindo /ship manual), e retorna relatorio
+  padronizado (Task/Branch/Commits/PR/Reviews/Status). Orquestrador consolida num
+  relatorio final com PRs abertos e bloqueadores. `disable-model-invocation: true` no
+  frontmatter. Template do prompt do sub-agente copiado literalmente para o SKILL.md
+  (sem parafrasear). Sem logica de retry no orquestrador -- responsabilidade do sub-agente.
+  Smoke: 5.18 (Categorias) e 5.19 (Transacoes) prontos para execucao pos-merge. PR #94.
 
 - **5.17 -- Redesign visual Fintech-Clean (polimento)** (2026-05-13): polimento visual
   das paginas existentes sem mudanca de logica. **(1) Fix de fonte:** auto-referencia
