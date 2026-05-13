@@ -33,6 +33,14 @@ describe('formatTipoConta', () => {
   })
 })
 
+describe('formatTipoCategoria', () => {
+  it('retorna label em portugues', () => {
+    expect(formatTipoCategoria('RECEITA')).toBe('Receita')
+    expect(formatTipoCategoria('DESPESA')).toBe('Despesa')
+    expect(formatTipoCategoria('DESCONHECIDO')).toBe('DESCONHECIDO')
+  })
+})
+
 describe('formatTipoTransacao', () => {
   it('formatTipoTransacao retorna label em portugues', () => {
     expect(formatTipoTransacao('RECEITA')).toBe('Receita')
