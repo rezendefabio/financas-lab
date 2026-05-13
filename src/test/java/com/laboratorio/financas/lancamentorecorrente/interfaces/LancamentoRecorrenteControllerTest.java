@@ -15,7 +15,7 @@ import com.laboratorio.financas.conta.domain.TipoConta;
 import com.laboratorio.financas.conta.infrastructure.persistence.ContaJpaRepository;
 import com.laboratorio.financas.conta.infrastructure.persistence.ContaRepositoryImpl;
 import com.laboratorio.financas.lancamentorecorrente.infrastructure.persistence.LancamentoRecorrenteJpaRepository;
-import com.laboratorio.financas.shared.AbstractIntegrationTest;
+import com.laboratorio.financas.shared.AbstractAuthenticatedIntegrationTest;
 import com.laboratorio.financas.shared.domain.Money;
 import com.laboratorio.financas.transacao.infrastructure.persistence.TransacaoJpaRepository;
 import java.math.BigDecimal;
@@ -27,16 +27,12 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
-import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
 @AutoConfigureMockMvc
-class LancamentoRecorrenteControllerTest extends AbstractIntegrationTest {
+class LancamentoRecorrenteControllerTest extends AbstractAuthenticatedIntegrationTest {
 
     private static final String PROXIMA = LocalDate.now().plusMonths(1).toString();
-
-    @Autowired
-    private MockMvc mockMvc;
 
     @Autowired
     private ObjectMapper objectMapper;
@@ -85,22 +81,20 @@ class LancamentoRecorrenteControllerTest extends AbstractIntegrationTest {
     }
 
     private String criarRetornaId(UUID contaId) throws Exception {
-        MvcResult resultado = mockMvc.perform(post("/api/lancamentos-recorrentes")
+        MvcResult resultado = mockMvc.perform(comAuth(post("/api/lancamentos-recorrentes")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(requestValido(contaId)))
+                        .content(requestValido(contaId))))
                 .andReturn();
         return objectMapper.readTree(resultado.getResponse().getContentAsString()).get("id").asText();
     }
-
-    // --- POST /api/lancamentos-recorrentes ---
 
     @Test
     void postCriaLancamentoValidoRetorna201() throws Exception {
         UUID contaId = criarContaPersistida();
 
-        mockMvc.perform(post("/api/lancamentos-recorrentes")
+        mockMvc.perform(comAuth(post("/api/lancamentos-recorrentes")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(requestValido(contaId)))
+                        .content(requestValido(contaId))))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id", notNullValue()))
                 .andExpect(jsonPath("$.descricao", equalTo("Aluguel mensal")))
@@ -126,9 +120,9 @@ class LancamentoRecorrenteControllerTest extends AbstractIntegrationTest {
                 }
                 """.formatted(contaId, PROXIMA);
 
-        mockMvc.perform(post("/api/lancamentos-recorrentes")
+        mockMvc.perform(comAuth(post("/api/lancamentos-recorrentes")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(body))
+                        .content(body)))
                 .andExpect(status().isBadRequest());
     }
 
@@ -147,17 +141,15 @@ class LancamentoRecorrenteControllerTest extends AbstractIntegrationTest {
                 }
                 """.formatted(contaId, PROXIMA);
 
-        mockMvc.perform(post("/api/lancamentos-recorrentes")
+        mockMvc.perform(comAuth(post("/api/lancamentos-recorrentes")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(body))
+                        .content(body)))
                 .andExpect(status().isBadRequest());
     }
 
-    // --- GET /api/lancamentos-recorrentes ---
-
     @Test
     void getListaRetornaVazioQuandoNenhum() throws Exception {
-        mockMvc.perform(get("/api/lancamentos-recorrentes"))
+        mockMvc.perform(comAuth(get("/api/lancamentos-recorrentes")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", hasSize(0)));
     }
@@ -168,19 +160,17 @@ class LancamentoRecorrenteControllerTest extends AbstractIntegrationTest {
         criarRetornaId(contaId);
         criarRetornaId(contaId);
 
-        mockMvc.perform(get("/api/lancamentos-recorrentes"))
+        mockMvc.perform(comAuth(get("/api/lancamentos-recorrentes")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", hasSize(2)));
     }
-
-    // --- GET /api/lancamentos-recorrentes/{id} ---
 
     @Test
     void getPorIdRetornaLancamentoExistente() throws Exception {
         UUID contaId = criarContaPersistida();
         String id = criarRetornaId(contaId);
 
-        mockMvc.perform(get("/api/lancamentos-recorrentes/" + id))
+        mockMvc.perform(comAuth(get("/api/lancamentos-recorrentes/" + id)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id", equalTo(id)))
                 .andExpect(jsonPath("$.descricao", equalTo("Aluguel mensal")));
@@ -188,39 +178,35 @@ class LancamentoRecorrenteControllerTest extends AbstractIntegrationTest {
 
     @Test
     void getPorIdInexistenteRetorna404() throws Exception {
-        mockMvc.perform(get("/api/lancamentos-recorrentes/" + UUID.randomUUID()))
+        mockMvc.perform(comAuth(get("/api/lancamentos-recorrentes/" + UUID.randomUUID())))
                 .andExpect(status().isNotFound());
     }
-
-    // --- DELETE /api/lancamentos-recorrentes/{id} ---
 
     @Test
     void deleteDesativaLancamentoRetorna204() throws Exception {
         UUID contaId = criarContaPersistida();
         String id = criarRetornaId(contaId);
 
-        mockMvc.perform(delete("/api/lancamentos-recorrentes/" + id))
+        mockMvc.perform(comAuth(delete("/api/lancamentos-recorrentes/" + id)))
                 .andExpect(status().isNoContent());
 
-        mockMvc.perform(get("/api/lancamentos-recorrentes/" + id))
+        mockMvc.perform(comAuth(get("/api/lancamentos-recorrentes/" + id)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.ativo", equalTo(false)));
     }
 
     @Test
     void deleteInexistenteRetorna404() throws Exception {
-        mockMvc.perform(delete("/api/lancamentos-recorrentes/" + UUID.randomUUID()))
+        mockMvc.perform(comAuth(delete("/api/lancamentos-recorrentes/" + UUID.randomUUID())))
                 .andExpect(status().isNotFound());
     }
-
-    // --- POST /api/lancamentos-recorrentes/{id}/execucoes ---
 
     @Test
     void postExecucaoCriaTransacaoEAvancaProximaOcorrencia() throws Exception {
         UUID contaId = criarContaPersistida();
         String id = criarRetornaId(contaId);
 
-        mockMvc.perform(post("/api/lancamentos-recorrentes/" + id + "/execucoes"))
+        mockMvc.perform(comAuth(post("/api/lancamentos-recorrentes/" + id + "/execucoes")))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.transacaoId", notNullValue()))
                 .andExpect(jsonPath("$.lancamentoRecorrenteId", equalTo(id)))
@@ -233,15 +219,15 @@ class LancamentoRecorrenteControllerTest extends AbstractIntegrationTest {
         UUID contaId = criarContaPersistida();
         String id = criarRetornaId(contaId);
 
-        mockMvc.perform(delete("/api/lancamentos-recorrentes/" + id));
+        mockMvc.perform(comAuth(delete("/api/lancamentos-recorrentes/" + id)));
 
-        mockMvc.perform(post("/api/lancamentos-recorrentes/" + id + "/execucoes"))
+        mockMvc.perform(comAuth(post("/api/lancamentos-recorrentes/" + id + "/execucoes")))
                 .andExpect(status().isBadRequest());
     }
 
     @Test
     void postExecucaoInexistenteRetorna404() throws Exception {
-        mockMvc.perform(post("/api/lancamentos-recorrentes/" + UUID.randomUUID() + "/execucoes"))
+        mockMvc.perform(comAuth(post("/api/lancamentos-recorrentes/" + UUID.randomUUID() + "/execucoes")))
                 .andExpect(status().isNotFound());
     }
 }

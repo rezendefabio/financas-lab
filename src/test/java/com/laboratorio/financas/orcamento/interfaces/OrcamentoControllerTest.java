@@ -12,7 +12,7 @@ import com.laboratorio.financas.categoria.domain.TipoCategoria;
 import com.laboratorio.financas.categoria.infrastructure.persistence.CategoriaJpaRepository;
 import com.laboratorio.financas.categoria.infrastructure.persistence.CategoriaRepositoryImpl;
 import com.laboratorio.financas.orcamento.infrastructure.persistence.OrcamentoJpaRepository;
-import com.laboratorio.financas.shared.AbstractIntegrationTest;
+import com.laboratorio.financas.shared.AbstractAuthenticatedIntegrationTest;
 import java.util.UUID;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
@@ -21,13 +21,9 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
-import org.springframework.test.web.servlet.MockMvc;
 
 @AutoConfigureMockMvc
-class OrcamentoControllerTest extends AbstractIntegrationTest {
-
-    @Autowired
-    private MockMvc mockMvc;
+class OrcamentoControllerTest extends AbstractAuthenticatedIntegrationTest {
 
     @Autowired
     private OrcamentoJpaRepository orcamentoJpaRepository;
@@ -69,9 +65,9 @@ class OrcamentoControllerTest extends AbstractIntegrationTest {
         void criarDeveRetornar201ComOrcamentoCriado() throws Exception {
             UUID categoriaId = criarCategoria();
 
-            mockMvc.perform(post("/api/orcamentos")
+            mockMvc.perform(comAuth(post("/api/orcamentos")
                             .contentType(MediaType.APPLICATION_JSON)
-                            .content(criarOrcamentoJson(categoriaId, "2024-06-01")))
+                            .content(criarOrcamentoJson(categoriaId, "2024-06-01"))))
                     .andExpect(status().isCreated())
                     .andExpect(jsonPath("$.id").isNotEmpty())
                     .andExpect(jsonPath("$.categoriaId").value(categoriaId.toString()))
@@ -84,7 +80,7 @@ class OrcamentoControllerTest extends AbstractIntegrationTest {
         @Test
         @DisplayName("retorna 400 quando categoriaId e nulo")
         void criarDeveRetornar400QuandoCategoriaIdNulo() throws Exception {
-            mockMvc.perform(post("/api/orcamentos")
+            mockMvc.perform(comAuth(post("/api/orcamentos")
                             .contentType(MediaType.APPLICATION_JSON)
                             .content("""
                                     {
@@ -92,7 +88,7 @@ class OrcamentoControllerTest extends AbstractIntegrationTest {
                                       "valorLimiteMoeda": "BRL",
                                       "mesAno": "2024-06-01"
                                     }
-                                    """))
+                                    """)))
                     .andExpect(status().isBadRequest());
         }
 
@@ -101,7 +97,7 @@ class OrcamentoControllerTest extends AbstractIntegrationTest {
         void criarDeveRetornar400QuandoValorLimiteNulo() throws Exception {
             UUID categoriaId = criarCategoria();
 
-            mockMvc.perform(post("/api/orcamentos")
+            mockMvc.perform(comAuth(post("/api/orcamentos")
                             .contentType(MediaType.APPLICATION_JSON)
                             .content("""
                                     {
@@ -109,7 +105,7 @@ class OrcamentoControllerTest extends AbstractIntegrationTest {
                                       "valorLimiteMoeda": "BRL",
                                       "mesAno": "2024-06-01"
                                     }
-                                    """.formatted(categoriaId)))
+                                    """.formatted(categoriaId))))
                     .andExpect(status().isBadRequest());
         }
 
@@ -118,7 +114,7 @@ class OrcamentoControllerTest extends AbstractIntegrationTest {
         void criarDeveRetornar400QuandoMoedaComTamanhoInvalido() throws Exception {
             UUID categoriaId = criarCategoria();
 
-            mockMvc.perform(post("/api/orcamentos")
+            mockMvc.perform(comAuth(post("/api/orcamentos")
                             .contentType(MediaType.APPLICATION_JSON)
                             .content("""
                                     {
@@ -127,7 +123,7 @@ class OrcamentoControllerTest extends AbstractIntegrationTest {
                                       "valorLimiteMoeda": "BR",
                                       "mesAno": "2024-06-01"
                                     }
-                                    """.formatted(categoriaId)))
+                                    """.formatted(categoriaId))))
                     .andExpect(status().isBadRequest());
         }
     }
@@ -139,7 +135,7 @@ class OrcamentoControllerTest extends AbstractIntegrationTest {
         @Test
         @DisplayName("retorna 200 com lista vazia quando nao ha orcamentos")
         void listarDeveRetornar200ComListaVazia() throws Exception {
-            mockMvc.perform(get("/api/orcamentos"))
+            mockMvc.perform(comAuth(get("/api/orcamentos")))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$").isArray())
                     .andExpect(jsonPath("$.length()").value(0));
@@ -150,12 +146,12 @@ class OrcamentoControllerTest extends AbstractIntegrationTest {
         void listarDeveRetornar200ComOrcamentosExistentes() throws Exception {
             UUID categoriaId = criarCategoria();
 
-            mockMvc.perform(post("/api/orcamentos")
+            mockMvc.perform(comAuth(post("/api/orcamentos")
                             .contentType(MediaType.APPLICATION_JSON)
-                            .content(criarOrcamentoJson(categoriaId, "2024-07-01")))
+                            .content(criarOrcamentoJson(categoriaId, "2024-07-01"))))
                     .andExpect(status().isCreated());
 
-            mockMvc.perform(get("/api/orcamentos"))
+            mockMvc.perform(comAuth(get("/api/orcamentos")))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$").isArray())
                     .andExpect(jsonPath("$.length()").value(1))
@@ -172,9 +168,9 @@ class OrcamentoControllerTest extends AbstractIntegrationTest {
         void buscarDeveRetornar200QuandoEncontrado() throws Exception {
             UUID categoriaId = criarCategoria();
 
-            String responseBody = mockMvc.perform(post("/api/orcamentos")
+            String responseBody = mockMvc.perform(comAuth(post("/api/orcamentos")
                             .contentType(MediaType.APPLICATION_JSON)
-                            .content(criarOrcamentoJson(categoriaId, "2024-08-01")))
+                            .content(criarOrcamentoJson(categoriaId, "2024-08-01"))))
                     .andExpect(status().isCreated())
                     .andReturn()
                     .getResponse()
@@ -182,7 +178,7 @@ class OrcamentoControllerTest extends AbstractIntegrationTest {
 
             String id = JsonPath.read(responseBody, "$.id");
 
-            mockMvc.perform(get("/api/orcamentos/{id}", id))
+            mockMvc.perform(comAuth(get("/api/orcamentos/{id}", id)))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.id").value(id))
                     .andExpect(jsonPath("$.categoriaId").value(categoriaId.toString()))
@@ -192,7 +188,7 @@ class OrcamentoControllerTest extends AbstractIntegrationTest {
         @Test
         @DisplayName("retorna 404 quando nao encontrado")
         void buscarDeveRetornar404QuandoNaoEncontrado() throws Exception {
-            mockMvc.perform(get("/api/orcamentos/{id}", UUID.randomUUID()))
+            mockMvc.perform(comAuth(get("/api/orcamentos/{id}", UUID.randomUUID())))
                     .andExpect(status().isNotFound());
         }
     }
@@ -206,9 +202,9 @@ class OrcamentoControllerTest extends AbstractIntegrationTest {
         void desativarDeveRetornar204EDesativaOrcamento() throws Exception {
             UUID categoriaId = criarCategoria();
 
-            String responseBody = mockMvc.perform(post("/api/orcamentos")
+            String responseBody = mockMvc.perform(comAuth(post("/api/orcamentos")
                             .contentType(MediaType.APPLICATION_JSON)
-                            .content(criarOrcamentoJson(categoriaId, "2024-09-01")))
+                            .content(criarOrcamentoJson(categoriaId, "2024-09-01"))))
                     .andExpect(status().isCreated())
                     .andReturn()
                     .getResponse()
@@ -216,10 +212,10 @@ class OrcamentoControllerTest extends AbstractIntegrationTest {
 
             String id = JsonPath.read(responseBody, "$.id");
 
-            mockMvc.perform(delete("/api/orcamentos/{id}", id))
+            mockMvc.perform(comAuth(delete("/api/orcamentos/{id}", id)))
                     .andExpect(status().isNoContent());
 
-            mockMvc.perform(get("/api/orcamentos/{id}", id))
+            mockMvc.perform(comAuth(get("/api/orcamentos/{id}", id)))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.ativo").value(false));
         }
@@ -227,7 +223,7 @@ class OrcamentoControllerTest extends AbstractIntegrationTest {
         @Test
         @DisplayName("retorna 404 ao desativar orcamento inexistente")
         void desativarDeveRetornar404QuandoNaoEncontrado() throws Exception {
-            mockMvc.perform(delete("/api/orcamentos/{id}", UUID.randomUUID()))
+            mockMvc.perform(comAuth(delete("/api/orcamentos/{id}", UUID.randomUUID())))
                     .andExpect(status().isNotFound());
         }
     }
@@ -241,9 +237,9 @@ class OrcamentoControllerTest extends AbstractIntegrationTest {
         void progressoDeveRetornar200ComProgressoZeradoSemTransacoes() throws Exception {
             UUID categoriaId = criarCategoria();
 
-            String responseBody = mockMvc.perform(post("/api/orcamentos")
+            String responseBody = mockMvc.perform(comAuth(post("/api/orcamentos")
                             .contentType(MediaType.APPLICATION_JSON)
-                            .content(criarOrcamentoJson(categoriaId, "2024-10-01")))
+                            .content(criarOrcamentoJson(categoriaId, "2024-10-01"))))
                     .andExpect(status().isCreated())
                     .andReturn()
                     .getResponse()
@@ -251,7 +247,7 @@ class OrcamentoControllerTest extends AbstractIntegrationTest {
 
             String id = JsonPath.read(responseBody, "$.id");
 
-            mockMvc.perform(get("/api/orcamentos/{id}/progresso", id))
+            mockMvc.perform(comAuth(get("/api/orcamentos/{id}/progresso", id)))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.orcamentoId").value(id))
                     .andExpect(jsonPath("$.categoriaId").value(categoriaId.toString()))
@@ -264,7 +260,7 @@ class OrcamentoControllerTest extends AbstractIntegrationTest {
         @Test
         @DisplayName("retorna 404 ao consultar progresso de orcamento inexistente")
         void progressoDeveRetornar404QuandoNaoEncontrado() throws Exception {
-            mockMvc.perform(get("/api/orcamentos/{id}/progresso", UUID.randomUUID()))
+            mockMvc.perform(comAuth(get("/api/orcamentos/{id}/progresso", UUID.randomUUID())))
                     .andExpect(status().isNotFound());
         }
     }

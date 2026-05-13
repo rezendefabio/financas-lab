@@ -12,7 +12,7 @@ import com.laboratorio.financas.conta.domain.Conta;
 import com.laboratorio.financas.conta.domain.TipoConta;
 import com.laboratorio.financas.conta.infrastructure.persistence.ContaJpaRepository;
 import com.laboratorio.financas.conta.infrastructure.persistence.ContaRepositoryImpl;
-import com.laboratorio.financas.shared.AbstractIntegrationTest;
+import com.laboratorio.financas.shared.AbstractAuthenticatedIntegrationTest;
 import com.laboratorio.financas.shared.domain.Money;
 import com.laboratorio.financas.transacao.infrastructure.persistence.TransacaoJpaRepository;
 import java.math.BigDecimal;
@@ -25,15 +25,11 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
-import org.springframework.test.web.servlet.MockMvc;
 
 @AutoConfigureMockMvc
-class RelatorioControllerTest extends AbstractIntegrationTest {
+class RelatorioControllerTest extends AbstractAuthenticatedIntegrationTest {
 
     private static final Currency BRL = Currency.getInstance("BRL");
-
-    @Autowired
-    private MockMvc mockMvc;
 
     @Autowired
     private TransacaoJpaRepository transacaoJpaRepository;
@@ -90,12 +86,12 @@ class RelatorioControllerTest extends AbstractIntegrationTest {
                 categoriaId != null ? ", \"categoriaId\": \"" + categoriaId + "\"" : ""
         );
 
-        mockMvc.perform(
+        mockMvc.perform(comAuth(
                 org.springframework.test.web.servlet.request.MockMvcRequestBuilders
                         .post("/api/transacoes")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body)
-        ).andExpect(status().isCreated());
+        )).andExpect(status().isCreated());
     }
 
     @Nested
@@ -105,9 +101,9 @@ class RelatorioControllerTest extends AbstractIntegrationTest {
         @Test
         @DisplayName("retorna 200 com lista vazia quando nao ha transacoes")
         void semTransacoesRetorna200ComListaVazia() throws Exception {
-            mockMvc.perform(get("/api/relatorios/gastos-por-categoria")
+            mockMvc.perform(comAuth(get("/api/relatorios/gastos-por-categoria")
                             .param("dataInicio", "2026-01-01")
-                            .param("dataFim", "2026-01-31"))
+                            .param("dataFim", "2026-01-31")))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.itensPorCategoria").isArray())
                     .andExpect(jsonPath("$.itensPorCategoria.length()").value(0))
@@ -123,9 +119,9 @@ class RelatorioControllerTest extends AbstractIntegrationTest {
             criarTransacao(contaId, categoriaId, "DESPESA", "100.00", "2026-01-10");
             criarTransacao(contaId, categoriaId, "DESPESA", "50.00", "2026-01-15");
 
-            mockMvc.perform(get("/api/relatorios/gastos-por-categoria")
+            mockMvc.perform(comAuth(get("/api/relatorios/gastos-por-categoria")
                             .param("dataInicio", "2026-01-01")
-                            .param("dataFim", "2026-01-31"))
+                            .param("dataFim", "2026-01-31")))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.itensPorCategoria.length()").value(1))
                     .andExpect(jsonPath("$.itensPorCategoria[0].nomeCategoria").value("Alimentacao"))
@@ -142,10 +138,10 @@ class RelatorioControllerTest extends AbstractIntegrationTest {
             criarTransacao(contaId1, categoriaId, "DESPESA", "200.00", "2026-01-05");
             criarTransacao(contaId2, categoriaId, "DESPESA", "100.00", "2026-01-10");
 
-            mockMvc.perform(get("/api/relatorios/gastos-por-categoria")
+            mockMvc.perform(comAuth(get("/api/relatorios/gastos-por-categoria")
                             .param("dataInicio", "2026-01-01")
                             .param("dataFim", "2026-01-31")
-                            .param("contaId", contaId1.toString()))
+                            .param("contaId", contaId1.toString())))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.totalGeral.valor").value(200.00));
         }
@@ -158,9 +154,9 @@ class RelatorioControllerTest extends AbstractIntegrationTest {
         @Test
         @DisplayName("retorna 200 com zeros quando nao ha transacoes")
         void semTransacoesRetorna200ComZeros() throws Exception {
-            mockMvc.perform(get("/api/relatorios/evolucao-saldo")
+            mockMvc.perform(comAuth(get("/api/relatorios/evolucao-saldo")
                             .param("dataInicio", "2026-01-01")
-                            .param("dataFim", "2026-01-31"))
+                            .param("dataFim", "2026-01-31")))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.totalReceitas.valor").value(0))
                     .andExpect(jsonPath("$.totalDespesas.valor").value(0))
@@ -176,9 +172,9 @@ class RelatorioControllerTest extends AbstractIntegrationTest {
             criarTransacao(contaId, null, "RECEITA", "500.00", "2026-02-05");
             criarTransacao(contaId, null, "DESPESA", "200.00", "2026-01-10");
 
-            mockMvc.perform(get("/api/relatorios/evolucao-saldo")
+            mockMvc.perform(comAuth(get("/api/relatorios/evolucao-saldo")
                             .param("dataInicio", "2026-01-01")
-                            .param("dataFim", "2026-02-28"))
+                            .param("dataFim", "2026-02-28")))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.totalReceitas.valor").value(1500.00))
                     .andExpect(jsonPath("$.totalDespesas.valor").value(200.00))

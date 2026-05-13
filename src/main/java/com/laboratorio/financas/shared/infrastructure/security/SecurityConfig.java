@@ -1,49 +1,45 @@
 package com.laboratorio.financas.shared.infrastructure.security;
 
+import com.laboratorio.financas.usuario.infrastructure.security.JwtAuthenticationFilter;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
-/**
- * Configuracao minima de seguranca. `authenticated()` e placeholder ate JWT chegar na Camada 2.
- */
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
 
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http,
+                                                   JwtAuthenticationFilter jwtFilter)
+            throws Exception {
         return http
                 .csrf(csrf -> csrf.disable())
-                .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(
-                                "/api/healthcheck",
-                                "/api/contas/**",       // TODO Etapa Auth (futura): remover quando JWT estiver pronto
-                                "/api/categorias/**",   // TODO Etapa Auth (futura): remover quando JWT estiver pronto
-                                "/api/transacoes/**",   // TODO Etapa Auth (futura): remover quando JWT estiver pronto
-                                "/api/orcamentos/**",   // TODO Etapa Auth (futura): remover quando JWT estiver pronto
-                                "/api/metas/**",        // TODO Etapa Auth (futura): remover quando JWT estiver pronto
-                                "/api/lancamentos-recorrentes/**", // TODO Etapa Auth (futura): remover quando JWT estiver pronto
-                                "/api/relatorios/**",              // TODO Etapa Auth (futura): remover quando JWT estiver pronto
-                                "/api/importacoes/**",             // TODO Etapa Auth (futura): remover quando JWT estiver pronto
-                                "/actuator/health",
-                                "/v3/api-docs/**",
-                                "/swagger-ui/**",
-                                "/swagger-ui.html"
-                        ).permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/auth/**").permitAll()
+                        .requestMatchers("/actuator/**").permitAll()
+                        .requestMatchers("/api/healthcheck").permitAll()
                         .anyRequest().authenticated()
                 )
-                .httpBasic(httpBasic -> httpBasic.disable())
-                .formLogin(formLogin -> formLogin.disable())
-                .exceptionHandling(ex -> ex.authenticationEntryPoint(
-                        (request, response, authException) ->
-                                response.sendError(HttpServletResponse.SC_UNAUTHORIZED)
-                ))
+                .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
+                .exceptionHandling(ex -> ex
+                        .authenticationEntryPoint((req, res, e) ->
+                                res.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Nao autorizado"))
+                )
                 .build();
+    }
+
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
     }
 }
