@@ -2,9 +2,9 @@ import { apiFetch } from '@/services/api-client'
 import type { Transacao } from '../types/transacao'
 
 interface CriarTransacaoRequest {
-  tipo: string
-  valorValor: number
-  valorMoeda: string
+  tipo: 'RECEITA' | 'DESPESA' | 'TRANSFERENCIA'
+  valor: number
+  moeda: string
   data: string
   descricao: string
   contaId: string
