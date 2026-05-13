@@ -14,3 +14,17 @@ export function formatTipoConta(tipo: string): string {
   }
   return labels[tipo] ?? tipo
 }
+
+export function formatTipoTransacao(tipo: string): string {
+  const labels: Record<string, string> = {
+    RECEITA: 'Receita',
+    DESPESA: 'Despesa',
+    TRANSFERENCIA: 'Transferencia',
+  }
+  return labels[tipo] ?? tipo
+}
+
+export function formatDate(dataIso: string): string {
+  // Append noon UTC to avoid day-off-by-one from timezone conversion
+  return new Date(dataIso + 'T12:00:00').toLocaleDateString('pt-BR')
+}

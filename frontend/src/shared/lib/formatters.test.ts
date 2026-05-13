@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { formatBRL, formatTipoConta } from './formatters'
+import { formatBRL, formatTipoConta, formatTipoTransacao, formatDate } from './formatters'
 
 describe('formatBRL', () => {
   it('formats a number as BRL currency', () => {
@@ -30,5 +30,20 @@ describe('formatTipoConta', () => {
 
   it('returns the original string for unknown type (fallback)', () => {
     expect(formatTipoConta('DESCONHECIDO')).toBe('DESCONHECIDO')
+  })
+})
+
+describe('formatTipoTransacao', () => {
+  it('formatTipoTransacao retorna label em portugues', () => {
+    expect(formatTipoTransacao('RECEITA')).toBe('Receita')
+    expect(formatTipoTransacao('DESPESA')).toBe('Despesa')
+    expect(formatTipoTransacao('TRANSFERENCIA')).toBe('Transferencia')
+    expect(formatTipoTransacao('DESCONHECIDO')).toBe('DESCONHECIDO')
+  })
+})
+
+describe('formatDate', () => {
+  it('formatDate formata data ISO no padrao pt-BR', () => {
+    expect(formatDate('2026-05-13')).toBe('13/05/2026')
   })
 })
