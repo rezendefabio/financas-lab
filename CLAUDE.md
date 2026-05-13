@@ -27,6 +27,9 @@ Estado atual e camadas: `docs/progresso.md` (secao "Status geral por Camada").
 - Dev: `.\scripts\dev-front.ps1` (inicia Next.js dev server).
 - `base-nova` usa `@base-ui/react` -- nao tem `@radix-ui`. Usar `render` prop em vez de `asChild`.
 
+- Testes: ao criar componente, hook ou service em `frontend/src/`, invocar
+  `/write-test <path>` para gerar teste Vitest + Testing Library colocado.
+
 ## Ambiente
 
 - SO: Windows nativo (nao WSL, nao Linux). Paths usam backslash em alguns contextos.
