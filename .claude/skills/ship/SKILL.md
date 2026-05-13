@@ -121,6 +121,27 @@ e sinalize ao operador. Nao cancele o /ship -- o PR ja foi aberto.
 
 Aguarde o resultado. Inclua o sumario de cada review no relatorio final.
 
+## Passo 5.1 -- Correcao autonoma de apontamentos
+
+Apos receber os resultados dos dois reviews, avalie cada apontamento:
+
+- **Apontamento objetivo** (falta de anotacao, variavel nao usada, import ausente,
+  violacao de convencao estabelecida nos ADRs): corrija diretamente no codigo sem
+  perguntar ao operador.
+- **Apontamento subjetivo ou arquitetural com tradeoffs** (redesign de interface,
+  mudanca de estrategia, decisao que afeta outros bounded contexts): reporte ao operador
+  e aguarde instrucao.
+
+Para cada apontamento objetivo corrigido:
+1. Edite o arquivo com o fix minimo necessario.
+2. Rode `.\scripts\check.ps1` para confirmar BUILD SUCCESS apos a correcao.
+3. Commite com mensagem `fix(<scope>): <descricao curta do apontamento corrigido>`.
+4. Faca push da branch.
+5. Edite o body do PR (via `gh pr edit <numero> --body "..."`) adicionando secao
+   `## Cenarios destrutivos validados` com justificativa de cada correcao.
+
+Se nenhum apontamento objetivo existir: pule este passo e va direto ao Passo 6.
+
 ## Passo 6 -- Relatorio final
 
 Produza:

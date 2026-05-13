@@ -105,6 +105,13 @@ o executor preenche a lacuna sem reportar como bloqueador.
 **Skills com `disable-model-invocation: true`** (`/feature`, `/migrate`, `/write-test`, `/ship`):
 nao podem ser invocadas via Skill tool -- executor le a skill, entende o padrao e executa manualmente.
 
+**Correcao autonoma de apontamentos de review (Passo 5.1 do /ship):**
+Apos os dois reviews automaticos, o executor corrige apontamentos objetivos sem perguntar ao
+operador. Apontamento objetivo: falta de anotacao, variavel nao usada, import ausente, violacao
+de convencao ADR estabelecida. Apontamento subjetivo ou arquitetural: reportar e aguardar instrucao.
+Para cada correcao: editar arquivo, rodar `check.ps1`, commitar com `fix(<scope>): ...`, push,
+editar body do PR com secao `## Cenarios destrutivos validados`.
+
 ### Subagents e skills
 
 Subagents do projeto vivem em `.claude/agents/<nome>.md` (flat); skills orquestradoras correspondentes em `.claude/skills/<nome>/SKILL.md` (flat). Skill usa `context: fork` + `agent: <nome>` no frontmatter para forkar contexto no subagent. Operador invoca via slash command (`/<nome> <args>`); skill com `disable-model-invocation: true` nao e invocada automaticamente. Invocacao proativa via campo `description` no subagent e considerada nao-deterministica e nao e mecanismo primario (ADR-012).
