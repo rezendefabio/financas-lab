@@ -68,7 +68,7 @@ describe('ContasPage', () => {
     })
 
     expect(screen.getByText('Poupanca BB')).toBeTruthy()
-    expect(screen.getByText('Corrente')).toBeTruthy()
+    expect(screen.getByText('Conta Corrente')).toBeTruthy()
     expect(screen.getByText('Poupanca')).toBeTruthy()
     expect(screen.getByText('Ativa')).toBeTruthy()
     expect(screen.getByText('Inativa')).toBeTruthy()

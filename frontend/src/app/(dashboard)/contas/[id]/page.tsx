@@ -2,22 +2,13 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useParams, useRouter } from 'next/navigation'
 import { useState } from 'react'
+import { ArrowLeft } from 'lucide-react'
 import { contasService } from '@/features/contas/services/contas.service'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card'
 import { Badge } from '@/shared/components/ui/badge'
 import { Button } from '@/shared/components/ui/button'
 import { Skeleton } from '@/shared/components/ui/skeleton'
-
-function formatBRL(valor: number): string {
-  return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(valor)
-}
-
-const TIPO_LABEL: Record<string, string> = {
-  CORRENTE: 'Corrente',
-  POUPANCA: 'Poupanca',
-  DINHEIRO: 'Dinheiro',
-  CARTAO_CREDITO: 'Cartao de Credito',
-}
+import { formatBRL, formatTipoConta } from '@/shared/lib/formatters'
 
 export default function ContaDetalhePage() {
   const { id } = useParams<{ id: string }>()
@@ -70,73 +61,83 @@ export default function ContaDetalhePage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">{conta.nome}</h1>
-        <Button variant="outline" onClick={() => router.push('/contas')}>Voltar</Button>
+      <div className="flex items-center gap-4">
+        <Button variant="ghost" size="icon" aria-label="Voltar" onClick={() => router.back()}>
+          <ArrowLeft className="h-4 w-4" />
+        </Button>
+        <h1 className="text-2xl font-semibold tracking-tight">{conta.nome}</h1>
       </div>
 
-      <Card className="max-w-lg">
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle>Detalhes</CardTitle>
-            <Badge variant={conta.ativa ? 'default' : 'secondary'}>
-              {conta.ativa ? 'Ativa' : 'Inativa'}
-            </Badge>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div>
-            <p className="text-sm text-muted-foreground">Tipo</p>
-            <p className="font-medium">{TIPO_LABEL[conta.tipo] ?? conta.tipo}</p>
-          </div>
+      <div className="max-w-xl">
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle>Detalhes</CardTitle>
+              <Badge variant={conta.ativa ? 'default' : 'secondary'}>
+                {conta.ativa ? 'Ativa' : 'Inativa'}
+              </Badge>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div>
+                <dt className="text-sm text-muted-foreground">Nome</dt>
+                <dd className="font-medium">{conta.nome}</dd>
+              </div>
+              <div>
+                <dt className="text-sm text-muted-foreground">Tipo</dt>
+                <dd className="font-medium">{formatTipoConta(conta.tipo)}</dd>
+              </div>
+              <div>
+                <dt className="text-sm text-muted-foreground">Saldo Atual</dt>
+                <dd className="tabular-nums font-semibold text-lg">
+                  {loadingSaldo ? (
+                    <Skeleton className="h-6 w-28" />
+                  ) : saldo ? (
+                    formatBRL(saldo.saldoAtual.valor)
+                  ) : '—'}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-sm text-muted-foreground">Saldo Inicial</dt>
+                <dd className="tabular-nums">{formatBRL(conta.saldoInicialValor)}</dd>
+              </div>
+            </dl>
 
-          <div>
-            <p className="text-sm text-muted-foreground">Saldo inicial</p>
-            <p className="font-medium">{formatBRL(conta.saldoInicialValor)}</p>
-          </div>
-
-          <div>
-            <p className="text-sm text-muted-foreground">Saldo atual</p>
-            {loadingSaldo ? (
-              <Skeleton className="h-6 w-28" />
-            ) : saldo ? (
-              <p className="text-xl font-bold">{formatBRL(saldo.saldoAtual.valor)}</p>
-            ) : null}
-          </div>
-
-          {conta.ativa && (
-            <div className="pt-2">
-              {!confirmando ? (
-                <Button
-                  variant="destructive"
-                  onClick={() => setConfirmando(true)}
-                >
-                  Desativar conta
-                </Button>
-              ) : (
-                <div className="flex gap-2 items-center">
-                  <p className="text-sm text-muted-foreground">Confirmar desativacao?</p>
+            {conta.ativa && (
+              <div className="pt-2">
+                {!confirmando ? (
                   <Button
                     variant="destructive"
-                    size="sm"
-                    disabled={desativarMutation.isPending}
-                    onClick={() => desativarMutation.mutate()}
+                    onClick={() => setConfirmando(true)}
                   >
-                    {desativarMutation.isPending ? 'Desativando...' : 'Confirmar'}
+                    Desativar conta
                   </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setConfirmando(false)}
-                  >
-                    Cancelar
-                  </Button>
-                </div>
-              )}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                ) : (
+                  <div className="flex gap-2 items-center">
+                    <p className="text-sm text-muted-foreground">Confirmar desativacao?</p>
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      disabled={desativarMutation.isPending}
+                      onClick={() => desativarMutation.mutate()}
+                    >
+                      {desativarMutation.isPending ? 'Desativando...' : 'Confirmar'}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setConfirmando(false)}
+                    >
+                      Cancelar
+                    </Button>
+                  </div>
+                )}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
     </div>
   )
 }
