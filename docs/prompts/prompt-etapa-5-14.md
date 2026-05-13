@@ -34,7 +34,7 @@ Leia `frontend/src/types/` para verificar o que ja existe. Se `Conta`,
 em `frontend/src/types/conta.ts`:
 
 ```typescript
-export type TipoConta = 'CORRENTE' | 'POUPANCA' | 'INVESTIMENTO'
+export type TipoConta = 'CORRENTE' | 'POUPANCA' | 'DINHEIRO' | 'CARTAO_CREDITO'
 
 export interface Conta {
   id: string
@@ -106,9 +106,9 @@ import { z } from 'zod'
 
 const schema = z.object({
   nome: z.string().min(1, 'Nome obrigatorio').max(100),
-  tipo: z.enum(['CORRENTE', 'POUPANCA', 'INVESTIMENTO']),
-  saldoInicialValor: z.coerce.number().min(0, 'Valor deve ser >= 0'),
-  saldoInicialMoeda: z.string().default('BRL'),
+  tipo: z.enum(['CORRENTE', 'POUPANCA', 'DINHEIRO', 'CARTAO_CREDITO']),
+  saldoInicialValor: z.number().min(0, 'Valor deve ser >= 0'),
+  saldoInicialMoeda: z.string(),
 })
 ```
 
