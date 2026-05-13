@@ -1,7 +1,6 @@
 'use client'
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { isAuthenticated } from '@/lib/auth'
 import { useAuth } from '@/hooks/use-auth'
 import {
   SidebarProvider,
@@ -31,10 +30,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const auth = useAuth()
 
   useEffect(() => {
-    if (!isAuthenticated()) {
+    if (!auth.loggedIn) {
       router.push('/login')
     }
-  }, [router])
+  }, [auth.loggedIn, router])
 
   return (
     <SidebarProvider>
