@@ -121,6 +121,10 @@ Itens descobertos na Sub-etapa 4.10 (auditoria meta-operacional). Nao sao hooks 
 
 - **Transcripts em `~/.claude/projects/<hash>/<conversa-hash>/` sem rotina de expiracao.** (Achado 4.15 via auditoria empirica.) ~427 MB acumulados em 17 projetos do operador. Maior conversa unica: 90 MB. Sem mecanismo automatico de expiracao por idade ou limpeza. **Fora do escopo do projeto `financas-lab`** -- gestao de storage do Claude Code e decisao pessoal sobre setup, nao do projeto. Registrado para visibilidade. Acao: nenhuma do lado do projeto. Operador pode considerar limpeza periodica de transcripts antigos no proprio fluxo (fora desta sub-etapa).
 
+## Agentes e skills
+
+- **front-reviewer** + **/review-front** (Sub-etapa 5.12). Caminhos: `.claude/agents/front-reviewer.md`, `.claude/skills/review-front/SKILL.md`. Revisor de codigo frontend especializado nas convencoes do projeto. 5 bloqueadores (B1 fetch fora de services/, B2 asChild em base-nova, B3 URL hardcoded de ambiente, B4 `any` em tipos de API, B5 credencial literal), 4 sugestoes (S1 console.log em producao, S2 hook/componente sem teste, S3 acesso a token fora de auth.ts/auth-provider, S4 props sem tipo explicito), 3 elogios (E1 render prop correto, E2 apiFetch em vez de fetch, E3 ApiError para tipagem). Condicional no /ship (Passo 5, Review 3): so invocado se ha arquivos `frontend/` na branch.
+
 ## Scripts de gate
 
 Scripts de validacao que rodam como gate de qualidade (nao sao git hooks, mas sao invocados pelo /ship antes do push).
