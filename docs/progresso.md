@@ -3,7 +3,7 @@
 > Documento de tracking. Mostra **onde estamos** na construção da fábrica e do produto.
 > Atualizado conforme camadas avançam. Diferente do `decisoes.md` (que registra escolhas) e dos `adrs.md` (que registram porquês), este documento responde a pergunta: "em que ponto eu estou?".
 
-**Última atualização:** 2026-05-13 (Sub-etapa 5.20 -- Skill /batch para execucao paralela)
+**Última atualização:** 2026-05-13 (Sub-etapa 5.18 -- Categorias frontend listagem e criacao)
 
 ---
 
@@ -172,6 +172,16 @@ Ativar a fábrica de fato: rodar features no Tier 2, configurar 3 routines Tier 
   frontmatter. Template do prompt do sub-agente copiado literalmente para o SKILL.md
   (sem parafrasear). Sem logica de retry no orquestrador -- responsabilidade do sub-agente.
   Smoke: 5.18 (Categorias) e 5.19 (Transacoes) prontos para execucao pos-merge. PR #94.
+
+- **5.18 -- Categorias frontend (listagem e criacao)** (2026-05-13): duas paginas Next.js
+  para o bounded context `categoria`. Pagina `/categorias`: grid de cards com badge
+  RECEITA (primary) / DESPESA (destructive), skeleton de carregamento, estado vazio,
+  border-l-4 com cor por tipo. Pagina `/categorias/novo`: formulario React Hook Form +
+  Zod, campos Nome (min 1 / max 100), Tipo (select RECEITA/DESPESA), Categoria pai
+  (select opcional carregado da API -- so exibido quando ha categorias existentes).
+  Schema Zod espelha `CriarCategoriaRequest.java` (B6 cumprida). Formatador
+  `formatTipoCategoria` adicionado em `shared/lib/formatters.ts`. 54 testes passando,
+  `check-front.ps1` verde. PR aberto.
 
 - **5.17 -- Redesign visual Fintech-Clean (polimento)** (2026-05-13): polimento visual
   das paginas existentes sem mudanca de logica. **(1) Fix de fonte:** auto-referencia
