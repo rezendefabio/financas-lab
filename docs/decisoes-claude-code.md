@@ -255,8 +255,45 @@ resolve a lacuna identificada pelo pr-reviewer do PR #73. Commitado na branch, n
 
 ---
 
+## Sub-etapa 5.3 -- Bounded context `meta`
+
+### Padrao: dois @Embedded do mesmo tipo na mesma Entity
+
+Quando uma Entity tem dois campos Money (ex: `valorAlvo` e `valorAtual`), cada um
+precisa de `@AttributeOverride` proprio com nomes de colunas distintos. Sem isso,
+JPA levanta `HibernateException: column "valor" is mapped more than once`.
+
+Exemplo:
+
+```java
+@Embedded
+@AttributeOverride(name = "valor", column = @Column(name = "valor_alvo_valor", ...))
+@AttributeOverride(name = "moeda", column = @Column(name = "valor_alvo_moeda", ...))
+private MoneyEmbeddable valorAlvo;
+
+@Embedded
+@AttributeOverride(name = "valor", column = @Column(name = "valor_atual_valor", ...))
+@AttributeOverride(name = "moeda", column = @Column(name = "valor_atual_moeda", ...))
+private MoneyEmbeddable valorAtual;
+```
+
+### Decisao: fromDomain() estatico no DTO
+
+`MetaResponse.fromDomain(Meta meta)` encapsula a conversao inline (percentualConcluido,
+atrasada computados). Padrao herdado de ContaResponse. Preferido a mapper separado
+para DTOs de interface -- logica de apresentacao fica no proprio DTO.
+
+### Decisao: deposito como sub-recurso POST
+
+`POST /api/metas/{id}/depositos` em vez de `PUT /api/metas/{id}` para registrar deposito.
+Semantica correta: deposito e uma acao, nao uma atualizacao parcial do recurso.
+
+---
+
 ## Historico de mudancas deste documento
 
+- **2026-05-12** -- Sub-etapa 5.3 concluida: bounded context `meta`. Padrao dois @Embedded
+  na mesma Entity. fromDomain() no DTO. POST sub-recurso para depositos. PR #76.
 - **2026-05-12** -- Sub-etapa 5.2 concluida: test-writer ampliado (4o nivel: application
   use cases com Mockito). Lacuna do PR #73 resolvida. PR #75.
 - **2026-05-12** -- Sub-etapa 5.1 concluida: bounded context `orcamento`. Camada 4
