@@ -3,7 +3,7 @@
 > Documento de tracking. Mostra **onde estamos** na construção da fábrica e do produto.
 > Atualizado conforme camadas avançam. Diferente do `decisoes.md` (que registra escolhas) e dos `adrs.md` (que registram porquês), este documento responde a pergunta: "em que ponto eu estou?".
 
-**Última atualização:** 2026-05-12 (Sub-etapa 5.1 -- Bounded context orcamento)
+**Última atualização:** 2026-05-12 (Sub-etapa 5.2 -- test-writer ampliado para application use cases)
 
 ---
 
@@ -160,6 +160,12 @@ Ativar a fábrica de fato: rodar features no Tier 2, configurar 3 routines Tier 
 
 ### Sub-etapas concluídas
 
+- **5.2 -- test-writer ampliado para `*/application/*UseCase.java`** (2026-05-12): segunda
+  ampliacao do test-writer (apos 4.18 para integration). Deteccao de nivel via path
+  `*/application/*UseCase.java`. Regras: JUnit 5 + AssertJ + Mockito.mock(), zero Spring,
+  @BeforeEach setUp(), helpers privados. Referencia de estilo: CalcularSaldoDaContaUseCaseTest.
+  Smoke: CalcularProgressoDoOrcamentoUseCaseTest gerado (cobre 7+ cenarios incluindo fronteiras
+  de StatusProgresso). Lacuna do PR #73 resolvida. PR #75.
 - **5.1 -- Bounded context `orcamento`** (2026-05-12): primeiro feature Tier 2 completo.
   Fluxo exercitado: /feature -> domain -> /migrate -> application + infra + interfaces -> /ship.
   CRUD (criar, listar, buscar, desativar) + endpoint de progresso por categoria/mes.
@@ -584,6 +590,8 @@ Definir como capturar quando chegarmos na Camada 4 — não criar burocracia ago
 
 ## Histórico de mudanças deste documento
 
+- **2026-05-12** -- Sub-etapa 5.2 concluida: test-writer ampliado para application use cases.
+  CalcularProgressoDoOrcamentoUseCaseTest gerado. PR #75.
 - **2026-05-12** -- Sub-etapa 5.1 concluida: bounded context `orcamento`. Camada 4
   inaugurada. Primeiro feature Tier 2 completo. PR #73.
 - **2026-05-12** -- Sub-etapa 4.26 concluida: split de `decisoes-claude-code.md`.
