@@ -121,6 +121,12 @@ Itens descobertos na Sub-etapa 4.10 (auditoria meta-operacional). Nao sao hooks 
 
 - **Transcripts em `~/.claude/projects/<hash>/<conversa-hash>/` sem rotina de expiracao.** (Achado 4.15 via auditoria empirica.) ~427 MB acumulados em 17 projetos do operador. Maior conversa unica: 90 MB. Sem mecanismo automatico de expiracao por idade ou limpeza. **Fora do escopo do projeto `financas-lab`** -- gestao de storage do Claude Code e decisao pessoal sobre setup, nao do projeto. Registrado para visibilidade. Acao: nenhuma do lado do projeto. Operador pode considerar limpeza periodica de transcripts antigos no proprio fluxo (fora desta sub-etapa).
 
+## Scripts de gate
+
+Scripts de validacao que rodam como gate de qualidade (nao sao git hooks, mas sao invocados pelo /ship antes do push).
+
+- **check-front.ps1** (Sub-etapa 5.11). Caminho: `scripts/check-front.ps1`. Gate de qualidade do frontend: executa `npm run lint`, `npm run test:run` e `npm run build` em `frontend/`, nessa ordem (fail-fast: mais rapido primeiro). Qualquer etapa com exit != 0 interrompe e impede o push. Modo **fail** (nenhuma etapa pode ser warn -- lint, testes e build sao objetivos). Invocado pelo /ship no Passo 1.1 de forma condicional: so roda se houver arquivos `frontend/` na branch (PRs puramente de backend nao sao penalizados).
+
 ## Hooks implementados
 
 Itens originalmente listados em "Hooks Markdown / docs" ou outras secoes, agora implementados e ativos no projeto. Mantidos aqui como historico de progresso da Camada 3.

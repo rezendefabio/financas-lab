@@ -65,6 +65,26 @@ antes de shipar." e termine. Nao faca push.
 ATENCAO: check.ps1 exige Docker Desktop rodando (Testcontainers). Se Docker nao
 estiver ativo, o gate falhara na verificacao de Docker antes de qualquer teste.
 
+## Passo 1.1 -- Gate frontend (condicional)
+
+Verifique se ha arquivos em `frontend/` entre os commits da branch:
+
+```powershell
+$frontendChanged = git diff --name-only main..HEAD | Where-Object { $_ -like "frontend/*" }
+```
+
+Se `$frontendChanged` for nao-nulo e nao-vazio: execute o gate frontend:
+
+```powershell
+.\scripts\check-front.ps1
+```
+
+Se exit code != 0: escreva "ERRO: gate frontend falhou (check-front.ps1 exit
+$LASTEXITCODE). Corrija antes de shipar." e termine. Nao faca push.
+
+Se `$frontendChanged` for nulo ou vazio: pule este passo (sem arquivos frontend
+na branch, gate nao se aplica).
+
 ## Passo 2 -- Push
 
 ```powershell
