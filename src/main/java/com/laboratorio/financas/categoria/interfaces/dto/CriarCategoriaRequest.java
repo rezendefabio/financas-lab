@@ -4,6 +4,7 @@ import com.laboratorio.financas.categoria.domain.TipoCategoria;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
+import java.util.UUID;
 
 public record CriarCategoriaRequest(
         @NotBlank
@@ -11,5 +12,7 @@ public record CriarCategoriaRequest(
         String nome,
 
         @NotNull
-        TipoCategoria tipo
+        TipoCategoria tipo,
+
+        UUID categoriaPaiId
 ) { }

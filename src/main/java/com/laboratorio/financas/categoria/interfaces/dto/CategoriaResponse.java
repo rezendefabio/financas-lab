@@ -9,6 +9,7 @@ public record CategoriaResponse(
         UUID id,
         String nome,
         TipoCategoria tipo,
+        UUID categoriaPaiId,
         Instant criadoEm,
         Instant atualizadoEm
 ) {
@@ -17,6 +18,7 @@ public record CategoriaResponse(
                 categoria.getId(),
                 categoria.getNome(),
                 categoria.getTipo(),
+                categoria.getCategoriaPaiId(),
                 categoria.getCriadoEm(),
                 categoria.getAtualizadoEm()
         );

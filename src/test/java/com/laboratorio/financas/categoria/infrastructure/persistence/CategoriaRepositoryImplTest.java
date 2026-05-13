@@ -20,6 +20,11 @@ class CategoriaRepositoryImplTest extends AbstractIntegrationTest {
     @Autowired
     private CategoriaJpaRepository jpaRepository;
 
+    @org.junit.jupiter.api.BeforeEach
+    void limparAntes() {
+        jpaRepository.deleteAll();
+    }
+
     @AfterEach
     void limpar() {
         jpaRepository.deleteAll();

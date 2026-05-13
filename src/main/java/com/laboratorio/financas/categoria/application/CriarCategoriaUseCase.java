@@ -1,8 +1,10 @@
 package com.laboratorio.financas.categoria.application;
 
 import com.laboratorio.financas.categoria.domain.Categoria;
+import com.laboratorio.financas.categoria.domain.CategoriaNaoEncontradaException;
 import com.laboratorio.financas.categoria.domain.CategoriaRepository;
 import com.laboratorio.financas.categoria.domain.TipoCategoria;
+import java.util.UUID;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -15,11 +17,18 @@ public class CriarCategoriaUseCase {
         this.repository = repository;
     }
 
-    public record Comando(String nome, TipoCategoria tipo) { }
+    public record Comando(String nome, TipoCategoria tipo, UUID categoriaPaiId) { }
 
     @Transactional
     public Categoria executar(Comando comando) {
-        Categoria nova = new Categoria(comando.nome(), comando.tipo());
+        if (comando.categoriaPaiId() != null) {
+            Categoria pai = repository.buscarPorId(comando.categoriaPaiId())
+                    .orElseThrow(() -> new CategoriaNaoEncontradaException(comando.categoriaPaiId()));
+            if (pai.getCategoriaPaiId() != null) {
+                throw new IllegalArgumentException("Nao e permitido criar subcategoria de subcategoria");
+            }
+        }
+        Categoria nova = new Categoria(comando.nome(), comando.tipo(), comando.categoriaPaiId());
         return repository.salvar(nova);
     }
 }

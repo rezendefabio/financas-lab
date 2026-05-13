@@ -30,6 +30,11 @@ class CategoriaControllerTest extends AbstractAuthenticatedIntegrationTest {
     @Autowired
     private CategoriaJpaRepository jpaRepository;
 
+    @org.junit.jupiter.api.BeforeEach
+    void limparAntes() {
+        jpaRepository.deleteAll();
+    }
+
     @AfterEach
     void limpar() {
         jpaRepository.deleteAll();
@@ -40,6 +45,16 @@ class CategoriaControllerTest extends AbstractAuthenticatedIntegrationTest {
                 "nome", "Salario",
                 "tipo", "RECEITA"
         );
+    }
+
+    private String criarCategoriaRetornaId(String nome, String tipo) throws Exception {
+        Map<String, Object> body = Map.of("nome", nome, "tipo", tipo);
+        MvcResult resultado = mockMvc.perform(comAuth(post("/api/categorias")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(body))))
+                .andExpect(status().isCreated())
+                .andReturn();
+        return objectMapper.readTree(resultado.getResponse().getContentAsString()).get("id").asText();
     }
 
     @Test
@@ -157,6 +172,32 @@ class CategoriaControllerTest extends AbstractAuthenticatedIntegrationTest {
         UUID idInexistente = UUID.randomUUID();
         mockMvc.perform(comAuth(delete("/api/categorias/" + idInexistente)))
                 .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void postCategoriaComCategoriaPaiValidaRetorna201ComCategoriaPaiId() throws Exception {
+        String paiId = criarCategoriaRetornaId("Alimentacao", "DESPESA");
+
+        Map<String, Object> body = new java.util.HashMap<>();
+        body.put("nome", "Mercado");
+        body.put("tipo", "DESPESA");
+        body.put("categoriaPaiId", paiId);
+
+        mockMvc.perform(comAuth(post("/api/categorias")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(body))))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.nome", equalTo("Mercado")))
+                .andExpect(jsonPath("$.categoriaPaiId", equalTo(paiId)));
+    }
+
+    @Test
+    void postCategoriaSemCategoriaPaiRetornaCampoNulo() throws Exception {
+        mockMvc.perform(comAuth(post("/api/categorias")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(requestValido()))))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.categoriaPaiId").doesNotExist());
     }
 
     @Test

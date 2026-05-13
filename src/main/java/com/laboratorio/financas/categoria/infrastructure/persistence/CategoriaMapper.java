@@ -15,7 +15,8 @@ public interface CategoriaMapper {
                 categoria.getNome(),
                 categoria.getTipo(),
                 categoria.getCriadoEm(),
-                categoria.getAtualizadoEm()
+                categoria.getAtualizadoEm(),
+                categoria.getCategoriaPaiId()
         );
     }
 
@@ -27,6 +28,7 @@ public interface CategoriaMapper {
                 entity.getId(),
                 entity.getNome(),
                 entity.getTipo(),
+                entity.getCategoriaPaiId(),
                 entity.getCriadoEm(),
                 entity.getAtualizadoEm()
         );
