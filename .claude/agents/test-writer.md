@@ -20,9 +20,9 @@ Gerador de testes para o projeto financas-lab. Opera em dois modos: **Java** (JU
 
 **Niveis de teste cobertos (modo frontend):**
 
-- **Componente** (`src/app/**/*.tsx`, `src/components/**/*.tsx`) -- Vitest + Testing Library + userEvent.
-- **Hook** (`src/hooks/**/*.ts`) -- `renderHook` + `act`.
-- **Service/utility** (`src/services/**/*.ts`, `src/lib/**/*.ts`) -- `vi.mock` de `api-client`.
+- **Componente** (`src/app/**/*.tsx`, `src/shared/components/**/*.tsx`, `src/features/*/components/**/*.tsx`) -- Vitest + Testing Library + userEvent.
+- **Hook** (`src/features/*/hooks/**/*.ts`, `src/shared/hooks/**/*.ts`) -- `renderHook` + `act`.
+- **Service/utility** (`src/features/*/services/**/*.ts`, `src/services/**/*.ts`, `src/shared/lib/**/*.ts`) -- `vi.mock` de `api-client`.
 
 Le a classe alvo + classes vizinhas relevantes + arquivo de teste de referencia (`ContaTest.java` para unit, `ContaRepositoryImplTest.java` ou `TransacaoRepositoryImplTest.java` para integration) como referencia de estilo. Gera arquivo de teste OU acrescenta `@Test` a arquivo existente (ver passo "0" no fluxo). Valida via `./mvnw test`, reporta resultado. **Nao tenta auto-corrigir em loop** — se nao compila ou nao passa, reporta erro literal e devolve decisao ao operador.
 
@@ -44,9 +44,10 @@ independentemente de extensao ou nome de subpasta.
 
 | Categoria | Path pattern | Arquivo de teste gerado |
 |-----------|-------------|-------------------------|
-| Componente | `src/app/**/*.tsx`, `src/components/**/*.tsx` | mesmo diretorio, `<Nome>.test.tsx` |
-| Hook | `src/hooks/**/*.ts` | mesmo diretorio, `<nome>.test.ts` |
-| Service/utility | `src/services/**/*.ts`, `src/lib/**/*.ts` | mesmo diretorio, `<nome>.test.ts` |
+| Componente | `src/app/**/*.tsx`, `src/shared/components/**/*.tsx`, `src/features/*/components/**/*.tsx` | mesmo diretorio, `<Nome>.test.tsx` |
+| Hook | `src/features/*/hooks/**/*.ts`, `src/shared/hooks/**/*.ts` | mesmo diretorio, `<nome>.test.ts` |
+| Service | `src/features/*/services/**/*.ts`, `src/services/**/*.ts` | mesmo diretorio, `<nome>.test.ts` |
+| Utility | `src/shared/lib/**/*.ts` | mesmo diretorio, `<nome>.test.ts` |
 
 Se o arquivo de teste ja existir: reportar "arquivo ja existe: <path>" e parar.
 Nunca sobrescrever teste existente.
@@ -105,7 +106,8 @@ Antes de gerar o teste, leia:
 1. O arquivo alvo completo (entender assinatura, dependencias, efeitos)
 2. O arquivo de setup `frontend/src/test/setup.ts` (matchers disponiveis)
 3. Um teste existente de mesma categoria como referencia de estilo
-   (ex: para componente, ler `src/app/(auth)/login/page.test.tsx`)
+   (ex: para componente, ler `src/app/(auth)/login/page.test.tsx`;
+   para service, ler `src/features/auth/services/auth.service.test.ts`)
 
 ### Validacao
 

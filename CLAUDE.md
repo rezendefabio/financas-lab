@@ -22,13 +22,15 @@ Estado atual e camadas: `docs/progresso.md` (secao "Status geral por Camada").
 - Framework: Next.js 16 (App Router) em `frontend/`.
 - Testes: Vitest + Testing Library (`npm test` em `frontend/`).
 - Design system: shadcn/ui com estilo `base-nova`. Adicionar componentes via `npx shadcn@latest add <nome>`.
-- Camada de API: `src/services/` com `api-client.ts` (fetch + JWT). NAO usar fetch direto fora de `services/`.
-- Auth: JWT em localStorage via `src/lib/auth.ts`. Provider em `src/providers/auth-provider.tsx`.
+- Camada de API: `src/services/api-client.ts` (unico ponto de `fetch`). Domain services ficam em
+  `src/features/<dominio>/services/`. NAO usar `fetch` diretamente fora de `api-client.ts`.
+- Auth: JWT em localStorage via `src/shared/lib/auth.ts`. Provider em `src/providers/auth-provider.tsx`.
 - Dev: `.\scripts\dev-front.ps1` (inicia Next.js dev server).
 - `base-nova` usa `@base-ui/react` -- nao tem `@radix-ui`. Usar `render` prop em vez de `asChild`.
-
-- Testes: ao criar componente, hook ou service em `frontend/src/`, invocar
-  `/write-test <path>` para gerar teste Vitest + Testing Library colocado.
+- Organizacao: feature-first (ADR-013). Cada dominio em `src/features/<dominio>/` com
+  `services/`, `types/`, `hooks/`, `components/` e `index.ts`. Codigo compartilhado em `src/shared/`.
+- Testes: ao criar componente, hook ou service, invocar `/write-test <path>` para gerar
+  teste Vitest + Testing Library colocado.
 
 ## Ambiente
 

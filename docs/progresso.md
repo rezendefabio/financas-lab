@@ -3,7 +3,7 @@
 > Documento de tracking. Mostra **onde estamos** na construção da fábrica e do produto.
 > Atualizado conforme camadas avançam. Diferente do `decisoes.md` (que registra escolhas) e dos `adrs.md` (que registram porquês), este documento responde a pergunta: "em que ponto eu estou?".
 
-**Última atualização:** 2026-05-13 (Sub-etapa 5.14 -- CRUD de Contas no frontend)
+**Última atualização:** 2026-05-13 (Sub-etapa 5.15 -- Reorganizacao feature-first do frontend)
 
 ---
 
@@ -159,6 +159,14 @@ Configurar `CLAUDE.md` rico, criar 3-5 subagents focados, criar 5-10 skills (sla
 Ativar a fábrica de fato: rodar features no Tier 2, configurar 3 routines Tier 1, validar paralelismo se necessário.
 
 ### Sub-etapas concluídas
+
+- **5.15 -- Reorganizacao feature-first do frontend** (2026-05-13): refactor de estrutura de
+  pastas do frontend para o padrao feature-first, espelhando os bounded contexts do backend.
+  Arquivos movidos de `src/services/`, `src/types/`, `src/hooks/`, `src/lib/` e `src/components/ui/`
+  para `src/features/<dominio>/` e `src/shared/`. Features: auth, contas, categorias, transacoes.
+  Barrel exports `index.ts` criados para cada feature. Nenhuma logica de negocio alterada.
+  46 testes passando, build verde. Agentes `test-writer` e `front-reviewer` atualizados com
+  novos path patterns. CLAUDE.md e ADR-013 documentam a nova estrutura. PR a abrir.
 
 - **5.14 -- CRUD de Contas no frontend** (2026-05-13): primeira feature de dominio no
   frontend. Tres paginas criadas na rota `/contas`: listagem (cards com badge ativa/inativa,

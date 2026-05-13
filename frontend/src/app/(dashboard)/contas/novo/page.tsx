@@ -5,8 +5,8 @@ import { z } from 'zod'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
-import { contasService } from '@/services/contas.service'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { contasService } from '@/features/contas/services/contas.service'
+import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card'
 import {
   Form,
   FormControl,
@@ -14,16 +14,16 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '@/components/ui/form'
-import { Input } from '@/components/ui/input'
-import { Button } from '@/components/ui/button'
+} from '@/shared/components/ui/form'
+import { Input } from '@/shared/components/ui/input'
+import { Button } from '@/shared/components/ui/button'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select'
+} from '@/shared/components/ui/select'
 
 const schema = z.object({
   nome: z.string().min(1, 'Nome obrigatorio').max(100),

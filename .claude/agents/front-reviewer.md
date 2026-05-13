@@ -33,10 +33,10 @@ Revisor senior de frontend. Pragmatico — nao implica em estilo, implica em vio
 
 | ID | Regra | Como detectar |
 |----|-------|---------------|
-| B1 | `fetch(` fora de `src/services/` | grep por `fetch(` em arquivos frontend fora de `src/services/` e `*.test.*` |
+| B1 | `fetch(` fora de `src/services/api-client.ts` | grep por `fetch(` em arquivos frontend exceto `src/services/api-client.ts` e `*.test.*` |
 | B2 | `asChild` em componente shadcn | grep por `asChild` -- base-nova usa `render` prop, nao `asChild` |
 | B3 | URL de ambiente hardcoded | grep por `http://localhost`, `http://192.168`, ou string com porta hardcoded fora de `.env*` |
-| B4 | `any` como tipo de resposta de API | grep por `: any` ou `as any` em arquivos em `src/services/` ou `src/types/` |
+| B4 | `any` como tipo de resposta de API | grep por `: any` ou `as any` em `src/features/*/services/`, `src/features/*/types/`, `src/shared/types/` |
 | B5 | Token/credencial em codigo | grep por `Bearer `, `password`, `secret` com valor literal (ja coberto pelo hook, mas relatar se passar) |
 
 ## Regras -- Sugestoes (nao impede merge)
@@ -45,7 +45,7 @@ Revisor senior de frontend. Pragmatico — nao implica em estilo, implica em vio
 |----|-------|
 | S1 | `console.log` em componente ou hook de producao (remover antes de producao) |
 | S2 | Hook ou componente novo sem teste correspondente na PR |
-| S3 | Acesso a token fora de `src/lib/auth.ts` ou `src/providers/auth-provider.tsx` |
+| S3 | Acesso a token fora de `src/shared/lib/auth.ts` ou `src/providers/auth-provider.tsx` |
 | S4 | Props de componente sem tipo explicito (interface ou type alias) |
 
 ## Regras -- Elogios (reforcar bom padrao)

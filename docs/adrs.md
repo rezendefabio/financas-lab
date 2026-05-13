@@ -606,3 +606,23 @@ Investigacao da documentacao oficial do Claude Code durante a redacao da 4.11 re
 **Recomendacao adicional:** skills orquestradoras de subagent devem usar `disable-model-invocation: true` no frontmatter. Isso restringe invocacao apenas ao operador via slash command, eliminando auto-discovery via description matching da skill. Maximo determinismo: skill so dispara quando operador escreve `/<nome>`.
 
 **Categoria operacional:** "errata de ADR baseada em descoberta de documentacao oficial". Distinta de patch tecnico (corrige bug do entregue) e refinamento pos-smoke empirico (smoke revelou suboptimo). Aplicavel a futuros ADRs cuja prescricao se mostre tecnicamente incorreta apos consulta a fonte oficial.
+
+## ADR-013 -- Organizacao frontend feature-first (2026-05-13)
+
+**Contexto:** Com multiplos dominios no frontend, a estrutura layer-first
+(todos services juntos, todos types juntos) dificulta localizar e entender
+o escopo de um dominio. A mesma limitacao que levou o backend a bounded contexts.
+
+**Decisao:** Adotar estrutura feature-first espelhando os bounded contexts do
+backend. Cada dominio vive em `src/features/<dominio>/` com suas proprias pastas
+`services/`, `types/`, `hooks/`, `components/` e um `index.ts` de barrel exports.
+Codigo genuinamente compartilhado (shadcn components, auth utils, api types) fica
+em `src/shared/`. O unico ponto de `fetch` e `src/services/api-client.ts`.
+
+**Consequencias:**
+- Facil localizar tudo de um dominio sem buscar em multiplas pastas raiz.
+- Espelha mentalmente o backend: `features/contas/` = bounded context `conta`.
+- Adicionar novo dominio = criar pasta `features/<dominio>/` com estrutura padrao.
+- Remover dominio = deletar `features/<dominio>/` sem impacto em outros.
+- Imports mais longos (`@/features/contas/services/contas.service`) mitigados por
+  barrel exports (`@/features/contas`).

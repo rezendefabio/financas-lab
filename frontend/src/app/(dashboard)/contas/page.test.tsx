@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 
-vi.mock('@/services/contas.service', () => ({
+vi.mock('@/features/contas/services/contas.service', () => ({
   contasService: {
     listar: vi.fn(),
   },
@@ -15,8 +15,8 @@ vi.mock('next/navigation', () => ({
 }))
 
 import ContasPage from './page'
-import { contasService } from '@/services/contas.service'
-import type { Conta } from '@/types/conta'
+import { contasService } from '@/features/contas/services/contas.service'
+import type { Conta } from '@/features/contas/types/conta'
 
 function makeWrapper() {
   const client = new QueryClient({

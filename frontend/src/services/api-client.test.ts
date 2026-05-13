@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { apiFetch } from './api-client'
-import { ApiError } from '@/types/api'
-import * as authModule from '@/lib/auth'
+import { ApiError } from '@/shared/types/api'
+import * as authModule from '@/shared/lib/auth'
 
 describe('apiFetch', () => {
   beforeEach(() => {

@@ -1,7 +1,7 @@
 'use client'
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { useAuth } from '@/hooks/use-auth'
+import { useAuth } from '@/features/auth/hooks/use-auth'
 import {
   SidebarProvider,
   Sidebar,
@@ -12,10 +12,10 @@ import {
   SidebarMenuButton,
   SidebarFooter,
   SidebarInset,
-} from '@/components/ui/sidebar'
+} from '@/shared/components/ui/sidebar'
 import { Home, CreditCard, ArrowLeftRight, Tag, BarChart3, LogOut } from 'lucide-react'
 import Link from 'next/link'
-import { Button } from '@/components/ui/button'
+import { Button } from '@/shared/components/ui/button'
 
 const navItems = [
   { href: '/', label: 'Dashboard', icon: Home },
