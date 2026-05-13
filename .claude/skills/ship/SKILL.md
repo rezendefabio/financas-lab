@@ -102,7 +102,26 @@ _Gerado via /ship. Adicione detalhes de decisao e smoke se necessario._"
 
 Se exit code != 0: escreva "ERRO: gh pr create falhou." com o output e termine.
 
-## Passo 5 -- Relatorio final
+## Passo 5 -- Reviews automaticas
+
+Extraia o numero do PR da URL retornada pelo gh pr create (ultimo segmento da URL).
+
+Invoque os dois agentes de review em sequencia usando o Agent tool:
+
+**Review 1 -- pr-reviewer:**
+- subagent_type: `pr-reviewer`
+- prompt: `Revise o PR #<numero> do repositorio financas-lab antes do merge.`
+
+Aguarde o resultado. Se o pr-reviewer reportar bloqueador: inclua no relatorio final
+e sinalize ao operador. Nao cancele o /ship -- o PR ja foi aberto.
+
+**Review 2 -- architect-reviewer:**
+- subagent_type: `architect-reviewer`
+- prompt: `Revise as decisoes arquiteturais do PR #<numero> do repositorio financas-lab contra os ADRs do projeto.`
+
+Aguarde o resultado. Inclua o sumario de cada review no relatorio final.
+
+## Passo 6 -- Relatorio final
 
 Produza:
 
@@ -116,7 +135,7 @@ PR:       <URL retornada pelo gh pr create>
 Titulo:   <titulo>
 Commits:  <numero> acima de main
 
-Proximos passos sugeridos:
-  /review-pr <numero-do-pr>   -- revisao critica antes do merge
-  /review-arch <numero-do-pr> -- validacao de ADRs arquiteturais
+Reviews:
+  pr-reviewer:       <OK / BLOQUEADOR: <motivo>>
+  architect-reviewer: <OK / BLOQUEADOR: <motivo>>
 ```

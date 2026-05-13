@@ -237,8 +237,28 @@ estrutural, nao enums de dominio especificos).
 
 ---
 
+## Sub-etapa 5.2 -- test-writer ampliado para application use cases
+
+### Padrao de unit test para application use cases
+
+`*/application/*UseCase.java` usa Mockito (nao mock manual inline) porque use cases
+tem dependencias de interface (repositories) que exigem stub de comportamento especifico.
+Diferente de `*/domain/` onde mocks manuais bastam, use cases precisam de `when().thenReturn()`
+para simular cenarios de repositorio (buscar/nao encontrar, retornar lista vazia, etc.).
+
+Referencia de estilo: `CalcularSaldoDaContaUseCaseTest.java` (Camada 2, ja existia).
+
+### Decisao: smoke = entrega real
+
+O smoke da 5.2 e tambem o artefato de valor: `CalcularProgressoDoOrcamentoUseCaseTest.java`
+resolve a lacuna identificada pelo pr-reviewer do PR #73. Commitado na branch, nao descartado.
+
+---
+
 ## Historico de mudancas deste documento
 
+- **2026-05-12** -- Sub-etapa 5.2 concluida: test-writer ampliado (4o nivel: application
+  use cases com Mockito). Lacuna do PR #73 resolvida. PR #75.
 - **2026-05-12** -- Sub-etapa 5.1 concluida: bounded context `orcamento`. Camada 4
   inaugurada. Primeiro feature Tier 2 completo. PR #73.
 - **2026-05-12** -- Sub-etapa 4.26 concluida: split de `decisoes-claude-code.md`.
