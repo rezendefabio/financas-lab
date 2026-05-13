@@ -108,9 +108,10 @@ Push-Location frontend
 npm run test:run
 $exit = $LASTEXITCODE
 Pop-Location
+if ($exit -ne 0) { reportar output de erro literalmente e parar }
 ```
 
-Se exit != 0: reportar o output de erro literalmente. Nao corrigir automaticamente.
+Se `$exit -ne 0`: reportar o output de erro literalmente. Nao corrigir automaticamente.
 O operador decide se o erro e no teste gerado ou no codigo alvo.
 
 ### Exemplos de cenarios cobertos
@@ -300,7 +301,16 @@ Justificativa: convencao do projeto e que testes integration de queries customiz
 1. **Antes de gerar, identifique nivel de teste + arquivo alvo + verifique se ja existe.**
 
    **1a. Detecte o modo** a partir do path do argumento:
-   - Se comecar com `frontend/` ou contiver `/app/`, `/components/`, `/hooks/`, `/services/`, `/lib/` em arquivo `.ts`/`.tsx`: operar em **modo frontend** (ver secao "## Modo frontend"). Dermine a categoria (componente, hook, service/utility) pelo path pattern. Derive o path do arquivo de teste (mesmo diretorio, sufixo `.test.ts` ou `.test.tsx`). Verifique se o arquivo ja existe -- se sim, reportar "arquivo ja existe: <path>" e parar. Se nao, gerar teste conforme padroes da categoria, rodar `npm run test:run` em `frontend/` via Push-Location/Pop-Location, e reportar resultado. **Nao executar os passos Java abaixo.**
+   - Se comecar com `frontend/` ou contiver `/app/`, `/components/`, `/hooks/`, `/services/`, `/lib/` em arquivo `.ts`/`.tsx`: operar em **modo frontend** (ver secao "## Modo frontend"). Determine a categoria (componente, hook, service/utility) pelo path pattern. Derive o path do arquivo de teste (mesmo diretorio, sufixo `.test.ts` ou `.test.tsx`). Verifique se o arquivo ja existe via `ls <path-do-teste>` -- se sim, reportar "arquivo ja existe: <path>" e parar. Se nao, gerar teste conforme padroes da categoria, rodar validacao abaixo e reportar resultado. **Nao executar os passos Java abaixo.**
+
+     Validacao frontend:
+     ```powershell
+     Push-Location frontend
+     npm run test:run
+     $exit = $LASTEXITCODE
+     Pop-Location
+     if ($exit -ne 0) { reportar output de erro literalmente e parar }
+     ```
    - Caso contrario: operar em **modo Java** (JUnit 5 -- passos abaixo).
 
    **1b. Detecte o nivel Java** a partir do path da classe alvo (regras na secao "O que voce GERA").
