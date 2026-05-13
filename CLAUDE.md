@@ -31,6 +31,10 @@ Estado atual e camadas: `docs/progresso.md` (secao "Status geral por Camada").
   `services/`, `types/`, `hooks/`, `components/` e `index.ts`. Codigo compartilhado em `src/shared/`.
 - Testes: ao criar componente, hook ou service, invocar `/write-test <path>` para gerar
   teste Vitest + Testing Library colocado.
+- Validacao: ao criar formulario frontend, ler o `*Request.java` correspondente
+  e espelhar cada anotacao Java no schema Zod: `@NotBlank` → `.min(1)`,
+  `@Size(max=N)` → `.max(N)`, `@Size(min=M,max=N)` → `.length` ou `.min().max()`,
+  `@Min(N)` → `.min(N)`. Divergencia entre Zod e Java e bloqueador (B6).
 
 ## Ambiente
 
