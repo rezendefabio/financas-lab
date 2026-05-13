@@ -3,21 +3,28 @@ export interface ValorMonetario {
   moeda: string
 }
 
+export type TipoConta = 'CORRENTE' | 'POUPANCA' | 'DINHEIRO' | 'CARTAO_CREDITO'
+
 export interface Conta {
   id: string
   nome: string
-  tipo: 'CORRENTE' | 'POUPANCA' | 'INVESTIMENTO' | 'CARTEIRA'
-  saldoInicial: ValorMonetario
-  ativo: boolean
+  tipo: TipoConta
+  saldoInicialValor: number
+  saldoInicialMoeda: string
+  ativa: boolean
   criadoEm: string
   atualizadoEm: string
 }
 
 export interface SaldoResponse {
-  saldoAtual: ValorMonetario
+  contaId: string
   saldoInicial: ValorMonetario
   totalReceitas: ValorMonetario
   totalDespesas: ValorMonetario
+  totalTransferenciasEnviadas: ValorMonetario
+  totalTransferenciasRecebidas: ValorMonetario
+  saldoAtual: ValorMonetario
+  calculadoEm: string
 }
 
 export interface SaldoTotalResponse {
