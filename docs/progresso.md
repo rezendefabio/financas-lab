@@ -3,7 +3,7 @@
 > Documento de tracking. Mostra **onde estamos** na construção da fábrica e do produto.
 > Atualizado conforme camadas avançam. Diferente do `decisoes.md` (que registra escolhas) e dos `adrs.md` (que registram porquês), este documento responde a pergunta: "em que ponto eu estou?".
 
-**Última atualização:** 2026-05-12 (Sub-etapa 5.3 -- Bounded context meta)
+**Última atualização:** 2026-05-13 (Sub-etapa 5.4 -- Bounded context lancamento-recorrente)
 
 ---
 
@@ -160,6 +160,13 @@ Ativar a fábrica de fato: rodar features no Tier 2, configurar 3 routines Tier 
 
 ### Sub-etapas concluídas
 
+- **5.4 -- Bounded context `lancamento-recorrente`** (2026-05-13): terceiro feature Tier 2.
+  Recorrencias (despesas/receitas periodicas) com 7 periodicidades (SEMANAL a ANUAL).
+  Padrao novo: **cross-BC write** -- ExecutarLancamentoRecorrenteUseCase injeta
+  TransacaoRepository e cria uma Transacao de outro bounded context via transacaoRepository.salvar().
+  Ate 5.3, cruzamento de BCs era apenas leitura (CalcularProgressoDoOrcamentoUseCase).
+  Enum Periodicidade com metodo abstrato calcularProxima() usando anonymous classes.
+  5 use cases, 5 endpoints (CRUD + /execucoes sub-recurso). V7 migration. PR #78.
 - **5.3 -- Bounded context `meta`** (2026-05-12): segundo feature Tier 2.
   Objetivos financeiros com depositos e acompanhamento de progresso.
   Padrao novo: dois @Embedded MoneyEmbeddable na mesma Entity (valorAlvo + valorAtual).
