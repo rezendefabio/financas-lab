@@ -6,11 +6,13 @@ $ErrorActionPreference = "Stop"
 
 $frontendPath = Join-Path $PSScriptRoot "..\frontend"
 
+Push-Location $frontendPath
+
 Write-Host "==> Gate frontend: lint..." -ForegroundColor Cyan
-Set-Location $frontendPath
 npm run lint
 if ($LASTEXITCODE -ne 0) {
     Write-Host "Lint falhou (exit $LASTEXITCODE)." -ForegroundColor Red
+    Pop-Location
     exit $LASTEXITCODE
 }
 
@@ -18,12 +20,15 @@ Write-Host "==> Gate frontend: testes..." -ForegroundColor Cyan
 npm run test:run
 if ($LASTEXITCODE -ne 0) {
     Write-Host "Testes falharam (exit $LASTEXITCODE)." -ForegroundColor Red
+    Pop-Location
     exit $LASTEXITCODE
 }
 
 Write-Host "==> Gate frontend: build..." -ForegroundColor Cyan
 npm run build
 $exit = $LASTEXITCODE
+
+Pop-Location
 
 Write-Host ""
 if ($exit -eq 0) {
