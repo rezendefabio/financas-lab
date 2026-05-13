@@ -2,6 +2,7 @@ package com.laboratorio.financas.conta.interfaces;
 
 import com.laboratorio.financas.conta.application.BuscarContaPorIdUseCase;
 import com.laboratorio.financas.conta.application.CalcularSaldoDaContaUseCase;
+import com.laboratorio.financas.conta.application.CalcularSaldoTotalUseCase;
 import com.laboratorio.financas.conta.application.CriarContaUseCase;
 import com.laboratorio.financas.conta.application.DesativarContaUseCase;
 import com.laboratorio.financas.conta.application.ListarContasUseCase;
@@ -9,10 +10,12 @@ import com.laboratorio.financas.conta.domain.Conta;
 import com.laboratorio.financas.conta.interfaces.dto.ContaResponse;
 import com.laboratorio.financas.conta.interfaces.dto.CriarContaRequest;
 import com.laboratorio.financas.conta.interfaces.dto.SaldoResponse;
+import com.laboratorio.financas.conta.interfaces.dto.SaldoTotalResponse;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -33,19 +36,22 @@ public class ContaController {
     private final BuscarContaPorIdUseCase buscarContaPorIdUseCase;
     private final DesativarContaUseCase desativarContaUseCase;
     private final CalcularSaldoDaContaUseCase calcularSaldoDaContaUseCase;
+    private final CalcularSaldoTotalUseCase calcularSaldoTotalUseCase;
 
     public ContaController(
             CriarContaUseCase criarContaUseCase,
             ListarContasUseCase listarContasUseCase,
             BuscarContaPorIdUseCase buscarContaPorIdUseCase,
             DesativarContaUseCase desativarContaUseCase,
-            CalcularSaldoDaContaUseCase calcularSaldoDaContaUseCase
+            CalcularSaldoDaContaUseCase calcularSaldoDaContaUseCase,
+            CalcularSaldoTotalUseCase calcularSaldoTotalUseCase
     ) {
         this.criarContaUseCase = criarContaUseCase;
         this.listarContasUseCase = listarContasUseCase;
         this.buscarContaPorIdUseCase = buscarContaPorIdUseCase;
         this.desativarContaUseCase = desativarContaUseCase;
         this.calcularSaldoDaContaUseCase = calcularSaldoDaContaUseCase;
+        this.calcularSaldoTotalUseCase = calcularSaldoTotalUseCase;
     }
 
     @PostMapping
@@ -65,6 +71,12 @@ public class ContaController {
         boolean apenasAtivas = Boolean.TRUE.equals(ativa);
         List<Conta> contas = listarContasUseCase.executar(apenasAtivas);
         return contas.stream().map(ContaResponse::fromDomain).toList();
+    }
+
+    @GetMapping("/saldo-total")
+    @Transactional(readOnly = true)
+    public SaldoTotalResponse calcularSaldoTotal() {
+        return SaldoTotalResponse.fromResultado(calcularSaldoTotalUseCase.executar());
     }
 
     @GetMapping("/{id}")

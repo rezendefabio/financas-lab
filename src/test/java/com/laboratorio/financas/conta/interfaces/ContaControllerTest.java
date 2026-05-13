@@ -346,6 +346,38 @@ class ContaControllerTest extends AbstractAuthenticatedIntegrationTest {
     }
 
     @Test
+    void getSaldoTotalSemContasAtivasRetornaZero() throws Exception {
+        mockMvc.perform(comAuth(get("/api/contas/saldo-total")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.valor", equalTo(0.0)))
+                .andExpect(jsonPath("$.moeda", equalTo("BRL")))
+                .andExpect(jsonPath("$.totalContas", equalTo(0)));
+    }
+
+    @Test
+    void getSaldoTotalComDuasContasAtivasSomaOsSaldos() throws Exception {
+        String conta1Id = criarContaRetornaId(BigDecimal.valueOf(1000));
+        String conta2Id = criarContaRetornaId(BigDecimal.valueOf(500));
+
+        mockMvc.perform(comAuth(get("/api/contas/saldo-total")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.valor", equalTo(1500.0)))
+                .andExpect(jsonPath("$.totalContas", equalTo(2)));
+    }
+
+    @Test
+    void getSaldoTotalIgnoraContasInativas() throws Exception {
+        String contaAtivaId = criarContaRetornaId(BigDecimal.valueOf(800));
+        String contaInativaId = criarContaRetornaId(BigDecimal.valueOf(200));
+        mockMvc.perform(comAuth(delete("/api/contas/" + contaInativaId)));
+
+        mockMvc.perform(comAuth(get("/api/contas/saldo-total")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.valor", equalTo(800.0)))
+                .andExpect(jsonPath("$.totalContas", equalTo(1)));
+    }
+
+    @Test
     void cicloCompletoPostGetDeleteGetAtivaFalse() throws Exception {
         MvcResult resultado = mockMvc.perform(comAuth(post("/api/contas")
                         .contentType(MediaType.APPLICATION_JSON)
