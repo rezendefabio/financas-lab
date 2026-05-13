@@ -3,7 +3,7 @@
 > Documento de tracking. Mostra **onde estamos** na construção da fábrica e do produto.
 > Atualizado conforme camadas avançam. Diferente do `decisoes.md` (que registra escolhas) e dos `adrs.md` (que registram porquês), este documento responde a pergunta: "em que ponto eu estou?".
 
-**Última atualização:** 2026-05-13 (Sub-etapa 5.15 -- Reorganizacao feature-first do frontend)
+**Última atualização:** 2026-05-13 (Sub-etapa 5.16 -- Tema Fintech-Clean + validacao espelhada + B6)
 
 ---
 
@@ -159,6 +159,23 @@ Configurar `CLAUDE.md` rico, criar 3-5 subagents focados, criar 5-10 skills (sla
 Ativar a fábrica de fato: rodar features no Tier 2, configurar 3 routines Tier 1, validar paralelismo se necessário.
 
 ### Sub-etapas concluídas
+
+- **5.16 -- Tema Fintech-Clean + validacao espelhada + B6** (2026-05-13): tres entregas
+  visuais e de convencao. **(1) Tema:** paleta Fintech-Clean aplicada em `globals.css`
+  (sidebar zinc-900, fundo zinc-50, acento emerald-600, charts em escala emerald).
+  Bloco `.dark` preservado sem alteracoes. **(2) Formatadores compartilhados:**
+  `shared/lib/formatters.ts` com `formatBRL` (Intl.NumberFormat pt-BR) e `formatTipoConta`
+  (labels por enum). Substitui duplicacoes inline nas 3 paginas de contas e no dashboard.
+  Teste colocado gerado (5 casos). **(3) Grid e layout consistente:** paginas de listagem
+  com `grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3`; formularios com `max-w-xl` + botao
+  ArrowLeft + `aria-label="Voltar"`. Pagina de detalhe com `dl/dt/dd grid sm:grid-cols-2`.
+  Valores monetarios com `tabular-nums` em todos os pontos. **(4) Validacao espelhada:**
+  schema Zod de `contas/novo` corrigido: `z.coerce.number()` (com cast `as Resolver<FormValues>`
+  para compatibilidade TS), `z.string().length(3).default('BRL')`, espelhando
+  `CriarContaRequest.java`. **(5) Regra B6 + convencao CLAUDE.md:** front-reviewer
+  recebe B6 (schema Zod divergente do DTO Java e bloqueador); CLAUDE.md ganha
+  convencao de validacao espelhada na secao Frontend. 53 testes passando,
+  `check-front.ps1` verde. PR a abrir.
 
 - **5.15 -- Reorganizacao feature-first do frontend** (2026-05-13): refactor de estrutura de
   pastas do frontend para o padrao feature-first, espelhando os bounded contexts do backend.
