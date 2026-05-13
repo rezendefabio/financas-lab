@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { formatBRL, formatTipoConta, formatTipoTransacao, formatDate } from './formatters'
+import { formatBRL, formatTipoConta, formatTipoTransacao, formatDate, formatTipoCategoria } from './formatters'
 
 describe('formatBRL', () => {
   it('formats a number as BRL currency', () => {
