@@ -123,6 +123,8 @@ Itens descobertos na Sub-etapa 4.10 (auditoria meta-operacional). Nao sao hooks 
 
 ## Agentes e skills
 
+- **test-writer (extensao frontend)** (Sub-etapa 5.13). Detecta path `frontend/` e gera Vitest + Testing Library no lugar de JUnit. Categorias: componente (`src/app/**/*.tsx`, `src/components/**/*.tsx`), hook (`src/hooks/**/*.ts`), service/utility (`src/services/**/*.ts`, `src/lib/**/*.ts`). Arquivo de teste colocado no mesmo diretorio do alvo. Validacao: `npm run test:run` em `frontend/` via Push-Location/Pop-Location. Recusa silenciosa se arquivo de teste ja existir. Agente: `.claude/agents/test-writer.md` (extensao aditiva -- logica Java intacta).
+
 - **front-reviewer** + **/review-front** (Sub-etapa 5.12). Caminhos: `.claude/agents/front-reviewer.md`, `.claude/skills/review-front/SKILL.md`. Revisor de codigo frontend especializado nas convencoes do projeto. 5 bloqueadores (B1 fetch fora de services/, B2 asChild em base-nova, B3 URL hardcoded de ambiente, B4 `any` em tipos de API, B5 credencial literal), 4 sugestoes (S1 console.log em producao, S2 hook/componente sem teste, S3 acesso a token fora de auth.ts/auth-provider, S4 props sem tipo explicito), 3 elogios (E1 render prop correto, E2 apiFetch em vez de fetch, E3 ApiError para tipagem). Condicional no /ship (Passo 5, Review 3): so invocado se ha arquivos `frontend/` na branch.
 
 ## Scripts de gate
