@@ -3,7 +3,7 @@
 > Documento de tracking. Mostra **onde estamos** na construção da fábrica e do produto.
 > Atualizado conforme camadas avançam. Diferente do `decisoes.md` (que registra escolhas) e dos `adrs.md` (que registram porquês), este documento responde a pergunta: "em que ponto eu estou?".
 
-**Última atualização:** 2026-05-13 (Sub-etapa 5.4 -- Bounded context lancamento-recorrente)
+**Última atualização:** 2026-05-13 (Sub-etapa 5.5 -- Bounded context relatorio)
 
 ---
 
@@ -160,6 +160,14 @@ Ativar a fábrica de fato: rodar features no Tier 2, configurar 3 routines Tier 
 
 ### Sub-etapas concluídas
 
+- **5.5 -- Bounded context `relatorio`** (2026-05-13): quarto feature Tier 2.
+  Padrao novo: **BC pure-query** -- bounded context sem entidade de dominio, sem migration,
+  sem repositorio proprio. So application/ e interfaces/. Injeta repositorios de outros BCs
+  (TransacaoRepository, CategoriaRepository) diretamente nos use cases. Dois use cases de
+  agregacao: GastosPorCategoriaUseCase (agrupa despesas por categoria, ordena por total desc)
+  e EvolucaoSaldoUseCase (receitas/despesas/saldo por mes em intervalo). Dois endpoints GET
+  em /api/relatorios/. Registra primeiro padrao de feature de leitura sem persistencia propria.
+  PR #79.
 - **5.4 -- Bounded context `lancamento-recorrente`** (2026-05-13): terceiro feature Tier 2.
   Recorrencias (despesas/receitas periodicas) com 7 periodicidades (SEMANAL a ANUAL).
   Padrao novo: **cross-BC write** -- ExecutarLancamentoRecorrenteUseCase injeta

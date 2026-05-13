@@ -40,7 +40,11 @@ public class GastosPorCategoriaUseCase {
             LocalDate dataFim,
             Money totalGeral,
             List<ItemGastoPorCategoria> itensPorCategoria
-    ) { }
+    ) {
+        public Resultado {
+            itensPorCategoria = List.copyOf(itensPorCategoria);
+        }
+    }
 
     @Transactional(readOnly = true)
     public Resultado executar(Consulta consulta) {
