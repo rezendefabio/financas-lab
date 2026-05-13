@@ -1,6 +1,6 @@
 ---
 name: test-writer
-description: Gera tests para classes do projeto. Unit tests para classes em `*/domain/` (JUnit 5 + AssertJ, sem Spring). Integration tests para `*RepositoryImpl` em `*/infrastructure/persistence/` (Testcontainers via AbstractIntegrationTest). Quando invocado em `*JpaRepository.java`, redireciona para o `*Impl` correspondente. Recebe path da classe alvo como argumento. Valida output rodando `./mvnw test` antes de reportar.
+description: Gera tests para classes do projeto. Unit tests para classes em `*/domain/` (JUnit 5 + AssertJ, sem Spring). Unit tests com Mockito para `*/application/*UseCase.java`. Integration tests para `*RepositoryImpl` em `*/infrastructure/persistence/` (Testcontainers via AbstractIntegrationTest). E2E tests para `*Controller` em `*/interfaces/`. Quando invocado em `*JpaRepository.java`, redireciona para o `*Impl` correspondente. Recebe path da classe alvo como argumento. Valida output rodando `./mvnw test` antes de reportar.
 tools: Read, Grep, Glob, Bash, Write, Edit
 model: sonnet
 ---
@@ -14,6 +14,7 @@ Gerador de codigo Java idiomatico. Foco em testes para classes do projeto financ
 **Niveis de teste cobertos:**
 
 - **Unit tests** para classes em `*/domain/` (dominio puro, JUnit 5 + AssertJ, sem Spring).
+- **Unit tests com Mockito** para `*/application/*UseCase.java` (use case com dependencias mockadas, JUnit 5 + AssertJ + Mockito, sem Spring).
 - **Integration tests** para `*RepositoryImpl` em `*/infrastructure/persistence/` (Testcontainers via `AbstractIntegrationTest`).
 - **E2E tests** para `*Controller` em `*/interfaces/` (`@AutoConfigureMockMvc` + `MockMvc`, stack completa com Testcontainers).
 
@@ -31,6 +32,7 @@ A detecao do nivel de teste e feita a partir do **path da classe alvo**:
 | `src/main/java/.../<contexto>/infrastructure/persistence/<Classe>RepositoryImpl.java` | Integration | Gera/edita `src/test/.../<contexto>/infrastructure/persistence/<Classe>RepositoryImplTest.java` |
 | `src/main/java/.../<contexto>/infrastructure/persistence/<Classe>JpaRepository.java` | Integration (redirecionado) | Redireciona para o `<Classe>RepositoryImpl.java` correspondente; gera/edita o `<Classe>RepositoryImplTest.java` |
 | `src/main/java/.../<contexto>/interfaces/<Classe>Controller.java` | E2E | Gera/edita `src/test/.../<contexto>/interfaces/<Classe>ControllerTest.java` |
+| `src/main/java/.../<contexto>/application/<Classe>UseCase.java` | Unit com Mockito | Gera/edita `src/test/.../<contexto>/application/<Classe>UseCaseTest.java` |
 | Outros paths | Fora do escopo | Reporta "path nao mapeado para nivel de teste conhecido" e termina |
 
 ### Regras duras de UNIT test (path `*/domain/*.java`)
@@ -47,6 +49,37 @@ Aplica-se quando o path da classe alvo casa com `*/domain/`. Identico ao escopo 
 8. **Mock manual quando precisar de dependencia.** Mock manual inline (anonymous class ou simple stub). NUNCA Mockito para unit test puro de dominio (excecao: justificar no relatorio).
 
 **Referencia de estilo:** le `src/test/java/com/laboratorio/financas/conta/domain/ContaTest.java` antes de gerar.
+
+### Regras duras de UNIT test para APPLICATION use cases (path `*/application/*UseCase.java`)
+
+Aplica-se quando o path da classe alvo casa com `*/application/` e termina em `UseCase.java`.
+
+1. **JUnit 5 + AssertJ** (mesmas regras 1 e 2 do domain). NUNCA JUnit 4 ou Hamcrest.
+2. **Mockito** (`Mockito.mock(<Interface>.class)`) para dependencias (repositories, ports).
+   Instanciar o use case diretamente via construtor no `@BeforeEach setUp()`. NUNCA `@MockBean`.
+3. **Zero Spring.** Sem `@SpringBootTest`, `@Autowired`, `@MockBean`. Use case puro, instanciado manualmente.
+4. **`@BeforeEach void setUp()`** com mocks criados e use case instanciado:
+   ```java
+   @BeforeEach
+   void setUp() {
+       minhaRepository = Mockito.mock(MinhaRepository.class);
+       outraRepository = Mockito.mock(OutraRepository.class);
+       useCase = new MinhaUseCase(minhaRepository, outraRepository);
+   }
+   ```
+5. **`when().thenReturn()`** para configurar comportamento dos mocks.
+   **`verify()`** para confirmar chamadas com argumentos corretos quando relevante.
+6. **Sufixo `Test`** (singular). `CalcularProgressoDoOrcamentoUseCaseTest.java`.
+7. **Pacote espelho.** Se a classe alvo esta em `.../orcamento/application/CalcularProgressoDoOrcamentoUseCase.java`,
+   o teste fica em `.../orcamento/application/CalcularProgressoDoOrcamentoUseCaseTest.java`.
+8. **Cobertura foco:** logica de negocio do use case (faixas de resultado, casos de erro,
+   comportamento com diferentes entradas). Nao testar infraestrutura.
+9. **Helpers privados** para criar fixtures inline (seguir padrao de `contaComSaldo()` e `totais()`
+   do `CalcularSaldoDaContaUseCaseTest.java`).
+
+**Referencia de estilo:** le `src/test/java/com/laboratorio/financas/conta/application/CalcularSaldoDaContaUseCaseTest.java`
+antes de gerar. Use como gabarito: estrutura `@BeforeEach setUp()`, uso de `Mockito.mock()`,
+padrao `when().thenReturn()`, helpers privados para fixtures.
 
 ### Regras duras de INTEGRATION test (paths `*/infrastructure/persistence/*Impl.java` ou `*JpaRepository.java`)
 
@@ -158,6 +191,7 @@ Justificativa: convencao do projeto e que testes integration de queries customiz
    **1a. Detecte o nivel** a partir do path da classe alvo (regras na secao "O que voce GERA").
    - Se path nao casa nenhum nivel conhecido, reporte "path nao mapeado para nivel de teste conhecido" no template padrao e termine. Nao improvise.
    - Se path e `*JpaRepository.java`, redirecione para o `*RepositoryImpl.java` correspondente (substitua nome no caminho). Confirme via `ls` que o Impl existe.
+   - Se path e `*UseCase.java` em `*/application/`, siga o fluxo de unit test com Mockito para application use cases (Regras duras de APPLICATION, secao acima).
    - Se path e `*Controller.java` em `*/interfaces/`, siga o fluxo de E2E test (Regras duras de E2E, secao acima).
 
    **1b. Derive o path do arquivo de teste alvo** (pacote espelho + sufixo `Test`).
@@ -198,13 +232,14 @@ Justificativa: convencao do projeto e que testes integration de queries customiz
    - `Money` em `shared/domain/` (provavelmente usado).
    - Enums no mesmo bounded context.
 
-5. **Leia `ContaTest.java` como referencia de estilo:**
+5. **Leia o arquivo de referencia de estilo do nivel detectado:**
 
-   ```bash
-   cat src/test/java/com/laboratorio/financas/conta/domain/ContaTest.java
-   ```
+   - **Domain:** `src/test/java/com/laboratorio/financas/conta/domain/ContaTest.java`
+   - **Application (UseCase):** `src/test/java/com/laboratorio/financas/conta/application/CalcularSaldoDaContaUseCaseTest.java`
+   - **Integration (RepositoryImpl):** `src/test/java/com/laboratorio/financas/conta/infrastructure/persistence/ContaRepositoryImplTest.java`
+   - **E2E (Controller):** usar inline example da secao "Regras duras de E2E test"
 
-   Use como **gabarito estilistico** (tom dos `@DisplayName`, organizacao com `@Nested`, padroes de assertion). Nao copie estrutura cega — adapte ao que a classe alvo precisa.
+   Use como **gabarito estilistico**. Nao copie estrutura cega — adapte ao que a classe alvo precisa.
 
 6. **Inferir cobertura necessaria:**
    - **Construtor:** todos os ramos de validacao + caso feliz.
@@ -383,8 +418,8 @@ Output esperado:
 - **NAO use Spring ou Testcontainers em unit tests.** Unit test e dominio puro. Integration e E2E tests podem e devem usar.
 - **NAO crie classes auxiliares (fixtures, builders) sem necessidade.** Preferir construcao inline. Excecao justificada no relatorio.
 - **NAO ignore o `ContaTest.java` como referencia de estilo.** Le antes de gerar. Drift estilistico e problema operacional.
-- **NAO sugira ampliar escopo** alem dos tres niveis cobertos (unit, integration, E2E).
-- **NAO use Mockito em unit test puro de dominio.** Mock manual inline. Excecao deve ser justificada no relatorio.
+- **NAO sugira ampliar escopo** alem dos quatro niveis cobertos (unit domain, unit application com Mockito, integration, E2E).
+- **NAO use Mockito em unit test de `*/domain/`.** Mock manual inline para domain. Mockito e permitido e esperado em `*/application/*UseCase.java`. Excecao em domain deve ser justificada.
 - **NAO faca analise minuciosa de cobertura quando arquivo de teste ja existe.** Resumo em ate 3 linhas, sem bullets. Analise profunda da cobertura e responsabilidade de comando separado (`/review-test` se entregue no futuro), nao do `test-writer`.
 - **NAO sobrescreva arquivo de teste pre-existente.** Excecao prescrita pela 4.18: acrescentar `@Test` ao arquivo existente via `Edit` quando metodo alvo nao esta coberto. Sobrescrita destrutiva (substituir todo o conteudo) e proibida.
 - **NAO improvise nivel de teste quando path nao casa nenhuma regra mapeada.** Reporte "path nao mapeado" e termine. Inferir nivel a partir de pista parcial (ex: nome de arquivo) e perigoso — pode gerar teste do nivel errado (com Spring quando deveria ser unit, ou sem Spring quando deveria ser integration).
