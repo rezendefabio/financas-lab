@@ -2,15 +2,15 @@ import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import LoginPage from './page'
-import { ApiError } from '@/types/api'
+import { ApiError } from '@/shared/types/api'
 
-vi.mock('@/services/auth.service', () => ({
+vi.mock('@/features/auth/services/auth.service', () => ({
   authService: {
     login: vi.fn(),
   },
 }))
 
-vi.mock('@/hooks/use-auth', () => ({
+vi.mock('@/features/auth/hooks/use-auth', () => ({
   useAuth: () => ({ refresh: vi.fn(), loggedIn: false, logout: vi.fn() }),
 }))
 
@@ -19,7 +19,7 @@ vi.mock('next/navigation', () => ({
   useRouter: () => ({ push: mockPush }),
 }))
 
-import { authService } from '@/services/auth.service'
+import { authService } from '@/features/auth/services/auth.service'
 
 describe('LoginPage', () => {
   beforeEach(() => {

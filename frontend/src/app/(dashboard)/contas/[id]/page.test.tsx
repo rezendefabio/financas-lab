@@ -8,7 +8,7 @@ vi.mock('@tanstack/react-query', () => ({
   useQueryClient: vi.fn(),
 }))
 
-vi.mock('@/services/contas.service', () => ({
+vi.mock('@/features/contas/services/contas.service', () => ({
   contasService: {
     buscarPorId: vi.fn(),
     calcularSaldo: vi.fn(),
@@ -24,7 +24,7 @@ vi.mock('next/navigation', () => ({
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import ContaDetalhePage from './page'
-import type { Conta, SaldoResponse } from '@/types/conta'
+import type { Conta, SaldoResponse } from '@/features/contas/types/conta'
 
 const contaAtiva: Conta = {
   id: 'conta-123',

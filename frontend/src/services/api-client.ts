@@ -1,5 +1,5 @@
-import { getToken, clearToken } from '@/lib/auth'
-import { ApiError } from '@/types/api'
+import { getToken, clearToken } from '@/shared/lib/auth'
+import { ApiError } from '@/shared/types/api'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8080'
 

@@ -2,7 +2,7 @@ import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
-vi.mock('@/services/contas.service', () => ({
+vi.mock('@/features/contas/services/contas.service', () => ({
   contasService: {
     criar: vi.fn(),
   },
@@ -33,7 +33,7 @@ vi.mock('@tanstack/react-query', async (importOriginal) => {
   }
 })
 
-import { contasService } from '@/services/contas.service'
+import { contasService } from '@/features/contas/services/contas.service'
 import NovaConta from './page'
 
 describe('NovaConta', () => {

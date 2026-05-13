@@ -1,6 +1,6 @@
 'use client'
 import { createContext, useContext, useState, useCallback } from 'react'
-import { isAuthenticated, clearToken } from '@/lib/auth'
+import { isAuthenticated, clearToken } from '@/shared/lib/auth'
 
 interface AuthContextValue {
   loggedIn: boolean
