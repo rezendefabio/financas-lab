@@ -3,7 +3,7 @@
 > Documento de tracking. Mostra **onde estamos** na construção da fábrica e do produto.
 > Atualizado conforme camadas avançam. Diferente do `decisoes.md` (que registra escolhas) e dos `adrs.md` (que registram porquês), este documento responde a pergunta: "em que ponto eu estou?".
 
-**Última atualização:** 2026-05-13 (Sub-etapa 5.5 -- Bounded context relatorio)
+**Última atualização:** 2026-05-13 (Sub-etapa 5.6 -- Bounded context importacao)
 
 ---
 
@@ -160,6 +160,15 @@ Ativar a fábrica de fato: rodar features no Tier 2, configurar 3 routines Tier 
 
 ### Sub-etapas concluídas
 
+- **5.6 -- Bounded context `importacao`** (2026-05-13): quinto feature Tier 2.
+  Padrao novo: **file upload + batch cross-BC** -- primeira ocorrencia no projeto.
+  `ImportacaoController` recebe multipart/form-data (`POST /api/importacoes/csv`).
+  `ImportarTransacoesCsvUseCase` parseia CSV com `BufferedReader` (sem biblioteca externa)
+  e persiste Transacoes via `TransacaoRepository` (cross-BC write, analogo a 5.4).
+  Estrategia duas fases: parsing sem DB (detecta erros de formato) + persistencia
+  `@Transactional` (detecta erros de constraint). Erros individuais coletados sem abortar
+  batch. Sem domain/ proprio, sem infrastructure/, sem migration. 2 commits, 5 arquivos.
+  PR #81.
 - **5.5 -- Bounded context `relatorio`** (2026-05-13): quarto feature Tier 2.
   Padrao novo: **BC pure-query** -- bounded context sem entidade de dominio, sem migration,
   sem repositorio proprio. So application/ e interfaces/. Injeta repositorios de outros BCs

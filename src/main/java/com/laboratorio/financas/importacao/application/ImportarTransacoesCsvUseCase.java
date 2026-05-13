@@ -35,7 +35,11 @@ public class ImportarTransacoesCsvUseCase {
             int importadas,
             int falhas,
             List<ErroImportacao> erros
-    ) { }
+    ) {
+        public Resultado {
+            erros = List.copyOf(erros);
+        }
+    }
 
     public record ErroImportacao(int linha, String motivo) { }
 
