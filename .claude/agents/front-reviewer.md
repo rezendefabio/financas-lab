@@ -39,6 +39,7 @@ Revisor senior de frontend. Pragmatico — nao implica em estilo, implica em vio
 | B4 | `any` como tipo de resposta de API | grep por `: any` ou `as any` em `src/features/*/services/`, `src/features/*/types/`, `src/shared/types/` |
 | B5 | Token/credencial em codigo | grep por `Bearer `, `password`, `secret` com valor literal (ja coberto pelo hook, mas relatar se passar) |
 | B6 | Schema Zod divergente do DTO Java | Para formularios: comparar z.string().max() com @Size(max=), z.enum() com enum Java, z.string().min(1) com @NotBlank. Divergencia e bloqueador. |
+| B7 | Campo com tipo semantico errado | `BigDecimal` monetario sem `type="number" step="0.01"`; `boolean` como campo de texto; FK `UUID` como input livre; `Instant` como campo editavel. Consultar `docs/field-type-catalog.md`. |
 
 ## Regras -- Sugestoes (nao impede merge)
 

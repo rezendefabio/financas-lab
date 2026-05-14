@@ -3,7 +3,7 @@
 > Documento de tracking. Mostra **onde estamos** na construção da fábrica e do produto.
 > Atualizado conforme camadas avançam. Diferente do `decisoes.md` (que registra escolhas) e dos `adrs.md` (que registram porquês), este documento responde a pergunta: "em que ponto eu estou?".
 
-**Última atualização:** 2026-05-14 (Sub-etapa 5.25 -- Fix /batch: paralelismo e verificacao de arquivos)
+**Última atualização:** 2026-05-14 (Sub-etapa 5.26 -- Catalogo de mapeamento tipo-backend para componente-frontend)
 
 ---
 
@@ -159,6 +159,14 @@ Configurar `CLAUDE.md` rico, criar 3-5 subagents focados, criar 5-10 skills (sla
 Ativar a fábrica de fato: rodar features no Tier 2, configurar 3 routines Tier 1, validar paralelismo se necessário.
 
 ### Sub-etapas concluídas
+
+- **5.26 -- Catalogo de mapeamento tipo-backend para componente-frontend** (2026-05-14):
+  criado `docs/field-type-catalog.md` com regras de mapeamento para valores monetarios
+  (`BigDecimal` → `<Input type="number" step="0.01">`), datas/timestamps, booleanos,
+  FKs (`UUID` → `<Select>` carregado da API), enums, strings com restricoes e valores
+  calculados/read-only. CLAUDE.md atualizado com referencia ao catalogo na secao
+  `## Frontend`. Regra B7 adicionada ao `front-reviewer` para bloquear violacoes de
+  tipo semantico em campos frontend. PR #103.
 
 - **5.25 -- Fix `/batch`: paralelismo e verificacao de arquivos** (2026-05-14):
   dois bugs corrigidos na skill `/batch` (`.claude/skills/batch/SKILL.md`).
