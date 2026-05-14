@@ -3,7 +3,7 @@
 > Documento de tracking. Mostra **onde estamos** na construção da fábrica e do produto.
 > Atualizado conforme camadas avançam. Diferente do `decisoes.md` (que registra escolhas) e dos `adrs.md` (que registram porquês), este documento responde a pergunta: "em que ponto eu estou?".
 
-**Última atualização:** 2026-05-14 (Sub-etapa 5.36 -- babysit-prs detecta BEHIND e atualiza via update-branch)
+**Última atualização:** 2026-05-14 (Sub-etapa 5.37 -- /plan exibe planejamento e aguarda aprovacao antes de spawnar)
 
 ---
 
@@ -159,6 +159,13 @@ Configurar `CLAUDE.md` rico, criar 3-5 subagents focados, criar 5-10 skills (sla
 Ativar a fábrica de fato: rodar features no Tier 2, configurar 3 routines Tier 1, validar paralelismo se necessário.
 
 ### Sub-etapas concluídas
+
+- **5.37 -- /plan exibe planejamento e aguarda aprovacao antes de spawnar** (2026-05-14):
+  Modificacao da skill `/plan` para exibir planejamento detalhado (id, titulo, resumo) antes
+  de spawnar executores. Novo campo `resumo` adicionado ao formato JSON do planejador e ao
+  registro em `.claude/tasks.json`. Passo 3 substituido por exibicao detalhada + AskUserQuestion
+  ("Sim, spawnar" / "Nao, cancelar"); recusa encerra sem spawnar. Antigos Passos 3 e 4
+  renumerados para Passos 4 e 5. Default da confirmacao e NAO. PR aberto.
 
 - **5.36 -- babysit-prs detecta BEHIND e atualiza via update-branch** (2026-05-14):
   Adiciona deteccao de `mergeStateStatus == "BEHIND"` ao babysitter de PRs. Tres
