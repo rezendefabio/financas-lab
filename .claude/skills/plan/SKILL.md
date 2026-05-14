@@ -174,10 +174,28 @@ Nao escrever texto entre os tool calls. Nao aguardar resultado de um antes de em
 ## Passo 5 -- Atualizar state e consolidar
 
 Apos todos os executores completarem, para cada task:
-- Atualizar `status` em `.claude/tasks.json`:
-  - "completed" se Status: OK
-  - "blocked" se Status: BLOQUEADOR
-- Preencher `branch` e `pr_url` com os valores do relatorio
+
+1. Parsear o relatorio do executor para extrair os campos:
+   - `branch`: linha que comeca com `Branch:` -- extrair tudo apos `Branch:` com trim
+     - Se a linha for `Branch:   feat/etapa-X-Y-foo`, extrair `feat/etapa-X-Y-foo`
+     - Se ausente ou vazia: manter null
+   - `pr_url`: linha que comeca com `PR:` -- extrair tudo apos `PR:` com trim
+     - Se o valor for `nao aberto` (case-insensitive): manter null
+     - Se for uma URL (comeca com `https://`): usar como pr_url
+     - Se ausente: manter null
+   - `status`: linha que comeca com `Status:`
+     - Se contem `OK`: usar `completed`
+     - Se contem `BLOQUEADOR`: usar `blocked`
+
+2. Atualizar `.claude/tasks.json` -- para cada task, sobrescrever os campos:
+   - `status`: valor extraido acima
+   - `branch`: valor extraido acima
+   - `pr_url`: valor extraido acima
+   - `updated_at`: timestamp ISO atual
+
+   Ler o JSON atual, modificar o objeto da task correspondente pelo campo `id`,
+   serializar e gravar de volta. Usar a ferramenta Write (nao Bash com echo)
+   para evitar problemas de encoding.
 
 Exibir relatorio final:
 
