@@ -3,7 +3,7 @@
 > Documento de tracking. Mostra **onde estamos** na construção da fábrica e do produto.
 > Atualizado conforme camadas avançam. Diferente do `decisoes.md` (que registra escolhas) e dos `adrs.md` (que registram porquês), este documento responde a pergunta: "em que ponto eu estou?".
 
-**Última atualização:** 2026-05-13 (Sub-etapa 5.23 -- Fix categorias duplicadas no formulario de transacao)
+**Última atualização:** 2026-05-14 (Sub-etapa 5.24 -- Gitignore fix + validacao Camada B)
 
 ---
 
@@ -160,6 +160,12 @@ Ativar a fábrica de fato: rodar features no Tier 2, configurar 3 routines Tier 
 
 ### Sub-etapas concluídas
 
+- **5.24 -- Gitignore fix + validacao Camada B** (2026-05-14): `.claude/scheduled_tasks.lock`
+  adicionado ao `.gitignore` (arquivo criado pelo runtime Claude Code quando `ScheduleWakeup`
+  esta ativo; nao faz parte do repositorio). Validacao real da Camada B concluida: `/babysit-prs`
+  detectou `mergeable == "CONFLICTING"` em PR #100 apos merge do PR #99 (ambos tocaram
+  `docs/progresso.md`); rebase sobre `origin/main` executado via worktree isolado;
+  `git push --force-with-lease` OK; operador nao precisou intervir. PR #101.
 - **5.23 -- Fix categorias duplicadas no formulario de transacao** (2026-05-13): correcao
   de bug visual em `/transacoes/novo`. O select de categoria exibia entradas duplicadas
   quando o banco continha categorias com nomes identicos criadas em sessoes distintas
