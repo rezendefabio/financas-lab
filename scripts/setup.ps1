@@ -36,7 +36,9 @@ if (-not (Test-Path $settingsPath)) {
     "allow": [
       "Bash(git rebase *)",
       "Bash(git worktree *)",
-      "Bash(git push * --force-with-lease)"
+      "Bash(git push * --force-with-lease)",
+      "Bash(cd * && git rebase *)",
+      "Bash(cd * && GIT_EDITOR=* git rebase *)"
     ]
   },
   "hooks": {

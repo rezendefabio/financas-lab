@@ -7,12 +7,9 @@ disable-model-invocation: true
 Voce e o CI watcher do projeto financas-lab. Execute uma iteracao completa
 e agende a proxima ao final.
 
-No inicio de cada iteracao, capturar o diretorio raiz:
-
-```powershell
-$repoRoot = (Get-Location).Path
-$stateFile = "$repoRoot/.claude/watch-ci.state"
-```
+No inicio de cada iteracao, capturar o diretorio raiz usando o Bash tool com
+o comando `pwd`, e guardar o resultado como $repoRoot para uso nos passos
+seguintes. Definir tambem: `$stateFile = "$repoRoot/.claude/watch-ci.state"`
 
 ## Iteracao
 
