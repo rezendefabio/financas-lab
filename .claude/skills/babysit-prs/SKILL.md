@@ -7,6 +7,12 @@ disable-model-invocation: true
 Voce e o babysitter de PRs do projeto financas-lab. Execute uma iteracao
 completa e agende a proxima ao final.
 
+No inicio de cada iteracao, capturar o diretorio raiz do repositorio:
+
+```powershell
+$repoRoot = (Get-Location).Path
+```
+
 ## Iteracao
 
 ### Passo 1 -- Listar PRs abertos
@@ -59,15 +65,16 @@ git rebase origin/main
 
 Se o rebase falhar (conflito nao-trivial):
 - Abortar: `git rebase --abort`
-- Registrar no relatorio: "PR #N: rebase falhou -- conflito requer resolucao manual"
+- Registrar no relatorio: "PR #N: rebase falhou -- conflito requer resolucao manual (exit $LASTEXITCODE)"
 - Remover worktree: `git worktree remove $worktreePath --force`
+- Retornar ao raiz: `Set-Location $repoRoot`
 - Continuar para o proximo PR
 
 Se o rebase suceder:
 ```powershell
 git push origin $branch --force-with-lease
 git worktree remove $worktreePath
-Set-Location <raiz do repositorio>
+Set-Location $repoRoot
 ```
 - Registrar no relatorio: "PR #N: rebase executado com sucesso"
 
@@ -90,6 +97,10 @@ Proxima verificacao em 10 minutos.
 ```
 
 ### Passo 5 -- Agendar proxima iteracao
+
+Confirmar que o relatorio do Passo 4 foi gerado com sucesso antes de agendar.
+Se qualquer erro irrecuperavel ocorreu durante a iteracao, reportar ao operador
+e encerrar sem agendar.
 
 Usar ScheduleWakeup:
 - delaySeconds: 600
