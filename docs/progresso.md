@@ -3,7 +3,7 @@
 > Documento de tracking. Mostra **onde estamos** na construção da fábrica e do produto.
 > Atualizado conforme camadas avançam. Diferente do `decisoes.md` (que registra escolhas) e dos `adrs.md` (que registram porquês), este documento responde a pergunta: "em que ponto eu estou?".
 
-**Última atualização:** 2026-05-14 (Sub-etapa 5.38 -- /plan: Passo 5 reestruturado em sub-passos explícitos)
+**Última atualização:** 2026-05-14 (Sub-etapa 5.39 -- /plan: guarda imperativa contra execucao direta)
 
 ---
 
@@ -159,6 +159,13 @@ Configurar `CLAUDE.md` rico, criar 3-5 subagents focados, criar 5-10 skills (sla
 Ativar a fábrica de fato: rodar features no Tier 2, configurar 3 routines Tier 1, validar paralelismo se necessário.
 
 ### Sub-etapas concluídas
+
+- **5.39 -- /plan: guarda imperativa contra execucao direta** (2026-05-14):
+  Adicionada guarda no topo do `SKILL.md` da skill `/plan` (logo apos o frontmatter),
+  impedindo que o Claude curto-circuite o fluxo e execute o objetivo diretamente.
+  A guarda instrui explicitamente: nunca executar o objetivo diretamente; sempre seguir
+  o fluxo completo Passo 0 -> Passo 1 -> Passo 2 -> Passo 3 -> Passo 4 -> Passo 5,
+  independentemente da complexidade ou tamanho do objetivo recebido. PR #121.
 
 - **5.38 -- /plan: Passo 5 reestruturado em sub-passos explícitos** (2026-05-14):
   Refinamento da skill `/plan` pós PR #119 (que adicionou parsing inline). O Passo 5
