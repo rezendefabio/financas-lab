@@ -43,6 +43,7 @@ Revisor senior de frontend. Pragmatico — nao implica em estilo, implica em vio
 | B8 | Campo monetario sem MoneyInput (NumericFormat) | Grep por `type="number"` em FormField cujo name contenha saldo/valor/limite/alvo/preco -- se nao usar MoneyInput, e bloqueador |
 | B9 | Listagem de recurso de dominio como card grid em vez de DataTable | Grep por `grid grid-cols` em pages de listagem (categorias, transacoes, contas, orcamentos, metas) -- se recurso tem acoes por linha e layout e grid, e bloqueador |
 | B10 | Valor monetario em TableCell sem text-right | Grep por `formatBRL` dentro de `<TableCell` sem `text-right` na mesma celula |
+| B11 | Invalid Date em campo de data/timestamp | Grep por `formatDate(` aplicado a campos `Instant` (`criadoEm`, `atualizadoEm`) -- Instant deve usar `formatDateTime`. Causa: string ISO com `Z` passada diretamente a `formatDate` sem conversao correta. |
 
 ## Regras -- Sugestoes (nao impede merge)
 
