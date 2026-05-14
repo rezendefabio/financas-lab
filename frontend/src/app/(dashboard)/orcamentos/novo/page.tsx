@@ -19,6 +19,7 @@ import {
 } from '@/shared/components/ui/form'
 import { Input } from '@/shared/components/ui/input'
 import { Button } from '@/shared/components/ui/button'
+import { MoneyInput } from '@/shared/components/MoneyInput'
 import {
   Select,
   SelectContent,
@@ -154,12 +155,10 @@ export default function NovoOrcamentoPage() {
                     <FormItem>
                       <FormLabel>Valor Limite (R$)</FormLabel>
                       <FormControl>
-                        <Input
-                          type="number"
-                          step="0.01"
-                          min="0"
-                          className="w-full max-w-xs"
-                          {...field}
+                        <MoneyInput
+                          value={field.value}
+                          onChange={field.onChange}
+                          id={field.name}
                         />
                       </FormControl>
                       <FormMessage />
