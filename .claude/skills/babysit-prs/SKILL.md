@@ -146,6 +146,7 @@ Para cada PR com CI falhando:
 
 ```powershell
 $branch = (gh pr view $number --json headRefName | ConvertFrom-Json).headRefName
+$worktreePath = "$repoRoot/.claude/worktrees/babysit-ci-$number"
 
 # Obter logs do run com falha
 $runId = (gh run list --branch $branch --json databaseId,conclusion `
@@ -159,7 +160,9 @@ $logsFailed = gh run view $runId --log-failed
 Spawnar sub-agente para analisar e corrigir:
 
 Usar o Agent tool com subagent_type `general-purpose` e o seguinte prompt,
-substituindo os placeholders pelos valores reais:
+substituindo os placeholders pelos valores reais (`{BRANCH}` por `$branch`,
+`{PR_NUMBER}` por `$number`, `{WORKTREE_PATH}` por `$worktreePath`,
+`{REPO_ROOT}` por `$repoRoot`, `{LOGS_FAILED}` por `$logsFailed`):
 
 ---
 Voce e um desenvolvedor senior debugando um CI vermelho.
