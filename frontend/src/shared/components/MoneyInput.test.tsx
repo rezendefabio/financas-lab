@@ -51,4 +51,17 @@ describe('MoneyInput', () => {
     const input = screen.getByRole('textbox')
     expect(input).toHaveAttribute('id', 'campo-valor')
   })
+
+  it('alinha texto a direita por padrao', () => {
+    render(<MoneyInput value={0} onChange={vi.fn()} />)
+    const input = screen.getByRole('textbox')
+    expect(input).toHaveClass('text-right')
+  })
+
+  it('preserva className externo passado via prop', () => {
+    render(<MoneyInput value={0} onChange={vi.fn()} className="w-full" />)
+    const input = screen.getByRole('textbox')
+    expect(input).toHaveClass('text-right')
+    expect(input).toHaveClass('w-full')
+  })
 })
