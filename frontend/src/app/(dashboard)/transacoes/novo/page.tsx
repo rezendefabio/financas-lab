@@ -81,6 +81,14 @@ export default function NovaTransacaoPage() {
   const tipoAtual = form.watch('tipo')
   const isTransferencia = tipoAtual === 'TRANSFERENCIA'
 
+  // Deduplicar por nome dentro do mesmo tipo (IDs distintos, nomes iguais = dado duplicado no banco)
+  const categoriasDoTipo = (categorias ?? [])
+    .filter(c => c.tipo === tipoAtual)
+    .filter((c, idx, arr) => arr.findIndex(x => x.nome === c.nome) === idx)
+
+  const temDuplicatas = (categorias ?? [])
+    .filter(c => c.tipo === tipoAtual).length > categoriasDoTipo.length
+
   const mutation = useMutation({
     mutationFn: (values: FormValues) =>
       transacoesService.criar({
@@ -233,9 +241,14 @@ export default function NovaTransacaoPage() {
                 )}
 
                 {/* Categoria (opcional, oculto para transferencia) */}
-                {!isTransferencia && categorias && categorias.length > 0 && (
+                {!isTransferencia && categoriasDoTipo.length > 0 && (
                   <FormItem>
                     <FormLabel>Categoria (opcional)</FormLabel>
+                    {temDuplicatas && (
+                      <p className="text-xs text-amber-600">
+                        Categorias com nomes duplicados detectadas. Exibindo uma de cada.
+                      </p>
+                    )}
                     <Controller
                       control={form.control}
                       name="categoriaId"
@@ -245,11 +258,9 @@ export default function NovaTransacaoPage() {
                             <SelectValue placeholder="Sem categoria" />
                           </SelectTrigger>
                           <SelectContent>
-                            {categorias
-                              .filter(c => !isTransferencia && c.tipo === tipoAtual)
-                              .map((c) => (
-                                <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>
-                              ))}
+                            {categoriasDoTipo.map((c) => (
+                              <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>
+                            ))}
                           </SelectContent>
                         </Select>
                       )}

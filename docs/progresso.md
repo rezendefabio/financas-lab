@@ -3,7 +3,7 @@
 > Documento de tracking. Mostra **onde estamos** na construção da fábrica e do produto.
 > Atualizado conforme camadas avançam. Diferente do `decisoes.md` (que registra escolhas) e dos `adrs.md` (que registram porquês), este documento responde a pergunta: "em que ponto eu estou?".
 
-**Última atualização:** 2026-05-13 (Sub-etapa 5.22 -- Fix tipo Transacao e NaN na listagem)
+**Última atualização:** 2026-05-13 (Sub-etapa 5.23 -- Fix categorias duplicadas no formulario de transacao)
 
 ---
 
@@ -159,6 +159,17 @@ Configurar `CLAUDE.md` rico, criar 3-5 subagents focados, criar 5-10 skills (sla
 Ativar a fábrica de fato: rodar features no Tier 2, configurar 3 routines Tier 1, validar paralelismo se necessário.
 
 ### Sub-etapas concluídas
+
+- **5.23 -- Fix categorias duplicadas no formulario de transacao** (2026-05-13): correcao
+  de bug visual em `/transacoes/novo`. O select de categoria exibia entradas duplicadas
+  quando o banco continha categorias com nomes identicos criadas em sessoes distintas
+  (sem constraint UNIQUE). Correcao no frontend: calculo de `categoriasDoTipo` com
+  deduplicacao por nome via `findIndex` (mantendo primeiro ocorrente por tipo); calculo
+  de `temDuplicatas` comparando contagem antes/apos deduplicacao; aviso `text-amber-600`
+  exibido quando duplicatas detectadas; redundancia `!isTransferencia` no filtro JSX
+  interno eliminada (condicao externa ja garante). Apenas
+  `frontend/src/app/(dashboard)/transacoes/novo/page.tsx` modificado. 71 testes passando,
+  `check-front.ps1` verde. PR aberto.
 
 - **5.22 -- Fix tipo Transacao e NaN na listagem** (2026-05-13): correcao de bug critico
   na pagina `/transacoes`. `TransacaoResponse.java` retorna `valor` como `BigDecimal` plano
