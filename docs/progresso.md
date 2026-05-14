@@ -3,7 +3,7 @@
 > Documento de tracking. Mostra **onde estamos** na construção da fábrica e do produto.
 > Atualizado conforme camadas avançam. Diferente do `decisoes.md` (que registra escolhas) e dos `adrs.md` (que registram porquês), este documento responde a pergunta: "em que ponto eu estou?".
 
-**Última atualização:** 2026-05-14 (Sub-etapa 5.28 -- /batch embute conteudo inline; gitignore docs/prompts/)
+**Última atualização:** 2026-05-14 (Sub-etapa 5.29 -- babysitter delega resolucao de conflitos para sub-agente inteligente)
 
 ---
 
@@ -159,6 +159,21 @@ Configurar `CLAUDE.md` rico, criar 3-5 subagents focados, criar 5-10 skills (sla
 Ativar a fábrica de fato: rodar features no Tier 2, configurar 3 routines Tier 1, validar paralelismo se necessário.
 
 ### Sub-etapas concluídas
+
+- **5.29 -- babysitter delega resolucao de conflitos para sub-agente inteligente** (2026-05-14):
+  Passo 3a da skill `/babysit-prs` reformulado. Em vez de abortar conservadoramente
+  qualquer falha de rebase, spawna um sub-agente `general-purpose` que age como
+  desenvolvedor senior fazendo merge manual. O sub-agente le cada arquivo em conflito
+  na integra, entende a intencao de "ours" (origin/main) e "theirs" (branch do PR),
+  e produz uma sintese correta e idiomatica para o tipo de arquivo. Aborta apenas
+  diante de contradicao genuina sem resolucao possivel. Se RESOLVIDO: push
+  `--force-with-lease` e registra "rebase com resolucao inteligente OK". Se ABORTADO:
+  registra o motivo preciso da contradicao. PR aberto.
+  **Debito tecnico:** `subagent_type: general-purpose` built-in pode conflitar com
+  ADR-012, que prefere subagents registrados em `.claude/agents/` via `context: fork +
+  agent: <nome>`. Alternativa: criar `.claude/agents/conflict-resolver.md` com
+  frontmatter proprio (modelo, tools restritas) e invocar via Agent tool apontando para
+  ele. Decisao do operador: anotar como debito, nao bloquear merge.
 
 - **5.28 -- /batch embute conteudo inline; gitignore docs/prompts/** (2026-05-14):
   resolve problema recorrente de arquivos untracked em `docs/prompts/` bloqueando
