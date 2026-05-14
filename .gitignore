@@ -57,6 +57,7 @@ data/
 .claude/settings.json
 .claude/scheduled_tasks.lock
 .claude/worktrees/
+.claude/watch-ci.state
 
 # ─── Prompts de sub-etapas (efemeros, conteudo embutido inline pelo /batch) ────
 docs/prompts/
