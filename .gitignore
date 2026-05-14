@@ -55,6 +55,7 @@ data/
 # ─── Claude Code (settings locais pessoais — estrutura de projeto e versionada) ─
 .claude/settings.local.json
 .claude/settings.json
+.claude/scheduled_tasks.lock
 
 # ─── Sistema operacional ─────────────────────────────────────────────────────
 .DS_Store
