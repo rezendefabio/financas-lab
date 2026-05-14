@@ -3,7 +3,7 @@
 > Documento de tracking. Mostra **onde estamos** na construção da fábrica e do produto.
 > Atualizado conforme camadas avançam. Diferente do `decisoes.md` (que registra escolhas) e dos `adrs.md` (que registram porquês), este documento responde a pergunta: "em que ponto eu estou?".
 
-**Última atualização:** 2026-05-14 (Sub-etapa 5.26 -- Catalogo de mapeamento tipo-backend para componente-frontend)
+**Última atualização:** 2026-05-14 (Sub-etapa 5.27 -- Orcamentos frontend: listagem, criacao e detalhe com progresso)
 
 ---
 
@@ -159,6 +159,28 @@ Configurar `CLAUDE.md` rico, criar 3-5 subagents focados, criar 5-10 skills (sla
 Ativar a fábrica de fato: rodar features no Tier 2, configurar 3 routines Tier 1, validar paralelismo se necessário.
 
 ### Sub-etapas concluídas
+
+- **5.27 -- Orcamentos frontend (listagem, criacao e detalhe com progresso)** (2026-05-14):
+  tres paginas Next.js para o bounded context `orcamento`. **(1) Feature layer:**
+  `features/orcamentos/types/orcamento.ts` (interfaces Orcamento, Progresso,
+  CriarOrcamentoPayload, OrcamentoStatus, ValorMonetario), `services/orcamento-service.ts`
+  (listar, buscar, criar, desativar, progresso via apiFetch), `index.ts` com barrel exports.
+  **(2) Listagem `/orcamentos`:** tabela (nao cards) com colunas Categoria (nome via
+  join client-side), Mes/Ano (MM/YYYY), Limite (formatBRL), Status (badge ativo/inativo),
+  Acoes (link Ver). Estado vazio e estado de erro cobertos. **(3) Criacao `/orcamentos/novo`:**
+  React Hook Form + Zod, campos categoria (Select carregado de GET /api/categorias, agrupado
+  DESPESA primeiro depois RECEITA), valorLimiteValor (input number step=0.01), mesAno
+  (input type=month). Payload monta valorLimiteMoeda fixo como "BRL" e concatena "-01" ao
+  mesAno. **(4) Detalhe `/orcamentos/[id]`:** duas secoes -- dados do orcamento (categoria,
+  mes/ano, limite, badge ativo/inativo, criado em) e progresso do mes (totalGasto,
+  percentualUtilizado via componente Progress, badge de status com cores semanticas:
+  ABAIXO=verde/default, ATENCAO=secondary, ATINGIDO=outline, EXCEDIDO=destructive).
+  Botao Desativar aparece apenas se ativo=true; DELETE /api/orcamentos/{id} redireciona
+  para listagem. **(5) Componente Progress:** criado em `shared/components/ui/progress.tsx`
+  (div com role=progressbar, calculo de percentagem com clamp 0-100). **(6) Sidebar:**
+  link "Orcamentos" adicionado ao layout do dashboard (icone Wallet). **(7) Testes:**
+  `orcamento-service.test.ts` gerado (5 casos cobrindo todos os metodos do service).
+  `check-front.ps1` verde (76 testes, lint, build). PR aberto.
 
 - **5.26 -- Catalogo de mapeamento tipo-backend para componente-frontend** (2026-05-14):
   criado `docs/field-type-catalog.md` com regras de mapeamento para valores monetarios
