@@ -3,7 +3,7 @@
 > Documento de tracking. Mostra **onde estamos** na construção da fábrica e do produto.
 > Atualizado conforme camadas avançam. Diferente do `decisoes.md` (que registra escolhas) e dos `adrs.md` (que registram porquês), este documento responde a pergunta: "em que ponto eu estou?".
 
-**Última atualização:** 2026-05-14 (Sub-etapa 5.31 -- routine Tier 1 watch-ci)
+**Última atualização:** 2026-05-14 (Sub-etapa 5.32 -- routine Tier 1 daily-summary)
 
 ---
 
@@ -159,6 +159,18 @@ Configurar `CLAUDE.md` rico, criar 3-5 subagents focados, criar 5-10 skills (sla
 Ativar a fábrica de fato: rodar features no Tier 2, configurar 3 routines Tier 1, validar paralelismo se necessário.
 
 ### Sub-etapas concluídas
+
+- **5.32 -- routine Tier 1 daily-summary** (2026-05-14):
+  Terceira routine Tier 1 da fabrica. Skill `/daily-summary` em
+  `.claude/skills/daily-summary/SKILL.md` com `disable-model-invocation: true`.
+  Logica: verifica estado persistente em `.claude/daily-summary.state`; se menos
+  de 20h desde a ultima execucao, reporta tempo restante e agenda proxima
+  verificacao sem gerar resumo. Se >= 20h: coleta PRs mergeados hoje (filtro por
+  `mergedAt > $agora.Date`), PRs abertos (flag `CONFLICTING`), ultimo run do CI
+  em main, commits em main no dia; exibe bloco formatado com separadores `===`;
+  salva timestamp em `daily-summary.state`; agenda proxima iteracao via
+  `ScheduleWakeup` com `delaySeconds: 3600`. Estado persistente gitignored
+  (`.claude/daily-summary.state` adicionado ao `.gitignore`). PR aberto.
 
 - **5.31 -- routine Tier 1 watch-ci -- CI watcher/healer do branch main** (2026-05-14):
   Cria `.claude/skills/watch-ci/SKILL.md`, routine Tier 1 que monitora o CI do
