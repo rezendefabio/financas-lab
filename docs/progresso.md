@@ -171,6 +171,17 @@ Ativar a fábrica de fato: rodar features no Tier 2, configurar 3 routines Tier 
   "Cleanup de branches orfaos" remove branches locais `worktree-agent-*` remanescentes apos
   execucao do Agent tool com `isolation: worktree`. PR aberto.
 
+- **5.33 -- skill /plan -- agente planejador + rastreamento persistente** (2026-05-14):
+  Skill `/plan` em `.claude/skills/plan/SKILL.md` com `disable-model-invocation: true`.
+  Remove o humano da coordenacao: operador fornece objetivo de alto nivel; skill spawna
+  sub-agente planejador que le o projeto, quebra em tasks independentes e paralelizaveis
+  com prompts completos para cada executor; registra tasks em `.claude/tasks.json` com
+  campos `id`, `planId`, `titulo`, `status`, `branch`, `pr_url`, `created_at`,
+  `updated_at`; spawna executores em paralelo (acao atomica); atualiza state apos
+  conclusao. Skill `/tasks` em `.claude/skills/tasks/SKILL.md` permite consultar
+  estado das tasks entre sessoes, agrupado por `planId`. Estado persistente em
+  `.claude/tasks.json` gitignored (adicionado ao `.gitignore`). PR aberto.
+
 - **5.32 -- routine Tier 1 daily-summary** (2026-05-14):
   Terceira routine Tier 1 da fabrica. Skill `/daily-summary` em
   `.claude/skills/daily-summary/SKILL.md` com `disable-model-invocation: true`.
