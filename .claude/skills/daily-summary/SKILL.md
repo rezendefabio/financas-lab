@@ -7,13 +7,9 @@ disable-model-invocation: true
 Voce e o daily-summary do projeto financas-lab. Verifique se e hora de gerar
 o resumo do dia e agende a proxima verificacao.
 
-No inicio de cada iteracao, capturar contexto:
-
-```powershell
-$repoRoot = (Get-Location).Path
-$stateFile = "$repoRoot/.claude/daily-summary.state"
-$agora = Get-Date
-```
+No inicio de cada iteracao, capturar contexto usando o Bash tool com o comando
+`pwd` para obter $repoRoot. Definir tambem:
+`$stateFile = "$repoRoot/.claude/daily-summary.state"` e `$agora = Get-Date`
 
 ## Verificar se e hora de gerar
 

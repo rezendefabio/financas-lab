@@ -3,7 +3,7 @@
 > Documento de tracking. Mostra **onde estamos** na construção da fábrica e do produto.
 > Atualizado conforme camadas avançam. Diferente do `decisoes.md` (que registra escolhas) e dos `adrs.md` (que registram porquês), este documento responde a pergunta: "em que ponto eu estou?".
 
-**Última atualização:** 2026-05-14 (Sub-etapa 5.32 -- routine Tier 1 daily-summary)
+**Última atualização:** 2026-05-14 (Sub-etapa 5.34 -- housekeeping permissoes e sintaxe bash)
 
 ---
 
@@ -159,6 +159,17 @@ Configurar `CLAUDE.md` rico, criar 3-5 subagents focados, criar 5-10 skills (sla
 Ativar a fábrica de fato: rodar features no Tier 2, configurar 3 routines Tier 1, validar paralelismo se necessário.
 
 ### Sub-etapas concluídas
+
+- **5.34 -- housekeeping: permissoes setup.ps1, sintaxe bash nas skills de loop, cleanup worktrees /batch** (2026-05-14):
+  Tres debitos acumulados resolvidos juntos. **(1) `scripts/setup.ps1`:** duas permissoes
+  novas adicionadas ao template de `.claude/settings.json` -- `"Bash(cd * && git rebase *)"` e
+  `"Bash(cd * && GIT_EDITOR=* git rebase *)"` -- garantindo que novos ambientes recebam as
+  mesmas permissoes que o ambiente atual ja tem. **(2) Skills de loop (babysit-prs, watch-ci,
+  daily-summary):** substituida a linha `$repoRoot = (Get-Location).Path` (sintaxe PowerShell
+  que falha no contexto bash do Claude Code) por instrucao de capturar `$repoRoot` via Bash
+  tool com `pwd`. **(3) Skill `/batch`:** apos consolidar o relatorio no Passo 3, nova secao
+  "Cleanup de branches orfaos" remove branches locais `worktree-agent-*` remanescentes apos
+  execucao do Agent tool com `isolation: worktree`. PR aberto.
 
 - **5.32 -- routine Tier 1 daily-summary** (2026-05-14):
   Terceira routine Tier 1 da fabrica. Skill `/daily-summary` em

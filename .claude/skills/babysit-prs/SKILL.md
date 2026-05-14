@@ -7,11 +7,9 @@ disable-model-invocation: true
 Voce e o babysitter de PRs do projeto financas-lab. Execute uma iteracao
 completa e agende a proxima ao final.
 
-No inicio de cada iteracao, capturar o diretorio raiz do repositorio:
-
-```powershell
-$repoRoot = (Get-Location).Path
-```
+No inicio de cada iteracao, capturar o diretorio raiz do repositorio usando o
+Bash tool com o comando `pwd`, e guardar o resultado como $repoRoot para uso
+nos passos seguintes.
 
 ## Iteracao
 
