@@ -3,7 +3,7 @@
 > Documento de tracking. Mostra **onde estamos** na construção da fábrica e do produto.
 > Atualizado conforme camadas avançam. Diferente do `decisoes.md` (que registra escolhas) e dos `adrs.md` (que registram porquês), este documento responde a pergunta: "em que ponto eu estou?".
 
-**Última atualização:** 2026-05-14 (Sub-etapa 5.45 -- MoneyInput: alinha valor a direita)
+**Última atualização:** 2026-05-14 (Sub-etapa 5.46 -- Invalid Date: fix + regra B11)
 
 ---
 
@@ -159,6 +159,19 @@ Configurar `CLAUDE.md` rico, criar 3-5 subagents focados, criar 5-10 skills (sla
 Ativar a fábrica de fato: rodar features no Tier 2, configurar 3 routines Tier 1, validar paralelismo se necessário.
 
 ### Sub-etapas concluídas
+
+- **5.46 -- Invalid Date: fix imediato + regra prescritiva B11 + blocker no front-reviewer** (2026-05-14):
+  Bug "Invalid Date" no campo `criadoEm` da tela de detalhe de Meta (e Orcamento).
+  Causa: `formatDate` concatenava `T12:00:00` para corrigir timezone de `LocalDate`,
+  mas campos `Instant` ja carregam `T15:30:00Z` -- concatenacao produzia string invalida.
+  **(1) Fix em `formatters.ts`:** `formatDate` detecta se string ja contem `T` (Instant/
+  LocalDateTime) e faz parse direto; date-only ainda usa noon-UTC para evitar day-shift;
+  null/undefined retorna `'--'`. Nova funcao `formatDateTime` para campos Instant/LocalDateTime.
+  **(2) Fix nas paginas:** `metas/[id]` e `orcamentos/[id]` passam a usar `formatDateTime`
+  para `criadoEm`. **(3) design-system.md:** tabela de exibicao corrigida (Instant usa
+  `formatDateTime`); template Detalhe corrigido; secao B11 adicionada com regra prescritiva.
+  **(4) front-reviewer.md:** B11 adicionado aos blockers -- detecta `formatDate(` em campos
+  Instant (`criadoEm`, `atualizadoEm`). 171 testes, build OK. PR aberto.
 
 - **5.45 -- MoneyInput: alinha valor a direita** (2026-05-14):
   Componente `MoneyInput.tsx` corrigido para alinhar o valor monetario a direita.
