@@ -52,7 +52,7 @@ Para o PR com conflito:
 
 ```powershell
 $branch = $pr.headRefName
-$worktreePath = ".claude/worktrees/babysit-pr-$number"
+$worktreePath = "$repoRoot/.claude/worktrees/babysit-pr-$number"
 
 # Criar worktree para o branch do PR
 git fetch origin
@@ -116,8 +116,9 @@ Se o rebase falhar (`$LASTEXITCODE -ne 0`):
 
   Se todos os arquivos foram resolvidos:
   - `git rebase --continue --no-edit`
-  - Se suceder: reportar `RESOLVIDO: <descricao de como cada arquivo foi tratado>`
-  - Se surgir novo conflito (proximo commit do rebase): repetir o processo
+  - Verificar `$LASTEXITCODE` imediatamente apos o comando
+  - Se `$LASTEXITCODE -eq 0`: reportar `RESOLVIDO: <descricao de como cada arquivo foi tratado>`
+  - Se `$LASTEXITCODE -ne 0` (novo conflito no proximo commit do rebase): repetir Passos 1, 2 e 3
 
   Se algum arquivo NAO foi resolvido:
   - `git rebase --abort`
@@ -151,7 +152,7 @@ Exibir resumo:
 [babysit-prs HH:MM] N PRs verificados
 
 <para cada PR:>
-  PR #N <titulo>: <REBASE OK | REBASE FALHOU (manual) | CI FALHOU: <check> | OK>
+  PR #N <titulo>: <REBASE OK | REBASE RESOLVIDO (inteligente) | REBASE ABORTADO: <motivo> | CI FALHOU: <check> | OK>
 
 Proxima verificacao em 10 minutos.
 ```
