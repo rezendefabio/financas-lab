@@ -3,7 +3,7 @@
 > Documento de tracking. Mostra **onde estamos** na construção da fábrica e do produto.
 > Atualizado conforme camadas avançam. Diferente do `decisoes.md` (que registra escolhas) e dos `adrs.md` (que registram porquês), este documento responde a pergunta: "em que ponto eu estou?".
 
-**Última atualização:** 2026-05-14 (Sub-etapa 5.24 -- Gitignore fix + validacao Camada B)
+**Última atualização:** 2026-05-14 (Sub-etapa 5.25 -- Fix /batch: paralelismo e verificacao de arquivos)
 
 ---
 
@@ -159,6 +159,17 @@ Configurar `CLAUDE.md` rico, criar 3-5 subagents focados, criar 5-10 skills (sla
 Ativar a fábrica de fato: rodar features no Tier 2, configurar 3 routines Tier 1, validar paralelismo se necessário.
 
 ### Sub-etapas concluídas
+
+- **5.25 -- Fix `/batch`: paralelismo e verificacao de arquivos** (2026-05-14):
+  dois bugs corrigidos na skill `/batch` (`.claude/skills/batch/SKILL.md`).
+  **(1) Bug Test-Path:** Passo 0 usava bloco PowerShell com `Test-Path`, que nao
+  existe no contexto bash do Claude Code -- substituido por instrucao de verificacao
+  via tool Glob nativo (sem dependencia de shell). **(2) Bug paralelismo serial:**
+  instrucao de intencao ("enviar TODOS em UMA UNICA mensagem") era insuficiente --
+  o modelo emitia um Agent call por vez. Passo 2 reestruturado com cabecalho
+  "acao atomica", remocao explicita da nocao de loop, e secao "ACAO OBRIGATORIA"
+  imperativa ao final. Template do sub-agente preservado identico. Passo 1 e Passo 3
+  intocados. PR aberto.
 
 - **5.24 -- Gitignore fix + validacao Camada B** (2026-05-14): `.claude/scheduled_tasks.lock`
   adicionado ao `.gitignore` (arquivo criado pelo runtime Claude Code quando `ScheduleWakeup`

@@ -7,23 +7,14 @@ disable-model-invocation: true
 Execute as tasks em paralelo seguindo os passos abaixo.
 Pare e reporte ao operador se qualquer verificacao inicial falhar.
 
-## Passo 0 -- Resolver paths dos prompts
+## Passo 0 -- Resolver e verificar paths
 
 Para cada argumento recebido:
 - Se comeca com `docs/prompts/`: usar o path literal
 - Caso contrario: expandir para `docs/prompts/prompt-{arg}.md`
 
-Verificar que cada arquivo existe:
-```powershell
-foreach ($path in $paths) {
-    if (-not (Test-Path $path)) {
-        Write-Host "ERRO: arquivo nao encontrado: $path"
-        exit 1
-    }
-}
-```
-
-Se algum nao existir: reportar e terminar sem spawnar nada.
+Verificar que cada arquivo existe usando o tool Glob com o pattern exato do path.
+Se o Glob retornar lista vazia para qualquer path: reportar "ERRO: arquivo nao encontrado: {path}" e terminar sem spawnar nada.
 
 ## Passo 1 -- Confirmar execucao
 
@@ -36,16 +27,19 @@ Exibir ao operador a lista de tasks que serao executadas em paralelo:
   ...
 ```
 
-## Passo 2 -- Spawnar todos os agentes em paralelo
+## Passo 2 -- Spawnar todos os agentes (acao atomica)
 
-IMPORTANTE: enviar TODOS os Agent tool calls em UMA UNICA mensagem ao modelo.
-Chamadas em mensagens separadas executam sequencialmente -- nao e o objetivo.
+Esta etapa e UMA UNICA acao atomica: emitir N Agent tool calls simultaneamente,
+onde N e o numero de tasks da lista.
 
-Para cada task, usar:
+Nao ha loop. Nao ha "primeiro um, depois o outro". Todos os Agent calls sao emitidos
+na mesma resposta, ao mesmo tempo, antes de qualquer resultado ser recebido.
+
+Para cada task na lista, os parametros do Agent call sao:
 - subagent_type: "general-purpose"
 - isolation: "worktree"
 - run_in_background: false
-- prompt: ver template abaixo (substituir {PATH} pelo path real do arquivo)
+- prompt: template abaixo com {PATH} substituido pelo path real
 
 ### Template do prompt do sub-agente
 
@@ -89,6 +83,13 @@ PR:       <URL do PR ou "nao aberto">
 Reviews:  <resumo de cada review>
 Status:   OK | BLOQUEADOR: <motivo>
 ```
+
+---
+
+ACAO OBRIGATORIA: Emita AGORA todos os {N} Agent tool calls acima em uma unica resposta.
+N = numero de tasks confirmadas no Passo 1.
+Nao escreva nenhum texto adicional antes ou entre os tool calls.
+Nao aguarde resultado de nenhum deles antes de emitir os demais.
 
 ## Passo 3 -- Aguardar e consolidar
 
