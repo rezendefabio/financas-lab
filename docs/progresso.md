@@ -3,7 +3,7 @@
 > Documento de tracking. Mostra **onde estamos** na construção da fábrica e do produto.
 > Atualizado conforme camadas avançam. Diferente do `decisoes.md` (que registra escolhas) e dos `adrs.md` (que registram porquês), este documento responde a pergunta: "em que ponto eu estou?".
 
-**Última atualização:** 2026-05-14 (Sub-etapa 5.41 -- documentacao do fluxo Tier 2 -- guia de intervencao do operador)
+**Última atualização:** 2026-05-14 (Sub-etapa 5.44 -- /plan: fix sintaxe bash no Passo 0; guarda contra execucao na branch main)
 
 ---
 
@@ -159,6 +159,20 @@ Configurar `CLAUDE.md` rico, criar 3-5 subagents focados, criar 5-10 skills (sla
 Ativar a fábrica de fato: rodar features no Tier 2, configurar 3 routines Tier 1, validar paralelismo se necessário.
 
 ### Sub-etapas concluídas
+
+- **5.44 -- /plan: fix sintaxe bash no Passo 0; guarda contra execucao na branch main** (2026-05-14):
+  Dois problemas acumulados na skill `/plan` corrigidos. **(1) Passo 0 -- sintaxe bash POSIX:**
+  bloco PowerShell (`Test-Path`, `Set-Content`, `Get-Date`, `Write-Host`) substituido por
+  bash POSIX (`[ -f ... ] || printf`, `date +%Y%m%d-%H%M%S`), eliminando o erro
+  `/usr/bin/bash: syntax error near unexpected token 'Test-Path'` que ocorria a cada execucao
+  do `/plan` no Git Bash do ambiente Windows. **(2) Template do executor no Passo 4 --
+  guarda obrigatoria contra main:** adicionadas tres protecoes logo apos a primeira linha do
+  template ("Voce e um executor autonomo..."): verificacao de branch antes de qualquer acao
+  (`git branch --show-current` com abort se `main`), restricao absoluta de ambiente
+  (NUNCA modificar fora do worktree, NUNCA `checkout main`/`switch main`) e restricao de
+  dependencias (verificar worktree antes de `npm install` / `mvn install`). Resolve problema
+  de arquivos residuais sangrandodo worktree para o repositorio principal apos execucoes do /plan.
+  PR aberto.
 
 - **5.41 -- documentacao do fluxo Tier 2 -- guia de intervencao do operador** (2026-05-14):
   Criado `docs/fluxo-tier2.md` com guia de quando intervir vs deixar a fabrica resolver.
