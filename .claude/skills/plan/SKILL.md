@@ -173,31 +173,45 @@ Nao escrever texto entre os tool calls. Nao aguardar resultado de um antes de em
 
 ## Passo 5 -- Atualizar state e consolidar
 
-Apos todos os executores completarem, para cada task:
+Apos todos os executores completarem, executar os tres sub-passos abaixo em ordem.
+Nao exibir o relatorio final antes de concluir 5.1 e 5.2 para TODAS as tasks.
 
-1. Parsear o relatorio do executor para extrair os campos:
-   - `branch`: linha que comeca com `Branch:` -- extrair tudo apos `Branch:` com trim
-     - Se a linha for `Branch:   feat/etapa-X-Y-foo`, extrair `feat/etapa-X-Y-foo`
-     - Se ausente ou vazia: manter null
-   - `pr_url`: linha que comeca com `PR:` -- extrair tudo apos `PR:` com trim
-     - Se o valor for `nao aberto` (case-insensitive): manter null
-     - Se for uma URL (comeca com `https://`): usar como pr_url
-     - Se ausente: manter null
-   - `status`: linha que comeca com `Status:`
-     - Se contem `OK`: usar `completed`
-     - Se contem `BLOQUEADOR`: usar `blocked`
+### Sub-passo 5.1 -- Parsear cada relatorio
 
-2. Atualizar `.claude/tasks.json` -- para cada task, sobrescrever os campos:
-   - `status`: valor extraido acima
-   - `branch`: valor extraido acima
-   - `pr_url`: valor extraido acima
-   - `updated_at`: timestamp ISO atual
+O resultado de cada Agent tool call e uma string de texto. Para cada resultado,
+iterar linha a linha e extrair:
 
-   Ler o JSON atual, modificar o objeto da task correspondente pelo campo `id`,
-   serializar e gravar de volta. Usar a ferramenta Write (nao Bash com echo)
-   para evitar problemas de encoding.
+- `branch`: primeira linha que comeca com `Branch:` (apos trim)
+  - Extrair tudo apos o prefixo, aplicar trim
+  - Se vazio ou ausente: null
+  - Exemplo: `"Branch:   feat/etapa-X-Y-foo"` -> `"feat/etapa-X-Y-foo"`
 
-Exibir relatorio final:
+- `pr_url`: primeira linha que comeca com `PR:` (apos trim)
+  - Se valor comecar com `https://`: usar como pr_url
+  - Se valor for `"nao aberto"` (case-insensitive): null
+  - Nos demais casos: null
+
+- `status`: primeira linha que comeca com `Status:` (apos trim)
+  - Se contem `OK`: `"completed"`
+  - Se contem `BLOQUEADOR`: `"blocked"`
+  - Se ausente: `"blocked"`
+
+### Sub-passo 5.2 -- Gravar tasks.json apos cada executor
+
+Para cada task (pelo campo `id`):
+
+1. Ler `.claude/tasks.json` com a ferramenta Read
+2. Fazer parse do JSON em memoria
+3. Localizar objeto cujo `id` corresponde a task
+4. Sobrescrever: `status`, `branch`, `pr_url`, `updated_at` (timestamp ISO)
+5. Serializar e gravar com a ferramenta Write
+   (NAO usar Bash com echo -- causa problemas de encoding)
+
+Executar para TODAS as tasks antes de prosseguir para 5.3.
+
+### Sub-passo 5.3 -- Exibir relatorio final
+
+So exibir apos 5.1 e 5.2 concluidos para todas as tasks:
 
 ```
 /plan concluido: "{OBJETIVO}"
