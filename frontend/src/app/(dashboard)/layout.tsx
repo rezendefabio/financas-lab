@@ -13,7 +13,7 @@ import {
   SidebarFooter,
   SidebarInset,
 } from '@/shared/components/ui/sidebar'
-import { Home, CreditCard, ArrowLeftRight, Tag, BarChart3, LogOut, Wallet } from 'lucide-react'
+import { Home, CreditCard, ArrowLeftRight, Tag, BarChart3, LogOut, Wallet, Target } from 'lucide-react'
 import Link from 'next/link'
 import { Button } from '@/shared/components/ui/button'
 
@@ -23,6 +23,7 @@ const navItems = [
   { href: '/transacoes', label: 'Transacoes', icon: ArrowLeftRight },
   { href: '/categorias', label: 'Categorias', icon: Tag },
   { href: '/orcamentos', label: 'Orcamentos', icon: Wallet },
+  { href: '/metas', label: 'Metas', icon: Target },
   { href: '/relatorios', label: 'Relatorios', icon: BarChart3 },
 ]
 
