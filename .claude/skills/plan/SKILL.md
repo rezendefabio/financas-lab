@@ -61,11 +61,16 @@ Retornar um JSON com a lista de tasks no formato:
     {
       "id": "task-001",
       "titulo": "descricao curta",
+      "resumo": "1-3 linhas descrevendo o que esta task vai fazer, quais arquivos vai tocar e qual resultado vai produzir",
       "prompt": "conteudo completo do prompt do executor"
     }
   ]
 }
 ```
+
+O campo `resumo` deve ser uma descricao executiva: o que a task entrega, quais arquivos
+principais serao editados, qual e o output esperado (ex: PR aberto, arquivo modificado).
+Maximo 3 linhas por task.
 
 Retornar APENAS o JSON, sem texto antes ou depois.
 ---
@@ -79,6 +84,7 @@ Para cada task retornada pelo planejador, adicionar em `.claude/tasks.json`:
   "id": "{task.id}",
   "planId": "{planId}",
   "titulo": "{task.titulo}",
+  "resumo": "{task.resumo}",
   "status": "pending",
   "branch": null,
   "pr_url": null,
@@ -87,16 +93,31 @@ Para cada task retornada pelo planejador, adicionar em `.claude/tasks.json`:
 }
 ```
 
-## Passo 3 -- Confirmar e spawnar executores
+## Passo 3 -- Exibir planejamento e aguardar aprovacao
 
-Exibir ao operador:
+Exibir ao operador o planejamento completo:
 
 ```
 /plan: {N} tasks planejadas para "{OBJETIVO}":
+
   [1] {task-001 titulo}
+      {task-001 resumo}
+
   [2] {task-002 titulo}
+      {task-002 resumo}
+
   ...
 ```
+
+Usar AskUserQuestion com a pergunta "Deseja spawnar os {N} executores agora?"
+e duas opcoes: "Sim, spawnar" e "Nao, cancelar".
+
+Se o operador escolher "Sim, spawnar": continuar para o Passo 4 (spawnar executores).
+Se o operador escolher "Nao, cancelar" ou qualquer outra resposta: exibir
+"Execucao cancelada. Tasks registradas em .claude/tasks.json com status pending."
+e encerrar sem spawnar nenhum executor.
+
+## Passo 4 -- Spawnar executores
 
 Spawnar todos os executores em paralelo (uma unica acao atomica -- todos os
 Agent tool calls emitidos na mesma resposta):
@@ -150,7 +171,7 @@ Status:   OK | BLOQUEADOR: <motivo>
 ACAO OBRIGATORIA: emitir AGORA todos os {N} Agent tool calls em uma unica resposta.
 Nao escrever texto entre os tool calls. Nao aguardar resultado de um antes de emitir os demais.
 
-## Passo 4 -- Atualizar state e consolidar
+## Passo 5 -- Atualizar state e consolidar
 
 Apos todos os executores completarem, para cada task:
 - Atualizar `status` em `.claude/tasks.json`:
