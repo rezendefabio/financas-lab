@@ -123,17 +123,24 @@ Bloqueadores: <lista ou "nenhum">
 Se qualquer task retornar BLOQUEADOR: sinalize ao operador mas nao cancele
 as outras tasks -- cada worktree e isolado e independente.
 
-### Cleanup de branches orfaos
+### Cleanup de worktrees e branches orfaos
 
-Apos consolidar o relatorio, remover branches locais `worktree-agent-*` que
-tenham ficado para tras:
+Apos consolidar o relatorio, remover worktrees e branches orfaos nessa ordem
+(worktree remove antes de branch -D para evitar erro de branch em uso por worktree registrado):
 
 ```powershell
-$orphans = git branch | Where-Object { $_ -match 'worktree-agent-' }
-foreach ($branch in $orphans) {
-    $b = $branch.Trim()
-    git branch -D $b 2>$null
+# 1. Remover worktrees registrados cujo path contem 'agent-'
+$wtOutput = git worktree list --porcelain
+foreach ($line in $wtOutput) {
+    if ($line -match '^worktree (.+agent-.+)$') {
+        git worktree remove -f -f $matches[1] 2>$null
+    }
+}
+# 2. Remover branches orfaos
+$orphanBranches = git branch | Where-Object { $_ -match 'worktree-agent-' }
+foreach ($b in @($orphanBranches)) {
+    git branch -D $b.Trim() 2>$null
 }
 ```
 
-Se nenhum branch orfao encontrado: pular silenciosamente.
+Se nenhum worktree ou branch orfao encontrado: pular silenciosamente.
