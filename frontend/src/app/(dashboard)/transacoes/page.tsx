@@ -30,7 +30,7 @@ function TransacaoCard({ transacao }: { transacao: Transacao }) {
       </CardHeader>
       <CardContent>
         <p className="text-xl font-bold tabular-nums">
-          {formatBRL(transacao.valor.valor)}
+          {formatBRL(transacao.valor)}
         </p>
         <p className="text-xs text-muted-foreground mt-1">{formatDate(transacao.data)}</p>
       </CardContent>

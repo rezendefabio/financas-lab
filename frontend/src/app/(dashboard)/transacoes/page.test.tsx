@@ -30,13 +30,15 @@ function makeWrapper() {
 const transacaoFixture = (overrides?: Partial<Transacao>): Transacao => ({
   id: 'tx-001',
   tipo: 'DESPESA',
-  valor: { valor: 150.0, moeda: 'BRL' },
+  valor: 150.0,
+  moeda: 'BRL',
   data: '2026-05-13',
   descricao: 'Supermercado',
   contaId: 'conta-001',
   contaDestinoId: null,
   categoriaId: null,
   criadoEm: '2026-05-13T00:00:00Z',
+  atualizadoEm: '2026-05-13T00:00:00Z',
   ...overrides,
 })
 
@@ -58,8 +60,8 @@ describe('TransacoesPage', () => {
   it('exibe lista de transacoes apos carregamento', async () => {
     vi.mocked(transacoesService.listar).mockResolvedValue({
       content: [
-        transacaoFixture({ tipo: 'DESPESA', descricao: 'Supermercado', valor: { valor: 150.0, moeda: 'BRL' } }),
-        transacaoFixture({ id: 'tx-002', tipo: 'RECEITA', descricao: 'Salario', valor: { valor: 5000.0, moeda: 'BRL' } }),
+        transacaoFixture({ tipo: 'DESPESA', descricao: 'Supermercado', valor: 150.0, moeda: 'BRL' }),
+        transacaoFixture({ id: 'tx-002', tipo: 'RECEITA', descricao: 'Salario', valor: 5000.0, moeda: 'BRL' }),
       ],
       totalElements: 2,
     })
@@ -125,7 +127,7 @@ describe('TransacoesPage', () => {
 
   it('formata valor da transacao em BRL', async () => {
     vi.mocked(transacoesService.listar).mockResolvedValue({
-      content: [transacaoFixture({ valor: { valor: 1500.5, moeda: 'BRL' } })],
+      content: [transacaoFixture({ valor: 1500.5, moeda: 'BRL' })],
       totalElements: 1,
     })
 
