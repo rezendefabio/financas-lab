@@ -3,7 +3,7 @@
 > Documento de tracking. Mostra **onde estamos** na construção da fábrica e do produto.
 > Atualizado conforme camadas avançam. Diferente do `decisoes.md` (que registra escolhas) e dos `adrs.md` (que registram porquês), este documento responde a pergunta: "em que ponto eu estou?".
 
-**Última atualização:** 2026-05-14 (Sub-etapa 5.37 -- /plan exibe planejamento e aguarda aprovacao antes de spawnar)
+**Última atualização:** 2026-05-14 (Sub-etapa 5.38 -- /plan: Passo 5 reestruturado em sub-passos explícitos)
 
 ---
 
@@ -159,6 +159,18 @@ Configurar `CLAUDE.md` rico, criar 3-5 subagents focados, criar 5-10 skills (sla
 Ativar a fábrica de fato: rodar features no Tier 2, configurar 3 routines Tier 1, validar paralelismo se necessário.
 
 ### Sub-etapas concluídas
+
+- **5.38 -- /plan: Passo 5 reestruturado em sub-passos explícitos** (2026-05-14):
+  Refinamento da skill `/plan` pós PR #119 (que adicionou parsing inline). O Passo 5
+  foi reestruturado em tres sub-passos explícitos: **(5.1) Parsear cada relatorio** --
+  iterar linha a linha sobre o resultado de cada Agent tool call para extrair `branch`
+  (linha `Branch:`), `pr_url` (linha `PR:` com prefixo `https://`) e `status` (linha
+  `Status:` com `OK`/`BLOQUEADOR`). **(5.2) Gravar tasks.json apos cada executor** --
+  Read/parse/update/Write para cada task antes de prosseguir; NAO usar Bash com echo.
+  **(5.3) Exibir relatorio final** -- so apos 5.1 e 5.2 concluidos para TODAS as tasks.
+  Nota: PRs #117 e #118 foram mergeados sem registro de sub-etapa (ficam como debito documental).
+  PR #119 adicionou o parsing inline no Passo 5; este registro (5.38) documenta o refinamento
+  subsequente (reestruturacao em sub-passos explícitos 5.1/5.2/5.3). PR #120.
 
 - **5.37 -- /plan exibe planejamento e aguarda aprovacao antes de spawnar** (2026-05-14):
   Modificacao da skill `/plan` para exibir planejamento detalhado (id, titulo, resumo) antes
