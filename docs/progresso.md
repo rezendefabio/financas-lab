@@ -3,7 +3,7 @@
 > Documento de tracking. Mostra **onde estamos** na construção da fábrica e do produto.
 > Atualizado conforme camadas avançam. Diferente do `decisoes.md` (que registra escolhas) e dos `adrs.md` (que registram porquês), este documento responde a pergunta: "em que ponto eu estou?".
 
-**Última atualização:** 2026-05-14 (Sub-etapa 5.29 -- babysitter delega resolucao de conflitos para sub-agente inteligente)
+**Última atualização:** 2026-05-14 (Sub-etapa 5.30 -- babysitter CI auto-fix via sub-agente)
 
 ---
 
@@ -159,6 +159,20 @@ Configurar `CLAUDE.md` rico, criar 3-5 subagents focados, criar 5-10 skills (sla
 Ativar a fábrica de fato: rodar features no Tier 2, configurar 3 routines Tier 1, validar paralelismo se necessário.
 
 ### Sub-etapas concluídas
+
+- **5.30 -- babysitter CI auto-fix via sub-agente** (2026-05-14):
+  Passo 3b da skill `/babysit-prs` substituido por acao real de auto-fix.
+  Antes: apenas registrava "CI falhou" no relatorio sem agir.
+  Agora: (1) Passo 2b captura checks via JSON estruturado (`gh pr checks --json
+  name,state,conclusion`) e identifica os falhando; (2) Passo 3b obtém os logs
+  do run com falha via `gh run view --log-failed`, spawna sub-agente
+  `general-purpose` que age como desenvolvedor senior -- le o log, identifica
+  causa raiz (compilacao, testes, lint), aplica correcao minima em worktree
+  isolado, valida com `check.ps1` ou `check-front.ps1`, commita e faz push.
+  Tenta no maximo 2 vezes. Se a correcao exigir decisao de negocio ou redesign
+  arquitetural: reporta "NAO CORRIGIDO: requer intervencao humana" sem abrir
+  worktree. Relatorio atualizado com labels `CI AUTO-FIX OK` e
+  `CI FALHOU (manual): <motivo>`. PR aberto.
 
 - **5.29 -- babysitter delega resolucao de conflitos para sub-agente inteligente** (2026-05-14):
   Passo 3a da skill `/babysit-prs` reformulado. Em vez de abortar conservadoramente
