@@ -6,6 +6,17 @@ Leia este arquivo antes de implementar qualquer tela nova.
 
 ---
 
+## Como usar este documento
+
+Cada secao contem regras prescritivas identificadas por grau:
+
+- **Bloqueador (BN):** violacao impede merge. Detectavel por inspecao de diff.
+- **Convencao:** padrao sem bloqueador formal -- siga por consistencia.
+
+Leia este arquivo antes de implementar qualquer tela. Divergencia entre Zod e Java e B6. Campo monetario sem MoneyInput e B8. Lista de recurso como card grid e B9. Valor monetario nao alinhado a direita em tabela e B10.
+
+---
+
 ## 1. Paleta de Cores
 
 Cores semanticas definidas em `frontend/src/app/globals.css` via variaveis CSS (OKLCH).
