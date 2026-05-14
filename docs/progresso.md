@@ -3,7 +3,7 @@
 > Documento de tracking. Mostra **onde estamos** na construção da fábrica e do produto.
 > Atualizado conforme camadas avançam. Diferente do `decisoes.md` (que registra escolhas) e dos `adrs.md` (que registram porquês), este documento responde a pergunta: "em que ponto eu estou?".
 
-**Última atualização:** 2026-05-14 (Sub-etapa 5.30 -- babysitter CI auto-fix via sub-agente)
+**Última atualização:** 2026-05-14 (Sub-etapa 5.31 -- routine Tier 1 watch-ci)
 
 ---
 
@@ -159,6 +159,20 @@ Configurar `CLAUDE.md` rico, criar 3-5 subagents focados, criar 5-10 skills (sla
 Ativar a fábrica de fato: rodar features no Tier 2, configurar 3 routines Tier 1, validar paralelismo se necessário.
 
 ### Sub-etapas concluídas
+
+- **5.31 -- routine Tier 1 watch-ci -- CI watcher/healer do branch main** (2026-05-14):
+  Cria `.claude/skills/watch-ci/SKILL.md`, routine Tier 1 que monitora o CI do
+  branch `main` a cada 30 minutos. Complementa o babysitter (5.21+5.30), que cobre
+  PRs abertos; o watch-ci cobre o branch principal apos um merge quebrado.
+  Fluxo: (1) consulta `gh run list --branch main --limit 1` para obter o run mais
+  recente; (2) se `in_progress` ou `queued`: aguarda sem agir; se `success`: limpa
+  state file e reporta verde; se `failure`: verifica `.claude/watch-ci.state` para
+  evitar acao repetida sobre a mesma falha; se nao processado, salva state, captura
+  logs via `gh run view --log-failed` e spawna sub-agente `general-purpose` que cria
+  um branch de fix, aplica correcao minima em worktree isolado, valida com `check.ps1`
+  ou `check-front.ps1`, commita, faz push e abre PR; (3) exibe relatorio
+  `[watch-ci HH:MM]` e agenda proxima iteracao com `ScheduleWakeup` (`delaySeconds: 1800`).
+  State file `.claude/watch-ci.state` adicionado ao `.gitignore`. PR aberto.
 
 - **5.30 -- babysitter CI auto-fix via sub-agente** (2026-05-14):
   Passo 3b da skill `/babysit-prs` substituido por acao real de auto-fix.
