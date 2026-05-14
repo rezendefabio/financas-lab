@@ -168,9 +168,9 @@ Ativar a fábrica de fato: rodar features no Tier 2, configurar 3 routines Tier 
   `Status:` com `OK`/`BLOQUEADOR`). **(5.2) Gravar tasks.json apos cada executor** --
   Read/parse/update/Write para cada task antes de prosseguir; NAO usar Bash com echo.
   **(5.3) Exibir relatorio final** -- so apos 5.1 e 5.2 concluidos para TODAS as tasks.
-  Nota: sub-etapas 5.38, 5.39, 5.40 (PRs #117, #118, #119) foram mergeadas sem atualizar
-  progresso.md; este registro usa o proximo numero disponivel (5.38, mas o PR da branch
-  de trabalho e o quinto desde a ultima entrada documentada). PR aberto.
+  Nota: PRs #117 e #118 foram mergeados sem registro de sub-etapa (ficam como debito documental).
+  PR #119 adicionou o parsing inline no Passo 5; este registro (5.38) documenta o refinamento
+  subsequente (reestruturacao em sub-passos explícitos 5.1/5.2/5.3). PR #120.
 
 - **5.37 -- /plan exibe planejamento e aguarda aprovacao antes de spawnar** (2026-05-14):
   Modificacao da skill `/plan` para exibir planejamento detalhado (id, titulo, resumo) antes
