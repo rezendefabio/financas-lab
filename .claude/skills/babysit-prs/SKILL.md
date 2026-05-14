@@ -13,6 +13,20 @@ nos passos seguintes.
 
 ## Iteracao
 
+### Passo 0 -- Carregar state file
+
+Verificar se `.claude/babysit-prs.state` existe:
+
+```powershell
+$stateFile = "$repoRoot/.claude/babysit-prs.state"
+```
+
+- Se existir: ler e parsear o JSON usando `Get-Content $stateFile | ConvertFrom-Json`.
+  Se o parse falhar (JSON invalido): reinicializar com `@{ prs = @{} }`.
+- Se nao existir: inicializar com `@{ prs = @{} }`.
+
+Guardar o objeto como `$state` para uso nos passos seguintes.
+
 ### Passo 1 -- Listar PRs abertos
 
 ```powershell
@@ -25,6 +39,23 @@ Se retornar lista vazia: reportar "Nenhum PR aberto." e agendar proxima iteracao
 ### Passo 2 -- Para cada PR, verificar estado
 
 Para cada PR na lista:
+
+**2.0 -- Verificar se PR foi tratado recentemente (anti-reprocessamento):**
+
+Obter SHA atual do HEAD do branch do PR:
+
+```powershell
+$headSha = (gh pr view $number --json headRefOid | ConvertFrom-Json).headRefOid
+```
+
+Se `$state.prs` contem entrada para este PR (chave `"$number"`):
+- Calcular diferenca em minutos entre agora (UTC) e `last_checked` do state.
+- Se `head_sha == $headSha` E diferenca < 30 minutos:
+  - Registrar no relatorio: "PR #N: IGNORADO (sem mudanca desde ultimo tratamento)"
+  - Pular para o proximo PR (ir direto ao proximo item do loop).
+- Caso contrario (SHA mudou OU >= 30 minutos): processar normalmente.
+
+Se nao contem entrada para este PR: processar normalmente.
 
 **2a -- Verificar conflito com main:**
 
@@ -99,6 +130,16 @@ Set-Location $repoRoot
 ```
 - Registrar no relatorio: "PR #N: rebase executado com sucesso"
 
+Apos acao (sucesso ou falha), atualizar state:
+```powershell
+$headSha = (gh pr view $number --json headRefOid | ConvertFrom-Json).headRefOid
+$state.prs["$number"] = @{
+    last_action  = "rebase"
+    last_checked = (Get-Date).ToUniversalTime().ToString("o")
+    head_sha     = $headSha
+}
+```
+
 ### Passo 3b -- Auto-fix de CI
 
 Para cada PR com CI falhando:
@@ -132,6 +173,16 @@ Com base no retorno do sub-agente:
 - Se `NAO CORRIGIDO`: registrar "PR #N: CI falhou -- auto-fix nao aplicavel: <motivo>"
 - Em ambos os casos: `Set-Location $repoRoot`
 
+Apos acao (corrigido ou nao), atualizar state:
+```powershell
+$headSha = (gh pr view $number --json headRefOid | ConvertFrom-Json).headRefOid
+$state.prs["$number"] = @{
+    last_action  = "ci-fix"
+    last_checked = (Get-Date).ToUniversalTime().ToString("o")
+    head_sha     = $headSha
+}
+```
+
 ### Passo 3c -- Auto-update (apenas se BEHIND e nao CONFLICTING)
 
 Para o PR com `mergeStateStatus == "BEHIND"` e `mergeable != "CONFLICTING"`:
@@ -147,6 +198,33 @@ Se retornar erro:
 - Registrar no relatorio: "PR #N: update-branch falhou -- <mensagem de erro>"
 - Nao spawnar sub-agente, nao criar worktree. O erro e passivo.
 
+Apos acao (sucesso ou falha), atualizar state:
+```powershell
+$headSha = (gh pr view $number --json headRefOid | ConvertFrom-Json).headRefOid
+$state.prs["$number"] = @{
+    last_action  = "update-branch"
+    last_checked = (Get-Date).ToUniversalTime().ToString("o")
+    head_sha     = $headSha
+}
+```
+
+### Passo 3d -- Atualizar state para PRs sem acao
+
+Se nenhuma acao foi executada para um PR (nao CONFLICTING, nao BEHIND, CI ok),
+atualizar state com `last_action = "ok"`:
+
+```powershell
+$state.prs["$number"] = @{
+    last_action  = "ok"
+    last_checked = (Get-Date).ToUniversalTime().ToString("o")
+    head_sha     = $headSha
+}
+```
+
+Depois de processar todos os PRs, salvar o state atualizado em disco usando o
+Write tool para gravar o JSON em `.claude/babysit-prs.state`.
+O JSON deve ser gerado via `$state | ConvertTo-Json -Depth 5`.
+
 ### Passo 4 -- Relatorio da iteracao
 
 Exibir resumo:
@@ -155,7 +233,7 @@ Exibir resumo:
 [babysit-prs HH:MM] N PRs verificados
 
 <para cada PR:>
-  PR #N <titulo>: <REBASE OK | REBASE RESOLVIDO (inteligente) | REBASE ABORTADO: <motivo> | UPDATE-BRANCH OK | UPDATE-BRANCH FALHOU: <motivo> | CI AUTO-FIX OK | CI FALHOU (manual): <motivo> | OK>
+  PR #N <titulo>: <REBASE OK | REBASE RESOLVIDO (inteligente) | REBASE ABORTADO: <motivo> | UPDATE-BRANCH OK | UPDATE-BRANCH FALHOU: <motivo> | CI AUTO-FIX OK | CI FALHOU (manual): <motivo> | IGNORADO (sem mudanca desde ultimo tratamento) | OK>
 
 Proxima verificacao em 10 minutos.
 ```

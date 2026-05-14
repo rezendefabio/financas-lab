@@ -64,6 +64,7 @@ docs/prompts/
 
 # ─── Estado persistente de routines (gerado em runtime, nao versionado) ─────
 .claude/daily-summary.state
+.claude/babysit-prs.state
 
 # ─── State persistente de tasks do /plan (efemero, nao versionado) ──────────
 .claude/tasks.json
