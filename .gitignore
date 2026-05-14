@@ -58,6 +58,9 @@ data/
 .claude/scheduled_tasks.lock
 .claude/worktrees/
 
+# ─── Prompts de sub-etapas (efemeros, conteudo embutido inline pelo /batch) ────
+docs/prompts/
+
 # ─── Sistema operacional ─────────────────────────────────────────────────────
 .DS_Store
 Thumbs.db
