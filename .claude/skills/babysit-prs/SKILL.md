@@ -40,11 +40,12 @@ Se `mergeable == "MERGEABLE"` ou `"UNKNOWN"`: pular rebase.
 **2b -- Verificar CI:**
 
 ```powershell
-gh pr checks <number>
+$checks = gh pr checks $number --json name,state,conclusion | ConvertFrom-Json
+$failing = $checks | Where-Object { $_.conclusion -eq "FAILURE" -or $_.state -eq "FAILURE" }
 ```
 
-Se houver checks com status `fail`: registrar no relatorio (Passo 3b).
-Se todos `pass` ou `pending`: sem acao.
+Se `$failing` nao for vazio: executar auto-fix (Passo 3b).
+Se todos passando ou pendentes: sem acao.
 
 ### Passo 3a -- Auto-rebase (apenas se CONFLICTING)
 
@@ -139,10 +140,115 @@ Set-Location $repoRoot
 ```
 - Registrar no relatorio: "PR #N: rebase executado com sucesso"
 
-### Passo 3b -- Registrar CI falhando
+### Passo 3b -- Auto-fix de CI
 
-Para cada PR com check falhando, registrar:
-"PR #N (<titulo>): CI falhou -- <nome do check>"
+Para cada PR com CI falhando:
+
+```powershell
+$branch = (gh pr view $number --json headRefName | ConvertFrom-Json).headRefName
+$worktreePath = "$repoRoot/.claude/worktrees/babysit-ci-$number"
+
+# Obter logs do run com falha
+$runId = (gh run list --branch $branch --json databaseId,conclusion `
+    | ConvertFrom-Json `
+    | Where-Object { $_.conclusion -eq "failure" } `
+    | Select-Object -First 1).databaseId
+
+$logsFailed = gh run view $runId --log-failed
+```
+
+Spawnar sub-agente para analisar e corrigir:
+
+Usar o Agent tool com subagent_type `general-purpose` e o seguinte prompt,
+substituindo os placeholders pelos valores reais (`{BRANCH}` por `$branch`,
+`{PR_NUMBER}` por `$number`, `{WORKTREE_PATH}` por `$worktreePath`,
+`{REPO_ROOT}` por `$repoRoot`, `{LOGS_FAILED}` por `$logsFailed`):
+
+---
+Voce e um desenvolvedor senior debugando um CI vermelho.
+Branch: {BRANCH}. PR: #{PR_NUMBER}. Worktree a criar: {WORKTREE_PATH}.
+
+## Log de falha do CI
+
+```
+{LOGS_FAILED}
+```
+
+## Tarefa
+
+Corrija o problema que causou a falha acima. Voce tem no maximo 2 tentativas.
+
+### Passo 1 -- Entender a falha
+
+Leia o log acima e identifique:
+- Qual etapa falhou (compilacao, testes, lint, build)?
+- Qual arquivo e qual linha causaram a falha?
+- A correcao e mecanica (import faltando, assertion errada, erro de sintaxe,
+  campo renomeado, tipo errado) ou exige decisao de negocio / redesign?
+
+Se exigir decisao de negocio ou redesign arquitetural: reportar
+`NAO CORRIGIDO: <motivo> -- requer intervencao humana` e encerrar sem abrir worktree.
+
+### Passo 2 -- Abrir worktree e corrigir
+
+```powershell
+Set-Location {REPO_ROOT}
+git fetch origin
+git worktree add {WORKTREE_PATH} {BRANCH}
+Set-Location {WORKTREE_PATH}
+```
+
+Leia os arquivos relevantes indicados pelo log. Aplique a correcao minima
+necessaria para resolver a falha sem alterar logica nao relacionada.
+
+### Passo 3 -- Validar localmente
+
+Se a falha foi em testes ou build Java:
+```powershell
+.\scripts\check.ps1
+```
+
+Se a falha foi em testes ou build frontend:
+```powershell
+.\scripts\check-front.ps1
+```
+
+Se o gate local passar (`$LASTEXITCODE -eq 0`): ir para Passo 4.
+
+Se falhar: analisar o novo erro.
+- Se for um erro diferente que voce consegue corrigir: corrigir e rodar o gate novamente (esta e a segunda tentativa).
+- Se falhar novamente ou o erro for irrecuperavel: `git worktree remove {WORKTREE_PATH} --force`, reportar
+  `NAO CORRIGIDO: <motivo da falha persistente>` e encerrar.
+
+### Passo 4 -- Commit e push
+
+```powershell
+git add -A
+git commit -m "fix(<scope>): corrige CI -- <descricao curta do problema>"
+git push origin {BRANCH}
+```
+
+Se o push falhar por branch divergida (`rejected ... non-fast-forward`):
+- Fazer rebase: `git rebase origin/{BRANCH}`
+- Se o rebase tiver conflitos: resolver usando o mesmo raciocinio do Passo 2
+  (entender a intencao de cada lado, produzir sintese correta, sem marcadores
+  de conflito no resultado final). Continuar com `git rebase --continue --no-edit`.
+- Se o rebase suceder: `git push origin {BRANCH} --force-with-lease`
+- Se o rebase falhar com contradicao genuina: `git rebase --abort`,
+  `git worktree remove {WORKTREE_PATH} --force`,
+  reportar `NAO CORRIGIDO: conflito pos-fix requer intervencao manual`.
+
+```powershell
+git worktree remove {WORKTREE_PATH}
+```
+
+Reportar `CORRIGIDO: <descricao do que foi corrigido>`.
+---
+
+Com base no retorno do sub-agente:
+- Se `CORRIGIDO`: registrar "PR #N: CI auto-fix OK -- <descricao>"
+- Se `NAO CORRIGIDO`: registrar "PR #N: CI falhou -- auto-fix nao aplicavel: <motivo>"
+- Em ambos os casos: `Set-Location $repoRoot`
 
 ### Passo 4 -- Relatorio da iteracao
 
@@ -152,7 +258,7 @@ Exibir resumo:
 [babysit-prs HH:MM] N PRs verificados
 
 <para cada PR:>
-  PR #N <titulo>: <REBASE OK | REBASE RESOLVIDO (inteligente) | REBASE ABORTADO: <motivo> | CI FALHOU: <check> | OK>
+  PR #N <titulo>: <REBASE OK | REBASE RESOLVIDO (inteligente) | REBASE ABORTADO: <motivo> | CI AUTO-FIX OK | CI FALHOU (manual): <motivo> | OK>
 
 Proxima verificacao em 10 minutos.
 ```
