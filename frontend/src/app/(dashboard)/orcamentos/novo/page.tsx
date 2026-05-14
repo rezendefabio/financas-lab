@@ -1,5 +1,5 @@
 'use client'
-import { useForm, Controller, type Resolver } from 'react-hook-form'
+import { useForm, type Resolver } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
@@ -97,56 +97,54 @@ export default function NovoOrcamentoPage() {
                 className="space-y-4"
               >
                 {/* Categoria */}
-                <FormItem>
-                  <FormLabel>Categoria</FormLabel>
-                  <Controller
-                    control={form.control}
-                    name="categoriaId"
-                    render={({ field }) => (
-                      <Select value={field.value} onValueChange={field.onChange}>
-                        <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Selecione uma categoria" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {categoriasDespesa.length > 0 && (
-                            <>
-                              <div className="px-2 py-1 text-xs font-semibold text-muted-foreground">
-                                Despesa
+                <FormField
+                  control={form.control}
+                  name="categoriaId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Categoria</FormLabel>
+                      <FormControl>
+                        <Select value={field.value} onValueChange={field.onChange}>
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Selecione uma categoria" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {categoriasDespesa.length > 0 && (
+                              <>
+                                <div className="px-2 py-1 text-xs font-semibold text-muted-foreground">
+                                  Despesa
+                                </div>
+                                {categoriasDespesa.map((c) => (
+                                  <SelectItem key={c.id} value={c.id}>
+                                    {c.nome}
+                                  </SelectItem>
+                                ))}
+                              </>
+                            )}
+                            {categoriasReceita.length > 0 && (
+                              <>
+                                <div className="px-2 py-1 text-xs font-semibold text-muted-foreground">
+                                  Receita
+                                </div>
+                                {categoriasReceita.map((c) => (
+                                  <SelectItem key={c.id} value={c.id}>
+                                    {c.nome}
+                                  </SelectItem>
+                                ))}
+                              </>
+                            )}
+                            {categoriasOrdenadas.length === 0 && (
+                              <div className="px-2 py-2 text-sm text-muted-foreground">
+                                Nenhuma categoria disponivel
                               </div>
-                              {categoriasDespesa.map((c) => (
-                                <SelectItem key={c.id} value={c.id}>
-                                  {c.nome}
-                                </SelectItem>
-                              ))}
-                            </>
-                          )}
-                          {categoriasReceita.length > 0 && (
-                            <>
-                              <div className="px-2 py-1 text-xs font-semibold text-muted-foreground">
-                                Receita
-                              </div>
-                              {categoriasReceita.map((c) => (
-                                <SelectItem key={c.id} value={c.id}>
-                                  {c.nome}
-                                </SelectItem>
-                              ))}
-                            </>
-                          )}
-                          {categoriasOrdenadas.length === 0 && (
-                            <div className="px-2 py-2 text-sm text-muted-foreground">
-                              Nenhuma categoria disponivel
-                            </div>
-                          )}
-                        </SelectContent>
-                      </Select>
-                    )}
-                  />
-                  {form.formState.errors.categoriaId && (
-                    <p className="text-sm text-destructive">
-                      {form.formState.errors.categoriaId.message}
-                    </p>
+                            )}
+                          </SelectContent>
+                        </Select>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
                   )}
-                </FormItem>
+                />
 
                 {/* Valor Limite */}
                 <FormField
