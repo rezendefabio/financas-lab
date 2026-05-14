@@ -21,7 +21,7 @@ import {
   FormMessage,
 } from '@/shared/components/ui/form'
 import { MoneyInput } from '@/shared/components/MoneyInput'
-import { formatBRL, formatDate } from '@/shared/lib/formatters'
+import { formatBRL, formatDate, formatDateTime } from '@/shared/lib/formatters'
 import type { StatusMeta } from '@/features/metas/types/meta'
 
 function statusVariant(status: StatusMeta): 'default' | 'secondary' | 'outline' | 'destructive' {
@@ -140,7 +140,7 @@ export default function MetaDetalhePage() {
             </div>
             <div>
               <p className="text-muted-foreground">Criado em</p>
-              <p className="font-medium">{formatDate(meta.criadoEm)}</p>
+              <p className="font-medium">{formatDateTime(meta.criadoEm)}</p>
             </div>
             <div>
               <p className="text-muted-foreground">Status</p>

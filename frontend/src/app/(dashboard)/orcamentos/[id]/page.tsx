@@ -10,7 +10,7 @@ import { Button } from '@/shared/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card'
 import { Progress } from '@/shared/components/ui/progress'
 import { Skeleton } from '@/shared/components/ui/skeleton'
-import { formatBRL, formatDate } from '@/shared/lib/formatters'
+import { formatBRL, formatDateTime } from '@/shared/lib/formatters'
 import type { OrcamentoStatus } from '@/features/orcamentos/types/orcamento'
 
 function formatMesAno(mesAno: string): string {
@@ -133,7 +133,7 @@ export default function OrcamentoDetalhePage() {
             </div>
             <div>
               <p className="text-muted-foreground">Criado em</p>
-              <p className="font-medium">{formatDate(orcamento.criadoEm)}</p>
+              <p className="font-medium">{formatDateTime(orcamento.criadoEm)}</p>
             </div>
           </div>
         </CardContent>
