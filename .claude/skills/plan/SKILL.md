@@ -17,13 +17,14 @@ Lancamento Recorrente").
 
 ## Passo 0 -- Preparar state
 
-```powershell
-$tasksFile = ".claude/tasks.json"
-if (-not (Test-Path $tasksFile)) {
-    '{ "tasks": [] }' | Set-Content $tasksFile
-}
-$planId = "plan-$(Get-Date -Format 'yyyyMMdd-HHmmss')"
+```bash
+TASKS_FILE=".claude/tasks.json"
+[ -f "$TASKS_FILE" ] || printf '{ "tasks": [] }' > "$TASKS_FILE"
+PLAN_ID="plan-$(date +%Y%m%d-%H%M%S)"
+echo "$PLAN_ID"
 ```
+
+Guardar o valor impresso como `planId` para uso nos passos seguintes.
 
 ## Passo 1 -- Spawnar sub-agente planejador
 
@@ -136,6 +137,29 @@ Para cada task, usar o Agent tool com:
 
 ```
 Voce e um executor autonomo no projeto financas-lab.
+
+## Verificacao obrigatoria de ambiente (executar ANTES de qualquer outra acao)
+
+```bash
+branch=$(git branch --show-current)
+echo "Branch atual: $branch"
+if [ "$branch" = "main" ]; then
+  echo "ERRO CRITICO: executor esta na branch main. Abortar imediatamente."
+  exit 1
+fi
+```
+
+Se o comando acima retornar "main": parar tudo e reportar
+`BLOQUEADOR: executor iniciou em main -- nao e permitido modificar main diretamente`.
+
+## Restricao absoluta de ambiente
+
+- Voce esta num worktree git ISOLADO. A branch `main` e BLOQUEADA.
+- NUNCA criar, modificar ou deletar arquivos fora do diretorio do seu worktree.
+- NUNCA fazer `git checkout main` ou `git switch main`.
+- NUNCA instalar dependencias (npm install, mvn install) no diretorio raiz do
+  repositorio principal -- apenas no seu worktree.
+- Se precisar instalar dependencias: verificar que esta no worktree antes de rodar.
 
 Sua unica responsabilidade: executar TODOS os passos descritos abaixo de forma
 completamente autonoma, sem pedir aprovacao ao operador.
