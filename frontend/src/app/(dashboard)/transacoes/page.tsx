@@ -2,40 +2,24 @@
 import { useQuery } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
 import { transacoesService } from '@/features/transacoes/services/transacoes.service'
-import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card'
+import { Card, CardContent } from '@/shared/components/ui/card'
 import { Badge } from '@/shared/components/ui/badge'
 import { Button } from '@/shared/components/ui/button'
 import { Skeleton } from '@/shared/components/ui/skeleton'
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from '@/shared/components/ui/table'
 import { formatBRL, formatTipoTransacao, formatDate } from '@/shared/lib/formatters'
-import type { Transacao } from '@/features/transacoes/types/transacao'
 
 function badgeVariant(tipo: string) {
   if (tipo === 'RECEITA') return 'default' as const
   if (tipo === 'DESPESA') return 'destructive' as const
   return 'secondary' as const
-}
-
-function TransacaoCard({ transacao }: { transacao: Transacao }) {
-  return (
-    <Card>
-      <CardHeader className="pb-2">
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-base truncate max-w-[60%]">
-            {transacao.descricao}
-          </CardTitle>
-          <Badge variant={badgeVariant(transacao.tipo)}>
-            {formatTipoTransacao(transacao.tipo)}
-          </Badge>
-        </div>
-      </CardHeader>
-      <CardContent>
-        <p className="text-xl font-bold tabular-nums">
-          {formatBRL(transacao.valor)}
-        </p>
-        <p className="text-xs text-muted-foreground mt-1">{formatDate(transacao.data)}</p>
-      </CardContent>
-    </Card>
-  )
 }
 
 export default function TransacoesPage() {
@@ -55,19 +39,30 @@ export default function TransacoesPage() {
       </div>
 
       {isLoading && (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {[1, 2, 3].map((i) => (
-            <Card key={i}>
-              <CardHeader>
-                <Skeleton className="h-5 w-40" />
-              </CardHeader>
-              <CardContent className="space-y-2">
-                <Skeleton className="h-6 w-28" />
-                <Skeleton className="h-4 w-20" />
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+        <Card>
+          <CardContent className="p-0">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Descricao</TableHead>
+                  <TableHead>Tipo</TableHead>
+                  <TableHead>Data</TableHead>
+                  <TableHead className="text-right">Valor</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {[1, 2, 3].map((i) => (
+                  <TableRow key={i}>
+                    <TableCell><Skeleton className="h-4 w-40" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-20" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-28" /></TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
       )}
 
       {isError && (
@@ -82,11 +77,36 @@ export default function TransacoesPage() {
       )}
 
       {transacoes.length > 0 && (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {transacoes.map((t) => (
-            <TransacaoCard key={t.id} transacao={t} />
-          ))}
-        </div>
+        <Card>
+          <CardContent className="p-0">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Descricao</TableHead>
+                  <TableHead>Tipo</TableHead>
+                  <TableHead>Data</TableHead>
+                  <TableHead className="text-right">Valor</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {transacoes.map((t) => (
+                  <TableRow key={t.id}>
+                    <TableCell className="font-medium">{t.descricao}</TableCell>
+                    <TableCell>
+                      <Badge variant={badgeVariant(t.tipo)}>
+                        {formatTipoTransacao(t.tipo)}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>{formatDate(t.data)}</TableCell>
+                    <TableCell className="text-right tabular-nums">
+                      {formatBRL(t.valor)}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
       )}
 
       {data && data.totalElements > 20 && (

@@ -39,7 +39,7 @@ function MetaRow({ meta, onVer }: { meta: Meta; onVer: () => void }) {
     <tr className="border-b last:border-0 hover:bg-muted/30 transition-colors">
       <td className="py-3 px-4 text-sm">{meta.nome}</td>
       <td className="py-3 px-4 text-sm">{formatDate(meta.prazo)}</td>
-      <td className="py-3 px-4 text-sm tabular-nums">{formatBRL(meta.valorAlvo.valor)}</td>
+      <td className="py-3 px-4 text-sm text-right tabular-nums">{formatBRL(meta.valorAlvo.valor)}</td>
       <td className="py-3 px-4 text-sm">
         <div className="flex items-center gap-2">
           <Badge variant={statusVariant(meta.status)}>{statusLabel(meta.status)}</Badge>
@@ -95,7 +95,7 @@ export default function MetasPage() {
               <tr className="border-b bg-muted/50">
                 <th className="py-3 px-4 text-left text-sm font-medium text-muted-foreground">Nome</th>
                 <th className="py-3 px-4 text-left text-sm font-medium text-muted-foreground">Prazo</th>
-                <th className="py-3 px-4 text-left text-sm font-medium text-muted-foreground">Valor Alvo</th>
+                <th className="py-3 px-4 text-right text-sm font-medium text-muted-foreground">Valor Alvo</th>
                 <th className="py-3 px-4 text-left text-sm font-medium text-muted-foreground">Status</th>
                 <th className="py-3 px-4 text-left text-sm font-medium text-muted-foreground">Acoes</th>
               </tr>
