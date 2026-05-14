@@ -3,7 +3,7 @@
 > Documento de tracking. Mostra **onde estamos** na construção da fábrica e do produto.
 > Atualizado conforme camadas avançam. Diferente do `decisoes.md` (que registra escolhas) e dos `adrs.md` (que registram porquês), este documento responde a pergunta: "em que ponto eu estou?".
 
-**Última atualização:** 2026-05-14 (Sub-etapa 5.34 -- housekeeping permissoes e sintaxe bash)
+**Última atualização:** 2026-05-14 (Sub-etapa 5.35 -- ADR-012: registra conflict-resolver e ci-fixer como agents)
 
 ---
 
@@ -159,6 +159,21 @@ Configurar `CLAUDE.md` rico, criar 3-5 subagents focados, criar 5-10 skills (sla
 Ativar a fábrica de fato: rodar features no Tier 2, configurar 3 routines Tier 1, validar paralelismo se necessário.
 
 ### Sub-etapas concluídas
+
+- **5.35 -- ADR-012: registra conflict-resolver e ci-fixer como agents** (2026-05-14):
+  Debito tecnico da 5.29 resolvido. Os sub-agentes de resolucao de conflito e de
+  auto-fix de CI que estavam definidos inline no `.claude/skills/babysit-prs/SKILL.md`
+  foram extraidos para arquivos registrados em `.claude/agents/` conforme ADR-012.
+  **(1) `.claude/agents/conflict-resolver.md`:** agente Sonnet com tools Read/Edit/Write/Bash.
+  System prompt extraido do babysitter (fluxo 3 passos: entender contexto, resolver cada
+  conflito com raciocinio sobre intencao de cada lado, aplicar e continuar o rebase).
+  **(2) `.claude/agents/ci-fixer.md`:** agente Sonnet com tools Read/Edit/Write/Bash/Grep/Glob.
+  System prompt extraido do babysitter (fluxo 4 passos: entender a falha, abrir worktree,
+  validar localmente, commit e push). **(3) `.claude/skills/babysit-prs/SKILL.md`:** blocos
+  inline substituidos por instrucoes que leem o arquivo do agente registrado e passam seu
+  conteudo como prompt. Logica de resolucao preservada integralmente -- apenas o local
+  de definicao do prompt mudou. Conformidade com ADR-012: todo sub-agente do projeto tem
+  arquivo de definicao em `.claude/agents/<nome>.md`. PR aberto.
 
 - **5.34 -- housekeeping: permissoes setup.ps1, sintaxe bash nas skills de loop, cleanup worktrees /batch** (2026-05-14):
   Tres debitos acumulados resolvidos juntos. **(1) `scripts/setup.ps1`:** duas permissoes
