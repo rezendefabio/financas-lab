@@ -7,14 +7,17 @@ disable-model-invocation: true
 Execute as tasks em paralelo seguindo os passos abaixo.
 Pare e reporte ao operador se qualquer verificacao inicial falhar.
 
-## Passo 0 -- Resolver e verificar paths
+## Passo 0 -- Resolver, verificar e ler conteudo
 
 Para cada argumento recebido:
 - Se comeca com `docs/prompts/`: usar o path literal
 - Caso contrario: expandir para `docs/prompts/prompt-{arg}.md`
 
-Verificar que cada arquivo existe usando o tool Glob com o pattern exato do path.
-Se o Glob retornar lista vazia para qualquer path: reportar "ERRO: arquivo nao encontrado: {path}" e terminar sem spawnar nada.
+Para cada path resolvido:
+1. Usar o tool Read para ler o arquivo na integra.
+   Se o Read retornar erro (arquivo nao encontrado): reportar
+   "ERRO: arquivo nao encontrado: {path}" e terminar sem spawnar nada.
+2. Guardar o conteudo lido para usar no Passo 2.
 
 ## Passo 1 -- Confirmar execucao
 
@@ -39,15 +42,19 @@ Para cada task na lista, os parametros do Agent call sao:
 - subagent_type: "general-purpose"
 - isolation: "worktree"
 - run_in_background: false
-- prompt: template abaixo com {PATH} substituido pelo path real
+- prompt: template abaixo com {CONTEUDO_DO_ARQUIVO} e {LABEL} substituidos
 
 ### Template do prompt do sub-agente
 
 ```
 Voce e um executor autonomo no projeto financas-lab.
 
-Sua unica responsabilidade: ler o arquivo `{PATH}` e executar TODOS os passos
-descritos nele de forma completamente autonoma, sem pedir aprovacao ao operador.
+Sua unica responsabilidade: executar TODOS os passos descritos abaixo de forma
+completamente autonoma, sem pedir aprovacao ao operador.
+
+## Instrucoes da tarefa
+
+{CONTEUDO_DO_ARQUIVO}
 
 ## Contexto do ambiente
 
@@ -56,27 +63,26 @@ descritos nele de forma completamente autonoma, sem pedir aprovacao ao operador.
 - Docker esta rodando (daemon ativo). check.ps1 e check-front.ps1 funcionam.
 - Git credentials e gh CLI estao configurados -- push e gh pr create funcionam.
 
-## Sobre skills invocados no prompt
+## Sobre skills invocados na tarefa
 
 O Skill tool NAO funciona para skills com disable-model-invocation:true.
-Para qualquer skill mencionado no prompt (/ship, /write-test, /feature, etc.):
+Para qualquer skill mencionado nas instrucoes (/ship, /write-test, /feature, etc.):
   1. Leia o arquivo `.claude/skills/<nome>/SKILL.md`
   2. Execute a logica descrita nele manualmente, passo a passo
 
 ## Execucao
 
 1. Leia `CLAUDE.md`
-2. Leia `{PATH}` na integra
-3. Execute cada passo do fluxo de execucao descrito no arquivo
-4. Nao pule passos. Nao invente passos que nao estao no arquivo.
-5. Se um passo falhar: registre o erro e tente corrigir antes de abortar.
+2. Execute cada passo do fluxo de execucao descrito em "Instrucoes da tarefa" acima
+3. Nao pule passos. Nao invente passos que nao estao nas instrucoes.
+4. Se um passo falhar: registre o erro e tente corrigir antes de abortar.
    Apenas aborte se o erro for irrecuperavel (ex: check.ps1 falha apos 2 tentativas).
 
 ## Relatorio final
 
 Ao terminar (sucesso ou falha), reporte:
 
-Task:     {PATH}
+Task:     {LABEL}
 Branch:   <branch criada>
 Commits:  <lista de commits>
 PR:       <URL do PR ou "nao aberto">

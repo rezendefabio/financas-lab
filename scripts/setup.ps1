@@ -32,6 +32,13 @@ if (-not (Test-Path $settingsPath)) {
     [System.Environment]::CurrentDirectory = (Get-Location).Path
     $settingsContent = @'
 {
+  "permissions": {
+    "allow": [
+      "Bash(git rebase *)",
+      "Bash(git worktree *)",
+      "Bash(git push * --force-with-lease)"
+    ]
+  },
   "hooks": {
     "PostToolUse": [
       {

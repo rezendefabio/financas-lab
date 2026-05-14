@@ -3,7 +3,7 @@
 > Documento de tracking. Mostra **onde estamos** na construção da fábrica e do produto.
 > Atualizado conforme camadas avançam. Diferente do `decisoes.md` (que registra escolhas) e dos `adrs.md` (que registram porquês), este documento responde a pergunta: "em que ponto eu estou?".
 
-**Última atualização:** 2026-05-14 (Sub-etapa 5.27 -- Orcamentos frontend: listagem, criacao e detalhe com progresso)
+**Última atualização:** 2026-05-14 (Sub-etapa 5.28 -- /batch embute conteudo inline; gitignore docs/prompts/)
 
 ---
 
@@ -159,6 +159,20 @@ Configurar `CLAUDE.md` rico, criar 3-5 subagents focados, criar 5-10 skills (sla
 Ativar a fábrica de fato: rodar features no Tier 2, configurar 3 routines Tier 1, validar paralelismo se necessário.
 
 ### Sub-etapas concluídas
+
+- **5.28 -- /batch embute conteudo inline; gitignore docs/prompts/** (2026-05-14):
+  resolve problema recorrente de arquivos untracked em `docs/prompts/` bloqueando
+  operacoes git do babysitter. **(1) `.gitignore`:** entrada `docs/prompts/` adicionada
+  -- arquivos de prompt sao efemeros, conteudo vai inline para o executor via /batch.
+  **(2) `/batch` (SKILL.md):** Passo 0 substituido -- em vez de verificar existencia com
+  Glob, usa tool Read para ler o arquivo na integra e guarda o conteudo. Template do
+  sub-agente reescrito: executor recebe `{CONTEUDO_DO_ARQUIVO}` inline em vez de um
+  path `{PATH}` para ler do disco. Label do relatorio final usa o path original como
+  `{LABEL}`. **(3) `scripts/setup.ps1`:** bloco de permissoes `git rebase`, `git worktree`,
+  `git push --force-with-lease` confirmado presente. **(4) `CLAUDE.md`:** secao "Modelo
+  executor" atualizada -- item 4 do Fluxo reformulado para descrever o novo mecanismo
+  inline; mencao a "commitar o .md da sub-etapa" removida das convencoes implicitas.
+  PR aberto.
 
 - **5.27 -- Orcamentos frontend (listagem, criacao e detalhe com progresso)** (2026-05-14):
   tres paginas Next.js para o bounded context `orcamento`. **(1) Feature layer:**

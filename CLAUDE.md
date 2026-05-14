@@ -94,8 +94,10 @@ Fluxo:
 1. Orquestrador gera `docs/prompts/prompt-etapa-X-Y.md` (arquivo fica untracked no disco)
 2. Operador abre terminal novo e roda: `claude --dangerously-skip-permissions`
 3. Operador instrui o executor: `"leia docs/prompts/prompt-etapa-X-Y.md e execute"`
-4. Executor le o arquivo, executa todas as tarefas, commita o `.md` junto com os docs
-   no ultimo commit da branch e entrega o PR autonomamente
+4. Executor recebe o conteudo das instrucoes inline (via /batch) ou le o arquivo
+   de prompt se invocado diretamente. Entrega o PR autonomamente.
+   Nota: arquivos de prompt em docs/prompts/ sao efemeros e gitignored -- o executor
+   NAO commita o .md da sub-etapa. O registro fica em docs/progresso.md.
 
 Para execucao sem interrupcao de aprovacao de ferramentas, o executor deve ser iniciado com:
 
@@ -121,7 +123,6 @@ o executor preenche a lacuna sem reportar como bloqueador.
 **Entrega:**
 
 - Rodar `./mvnw verify` antes de `/ship` -- BUILD SUCCESS obrigatorio.
-- Commitar `docs/prompts/prompt-etapa-X-Y.md` no ultimo commit da branch (executor nao abre PR separado para o prompt).
 
 **Skills com `disable-model-invocation: true`** (`/feature`, `/migrate`, `/write-test`, `/ship`):
 nao podem ser invocadas via Skill tool -- executor le a skill, entende o padrao e executa manualmente.
