@@ -3,7 +3,7 @@
 > Documento de tracking. Mostra **onde estamos** na construção da fábrica e do produto.
 > Atualizado conforme camadas avançam. Diferente do `decisoes.md` (que registra escolhas) e dos `adrs.md` (que registram porquês), este documento responde a pergunta: "em que ponto eu estou?".
 
-**Última atualização:** 2026-05-14 (Sub-etapa 5.44 -- /plan: fix sintaxe bash no Passo 0; guarda contra execucao na branch main)
+**Última atualização:** 2026-05-14 (Sub-etapa 5.45 -- MoneyInput: alinha valor a direita)
 
 ---
 
@@ -159,6 +159,12 @@ Configurar `CLAUDE.md` rico, criar 3-5 subagents focados, criar 5-10 skills (sla
 Ativar a fábrica de fato: rodar features no Tier 2, configurar 3 routines Tier 1, validar paralelismo se necessário.
 
 ### Sub-etapas concluídas
+
+- **5.45 -- MoneyInput: alinha valor a direita** (2026-05-14):
+  Componente `MoneyInput.tsx` corrigido para alinhar o valor monetario a direita.
+  Adicionado `'text-right'` via `cn()` no `className` do `NumericFormat`, mantendo
+  todos os estilos existentes e o `className` externo passado por prop. Convencao
+  padrao de software financeiro. PR aberto.
 
 - **5.44 -- /plan: fix sintaxe bash no Passo 0; guarda contra execucao na branch main** (2026-05-14):
   Dois problemas acumulados na skill `/plan` corrigidos. **(1) Passo 0 -- sintaxe bash POSIX:**
