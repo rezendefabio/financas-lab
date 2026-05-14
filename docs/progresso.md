@@ -3,7 +3,7 @@
 > Documento de tracking. Mostra **onde estamos** na construção da fábrica e do produto.
 > Atualizado conforme camadas avançam. Diferente do `decisoes.md` (que registra escolhas) e dos `adrs.md` (que registram porquês), este documento responde a pergunta: "em que ponto eu estou?".
 
-**Última atualização:** 2026-05-13 (Sub-etapa 5.21 -- Skill /babysit-prs loop babysitter de PRs)
+**Última atualização:** 2026-05-13 (Sub-etapa 5.22 -- Fix tipo Transacao e NaN na listagem)
 
 ---
 
@@ -159,6 +159,19 @@ Configurar `CLAUDE.md` rico, criar 3-5 subagents focados, criar 5-10 skills (sla
 Ativar a fábrica de fato: rodar features no Tier 2, configurar 3 routines Tier 1, validar paralelismo se necessário.
 
 ### Sub-etapas concluídas
+
+- **5.22 -- Fix tipo Transacao e NaN na listagem** (2026-05-13): correcao de bug critico
+  na pagina `/transacoes`. `TransacaoResponse.java` retorna `valor` como `BigDecimal` plano
+  e `moeda` como `String` plana, mas o tipo TypeScript `Transacao` declarava
+  `valor: ValorMonetario` (objeto aninhado `{ valor: number, moeda: string }`), causando
+  `transacao.valor.valor == undefined == NaN` no `formatBRL`. **(1) Tipo corrigido:**
+  `frontend/src/features/transacoes/types/transacao.ts` substituido -- `valor: number` e
+  `moeda: string` como campos planos; import de `ValorMonetario` removido; campo
+  `atualizadoEm` adicionado (presente no Java mas ausente no tipo anterior).
+  **(2) Componente corrigido:** `page.tsx` alterado de `formatBRL(transacao.valor.valor)`
+  para `formatBRL(transacao.valor)`. **(3) Testes corrigidos:** mocks em `page.test.tsx`
+  atualizados de `valor: { valor: X, moeda: 'BRL' }` para `valor: X, moeda: 'BRL'`.
+  71 testes passando, `check-front.ps1` verde (lint + testes + build). PR aberto.
 
 - **5.19 -- Transacoes frontend (listagem e criacao)** (2026-05-13): paginas
   `/transacoes` e `/transacoes/novo` no frontend. **(1) Fix B6:** `CriarTransacaoRequest`
