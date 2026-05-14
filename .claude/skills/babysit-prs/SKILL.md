@@ -63,12 +63,72 @@ Set-Location $worktreePath
 git rebase origin/main
 ```
 
-Se o rebase falhar (conflito nao-trivial):
-- Abortar: `git rebase --abort`
-- Registrar no relatorio: "PR #N: rebase falhou -- conflito requer resolucao manual (exit $LASTEXITCODE)"
-- Remover worktree: `git worktree remove $worktreePath --force`
-- Retornar ao raiz: `Set-Location $repoRoot`
-- Continuar para o proximo PR
+Se o rebase falhar (`$LASTEXITCODE -ne 0`):
+
+  **Spawnar sub-agente para resolver os conflitos:**
+
+  Usar o Agent tool com subagent_type `general-purpose` e o seguinte prompt,
+  substituindo {WORKTREE_PATH} e {PR_NUMBER} pelos valores reais:
+
+  ---
+  Voce e um desenvolvedor senior fazendo merge manual de um rebase com conflito.
+  Worktree: {WORKTREE_PATH}. PR: #{PR_NUMBER}.
+
+  Sua meta: para cada arquivo em conflito, produzir um resultado correto que
+  satisfaca a intencao de ambos os lados. So aborte diante de contradicao
+  genuina que nao tem resolucao sem decisao humana.
+
+  ## Passo 1 -- Entender o contexto
+
+  ```powershell
+  Set-Location {WORKTREE_PATH}
+  git log --oneline -5
+  git diff --name-only --diff-filter=U
+  ```
+
+  Para cada arquivo em conflito, leia o arquivo completo (com marcadores
+  `<<<<<<<`, `=======`, `>>>>>>>`). Se precisar de contexto adicional para
+  entender a intencao de alguma mudanca (arquivos relacionados, mensagens de
+  commit, dependencias), leia o que for necessario.
+
+  ## Passo 2 -- Resolver cada conflito
+
+  Para cada arquivo em conflito:
+
+  1. Entenda o que "ours" (origin/main) pretendia fazer naquele trecho.
+  2. Entenda o que "theirs" (branch do PR) pretendia fazer naquele trecho.
+  3. Produza o resultado que satisfaz ambas as intencoes, de forma correta e
+     idiomatica para o tipo de arquivo e linguagem.
+
+  O resultado nao precisa ser "um lado + o outro lado colados". Pode ser uma
+  sintese -- o que importa e que a intencao de cada lado seja preservada no
+  resultado final, sem duplicatas desnecessarias, sem codigo invalido.
+
+  Se em algum trecho as intencoes sao contraditorias e nao ha sintese possivel
+  sem uma decisao que voce nao consegue tomar com seguranca: marque esse arquivo
+  como NAO RESOLVIDO e registre o motivo preciso.
+
+  ## Passo 3 -- Aplicar e continuar
+
+  Para cada arquivo resolvido:
+  - Escrever o arquivo com o conteudo final (sem nenhum marcador de conflito)
+  - `git add <arquivo>`
+
+  Se todos os arquivos foram resolvidos:
+  - `git rebase --continue --no-edit`
+  - Se suceder: reportar `RESOLVIDO: <descricao de como cada arquivo foi tratado>`
+  - Se surgir novo conflito (proximo commit do rebase): repetir o processo
+
+  Se algum arquivo NAO foi resolvido:
+  - `git rebase --abort`
+  - Reportar `ABORTADO: <arquivo> -- <motivo da contradicao>`
+  ---
+
+  Com base no retorno do sub-agente:
+  - Se `RESOLVIDO`: `git push origin $branch --force-with-lease`, remover worktree,
+    registrar "PR #N: rebase com resolucao inteligente OK"
+  - Se `ABORTADO`: remover worktree, registrar a mensagem como motivo
+  - Em ambos os casos: `Set-Location $repoRoot`
 
 Se o rebase suceder:
 ```powershell
