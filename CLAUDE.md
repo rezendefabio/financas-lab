@@ -35,6 +35,8 @@ Estado atual e camadas: `docs/progresso.md` (secao "Status geral por Camada").
   e espelhar cada anotacao Java no schema Zod: `@NotBlank` → `.min(1)`,
   `@Size(max=N)` → `.max(N)`, `@Size(min=M,max=N)` → `.length` ou `.min().max()`,
   `@Min(N)` → `.min(N)`. Divergencia entre Zod e Java e bloqueador (B6).
+- Mapeamento de tipo-backend para componente: antes de implementar qualquer campo,
+  consultar `docs/field-type-catalog.md`. Violacao e bloqueador B7.
 
 ## Ambiente
 
