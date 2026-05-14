@@ -20,7 +20,7 @@ import {
   FormLabel,
   FormMessage,
 } from '@/shared/components/ui/form'
-import { Input } from '@/shared/components/ui/input'
+import { MoneyInput } from '@/shared/components/MoneyInput'
 import { formatBRL, formatDate } from '@/shared/lib/formatters'
 import type { StatusMeta } from '@/features/metas/types/meta'
 
@@ -193,12 +193,10 @@ export default function MetaDetalhePage() {
                     <FormItem>
                       <FormLabel>Valor (R$)</FormLabel>
                       <FormControl>
-                        <Input
-                          type="number"
-                          step="0.01"
-                          min="0"
-                          className="w-full max-w-xs"
-                          {...field}
+                        <MoneyInput
+                          value={field.value}
+                          onChange={field.onChange}
+                          id={field.name}
                         />
                       </FormControl>
                       <FormMessage />
