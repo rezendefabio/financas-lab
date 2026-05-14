@@ -169,6 +169,11 @@ Ativar a fábrica de fato: rodar features no Tier 2, configurar 3 routines Tier 
   diante de contradicao genuina sem resolucao possivel. Se RESOLVIDO: push
   `--force-with-lease` e registra "rebase com resolucao inteligente OK". Se ABORTADO:
   registra o motivo preciso da contradicao. PR aberto.
+  **Debito tecnico:** `subagent_type: general-purpose` built-in pode conflitar com
+  ADR-012, que prefere subagents registrados em `.claude/agents/` via `context: fork +
+  agent: <nome>`. Alternativa: criar `.claude/agents/conflict-resolver.md` com
+  frontmatter proprio (modelo, tools restritas) e invocar via Agent tool apontando para
+  ele. Decisao do operador: anotar como debito, nao bloquear merge.
 
 - **5.28 -- /batch embute conteudo inline; gitignore docs/prompts/** (2026-05-14):
   resolve problema recorrente de arquivos untracked em `docs/prompts/` bloqueando
