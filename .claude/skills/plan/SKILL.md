@@ -190,3 +190,25 @@ Exibir relatorio final:
 PRs abertos: N/{total}
 Bloqueadores: <lista ou "nenhum">
 ```
+
+## Passo 6 -- Cleanup de worktrees e branches orfaos
+
+Apos exibir o relatorio final, remover worktrees e branches orfaos nessa ordem
+(worktree remove antes de branch -D para evitar erro de branch em uso por worktree registrado):
+
+```powershell
+# 1. Remover worktrees registrados cujo path contem 'agent-'
+$wtOutput = git worktree list --porcelain
+foreach ($line in $wtOutput) {
+    if ($line -match '^worktree (.+agent-.+)$') {
+        git worktree remove -f -f $matches[1] 2>$null
+    }
+}
+# 2. Remover branches orfaos
+$orphanBranches = git branch | Where-Object { $_ -match 'worktree-agent-' }
+foreach ($b in @($orphanBranches)) {
+    git branch -D $b.Trim() 2>$null
+}
+```
+
+Se nenhum worktree ou branch orfao encontrado: pular silenciosamente.
