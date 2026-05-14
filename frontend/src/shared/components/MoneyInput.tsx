@@ -43,7 +43,7 @@ function MoneyInput({
       id={id}
       aria-label={ariaLabel}
       aria-describedby={ariaDescribedby}
-      className={cn(className)}
+      className={cn('text-right', className)}
       placeholder="R$ 0,00"
     />
   )
