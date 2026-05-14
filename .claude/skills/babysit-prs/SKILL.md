@@ -16,7 +16,7 @@ nos passos seguintes.
 ### Passo 1 -- Listar PRs abertos
 
 ```powershell
-gh pr list --state open --json number,title,headRefName,mergeable
+gh pr list --state open --json number,title,headRefName,mergeable,mergeStateStatus
 ```
 
 Se retornar lista vazia: reportar "Nenhum PR aberto." e agendar proxima iteracao
@@ -29,11 +29,24 @@ Para cada PR na lista:
 **2a -- Verificar conflito com main:**
 
 ```powershell
-$pr = gh pr view <number> --json mergeable,headRefName | ConvertFrom-Json
+$pr = gh pr view <number> --json mergeable,headRefName,mergeStateStatus | ConvertFrom-Json
 ```
 
 Se `mergeable == "CONFLICTING"`: executar auto-rebase (Passo 3a).
 Se `mergeable == "MERGEABLE"` ou `"UNKNOWN"`: pular rebase.
+
+**2a.1 -- Verificar se PR esta BEHIND:**
+
+Se `mergeStateStatus == "BEHIND"` E `mergeable != "CONFLICTING"`:
+executar update automatico (Passo 3c).
+
+Logica:
+- Se `mergeable == "CONFLICTING"`, o Passo 3a ja trata -- nao duplicar.
+- Se `mergeStateStatus == "BEHIND"` e `mergeable` for `"UNKNOWN"` ou `"MERGEABLE"`,
+  o update via API e seguro e deve ser feito.
+- O campo `mergeStateStatus` pode valer: `"BEHIND"`, `"BLOCKED"`, `"CLEAN"`,
+  `"DIRTY"`, `"DRAFT"`, `"HAS_HOOKS"`, `"UNKNOWN"`, `"UNSTABLE"`. Apenas
+  `"BEHIND"` dispara a acao.
 
 **2b -- Verificar CI:**
 
@@ -119,6 +132,21 @@ Com base no retorno do sub-agente:
 - Se `NAO CORRIGIDO`: registrar "PR #N: CI falhou -- auto-fix nao aplicavel: <motivo>"
 - Em ambos os casos: `Set-Location $repoRoot`
 
+### Passo 3c -- Auto-update (apenas se BEHIND e nao CONFLICTING)
+
+Para o PR com `mergeStateStatus == "BEHIND"` e `mergeable != "CONFLICTING"`:
+
+```powershell
+gh pr update-branch <number>
+```
+
+Se retornar sucesso (`$LASTEXITCODE -eq 0`):
+- Registrar no relatorio: "PR #N: atualizado via update-branch (estava BEHIND)"
+
+Se retornar erro:
+- Registrar no relatorio: "PR #N: update-branch falhou -- <mensagem de erro>"
+- Nao spawnar sub-agente, nao criar worktree. O erro e passivo.
+
 ### Passo 4 -- Relatorio da iteracao
 
 Exibir resumo:
@@ -127,7 +155,7 @@ Exibir resumo:
 [babysit-prs HH:MM] N PRs verificados
 
 <para cada PR:>
-  PR #N <titulo>: <REBASE OK | REBASE RESOLVIDO (inteligente) | REBASE ABORTADO: <motivo> | CI AUTO-FIX OK | CI FALHOU (manual): <motivo> | OK>
+  PR #N <titulo>: <REBASE OK | REBASE RESOLVIDO (inteligente) | REBASE ABORTADO: <motivo> | UPDATE-BRANCH OK | UPDATE-BRANCH FALHOU: <motivo> | CI AUTO-FIX OK | CI FALHOU (manual): <motivo> | OK>
 
 Proxima verificacao em 10 minutos.
 ```

@@ -3,7 +3,7 @@
 > Documento de tracking. Mostra **onde estamos** na construção da fábrica e do produto.
 > Atualizado conforme camadas avançam. Diferente do `decisoes.md` (que registra escolhas) e dos `adrs.md` (que registram porquês), este documento responde a pergunta: "em que ponto eu estou?".
 
-**Última atualização:** 2026-05-14 (Sub-etapa 5.35 -- ADR-012: registra conflict-resolver e ci-fixer como agents)
+**Última atualização:** 2026-05-14 (Sub-etapa 5.36 -- babysit-prs detecta BEHIND e atualiza via update-branch)
 
 ---
 
@@ -159,6 +159,17 @@ Configurar `CLAUDE.md` rico, criar 3-5 subagents focados, criar 5-10 skills (sla
 Ativar a fábrica de fato: rodar features no Tier 2, configurar 3 routines Tier 1, validar paralelismo se necessário.
 
 ### Sub-etapas concluídas
+
+- **5.36 -- babysit-prs detecta BEHIND e atualiza via update-branch** (2026-05-14):
+  Adiciona deteccao de `mergeStateStatus == "BEHIND"` ao babysitter de PRs. Tres
+  mudancas em `.claude/skills/babysit-prs/SKILL.md`: **(1) Passo 1:** campo
+  `mergeStateStatus` adicionado ao payload do `gh pr list` e `gh pr view`.
+  **(2) Passo 2a.1:** nova verificacao apos conflito -- se `mergeStateStatus == "BEHIND"`
+  e `mergeable != "CONFLICTING"`, dispara Passo 3c (update via API, seguro sem rebase).
+  **(3) Passo 3c:** novo bloco que executa `gh pr update-branch <number>`; sucesso
+  registra "UPDATE-BRANCH OK", erro e passivo (sem worktree, sem sub-agente).
+  **(4) Passo 4:** labels do relatorio atualizadas com `UPDATE-BRANCH OK` e
+  `UPDATE-BRANCH FALHOU`. Fluxos 3a (CONFLICTING) e 3b (CI) intactos. PR aberto.
 
 - **5.35 -- ADR-012: registra conflict-resolver e ci-fixer como agents** (2026-05-14):
   Debito tecnico da 5.29 resolvido. Os sub-agentes de resolucao de conflito e de
