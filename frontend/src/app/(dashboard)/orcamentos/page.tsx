@@ -30,7 +30,7 @@ function OrcamentoRow({
     <tr className="border-b last:border-0 hover:bg-muted/30 transition-colors">
       <td className="py-3 px-4 text-sm">{categoria?.nome ?? orcamento.categoriaId}</td>
       <td className="py-3 px-4 text-sm">{formatMesAno(orcamento.mesAno)}</td>
-      <td className="py-3 px-4 text-sm tabular-nums">{formatBRL(orcamento.valorLimite.valor)}</td>
+      <td className="py-3 px-4 text-sm text-right tabular-nums">{formatBRL(orcamento.valorLimite.valor)}</td>
       <td className="py-3 px-4 text-sm">
         <Badge variant={orcamento.ativo ? 'default' : 'secondary'}>
           {orcamento.ativo ? 'Ativo' : 'Inativo'}
@@ -88,7 +88,7 @@ export default function OrcamentosPage() {
               <tr className="border-b bg-muted/50">
                 <th className="py-3 px-4 text-left text-sm font-medium text-muted-foreground">Categoria</th>
                 <th className="py-3 px-4 text-left text-sm font-medium text-muted-foreground">Mes/Ano</th>
-                <th className="py-3 px-4 text-left text-sm font-medium text-muted-foreground">Limite</th>
+                <th className="py-3 px-4 text-right text-sm font-medium text-muted-foreground">Limite</th>
                 <th className="py-3 px-4 text-left text-sm font-medium text-muted-foreground">Status</th>
                 <th className="py-3 px-4 text-left text-sm font-medium text-muted-foreground">Acoes</th>
               </tr>
