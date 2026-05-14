@@ -9,7 +9,7 @@ Ler antes de gerar qualquer campo. Violacao de B7 bloqueia merge.
 
 | Situacao | Input | Exibicao |
 |---|---|---|
-| `BigDecimal` com significado monetario (valor, limite, saldo) | `<Input type="number" step="0.01" min="0">` com prefixo "R$" | `formatBRL(value)` |
+| `BigDecimal` com significado monetario (valor, limite, saldo) | `MoneyInput` (de `@/shared/components/MoneyInput`) | `formatBRL(value)` |
 | Moeda (`String valorLimiteMoeda`, `String moeda`) | Campo oculto com valor padrao `"BRL"` -- nao expor ao usuario | `moeda` ao lado do valor |
 
 ### Datas e timestamps
@@ -70,3 +70,28 @@ Acesso correto: `formatBRL(orcamento.valorLimite.valor)`.
 - `formatTipoConta(tipo: string)` -- label para TipoConta
 - `formatTipoCategoria(tipo: string)` -- label para TipoCategoria (RECEITA/DESPESA)
 - `formatTipoTransacao(tipo: string)` -- label para TipoTransacao
+
+## Componentes wrapper (shared/components/)
+
+### MoneyInput
+
+- Quando usar: qualquer `BigDecimal` com significado monetario em formulario
+- Importacao: `import { MoneyInput } from '@/shared/components/MoneyInput'`
+- Props: `value: number`, `onChange: (value: number) => void`, `disabled?`, `className?`, `id?`
+- Integracao react-hook-form: passar `value={field.value}` e `onChange={field.onChange}`, NAO usar spread `{...field}`
+- Zod schema: `z.coerce.number().min(0)` para valores >= 0, `.positive()` para obrigatorio positivo
+- Nao usar: `<Input type="number" step="0.01">` para valores monetarios
+
+### StatusBadge
+
+- Quando usar: exibicao de qualquer enum/status com cor semantica
+- Importacao: `import { StatusBadge, ORCAMENTO_STATUS_CONFIG, META_STATUS_CONFIG } from '@/shared/components/StatusBadge'`
+- Props: `status: string`, `config: Record<string, StatusConfig>`, `fallbackLabel?: string`
+- Configs pre-prontos: ORCAMENTO_STATUS_CONFIG, META_STATUS_CONFIG, CONTA_ATIVA_CONFIG
+
+### StatCard
+
+- Quando usar: metricas/KPIs no dashboard ou em paginas de detalhe
+- Importacao: `import { StatCard } from '@/shared/components/StatCard'`
+- Props: `titulo`, `valor` (string ja formatada), `variacao?`, `descricao?`, `icone?`
+- Valor ja deve estar formatado antes de passar: usar `formatBRL(valor)` ou `String(count)`
