@@ -274,48 +274,72 @@ Usar `toast.success()`, `toast.error()`, `toast.info()` do pacote `sonner`.
 
 ---
 
-### Componentes wrapper planejados (serao criados em task separada)
+## MoneyInput
 
-Os tres componentes abaixo ainda nao existem no codigo, mas serao criados em
-`frontend/src/shared/components/`. Esta secao documenta como serao usados.
+**Arquivo:** `frontend/src/shared/components/MoneyInput.tsx`
 
-#### MoneyInput
+**Regra B8 -- bloqueador:** Todo campo cujo nome semantico indica valor monetario (saldoInicial, valorLimite, valorAlvo, valor em transacao, qualquer campo BigDecimal monetario) DEVE usar `<MoneyInput>`. Nunca usar `<Input type="number">` ou `<Input type="text">` para campo monetario.
 
-**Caminho futuro:** `frontend/src/shared/components/MoneyInput.tsx`
+**Implementacao correta:** react-number-format com NumericFormat.
 
-**Quando usar:** todo campo `BigDecimal` com significado monetario em formularios.
+- Biblioteca: `react-number-format`.
+- Entrada direita-para-esquerda: digitos entram pela direita, casas decimais fixas em 2.
+- Formato BRL: prefixo `R$ `, separador de milhar `.`, separador decimal `,`.
+- Limite: valor maximo 999.999.999,99.
+- Props obrigatorias: `allowNegative={false}`, `decimalScale={2}`, `fixedDecimalScale={true}`.
+- Valor interno: `number` via `onValueChange` usando `values.floatValue ?? 0`.
 
-**Comportamento:** aceita apenas digitos, formata enquanto digita (mascara BRL), valor interno em `number`.
-
-**Nao usar** `<Input type="number">` direto para valores monetarios -- usar `MoneyInput`.
-
-Uso esperado:
+**Uso correto no formulario:**
 
 ```tsx
-<FormField
-  control={form.control}
-  name="saldoInicial"
-  render={({ field }) => (
-    <FormItem>
-      <FormLabel>Saldo Inicial</FormLabel>
-      <FormControl>
-        <MoneyInput {...field} />
-      </FormControl>
-      <FormMessage />
-    </FormItem>
-  )}
-/>
+<MoneyInput value={field.value} onChange={field.onChange} id={field.name} />
 ```
+
+**Violacao B8:** `<Input type="number">` ou `<Input type="text">` em campo com nome saldo/valor/limite/alvo.
+
+---
+
+## DataTable para listagens de recursos -- Regra B9
+
+**Regra B9 -- bloqueador:** Recursos do dominio (Categoria, Conta, Transacao, Orcamento, Meta) DEVEM ser listados em DataTable (componente `<Table>` do shadcn/ui), nunca em card grid.
+
+**Excecao permitida:** Card grid em dashboard de KPIs (StatCard) -- nao e listagem de recurso.
+
+Card grid e aceito apenas para metricas/KPIs de dashboard, nunca para listagem de entidades com acoes por linha.
+
+**DataTable minima para listagem de recurso:**
+
+- Colunas claras (Nome, Tipo, Valor, Status conforme entidade)
+- Coluna de acoes com `className="text-right"` no `<TableHead>` e `<TableCell>`
+- Sem card wrapping externo por item -- a tabela e o container
+
+**Violacao B9:** `grid grid-cols` em page de listagem de recurso de dominio.
+
+---
+
+## Alinhamento de valores monetarios em tabelas -- Regra B10
+
+**Regra B10 -- bloqueador:** Valores monetarios em `<TableCell>` DEVEM ter `className="text-right tabular-nums"`. O `<TableHead>` correspondente DEVE ter `className="text-right"`.
+
+**Racional:** Alinhamento a direita permite comparacao visual de ordens de grandeza; `tabular-nums` evita tremulacao ao atualizar valores.
+
+**Violacao B10:** `<TableCell>{formatBRL(valor)}</TableCell>` sem `text-right`.
+
+---
+
+### Componentes wrapper disponiveis
+
+Os componentes abaixo existem em `frontend/src/shared/components/`.
 
 #### StatusBadge
 
-**Caminho futuro:** `frontend/src/shared/components/StatusBadge.tsx`
+**Arquivo:** `frontend/src/shared/components/StatusBadge.tsx`
 
 **Quando usar:** exibicao de enum com cor semantica (status de orcamento, status de meta).
 
 **Comportamento:** recebe o valor raw do enum e um mapa de configuracao (label + variante de Badge).
 
-Uso esperado:
+Uso:
 
 ```tsx
 {/* Status do orcamento: ABAIXO / ATENCAO / ATINGIDO / EXCEDIDO */}
@@ -324,13 +348,13 @@ Uso esperado:
 
 #### StatCard
 
-**Caminho futuro:** `frontend/src/shared/components/StatCard.tsx`
+**Arquivo:** `frontend/src/shared/components/StatCard.tsx`
 
 **Quando usar:** metricas e KPIs no dashboard ou cabecalho de paginas de resumo.
 
-**Props esperadas:** `titulo` (string), `valor` (string formatado), `variacao` (opcional, numero com sinal).
+**Props:** `titulo` (string), `valor` (string formatado), `variacao` (opcional, numero com sinal).
 
-Uso esperado:
+Uso:
 
 ```tsx
 <StatCard
