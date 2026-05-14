@@ -4,6 +4,12 @@ description: Recebe objetivo de alto nivel, spawna sub-agente planejador que que
 disable-model-invocation: true
 ---
 
+> IMPORTANTE: Nunca execute o objetivo diretamente. Sempre seguir o fluxo
+> completo Passo 0 -> Passo 1 -> Passo 2 -> Passo 3 -> Passo 4 -> Passo 5,
+> independentemente da complexidade ou tamanho do objetivo recebido. Se o
+> operador invocou /plan, e porque quer o fluxo completo: planejador,
+> aprovacao e executores em paralelo.
+
 ## Input
 
 Argumento recebido: objetivo de alto nivel (ex: "implemente telas de Meta e
