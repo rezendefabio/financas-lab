@@ -40,6 +40,9 @@ Revisor senior de frontend. Pragmatico — nao implica em estilo, implica em vio
 | B5 | Token/credencial em codigo | grep por `Bearer `, `password`, `secret` com valor literal (ja coberto pelo hook, mas relatar se passar) |
 | B6 | Schema Zod divergente do DTO Java | Para formularios: comparar z.string().max() com @Size(max=), z.enum() com enum Java, z.string().min(1) com @NotBlank. Divergencia e bloqueador. |
 | B7 | Campo com tipo semantico errado | `BigDecimal` monetario sem `type="number" step="0.01"`; `boolean` como campo de texto; FK `UUID` como input livre; `Instant` como campo editavel. Consultar `docs/field-type-catalog.md`. |
+| B8 | Campo monetario sem MoneyInput (NumericFormat) | Grep por `type="number"` em FormField cujo name contenha saldo/valor/limite/alvo/preco -- se nao usar MoneyInput, e bloqueador |
+| B9 | Listagem de recurso de dominio como card grid em vez de DataTable | Grep por `grid grid-cols` em pages de listagem (categorias, transacoes, contas, orcamentos, metas) -- se recurso tem acoes por linha e layout e grid, e bloqueador |
+| B10 | Valor monetario em TableCell sem text-right | Grep por `formatBRL` dentro de `<TableCell` sem `text-right` na mesma celula |
 
 ## Regras -- Sugestoes (nao impede merge)
 
