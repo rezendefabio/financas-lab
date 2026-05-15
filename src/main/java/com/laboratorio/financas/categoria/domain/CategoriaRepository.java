@@ -18,5 +18,7 @@ public interface CategoriaRepository {
 
     List<Categoria> listarFilhosDe(UUID categoriaPaiId);
 
+    List<Categoria> listarVisiveisPara(UUID userId);
+
     void deletar(UUID id);
 }

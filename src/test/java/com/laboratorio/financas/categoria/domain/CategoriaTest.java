@@ -26,6 +26,8 @@ class CategoriaTest {
         assertThat(categoria.getCriadoEm()).isBetween(antes, depois);
         assertThat(categoria.getAtualizadoEm()).isEqualTo(categoria.getCriadoEm());
         assertThat(categoria.getCategoriaPaiId()).isNull();
+        assertThat(categoria.getUserId()).isNull();
+        assertThat(categoria.isSystem()).isFalse();
     }
 
     @Test
@@ -39,6 +41,14 @@ class CategoriaTest {
     void construtorNovoSemCategoriaPaiIdRetornaNull() {
         Categoria categoria = new Categoria("Salario", TipoCategoria.RECEITA, null);
         assertThat(categoria.getCategoriaPaiId()).isNull();
+    }
+
+    @Test
+    void construtorNovoComUserIdPreservaCampo() {
+        UUID userId = UUID.randomUUID();
+        Categoria categoria = new Categoria("Mercado", TipoCategoria.DESPESA, null, userId);
+        assertThat(categoria.getUserId()).isEqualTo(userId);
+        assertThat(categoria.isSystem()).isFalse();
     }
 
     @Test
@@ -84,11 +94,13 @@ class CategoriaTest {
     }
 
     @Test
-    void construtorNovoAceitaTipoReceitaEDespesa() {
+    void construtorNovoAceitaTipoReceitaDespesaENeutral() {
         Categoria receita = new Categoria("Salario", TipoCategoria.RECEITA);
         Categoria despesa = new Categoria("Aluguel", TipoCategoria.DESPESA);
+        Categoria neutral = new Categoria("Transferencia", TipoCategoria.NEUTRAL);
         assertThat(receita.getTipo()).isEqualTo(TipoCategoria.RECEITA);
         assertThat(despesa.getTipo()).isEqualTo(TipoCategoria.DESPESA);
+        assertThat(neutral.getTipo()).isEqualTo(TipoCategoria.NEUTRAL);
     }
 
     @Test
@@ -96,6 +108,34 @@ class CategoriaTest {
         Categoria c1 = new Categoria("Salario", TipoCategoria.RECEITA);
         Categoria c2 = new Categoria("Freelance", TipoCategoria.RECEITA);
         assertThat(c1.getId()).isNotEqualTo(c2.getId());
+    }
+
+    // --- Construtor completo com userId e system ---
+
+    @Test
+    void construtorCompletoComSystemTruePreservaCampos() {
+        UUID id = UUID.randomUUID();
+        Instant criadoEm = Instant.parse("2026-01-01T10:00:00Z");
+        Categoria categoria = new Categoria(
+                id, "Transferencia entre contas", TipoCategoria.NEUTRAL,
+                null, null, true, criadoEm, null
+        );
+        assertThat(categoria.isSystem()).isTrue();
+        assertThat(categoria.getUserId()).isNull();
+        assertThat(categoria.getTipo()).isEqualTo(TipoCategoria.NEUTRAL);
+    }
+
+    @Test
+    void construtorCompletoComUserIdESystemFalsePreservaCampos() {
+        UUID id = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
+        Instant criadoEm = Instant.parse("2026-01-01T10:00:00Z");
+        Categoria categoria = new Categoria(
+                id, "Mercado", TipoCategoria.DESPESA,
+                null, userId, false, criadoEm, null
+        );
+        assertThat(categoria.getUserId()).isEqualTo(userId);
+        assertThat(categoria.isSystem()).isFalse();
     }
 
     // --- Construtor de reconstrucao ---
@@ -117,6 +157,8 @@ class CategoriaTest {
         assertThat(categoria.getCriadoEm()).isEqualTo(criadoEm);
         assertThat(categoria.getAtualizadoEm()).isEqualTo(atualizadoEm);
         assertThat(categoria.getCategoriaPaiId()).isNull();
+        assertThat(categoria.getUserId()).isNull();
+        assertThat(categoria.isSystem()).isFalse();
     }
 
     @Test
@@ -177,6 +219,15 @@ class CategoriaTest {
                 .contains(categoria.getId().toString())
                 .contains("Salario")
                 .contains("RECEITA");
+    }
+
+    @Test
+    void toStringContemCampoSystem() {
+        Categoria categoria = new Categoria(
+                UUID.randomUUID(), "Transferencia", TipoCategoria.NEUTRAL,
+                null, null, true, Instant.now(), null
+        );
+        assertThat(categoria.toString()).contains("system=true");
     }
 
     @Test

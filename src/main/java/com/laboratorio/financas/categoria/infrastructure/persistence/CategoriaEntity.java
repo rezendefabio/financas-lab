@@ -39,6 +39,12 @@ public class CategoriaEntity {
     @Column(name = "categoria_pai_id")
     private UUID categoriaPaiId;
 
+    @Column(name = "user_id")
+    private UUID userId;
+
+    @Column(name = "system", nullable = false)
+    private boolean system;
+
     protected CategoriaEntity() {
         // Construtor protected exigido pelo JPA.
     }
@@ -49,7 +55,9 @@ public class CategoriaEntity {
             TipoCategoria tipo,
             Instant criadoEm,
             Instant atualizadoEm,
-            UUID categoriaPaiId
+            UUID categoriaPaiId,
+            UUID userId,
+            boolean system
     ) {
         this.id = id;
         this.nome = nome;
@@ -57,6 +65,8 @@ public class CategoriaEntity {
         this.criadoEm = criadoEm;
         this.atualizadoEm = atualizadoEm;
         this.categoriaPaiId = categoriaPaiId;
+        this.userId = userId;
+        this.system = system;
     }
 
     public UUID getId() {
@@ -81,5 +91,13 @@ public class CategoriaEntity {
 
     public UUID getCategoriaPaiId() {
         return categoriaPaiId;
+    }
+
+    public UUID getUserId() {
+        return userId;
+    }
+
+    public boolean isSystem() {
+        return system;
     }
 }
