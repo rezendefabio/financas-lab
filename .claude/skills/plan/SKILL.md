@@ -46,16 +46,72 @@ Leia os seguintes arquivos para entender o estado atual:
 - `CLAUDE.md` (convencoes, stack, estrutura)
 - `docs/progresso.md` (o que ja foi feito, sub-etapas concluidas)
 
-## Passo 2 -- Quebrar em tasks
+## Passo 1.5 -- Auditar o estado atual do projeto (OBRIGATORIO antes de propor tasks)
+
+Antes de propor qualquer task, executar as seguintes verificacoes:
+
+**1. Bounded contexts existentes:**
+Listar diretorios em `src/main/java/` que correspondem a bounded contexts:
+usar Glob com pattern `src/main/java/**/*Application.java` para localizar o
+pacote base, depois Glob `src/main/java/**/domain/*.java` para listar entidades.
+
+**2. Migrations existentes:**
+Listar `src/main/resources/db/migration/V*.sql` para saber o numero mais alto.
+O proximo numero disponivel e max(V) + 1.
+
+**3. Features ja implementadas:**
+Ler `docs/progresso.md` secao "Camada 4" para identificar o que ja foi entregue.
+
+**4. Regras de auditoria:**
+- Se o objetivo menciona criar X e X ja existe como bounded context: a task deve
+  ser REFACTOR de X, nao CRIACAO. Mencionar explicitamente no titulo da task.
+- Se o numero de migration proposto ja existe: usar o proximo disponivel.
+- Nunca propor duplicar logica que ja existe (auth, JWT, repositorios base).
+
+Registrar o resultado da auditoria (bounded contexts encontrados, ultimo V, features
+concluidas relevantes) antes de prosseguir para o Passo 2.
+
+## Passo 2 -- Quebrar em tasks (fatia vertical obrigatoria)
 
 Analise o objetivo e decomponha em tasks independentes e paralelizaveis.
+
+### Principio central: fatia vertical
+
+Cada task deve entregar uma feature COMPLETA, do banco ate a tela:
+- Migration SQL (se a feature altera o schema)
+- Domain: entidade, repositorio, excecoes de dominio
+- Application: use cases com testes Mockito
+- Infrastructure: repositorio JPA com testes Testcontainers
+- Interface: controller REST com testes MockMvc
+- **Frontend: pagina(s) Next.js com testes Vitest** (quando a feature tem UI)
+
+**Regra absoluta:** se o objetivo menciona "tela", "pagina", "frontend", "dashboard",
+"formulario" ou qualquer coisa visivel ao usuario, a task DEVE incluir o frontend.
+Nao e permitido criar uma task que so entrega backend quando a feature tem UI.
+
+**Quando nao ha frontend:** features puramente internas (jobs, migrations de dados,
+refactors de infra, hooks) podem ser tasks sem frontend. Neste caso, o titulo da
+task deve deixar claro que e backend-only ("Refactor interno de X", "Migration de dados Y").
+
+### Criterios de task
+
 Cada task deve:
 - Ser executavel de forma isolada num worktree git proprio
-- Ter escopo claramente delimitado (1 bounded context, 1 feature, 1 correcao)
-- Nao depender de outra task desta lista para compilar/testar
+- Ter escopo de UMA feature completa (nao metade de uma feature)
+- Nao depender de outra task desta lista para compilar e testar
+- Ter dependencias de dados claramente identificadas (ex: "depende de task-001
+  para FK de usuario -- spawnar apos task-001 mergeada")
+
+### Paralelismo correto
+
+- Tasks SEM dependencia de dados: spawnar todas em paralelo
+- Tasks COM dependencia: identificar a dependencia no prompt do executor e
+  orientar o executor a verificar se a migration da task-dependente ja foi
+  mergeada antes de criar FKs
 
 Para cada task, escreva o prompt completo que o executor vai receber.
-O prompt deve conter: contexto, o que fazer, arquivos a ler, fluxo de execucao,
+O prompt deve conter: contexto, auditoria do que ja existe, o que fazer,
+arquivos a ler, fluxo de execucao (incluindo frontend quando aplicavel),
 estrutura de commits, restricoes. Seguir o padrao dos prompts em docs/prompts/.
 
 ## Passo 3 -- Retornar lista de tasks
