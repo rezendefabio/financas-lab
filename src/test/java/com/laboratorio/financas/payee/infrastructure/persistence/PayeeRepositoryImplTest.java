@@ -4,6 +4,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.laboratorio.financas.payee.domain.Payee;
 import com.laboratorio.financas.shared.AbstractIntegrationTest;
+import com.laboratorio.financas.usuario.infrastructure.persistence.UsuarioEntity;
+import com.laboratorio.financas.usuario.infrastructure.persistence.UsuarioJpaRepository;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -20,17 +23,39 @@ class PayeeRepositoryImplTest extends AbstractIntegrationTest {
     @Autowired
     private PayeeJpaRepository jpaRepository;
 
-    private static final UUID USER_ID = UUID.randomUUID();
-    private static final UUID OUTRO_USER_ID = UUID.randomUUID();
+    @Autowired
+    private UsuarioJpaRepository usuarioJpaRepository;
+
+    private UUID USER_ID;
+    private UUID OUTRO_USER_ID;
 
     @BeforeEach
     void limparAntes() {
         jpaRepository.deleteAll();
+        usuarioJpaRepository.deleteAll();
+        USER_ID = criarUsuarioPersistido();
+        OUTRO_USER_ID = criarUsuarioPersistido();
     }
 
     @AfterEach
     void limpar() {
         jpaRepository.deleteAll();
+        usuarioJpaRepository.deleteAll();
+    }
+
+    private UUID criarUsuarioPersistido() {
+        UUID id = UUID.randomUUID();
+        UsuarioEntity entity = new UsuarioEntity(
+                id,
+                "teste+" + id + "@test.com",
+                "hash_bcrypt",
+                true,
+                Instant.now(),
+                null,
+                Instant.now()
+        );
+        usuarioJpaRepository.save(entity);
+        return id;
     }
 
     @Test
