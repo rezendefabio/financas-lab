@@ -7,6 +7,7 @@ import com.laboratorio.financas.conta.domain.TipoConta;
 import com.laboratorio.financas.shared.AbstractIntegrationTest;
 import com.laboratorio.financas.shared.domain.Money;
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Currency;
 import java.util.List;
@@ -248,7 +249,7 @@ class ContaRepositoryImplTest extends AbstractIntegrationTest {
                 null,
                 null,
                 true,
-                java.time.Instant.now(),
+                Instant.now(),
                 null
         );
 
@@ -276,7 +277,7 @@ class ContaRepositoryImplTest extends AbstractIntegrationTest {
                 10,
                 20,
                 true,
-                java.time.Instant.now(),
+                Instant.now(),
                 null
         );
 
@@ -307,7 +308,7 @@ class ContaRepositoryImplTest extends AbstractIntegrationTest {
                 null,
                 null,
                 true,
-                java.time.Instant.now(),
+                Instant.now(),
                 null
         );
 
