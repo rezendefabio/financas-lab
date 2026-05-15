@@ -49,7 +49,9 @@ public class CategoriaController {
         CriarCategoriaUseCase.Comando comando = new CriarCategoriaUseCase.Comando(
                 request.nome(),
                 request.tipo(),
-                request.categoriaPaiId()
+                request.categoriaPaiId(),
+                request.userId(),
+                request.system()
         );
         Categoria criada = criarCategoriaUseCase.executar(comando);
         return ResponseEntity.status(HttpStatus.CREATED).body(CategoriaResponse.fromDomain(criada));

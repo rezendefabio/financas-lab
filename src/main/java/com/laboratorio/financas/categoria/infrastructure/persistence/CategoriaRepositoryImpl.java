@@ -60,6 +60,13 @@ public class CategoriaRepositoryImpl implements CategoriaRepository {
     }
 
     @Override
+    public List<Categoria> listarVisiveisPara(UUID userId) {
+        return jpaRepository.findVisiveisPara(userId).stream()
+                .map(mapper::toDomain)
+                .toList();
+    }
+
+    @Override
     public void deletar(UUID id) {
         jpaRepository.deleteById(id);
     }
