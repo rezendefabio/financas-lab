@@ -20,13 +20,13 @@ public class AtualizarTagUseCase {
 
     @Transactional
     public Tag executar(Comando comando) {
-        Tag existente = tagRepository.findByIdAndUserId(comando.id(), comando.userId())
+        Tag existente = tagRepository.buscarPorIdEUserId(comando.id(), comando.userId())
                 .orElseThrow(() -> new TagNaoEncontradaException(comando.id()));
 
         String novoNome = (comando.nome() != null) ? comando.nome() : existente.getNome();
         String novaCor = (comando.cor() != null) ? comando.cor() : existente.getCor();
 
         Tag atualizada = new Tag(existente.getId(), existente.getUserId(), novoNome, novaCor, existente.getCriadoEm());
-        return tagRepository.save(atualizada);
+        return tagRepository.salvar(atualizada);
     }
 }

@@ -6,13 +6,13 @@ import java.util.UUID;
 
 public interface TagRepository {
 
-    Optional<Tag> findById(UUID id);
+    Optional<Tag> buscarPorId(UUID id);
 
-    List<Tag> findByUserId(UUID userId);
+    List<Tag> buscarPorUserId(UUID userId);
 
-    Optional<Tag> findByIdAndUserId(UUID id, UUID userId);
+    Optional<Tag> buscarPorIdEUserId(UUID id, UUID userId);
 
-    Tag save(Tag tag);
+    Tag salvar(Tag tag);
 
-    void deleteById(UUID id);
+    void deletar(UUID id);
 }

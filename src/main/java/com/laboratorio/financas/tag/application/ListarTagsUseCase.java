@@ -18,6 +18,6 @@ public class ListarTagsUseCase {
 
     @Transactional(readOnly = true)
     public List<Tag> executar(UUID userId) {
-        return tagRepository.findByUserId(userId);
+        return tagRepository.buscarPorUserId(userId);
     }
 }

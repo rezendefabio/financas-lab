@@ -37,7 +37,7 @@ class FluxoCaixaUseCaseTest {
         when(transacaoRepository.listarComFiltros(any(), any()))
                 .thenReturn(new PageImpl<>(List.of()));
 
-        var resultado = useCase.executar(2026, 1);
+        var resultado = useCase.executar(2026, 1, UUID.randomUUID());
 
         assertThat(resultado.ano()).isEqualTo(2026);
         assertThat(resultado.mes()).isEqualTo(1);
@@ -54,7 +54,7 @@ class FluxoCaixaUseCaseTest {
         when(transacaoRepository.listarComFiltros(any(), any()))
                 .thenReturn(new PageImpl<>(List.of(receita1, receita2)));
 
-        var resultado = useCase.executar(2026, 3);
+        var resultado = useCase.executar(2026, 3, UUID.randomUUID());
 
         assertThat(resultado.totalReceitas()).isEqualByComparingTo("1500.00");
         assertThat(resultado.totalDespesas()).isEqualByComparingTo("0.00");
@@ -68,7 +68,7 @@ class FluxoCaixaUseCaseTest {
         when(transacaoRepository.listarComFiltros(any(), any()))
                 .thenReturn(new PageImpl<>(List.of(despesa1, despesa2)));
 
-        var resultado = useCase.executar(2026, 4);
+        var resultado = useCase.executar(2026, 4, UUID.randomUUID());
 
         assertThat(resultado.totalReceitas()).isEqualByComparingTo("0.00");
         assertThat(resultado.totalDespesas()).isEqualByComparingTo("500.00");
@@ -83,7 +83,7 @@ class FluxoCaixaUseCaseTest {
         when(transacaoRepository.listarComFiltros(any(), any()))
                 .thenReturn(new PageImpl<>(List.of(receita, despesa, transferencia)));
 
-        var resultado = useCase.executar(2026, 5);
+        var resultado = useCase.executar(2026, 5, UUID.randomUUID());
 
         assertThat(resultado.totalReceitas()).isEqualByComparingTo("2000.00");
         assertThat(resultado.totalDespesas()).isEqualByComparingTo("800.00");

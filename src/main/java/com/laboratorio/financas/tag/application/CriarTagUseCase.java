@@ -19,7 +19,7 @@ public class CriarTagUseCase {
 
     @Transactional
     public Tag executar(Comando comando) {
-        tagRepository.findByUserId(comando.userId()).stream()
+        tagRepository.buscarPorUserId(comando.userId()).stream()
                 .filter(t -> t.getNome().equalsIgnoreCase(comando.nome().trim()))
                 .findFirst()
                 .ifPresent(t -> {
@@ -28,6 +28,6 @@ public class CriarTagUseCase {
                     );
                 });
         Tag tag = new Tag(comando.userId(), comando.nome(), comando.cor());
-        return tagRepository.save(tag);
+        return tagRepository.salvar(tag);
     }
 }

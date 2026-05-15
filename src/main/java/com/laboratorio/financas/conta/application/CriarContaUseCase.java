@@ -5,6 +5,7 @@ import com.laboratorio.financas.conta.domain.ContaRepository;
 import com.laboratorio.financas.conta.domain.TipoConta;
 import com.laboratorio.financas.shared.domain.Money;
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.Currency;
 import java.util.UUID;
 import org.springframework.stereotype.Component;
@@ -53,7 +54,7 @@ public class CriarContaUseCase {
                 comando.diaFechamento(),
                 comando.diaVencimento(),
                 true,
-                java.time.Instant.now(),
+                Instant.now(),
                 null
         );
         return repository.salvar(nova);

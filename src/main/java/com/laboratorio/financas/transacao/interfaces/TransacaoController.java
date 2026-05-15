@@ -10,6 +10,8 @@ import com.laboratorio.financas.transacao.domain.TipoTransacao;
 import com.laboratorio.financas.transacao.domain.Transacao;
 import com.laboratorio.financas.transacao.interfaces.dto.TransacaoRequest;
 import com.laboratorio.financas.transacao.interfaces.dto.TransacaoResponse;
+import com.laboratorio.financas.usuario.domain.Usuario;
+import com.laboratorio.financas.usuario.domain.UsuarioRepository;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
@@ -23,6 +25,8 @@ import org.springframework.data.domain.Sort;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -47,26 +51,28 @@ public class TransacaoController {
     private final BuscarTransacaoPorIdUseCase buscarTransacaoPorIdUseCase;
     private final EditarTransacaoUseCase editarTransacaoUseCase;
     private final DeletarTransacaoUseCase deletarTransacaoUseCase;
+    private final UsuarioRepository usuarioRepository;
 
     public TransacaoController(
             CriarTransacaoUseCase criarTransacaoUseCase,
             ListarTransacoesUseCase listarTransacoesUseCase,
             BuscarTransacaoPorIdUseCase buscarTransacaoPorIdUseCase,
             EditarTransacaoUseCase editarTransacaoUseCase,
-            DeletarTransacaoUseCase deletarTransacaoUseCase
+            DeletarTransacaoUseCase deletarTransacaoUseCase,
+            UsuarioRepository usuarioRepository
     ) {
         this.criarTransacaoUseCase = criarTransacaoUseCase;
         this.listarTransacoesUseCase = listarTransacoesUseCase;
         this.buscarTransacaoPorIdUseCase = buscarTransacaoPorIdUseCase;
         this.editarTransacaoUseCase = editarTransacaoUseCase;
         this.deletarTransacaoUseCase = deletarTransacaoUseCase;
+        this.usuarioRepository = usuarioRepository;
     }
 
     @PostMapping
     public ResponseEntity<TransacaoResponse> criar(@Valid @RequestBody TransacaoRequest request) {
-        // userId extraido do JWT/SecurityContext -- Fase 1: nao ha lookup de usuario por email,
-        // user_id fica null ate que a integracao usuario<->transacao seja implementada
-        CriarTransacaoUseCase.Comando comando = toComando(request, null);
+        UUID userId = resolverUserId();
+        CriarTransacaoUseCase.Comando comando = toComando(request, userId);
         Transacao criada = criarTransacaoUseCase.executar(comando);
         return ResponseEntity.status(HttpStatus.CREATED).body(TransacaoResponse.fromDomain(criada));
     }
@@ -100,7 +106,8 @@ public class TransacaoController {
             @PathVariable UUID id,
             @Valid @RequestBody TransacaoRequest request
     ) {
-        CriarTransacaoUseCase.Comando comando = toComando(request, null);
+        UUID userId = resolverUserId();
+        CriarTransacaoUseCase.Comando comando = toComando(request, userId);
         Transacao atualizada = editarTransacaoUseCase.executar(id, comando);
         return TransacaoResponse.fromDomain(atualizada);
     }
@@ -113,6 +120,14 @@ public class TransacaoController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deletar(@PathVariable UUID id) {
         deletarTransacaoUseCase.executar(id);
+    }
+
+    private UUID resolverUserId() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String email = (String) auth.getPrincipal();
+        Usuario usuario = usuarioRepository.buscarPorEmail(email)
+                .orElseThrow(() -> new IllegalStateException("Usuario autenticado nao encontrado: " + email));
+        return usuario.getId();
     }
 
     private CriarTransacaoUseCase.Comando toComando(TransacaoRequest request, UUID userId) {

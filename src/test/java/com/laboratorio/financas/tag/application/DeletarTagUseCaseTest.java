@@ -33,31 +33,31 @@ class DeletarTagUseCaseTest {
     @Test
     void executarCaminhoFelizChamaDeleteById() {
         Tag tag = new Tag(TAG_ID, USER_ID, "Essencial", null, Instant.now());
-        when(repository.findByIdAndUserId(TAG_ID, USER_ID)).thenReturn(Optional.of(tag));
+        when(repository.buscarPorIdEUserId(TAG_ID, USER_ID)).thenReturn(Optional.of(tag));
 
         useCase.executar(TAG_ID, USER_ID);
 
-        verify(repository, times(1)).deleteById(TAG_ID);
+        verify(repository, times(1)).deletar(TAG_ID);
     }
 
     @Test
     void executarTagNaoEncontradaLancaException() {
-        when(repository.findByIdAndUserId(TAG_ID, USER_ID)).thenReturn(Optional.empty());
+        when(repository.buscarPorIdEUserId(TAG_ID, USER_ID)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> useCase.executar(TAG_ID, USER_ID))
                 .isInstanceOf(TagNaoEncontradaException.class);
 
-        verify(repository, never()).deleteById(TAG_ID);
+        verify(repository, never()).deletar(TAG_ID);
     }
 
     @Test
     void executarNaoRemoveTagDeOutroUsuario() {
         UUID outroUserId = UUID.randomUUID();
-        when(repository.findByIdAndUserId(TAG_ID, outroUserId)).thenReturn(Optional.empty());
+        when(repository.buscarPorIdEUserId(TAG_ID, outroUserId)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> useCase.executar(TAG_ID, outroUserId))
                 .isInstanceOf(TagNaoEncontradaException.class);
 
-        verify(repository, never()).deleteById(TAG_ID);
+        verify(repository, never()).deletar(TAG_ID);
     }
 }
