@@ -5,6 +5,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.laboratorio.financas.categoria.domain.Categoria;
 import com.laboratorio.financas.categoria.domain.TipoCategoria;
 import com.laboratorio.financas.shared.AbstractIntegrationTest;
+import com.laboratorio.financas.usuario.infrastructure.persistence.UsuarioEntity;
+import com.laboratorio.financas.usuario.infrastructure.persistence.UsuarioJpaRepository;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -22,14 +24,34 @@ class CategoriaRepositoryImplTest extends AbstractIntegrationTest {
     @Autowired
     private CategoriaJpaRepository jpaRepository;
 
+    @Autowired
+    private UsuarioJpaRepository usuarioJpaRepository;
+
     @BeforeEach
     void limparAntes() {
         jpaRepository.deleteAll();
+        usuarioJpaRepository.deleteAll();
     }
 
     @AfterEach
     void limpar() {
         jpaRepository.deleteAll();
+        usuarioJpaRepository.deleteAll();
+    }
+
+    private UUID criarUsuarioPersistido() {
+        UUID id = UUID.randomUUID();
+        UsuarioEntity entity = new UsuarioEntity(
+                id,
+                "teste+" + id + "@test.com",
+                "hash_bcrypt",
+                true,
+                Instant.now(),
+                null,
+                Instant.now()
+        );
+        usuarioJpaRepository.save(entity);
+        return id;
     }
 
     private Categoria categoriaSimples(String nome, TipoCategoria tipo) {
@@ -77,7 +99,7 @@ class CategoriaRepositoryImplTest extends AbstractIntegrationTest {
     @Test
     void salvarCategoriaDeUsuarioPreservaUserId() {
         // Given
-        UUID userId = UUID.randomUUID();
+        UUID userId = criarUsuarioPersistido();
         Categoria categoria = categoriaDeUsuario("Mercado", TipoCategoria.DESPESA, userId);
 
         // When
@@ -210,8 +232,8 @@ class CategoriaRepositoryImplTest extends AbstractIntegrationTest {
     @Test
     void listarVisiveisParaRetornaCategoriasSystemEDoUsuario() {
         // Given -- 1 system + 1 do usuario + 1 de outro usuario
-        UUID userId = UUID.randomUUID();
-        UUID outroUserId = UUID.randomUUID();
+        UUID userId = criarUsuarioPersistido();
+        UUID outroUserId = criarUsuarioPersistido();
         Categoria system = repository.salvar(categoriaSystem("Transferencia", TipoCategoria.NEUTRAL));
         Categoria doUsuario = repository.salvar(categoriaDeUsuario("Salario", TipoCategoria.RECEITA, userId));
         repository.salvar(categoriaDeUsuario("Aluguel", TipoCategoria.DESPESA, outroUserId));
@@ -228,7 +250,7 @@ class CategoriaRepositoryImplTest extends AbstractIntegrationTest {
     @Test
     void listarVisiveisParaRetornaApenasSystemQuandoUsuarioSemCategorias() {
         // Given -- apenas system
-        UUID userId = UUID.randomUUID();
+        UUID userId = criarUsuarioPersistido();
         Categoria system = repository.salvar(categoriaSystem("Transferencia", TipoCategoria.NEUTRAL));
 
         // When
@@ -243,7 +265,7 @@ class CategoriaRepositoryImplTest extends AbstractIntegrationTest {
     @Test
     void listarVisiveisParaRetornaVazioQuandoNaoHaNada() {
         // Given -- nenhuma categoria
-        UUID userId = UUID.randomUUID();
+        UUID userId = criarUsuarioPersistido();
 
         // When
         List<Categoria> visiveis = repository.listarVisiveisPara(userId);
