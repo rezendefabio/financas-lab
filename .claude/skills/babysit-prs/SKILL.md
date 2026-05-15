@@ -95,7 +95,8 @@ Se `$state.prs` contem entrada para este PR (chave `"$number"`):
     - Registrar no relatorio: "PR #N: IGNORADO (sem mudanca desde ultimo tratamento)"
     - Pular para o proximo PR (ir direto ao proximo item do loop).
   - Caso contrario (status mudou -- ex: CLEAN -> CONFLICTING): processar normalmente.
-    - Guardar em variavel que o processamento foi por mudanca de status (para o relatorio do Passo 4).
+    - Salvar `$statusAnterior = $state.prs["$number"].merge_state_status` e `$statusAtual = $currentStatus`
+      para uso no relatorio do Passo 4 (flag: `$reprocessadoPorStatus = $true`).
 - Caso contrario (SHA mudou OU >= 30 minutos): processar normalmente.
 
 Se nao contem entrada para este PR: processar normalmente.
@@ -176,11 +177,12 @@ Set-Location $repoRoot
 Apos acao (sucesso ou falha), atualizar state:
 ```powershell
 $headSha = (gh pr view $number --json headRefOid | ConvertFrom-Json).headRefOid
+$freshStatus = (gh pr view $number --json mergeStateStatus | ConvertFrom-Json).mergeStateStatus
 $state.prs["$number"] = @{
     last_action        = "rebase"
     last_checked       = (Get-Date).ToUniversalTime().ToString("o")
     head_sha           = $headSha
-    merge_state_status = $pr.mergeStateStatus
+    merge_state_status = $freshStatus
 }
 ```
 
@@ -220,11 +222,12 @@ Com base no retorno do sub-agente:
 Apos acao (corrigido ou nao), atualizar state:
 ```powershell
 $headSha = (gh pr view $number --json headRefOid | ConvertFrom-Json).headRefOid
+$freshStatus = (gh pr view $number --json mergeStateStatus | ConvertFrom-Json).mergeStateStatus
 $state.prs["$number"] = @{
     last_action        = "ci-fix"
     last_checked       = (Get-Date).ToUniversalTime().ToString("o")
     head_sha           = $headSha
-    merge_state_status = $pr.mergeStateStatus
+    merge_state_status = $freshStatus
 }
 ```
 
@@ -246,11 +249,12 @@ Se retornar erro:
 Apos acao (sucesso ou falha), atualizar state:
 ```powershell
 $headSha = (gh pr view $number --json headRefOid | ConvertFrom-Json).headRefOid
+$freshStatus = (gh pr view $number --json mergeStateStatus | ConvertFrom-Json).mergeStateStatus
 $state.prs["$number"] = @{
     last_action        = "update-branch"
     last_checked       = (Get-Date).ToUniversalTime().ToString("o")
     head_sha           = $headSha
-    merge_state_status = $pr.mergeStateStatus
+    merge_state_status = $freshStatus
 }
 ```
 
@@ -260,11 +264,12 @@ Se nenhuma acao foi executada para um PR (nao CONFLICTING, nao BEHIND, CI ok),
 atualizar state com `last_action = "ok"`:
 
 ```powershell
+$freshStatus = (gh pr view $number --json mergeStateStatus | ConvertFrom-Json).mergeStateStatus
 $state.prs["$number"] = @{
     last_action        = "ok"
     last_checked       = (Get-Date).ToUniversalTime().ToString("o")
     head_sha           = $headSha
-    merge_state_status = $pr.mergeStateStatus
+    merge_state_status = $freshStatus
 }
 ```
 
@@ -281,8 +286,8 @@ Exibir resumo:
 
 <para cada PR:>
   PR #N <titulo>: <REBASE OK | REBASE RESOLVIDO (inteligente) | REBASE ABORTADO: <motivo> | UPDATE-BRANCH OK | UPDATE-BRANCH FALHOU: <motivo> | CI AUTO-FIX OK | CI FALHOU (manual): <motivo> | IGNORADO (sem mudanca desde ultimo tratamento) | OK>
-  <se processado por mudanca de mergeStateStatus (nao por mudanca de SHA):>
-  PR #N: reprocessado (mergeStateStatus mudou: <status_anterior> -> <status_atual>)
+  <se $reprocessadoPorStatus == $true para este PR:>
+  PR #N: reprocessado (mergeStateStatus mudou: $statusAnterior -> $statusAtual)
 
 Proxima verificacao em 5 minutos.
 ```
