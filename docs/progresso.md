@@ -3,7 +3,7 @@
 > Documento de tracking. Mostra **onde estamos** na construção da fábrica e do produto.
 > Atualizado conforme camadas avançam. Diferente do `decisoes.md` (que registra escolhas) e dos `adrs.md` (que registram porquês), este documento responde a pergunta: "em que ponto eu estou?".
 
-**Última atualização:** 2026-05-14 (Sub-etapa 5.46 -- Invalid Date: fix + regra B11)
+**Última atualização:** 2026-05-14 (Sub-etapa 5.47 -- skill /setup-design com design-planner)
 
 ---
 
@@ -159,6 +159,18 @@ Configurar `CLAUDE.md` rico, criar 3-5 subagents focados, criar 5-10 skills (sla
 Ativar a fábrica de fato: rodar features no Tier 2, configurar 3 routines Tier 1, validar paralelismo se necessário.
 
 ### Sub-etapas concluídas
+
+- **5.47 -- Skill `/setup-design` com sub-agente design-planner** (2026-05-14):
+  Nova skill para inicializacao de design system dado o dominio do projeto. Fluxo:
+  operador invoca `/setup-design "<dominio>" [--figma <url>]`; skill spawna sub-agente
+  `design-planner` (Sonnet) que le contexto do projeto, componentes existentes e
+  `docs/design-system.md` como referencia, depois produz proposta completa cobrindo
+  paleta OKLCH, tipografia, componentes disponiveis, mapeamento tipo-dado-para-componente
+  (input e exibicao), page templates e bloqueadores; skill exibe proposta ao operador
+  via AskUserQuestion; se aprovada: escreve `docs/design-system.md` e cria componentes
+  wrapper novos com testes Vitest. Skill NAO commita nem abre PR -- operador commita
+  manualmente apos revisar. Arquivos: `.claude/agents/design-planner.md` e
+  `.claude/skills/setup-design/SKILL.md`. PR aberto.
 
 - **5.46 -- Invalid Date: fix imediato + regra prescritiva B11 + blocker no front-reviewer** (2026-05-14):
   Bug "Invalid Date" no campo `criadoEm` da tela de detalhe de Meta (e Orcamento).
