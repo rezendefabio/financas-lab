@@ -205,6 +205,18 @@ Ativar a fábrica de fato: rodar features no Tier 2, configurar 3 routines Tier 
   (B) @Entity com comentario modificado -- silencioso; (C) UseCase sem @Entity -- silencioso.
   Cobre debito explicito registrado desde a 4.7. PR aberto.
 
+- **5.52 -- hooks java-spring: mvnw sem profile e bit de execucao** (2026-05-15):
+  Dois hooks pre-commit novos para o escopo `java-spring`. **(1) mvnw-profile.ps1:**
+  bloqueia commit se algum arquivo `.ps1` em `scripts/` staged contem
+  `mvnw spring-boot:run` sem `-Dspring-boot.run.profiles=`. Licao 3.3.1: sem profile
+  explicito, Spring usa profile `default` sem datasource configurado, gerando
+  `Failed to configure a DataSource`. **(2) mvnw-executable.ps1:** bloqueia commit
+  se `mvnw` esta no indice git sem modo `100755`. Licao 1.5: localmente no Windows
+  nao ha impacto, mas no CI Linux `./mvnw` falha com `Permission denied`.
+  Ambos registrados no orquestrador `.githooks/pre-commit.ps1`.
+  Validacao destrutiva 4 cenarios (A bloqueia sem profile, B passa com profile,
+  C bloqueia sem bit, D nao age em nao-.ps1). PR #138 aberto.
+
 - **5.51 -- hooks java-spring: baseline-on-migrate e ordem Lombok/MapStruct** (2026-05-15):
   Dois novos hooks pre-commit para o escopo `java-spring`. **(1) `baseline-on-migrate.ps1`:**
   bloqueia commit de qualquer `application*.yml` em `src/main/resources/` que contenha
