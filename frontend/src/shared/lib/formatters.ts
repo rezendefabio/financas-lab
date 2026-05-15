@@ -32,7 +32,15 @@ export function formatTipoTransacao(tipo: string): string {
   return labels[tipo] ?? tipo
 }
 
-export function formatDate(dataIso: string): string {
-  // Append noon UTC to avoid day-off-by-one from timezone conversion
-  return new Date(dataIso + 'T12:00:00').toLocaleDateString('pt-BR')
+export function formatDate(dataIso: string | null | undefined): string {
+  if (!dataIso) return '--'
+  // Date-only strings (LocalDate) get noon UTC to avoid timezone day-shift.
+  // Strings that already carry a time component (Instant/LocalDateTime) are parsed directly.
+  const date = dataIso.includes('T') ? new Date(dataIso) : new Date(dataIso + 'T12:00:00')
+  return date.toLocaleDateString('pt-BR')
+}
+
+export function formatDateTime(isoTimestamp: string | null | undefined): string {
+  if (!isoTimestamp) return '--'
+  return new Date(isoTimestamp).toLocaleString('pt-BR')
 }

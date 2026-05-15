@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { formatBRL, formatTipoConta, formatTipoTransacao, formatDate, formatTipoCategoria } from './formatters'
+import { formatBRL, formatTipoConta, formatTipoTransacao, formatDate, formatTipoCategoria, formatDateTime } from './formatters'
 
 describe('formatBRL', () => {
   it('formats a number as BRL currency', () => {
@@ -51,7 +51,37 @@ describe('formatTipoTransacao', () => {
 })
 
 describe('formatDate', () => {
-  it('formatDate formata data ISO no padrao pt-BR', () => {
+  it('formata LocalDate (date-only) no padrao pt-BR', () => {
     expect(formatDate('2026-05-13')).toBe('13/05/2026')
+  })
+
+  it('formata Instant (string com T e Z) sem duplicar o componente de hora', () => {
+    const result = formatDate('2026-05-14T15:30:00Z')
+    expect(result).not.toBe('Invalid Date')
+    expect(result).toMatch(/\d{2}\/\d{2}\/\d{4}/)
+  })
+
+  it('retorna -- para null', () => {
+    expect(formatDate(null)).toBe('--')
+  })
+
+  it('retorna -- para undefined', () => {
+    expect(formatDate(undefined)).toBe('--')
+  })
+})
+
+describe('formatDateTime', () => {
+  it('formata Instant como data e hora no locale pt-BR', () => {
+    const result = formatDateTime('2026-05-14T15:30:00Z')
+    expect(result).not.toBe('Invalid Date')
+    expect(result).toContain('2026')
+  })
+
+  it('retorna -- para null', () => {
+    expect(formatDateTime(null)).toBe('--')
+  })
+
+  it('retorna -- para undefined', () => {
+    expect(formatDateTime(undefined)).toBe('--')
   })
 })

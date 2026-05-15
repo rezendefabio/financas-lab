@@ -327,6 +327,25 @@ Card grid e aceito apenas para metricas/KPIs de dashboard, nunca para listagem d
 
 ---
 
+## Invalid Date em campos de data/timestamp -- Regra B11
+
+**Regra B11 -- bloqueador:** Nenhum campo de data ou timestamp pode exibir literalmente "Invalid Date" na tela.
+
+**Causa comum:** string ISO passada diretamente ao formatador sem conversao previa com `new Date(valor)`.
+
+**Data / Timestamp (Instant, LocalDate, LocalDateTime)**
+
+- Exibicao: sempre converter com `new Date(valor)` antes de passar ao formatador.
+- Nunca passar string ISO diretamente ao formatador de data.
+- Verificar null/undefined antes de formatar -- exibir "--" se ausente.
+- Formato padrao: `formatDate(valor)` para campos `LocalDate` (data simples, sem hora).
+- Formato com hora: `formatDateTime(valor)` para campos `Instant` / `LocalDateTime` (ex: `criadoEm`, `atualizadoEm`).
+- "Invalid Date" em qualquer campo de data e bloqueador B11.
+
+**Violacao B11:** `formatDate(entidade.criadoEm)` onde `criadoEm` e um `Instant` (ISO com `Z`). Usar `formatDateTime` nesses casos.
+
+---
+
 ### Componentes wrapper disponiveis
 
 Os componentes abaixo existem em `frontend/src/shared/components/`.
@@ -392,7 +411,7 @@ Uso:
 | Percentual (0-100+) | `<Progress>` + texto `XX%` | `percentualUtilizado` |
 | Metrica / KPI | `StatCard` | saldo total, metas em andamento |
 | `LocalDate` | `formatDate(value)` | prazo, data de lancamento |
-| `Instant` / `LocalDateTime` | `formatDate(value)` read-only, nunca editavel | `criadoEm`, `atualizadoEm` |
+| `Instant` / `LocalDateTime` | `formatDateTime(value)` read-only, nunca editavel | `criadoEm`, `atualizadoEm` |
 | Objeto aninhado `ValorMonetario` | Acessar `.valor` antes de formatar | `formatBRL(orcamento.valorLimite.valor)` |
 | Enum raw | label do mapa de formatacao | `formatTipoConta(conta.tipo)` |
 
@@ -613,7 +632,7 @@ export default function EntidadeDetailPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">{entidade.nome}</h1>
-          <p className="text-sm text-muted-foreground">Criado em {formatDate(entidade.criadoEm)}</p>
+          <p className="text-sm text-muted-foreground">Criado em {formatDateTime(entidade.criadoEm)}</p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={onEdit}>Editar</Button>
