@@ -41,11 +41,27 @@ class RegistrarUsuarioUseCaseTest {
         when(usuarioRepository.salvar(any(Usuario.class)))
                 .thenAnswer(inv -> inv.getArgument(0));
 
-        Usuario resultado = useCase.executar(new RegistrarUsuarioUseCase.Comando("user@email.com", "senha123"));
+        Usuario resultado = useCase.executar(
+                new RegistrarUsuarioUseCase.Comando("user@email.com", "senha123", null));
 
         assertThat(resultado.getEmail()).isEqualTo("user@email.com");
         assertThat(resultado.getSenhaHash()).isEqualTo("bcrypt_hash");
         assertThat(resultado.isAtivo()).isTrue();
+        assertThat(resultado.getName()).isNull();
+        verify(usuarioRepository).salvar(any(Usuario.class));
+    }
+
+    @Test
+    void executarComNameSetaNameNaUsuario() {
+        when(usuarioRepository.existePorEmail("user@email.com")).thenReturn(false);
+        when(passwordEncoder.encode("senha123")).thenReturn("bcrypt_hash");
+        when(usuarioRepository.salvar(any(Usuario.class)))
+                .thenAnswer(inv -> inv.getArgument(0));
+
+        Usuario resultado = useCase.executar(
+                new RegistrarUsuarioUseCase.Comando("user@email.com", "senha123", "Fabio"));
+
+        assertThat(resultado.getName()).isEqualTo("Fabio");
         verify(usuarioRepository).salvar(any(Usuario.class));
     }
 
@@ -54,7 +70,7 @@ class RegistrarUsuarioUseCaseTest {
         when(usuarioRepository.existePorEmail("dup@email.com")).thenReturn(true);
 
         assertThatThrownBy(() ->
-                useCase.executar(new RegistrarUsuarioUseCase.Comando("dup@email.com", "senha123")))
+                useCase.executar(new RegistrarUsuarioUseCase.Comando("dup@email.com", "senha123", null)))
                 .isInstanceOf(EmailJaExisteException.class)
                 .hasMessageContaining("dup@email.com");
 
