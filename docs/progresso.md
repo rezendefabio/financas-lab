@@ -3,7 +3,7 @@
 > Documento de tracking. Mostra **onde estamos** na construção da fábrica e do produto.
 > Atualizado conforme camadas avançam. Diferente do `decisoes.md` (que registra escolhas) e dos `adrs.md` (que registram porquês), este documento responde a pergunta: "em que ponto eu estou?".
 
-**Última atualização:** 2026-05-15 (Sub-etapa 5.59 -- fix unix-commands falso positivo + guard worktree em batch e plan)
+**Última atualização:** 2026-05-15 (Sub-etapa 5.60 -- atualizacao documental + insights Boris Cherny)
 
 ---
 
@@ -159,6 +159,19 @@ Configurar `CLAUDE.md` rico, criar 3-5 subagents focados, criar 5-10 skills (sla
 Ativar a fábrica de fato: rodar features no Tier 2, configurar 3 routines Tier 1, validar paralelismo se necessário.
 
 ### Sub-etapas concluídas
+
+- **5.60 -- atualizacao documental + insights Boris Cherny** (2026-05-15):
+  Tres lacunas documentais acumuladas desde 5.3 corrigidas. **(1) `decisoes-claude-code.md`:**
+  adicionadas entradas das sub-etapas 5.9 a 5.59 cobrindo: base-nova/render prop, Vitest,
+  front-reviewer B/S/E, ADR-013, B6/B7, /batch Boris Cherny model, 270s ScheduleWakeup,
+  /batch inline prompts efemeros, conflict-resolver/ci-fixer, /plan gate humano + tasks.json,
+  macro-skills /init-project e design-planner, guard de worktree obrigatorio.
+  **(2) `progresso.md`:** inseridas entradas de tres sub-etapas sem numero: 5.40 (PR #117
+  cleanup worktrees/branches orfaos), 5.42 (PR #118 babysit-prs state file), 5.43 (PRs #113+#114
+  fix orcamento visual + telas de Meta). **(3) `visao.md`:** nova secao "Validacoes externas
+  -- Boris Cherny" com 3 blocos (o que validou, o que falta, insights para o blueprint);
+  criterio 3 marcado como atingido na 5.31/5.32; criterio 5 com estimativa empirica
+  (~80% reducao, spec a PR em <30min). PR aberto.
 
 - **5.59 -- fix unix-commands falso positivo + guard worktree em batch e plan** (2026-05-15):
   Dois fixes independentes. **(1) unix-commands.ps1:** deteccao de comandos Unix gerava falso
@@ -361,6 +374,26 @@ Ativar a fábrica de fato: rodar features no Tier 2, configurar 3 routines Tier 
   de arquivos residuais sangrandodo worktree para o repositorio principal apos execucoes do /plan.
   PR aberto.
 
+- **5.43 -- telas de Meta no frontend** (2026-05-14):
+  Feature layer `frontend/src/features/metas/` com types, service (5 endpoints) e barrel exports.
+  Paginas Next.js: listagem (tabela + badges de status/atrasada), criacao (RHF+Zod) e detalhe
+  (progresso, deposito, cancelamento). Sidebar: link Metas com icone Target apos Orcamentos.
+  Zod espelha anotacoes Java: `@NotBlank` -> `.min(1)`, `@FutureOrPresent` -> `.refine(val >= hoje)`,
+  `@Positive` -> `.positive()`. Objetos aninhados `valorAlvo.valor` e `valorAtual.valor` acessados
+  via ponto (B7 OK). 113/113 testes passam. Gate `check-front.ps1` verde: lint + testes + build.
+  Sub-etapa inclui tambem fix(orcamento): corrigir bug visual Select (`<FormField>` padrao com
+  `<FormControl>` + `<FormMessage />`) e adicionar testes Vitest das 3 paginas de Orcamento.
+  PRs #113 e #114.
+
+- **5.42 -- babysit-prs: controle de last-run com state file** (2026-05-14):
+  Implementa state file JSON em `.claude/babysit-prs.state` (gitignored) que persiste historico
+  de tratamento de cada PR entre iteracoes. Logica de anti-reprocessamento (Passo 2.0): obtem SHA
+  atual do HEAD via `gh pr view --json headRefOid`; se SHA nao mudou E `last_checked` < 30 minutos:
+  PR marcado como IGNORADO e pulado. Caso contrario: processado normalmente. Threshold de 30 minutos
+  fixo (loop roda a cada 10 minutos -- PR sem mudanca ignorado 2 iteracoes antes de reprocessamento
+  por timeout). State salvo via Write tool apos cada acao; JSON invalido reinicializado como `{"prs": {}}`.
+  `.gitignore` atualizado com `.claude/babysit-prs.state`. PR #118.
+
 - **5.41 -- documentacao do fluxo Tier 2 -- guia de intervencao do operador** (2026-05-14):
   Criado `docs/fluxo-tier2.md` com guia de quando intervir vs deixar a fabrica resolver.
   Tres checkpoints do operador (requisito, planejamento, PRs). Seis situacoes documentadas:
@@ -371,6 +404,15 @@ Ativar a fábrica de fato: rodar features no Tier 2, configurar 3 routines Tier 
   quando rejeitar PR de agente (ADR violado, escopo extrapolado, risco arquitetural),
   como cancelar /plan (antes de spawnar: responder "Nao, cancelar"; depois: aguardar e rejeitar PRs).
   Secao de sinais de intervencao e secao de comandos uteis de diagnostico. PR aberto.
+
+- **5.40 -- cleanup automatico de worktrees e branches orfaos apos /batch e /plan** (2026-05-14):
+  Apos cada execucao de `/batch` ou `/plan`, sub-agentes deixavam residuos: diretorios `agent-*`
+  registrados como worktrees e branches locais `worktree-agent-*`. Cleanup automatico adicionado
+  ao final de `/batch` e `/plan` com ordem obrigatoria: (1) `git worktree remove -f -f` para cada
+  path contendo `agent-` (deve vir ANTES do branch delete), (2) `git branch -D` para cada branch
+  `worktree-agent-*` (apos worktree removido, evita erro "branch in use"). Loop de branches usa
+  `@($orphanBranches)` para forcar contexto de array no PS5.1 (sem `@()`, array de 1 elemento e
+  desempacotado e o `foreach` falha silenciosamente). PR #117.
 
 - **5.39 -- /plan: guarda imperativa contra execucao direta** (2026-05-14):
   Adicionada guarda no topo do `SKILL.md` da skill `/plan` (logo apos o frontmatter),

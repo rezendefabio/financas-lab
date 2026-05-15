@@ -290,6 +290,166 @@ Semantica correta: deposito e uma acao, nao uma atualizacao parcial do recurso.
 
 ---
 
+## Sub-etapa 5.9 -- Frontend foundation: base-nova e render prop
+
+### Decisao: `render` prop em vez de `asChild`
+
+O design system `base-nova` usa `@base-ui/react` (nao `@radix-ui`). A prop `asChild`
+do Radix nao existe -- o padrao equivalente e `render prop` (ex:
+`<SidebarMenuButton render={<Link href="...">} />`). Qualquer componente que tente
+usar `asChild` com base-nova quebra silenciosamente. Registrado como bloqueador B2
+no `front-reviewer`.
+
+### Decisao: Vitest + Testing Library para frontend
+
+Jest nao era opcao (incompatibilidade com App Router + RSC). Vitest com
+`@testing-library/react` cobre componentes, hooks e services. Testes ficam colocados
+junto ao arquivo-alvo (`componente.test.tsx` ao lado de `componente.tsx`).
+
+---
+
+## Sub-etapas 5.12/5.15/5.16 -- front-reviewer, ADR-013 e B6
+
+### Decisao: front-reviewer com categorias B/S/E
+
+O `front-reviewer` classifica apontamentos em tres categorias:
+- **Bloqueadores (B):** violacoes objetivas que impedem merge (fetch fora de services/,
+  asChild em base-nova, URL hardcoded de ambiente, `any` em tipos de API, credencial literal,
+  valores Instant com formatDate em vez de formatDateTime, tipo de campo divergente do catalog).
+- **Sugestoes (S):** nao bloqueadoras (console.log em producao, componente sem teste).
+- **Elogios (E):** boas praticas observadas.
+
+### Decisao: ADR-013 -- feature-first no frontend
+
+Organizacao `src/features/<dominio>/` com `services/`, `types/`, `hooks/`, `components/`,
+`index.ts`. Codigo compartilhado em `src/shared/`. Codigo de dominio nao vaza para `src/app/`.
+Registrado como ADR-013 no `adrs.md`.
+
+### Decisao: B6 -- Zod espelha anotacoes Java
+
+Schema Zod do formulario frontend deve espelhar cada anotacao Java no `*Request.java`
+correspondente: `@NotBlank` -> `.min(1)`, `@Size(max=N)` -> `.max(N)`, `@Min(N)` -> `.min(N)`.
+Divergencia entre Zod e Java e bloqueador B6. Validacao espelhada elimina categoria
+inteira de bugs de validacao assimetrica.
+
+---
+
+## Sub-etapas 5.20/5.21 -- /batch e babysit-prs: Camadas A e B da fabrica
+
+### Decisao: "Boris Cherny model" -- loops + parallelism
+
+A fabrica opera em dois eixos paralelos:
+- **Camada A (/batch):** execucao paralela de tasks via Agent tool com `isolation: worktree`.
+  Acao atomica: todos os N Agent calls emitidos em uma unica resposta, antes de qualquer
+  resultado. Loop serial e bug.
+- **Camada B (babysit-prs):** routine Tier 1 de monitoramento continuo via `ScheduleWakeup`.
+
+### Decisao: 270s (nao 300s) para ScheduleWakeup
+
+O cache do Claude Code tem TTL de 5 minutos (300s). Usar exatamente 300s paga o cache miss
+sem amortiza-lo. `delaySeconds: 270` mantem o contexto quente. `delaySeconds: 600` (10min)
+foi o valor inicial do babysit-prs; reduzido para 270s na 5.50.
+
+---
+
+## Sub-etapa 5.26 -- field-type-catalog: B7
+
+### Decisao: catalogo prescritivo antes de implementar qualquer campo frontend
+
+`docs/field-type-catalog.md` mapeia tipo Java -> componente React (BigDecimal -> MoneyInput,
+UUID FK -> Select carregado da API, Instant -> formatDateTime, etc.). O executor deve
+consultar o catalogo antes de implementar qualquer campo. Violacao e bloqueador B7 no
+`front-reviewer`. Objetivo: eliminar a categoria de bugs onde o componente errado e
+escolhido por inferencia incorreta do tipo.
+
+---
+
+## Sub-etapa 5.28 -- /batch inline: prompts efemeros
+
+### Decisao: executor recebe conteudo inline, nao path de arquivo
+
+A partir da 5.28, `/batch` le o arquivo de prompt com Read tool e embute o conteudo
+inline no template do sub-agente. O executor nao precisa que o arquivo exista no
+worktree. `docs/prompts/` adicionado ao `.gitignore` -- prompts sao artefatos de
+orquestracao, nao codigo versionado. O registro permanente fica em `docs/progresso.md`.
+
+---
+
+## Sub-etapas 5.29/5.30 -- sub-agentes inteligentes de CI e conflito
+
+### Decisao: sub-agente resolve conflito com raciocinio sobre intencao
+
+Em vez de abortar conservadoramente qualquer falha de rebase, o babysitter spawna
+`conflict-resolver` que le cada arquivo em conflito na integra, entende a intencao de
+"ours" (main) vs "theirs" (branch do PR), e produz sintese correta. Aborta apenas
+diante de contradicao genuina de negocio. Extraido para `.claude/agents/conflict-resolver.md`
+na 5.35 (ADR-012 compliance).
+
+### Decisao: CI auto-fix via sub-agente com maximo 2 tentativas
+
+`ci-fixer` le o log de falha, identifica causa raiz (compilacao, testes, lint), aplica
+correcao minima em worktree isolado, valida com `check.ps1`, commita e faz push.
+Se a correcao exigir decisao de negocio: reporta "NAO CORRIGIDO: requer intervencao
+humana". Extraido para `.claude/agents/ci-fixer.md` na 5.35.
+
+---
+
+## Sub-etapa 5.33 -- /plan: aprovacao humana e rastreamento persistente
+
+### Decisao: gate humano entre planejamento e spawning
+
+`/plan` segue fluxo Passo 0 (state) -> Passo 1 (planejador) -> Passo 2 (exibe plan) ->
+Passo 3 (AskUserQuestion: "Sim, spawnar" / "Nao, cancelar") -> Passo 4 (spawn) ->
+Passo 5 (aguarda e atualiza). O humano aprova o plano antes de qualquer executor ser
+spawado. Default da confirmacao e NAO.
+
+### Decisao: tasks.json como estado persistente
+
+`.claude/tasks.json` (gitignored) persiste `id`, `planId`, `titulo`, `status`,
+`branch`, `pr_url`, `created_at`, `updated_at`. Permite retomar o acompanhamento
+entre sessoes via `/tasks`. Garante rastreabilidade mesmo se a sessao for encerrada
+durante a execucao.
+
+---
+
+## Sub-etapas 5.47/5.48 -- /setup-design e /init-project: macro-skills
+
+### Decisao: macro-skill orquestra outras skills sem logica propria
+
+`/init-project` introduz a quarta categoria de skill: macro-skill orquestradora que
+invoca `/setup-architecture`, `/setup-design` e `/setup-infra` em sequencia, lendo
+cada SKILL.md e executando manualmente (nunca via Skill tool). Toda logica de geracao
+e delegada para as skills especializadas.
+
+### Decisao: design-planner como primeiro sub-agente de design
+
+`design-planner` (Sonnet, context: fork) recebe dominio do projeto e produz proposta
+de paleta OKLCH, tipografia, mapeamento tipo-dado -> componente, page templates e
+bloqueadores B8/B9/B10. Skill exibe proposta ao operador via AskUserQuestion antes
+de escrever qualquer arquivo.
+
+---
+
+## Sub-etapas 5.49/5.59 -- isolamento de worktree: guard obrigatorio
+
+### Decisao: executor verifica worktree antes de qualquer acao de arquivo
+
+Causa raiz de arquivos residuais no repo principal: executor operando no worktree
+isolado mas criando arquivos com path relativo que resolvia para o diretorio do
+processo pai. Guard obrigatorio no inicio de cada executor:
+
+```bash
+worktree_root=$(git rev-parse --show-toplevel)
+if [ "$worktree_root" = "/c/projetos/financas-lab" ]; then
+  echo "ERRO CRITICO: diretorio e o repo principal."
+fi
+```
+
+E limpeza obrigatoria antes de encerrar: verificar `git status --short | grep "^??"` e
+remover qualquer arquivo `??` inesperado.
+
+---
+
 ## Historico de mudancas deste documento
 
 - **2026-05-12** -- Sub-etapa 5.3 concluida: bounded context `meta`. Padrao dois @Embedded
