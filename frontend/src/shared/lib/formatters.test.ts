@@ -28,6 +28,14 @@ describe('formatTipoConta', () => {
     expect(formatTipoConta('CARTAO_CREDITO')).toBe('Cartao de Credito')
   })
 
+  it('returns label for INVESTIMENTO', () => {
+    expect(formatTipoConta('INVESTIMENTO')).toBe('Investimento')
+  })
+
+  it('returns label for OUTRO', () => {
+    expect(formatTipoConta('OUTRO')).toBe('Outro')
+  })
+
   it('returns the original string for unknown type (fallback)', () => {
     expect(formatTipoConta('DESCONHECIDO')).toBe('DESCONHECIDO')
   })

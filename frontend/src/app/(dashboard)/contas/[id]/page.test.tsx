@@ -29,10 +29,17 @@ import type { Conta, SaldoResponse } from '@/features/contas/types/conta'
 
 const contaAtiva: Conta = {
   id: 'conta-123',
+  userId: null,
   nome: 'Nubank',
   tipo: 'CORRENTE',
   saldoInicialValor: 1000,
   saldoInicialMoeda: 'BRL',
+  saldoAtualValor: null,
+  saldoAtualMoeda: null,
+  limiteCreditoValor: null,
+  limiteCreditoMoeda: null,
+  diaFechamento: null,
+  diaVencimento: null,
   ativa: true,
   criadoEm: '2024-01-01T00:00:00Z',
   atualizadoEm: '2024-01-01T00:00:00Z',

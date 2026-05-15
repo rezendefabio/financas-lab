@@ -6,6 +6,11 @@ interface CriarContaRequest {
   tipo: string
   saldoInicialValor: number
   saldoInicialMoeda: string
+  userId?: string
+  limiteCreditoValor?: number
+  limiteCreditoMoeda?: string
+  diaFechamento?: number
+  diaVencimento?: number
 }
 
 export const contasService = {

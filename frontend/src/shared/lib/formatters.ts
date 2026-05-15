@@ -11,6 +11,8 @@ export function formatTipoConta(tipo: string): string {
     POUPANCA: 'Poupanca',
     DINHEIRO: 'Dinheiro',
     CARTAO_CREDITO: 'Cartao de Credito',
+    INVESTIMENTO: 'Investimento',
+    OUTRO: 'Outro',
   }
   return labels[tipo] ?? tipo
 }
