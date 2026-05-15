@@ -232,4 +232,127 @@ class ContaRepositoryImplTest extends AbstractIntegrationTest {
         assertThat(recuperada).isPresent();
         assertThat(recuperada.get().getSaldoInicial().moeda().getCurrencyCode()).isEqualTo("USD");
     }
+
+    @Test
+    void salvarComUserIdPersisteCorretamente() {
+        // Given
+        UUID userId = UUID.randomUUID();
+        Conta nova = new Conta(
+                UUID.randomUUID(),
+                userId,
+                "Conta Com User",
+                TipoConta.CORRENTE,
+                new Money(new BigDecimal("0.00"), BRL),
+                new Money(new BigDecimal("0.00"), BRL),
+                null,
+                null,
+                null,
+                true,
+                java.time.Instant.now(),
+                null
+        );
+
+        // When
+        repository.salvar(nova);
+        Optional<Conta> recuperada = repository.buscarPorId(nova.getId());
+
+        // Then
+        assertThat(recuperada).isPresent();
+        assertThat(recuperada.get().getUserId()).isEqualTo(userId);
+    }
+
+    @Test
+    void salvarComCamposCartaoCreditoPersisteCorretamente() {
+        // Given
+        Money limiteCredito = new Money(new BigDecimal("5000.00"), BRL);
+        Conta nova = new Conta(
+                UUID.randomUUID(),
+                null,
+                "Cartao Visa",
+                TipoConta.CARTAO_CREDITO,
+                new Money(new BigDecimal("0.00"), BRL),
+                new Money(new BigDecimal("0.00"), BRL),
+                limiteCredito,
+                10,
+                20,
+                true,
+                java.time.Instant.now(),
+                null
+        );
+
+        // When
+        repository.salvar(nova);
+        Optional<Conta> recuperada = repository.buscarPorId(nova.getId());
+
+        // Then
+        assertThat(recuperada).isPresent();
+        assertThat(recuperada.get().getLimiteCredito()).isEqualTo(limiteCredito);
+        assertThat(recuperada.get().getDiaFechamento()).isEqualTo(10);
+        assertThat(recuperada.get().getDiaVencimento()).isEqualTo(20);
+    }
+
+    @Test
+    void salvarComSaldoAtualDiferenteDeSaldoInicialPersisteCorretamente() {
+        // Given
+        Money saldoInicial = new Money(new BigDecimal("1000.00"), BRL);
+        Money saldoAtual = new Money(new BigDecimal("1500.00"), BRL);
+        Conta nova = new Conta(
+                UUID.randomUUID(),
+                null,
+                "Conta Atualizada",
+                TipoConta.CORRENTE,
+                saldoInicial,
+                saldoAtual,
+                null,
+                null,
+                null,
+                true,
+                java.time.Instant.now(),
+                null
+        );
+
+        // When
+        repository.salvar(nova);
+        Optional<Conta> recuperada = repository.buscarPorId(nova.getId());
+
+        // Then
+        assertThat(recuperada).isPresent();
+        assertThat(recuperada.get().getSaldoAtual()).isEqualTo(saldoAtual);
+    }
+
+    @Test
+    void salvarComTipoInvestimentoPersisteCorretamente() {
+        // Given
+        Conta nova = new Conta(
+                "CDB Nubank",
+                TipoConta.INVESTIMENTO,
+                new Money(new BigDecimal("2000.00"), BRL)
+        );
+
+        // When
+        repository.salvar(nova);
+        Optional<Conta> recuperada = repository.buscarPorId(nova.getId());
+
+        // Then
+        assertThat(recuperada).isPresent();
+        assertThat(recuperada.get().getTipo()).isEqualTo(TipoConta.INVESTIMENTO);
+    }
+
+    @Test
+    void salvarComTipoOutroPersisteCorretamente() {
+        // Given
+        Conta nova = new Conta(
+                "Conta Outro",
+                TipoConta.OUTRO,
+                new Money(new BigDecimal("100.00"), BRL)
+        );
+
+        // When
+        repository.salvar(nova);
+        Optional<Conta> recuperada = repository.buscarPorId(nova.getId());
+
+        // Then
+        assertThat(recuperada).isPresent();
+        assertThat(recuperada.get().getTipo()).isEqualTo(TipoConta.OUTRO);
+    }
 }

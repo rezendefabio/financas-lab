@@ -4,5 +4,7 @@ public enum TipoConta {
     CORRENTE,
     POUPANCA,
     DINHEIRO,
-    CARTAO_CREDITO
+    CARTAO_CREDITO,
+    INVESTIMENTO,
+    OUTRO
 }

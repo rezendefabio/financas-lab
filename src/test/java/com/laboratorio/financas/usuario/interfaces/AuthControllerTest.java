@@ -2,6 +2,7 @@ package com.laboratorio.financas.usuario.interfaces;
 
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.nullValue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -40,7 +41,30 @@ class AuthControllerTest extends AbstractIntegrationTest {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id", notNullValue()))
                 .andExpect(jsonPath("$.email", equalTo("novo@email.com")))
+                .andExpect(jsonPath("$.name").value(nullValue()))
                 .andExpect(jsonPath("$.criadoEm", notNullValue()));
+    }
+
+    @Test
+    void registrarComNameRetorna201ComNameNoResponse() throws Exception {
+        String body = """
+                {"email":"named@email.com","senha":"senha12345678","name":"Fabio"}
+                """;
+        mockMvc.perform(post("/api/auth/registrar")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(body))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.name", equalTo("Fabio")));
+    }
+
+    @Test
+    void registrarNameMuitoLongoRetorna400() throws Exception {
+        String nameLongo = "A".repeat(101);
+        String body = "{\"email\":\"long@email.com\",\"senha\":\"senha12345678\",\"name\":\"" + nameLongo + "\"}";
+        mockMvc.perform(post("/api/auth/registrar")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(body))
+                .andExpect(status().isBadRequest());
     }
 
     @Test

@@ -37,6 +37,12 @@ class ContaTest {
     }
 
     @Test
+    void construtorNovoInicializaSaldoAtualIgualASaldoInicial() {
+        Conta conta = new Conta("Corrente", TipoConta.CORRENTE, SALDO_100);
+        assertThat(conta.getSaldoAtual()).isEqualTo(SALDO_100);
+    }
+
+    @Test
     void construtorNovoComNomeComEspacosNasPontasTrimaONome() {
         Conta conta = new Conta("  Poupanca  ", TipoConta.POUPANCA, SALDO_ZERO);
         assertThat(conta.getNome()).isEqualTo("Poupanca");
@@ -122,17 +128,28 @@ class ContaTest {
     void construtorReconstrucaoComTodosOsCamposValidosPreservaValores() {
         // Given
         UUID id = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
         Instant criadoEm = Instant.parse("2026-01-01T10:00:00Z");
         Instant atualizadoEm = Instant.parse("2026-01-02T12:00:00Z");
+        Money limiteCredito = new Money(new BigDecimal("5000.00"), BRL);
 
         // When
-        Conta conta = new Conta(id, "Poupanca", TipoConta.POUPANCA, SALDO_100, false, criadoEm, atualizadoEm);
+        Conta conta = new Conta(
+                id, userId, "Poupanca", TipoConta.POUPANCA,
+                SALDO_100, SALDO_100, limiteCredito,
+                10, 20, false, criadoEm, atualizadoEm
+        );
 
         // Then
         assertThat(conta.getId()).isEqualTo(id);
+        assertThat(conta.getUserId()).isEqualTo(userId);
         assertThat(conta.getNome()).isEqualTo("Poupanca");
         assertThat(conta.getTipo()).isEqualTo(TipoConta.POUPANCA);
         assertThat(conta.getSaldoInicial()).isEqualTo(SALDO_100);
+        assertThat(conta.getSaldoAtual()).isEqualTo(SALDO_100);
+        assertThat(conta.getLimiteCredito()).isEqualTo(limiteCredito);
+        assertThat(conta.getDiaFechamento()).isEqualTo(10);
+        assertThat(conta.getDiaVencimento()).isEqualTo(20);
         assertThat(conta.isAtiva()).isFalse();
         assertThat(conta.getCriadoEm()).isEqualTo(criadoEm);
         assertThat(conta.getAtualizadoEm()).isEqualTo(atualizadoEm);
@@ -141,21 +158,33 @@ class ContaTest {
     @Test
     void construtorReconstrucaoComIdNuloLancaNullPointerException() {
         assertThatNullPointerException()
-                .isThrownBy(() -> new Conta(null, "Conta", TipoConta.CORRENTE, SALDO_100, true, Instant.now(), null))
+                .isThrownBy(() -> new Conta(
+                        null, null, "Conta", TipoConta.CORRENTE,
+                        SALDO_100, SALDO_100, null,
+                        null, null, true, Instant.now(), null
+                ))
                 .withMessageContaining("id");
     }
 
     @Test
     void construtorReconstrucaoComCriadoEmNuloLancaNullPointerException() {
         assertThatNullPointerException()
-                .isThrownBy(() -> new Conta(UUID.randomUUID(), "Conta", TipoConta.CORRENTE, SALDO_100, true, null, null))
+                .isThrownBy(() -> new Conta(
+                        UUID.randomUUID(), null, "Conta", TipoConta.CORRENTE,
+                        SALDO_100, SALDO_100, null,
+                        null, null, true, null, null
+                ))
                 .withMessageContaining("criadoEm");
     }
 
     @Test
     void construtorReconstrucaoComAtualizadoEmNuloDefaultaParaCriadoEm() {
         Instant criadoEm = Instant.parse("2026-01-01T10:00:00Z");
-        Conta conta = new Conta(UUID.randomUUID(), "Conta", TipoConta.CORRENTE, SALDO_ZERO, true, criadoEm, null);
+        Conta conta = new Conta(
+                UUID.randomUUID(), null, "Conta", TipoConta.CORRENTE,
+                SALDO_ZERO, SALDO_ZERO, null,
+                null, null, true, criadoEm, null
+        );
         assertThat(conta.getAtualizadoEm()).isEqualTo(criadoEm);
     }
 
@@ -163,14 +192,69 @@ class ContaTest {
     void construtorReconstrucaoComAtualizadoEmDiferenteDeCriadoEmPreserva() {
         Instant criadoEm = Instant.parse("2026-01-01T10:00:00Z");
         Instant atualizadoEm = Instant.parse("2026-06-15T08:30:00Z");
-        Conta conta = new Conta(UUID.randomUUID(), "Conta", TipoConta.CORRENTE, SALDO_ZERO, true, criadoEm, atualizadoEm);
+        Conta conta = new Conta(
+                UUID.randomUUID(), null, "Conta", TipoConta.CORRENTE,
+                SALDO_ZERO, SALDO_ZERO, null,
+                null, null, true, criadoEm, atualizadoEm
+        );
         assertThat(conta.getAtualizadoEm()).isEqualTo(atualizadoEm);
     }
 
     @Test
     void construtorReconstrucaoComAtivaFalsePreservaEstado() {
-        Conta conta = new Conta(UUID.randomUUID(), "Conta", TipoConta.CORRENTE, SALDO_ZERO, false, Instant.now(), null);
+        Conta conta = new Conta(
+                UUID.randomUUID(), null, "Conta", TipoConta.CORRENTE,
+                SALDO_ZERO, SALDO_ZERO, null,
+                null, null, false, Instant.now(), null
+        );
         assertThat(conta.isAtiva()).isFalse();
+    }
+
+    @Test
+    void construtorReconstrucaoSaldoAtualNuloDefaultaParaSaldoInicial() {
+        Conta conta = new Conta(
+                UUID.randomUUID(), null, "Conta", TipoConta.CORRENTE,
+                SALDO_100, null, null,
+                null, null, true, Instant.now(), null
+        );
+        assertThat(conta.getSaldoAtual()).isEqualTo(SALDO_100);
+    }
+
+    @Test
+    void construtorReconstrucaoComUserIdNuloAceita() {
+        Conta conta = new Conta(
+                UUID.randomUUID(), null, "Conta", TipoConta.CORRENTE,
+                SALDO_ZERO, SALDO_ZERO, null,
+                null, null, true, Instant.now(), null
+        );
+        assertThat(conta.getUserId()).isNull();
+    }
+
+    @Test
+    void construtorReconstrucaoComCamposCartaoPreserva() {
+        Money limiteCredito = new Money(new BigDecimal("10000.00"), BRL);
+        Conta conta = new Conta(
+                UUID.randomUUID(), null, "Cartao", TipoConta.CARTAO_CREDITO,
+                SALDO_ZERO, SALDO_ZERO, limiteCredito,
+                15, 25, true, Instant.now(), null
+        );
+        assertThat(conta.getLimiteCredito()).isEqualTo(limiteCredito);
+        assertThat(conta.getDiaFechamento()).isEqualTo(15);
+        assertThat(conta.getDiaVencimento()).isEqualTo(25);
+    }
+
+    // --- TipoConta novos valores ---
+
+    @Test
+    void tipoContaInvestimentoAceito() {
+        Conta conta = new Conta("Investimento", TipoConta.INVESTIMENTO, SALDO_100);
+        assertThat(conta.getTipo()).isEqualTo(TipoConta.INVESTIMENTO);
+    }
+
+    @Test
+    void tipoContaOutroAceito() {
+        Conta conta = new Conta("Outro", TipoConta.OUTRO, SALDO_ZERO);
+        assertThat(conta.getTipo()).isEqualTo(TipoConta.OUTRO);
     }
 
     // --- desativar() ---
@@ -201,15 +285,26 @@ class ContaTest {
     @Test
     void desativarPreservaDemaisCampos() {
         // Given
-        Conta ativa = new Conta("Minha Poupanca", TipoConta.POUPANCA, SALDO_100);
+        UUID userId = UUID.randomUUID();
+        Money limiteCredito = new Money(new BigDecimal("5000.00"), BRL);
+        Conta ativa = new Conta(
+                UUID.randomUUID(), userId, "Minha Poupanca", TipoConta.POUPANCA,
+                SALDO_100, SALDO_100, limiteCredito,
+                10, 20, true, Instant.now(), null
+        );
 
         // When
         Conta inativa = ativa.desativar();
 
         // Then
+        assertThat(inativa.getUserId()).isEqualTo(userId);
         assertThat(inativa.getNome()).isEqualTo("Minha Poupanca");
         assertThat(inativa.getTipo()).isEqualTo(TipoConta.POUPANCA);
         assertThat(inativa.getSaldoInicial()).isEqualTo(SALDO_100);
+        assertThat(inativa.getSaldoAtual()).isEqualTo(SALDO_100);
+        assertThat(inativa.getLimiteCredito()).isEqualTo(limiteCredito);
+        assertThat(inativa.getDiaFechamento()).isEqualTo(10);
+        assertThat(inativa.getDiaVencimento()).isEqualTo(20);
         assertThat(inativa.getCriadoEm()).isEqualTo(ativa.getCriadoEm());
     }
 
@@ -219,8 +314,16 @@ class ContaTest {
     void duasContasComMesmoIdSaoIguais() {
         UUID id = UUID.randomUUID();
         Instant t = Instant.now();
-        Conta conta1 = new Conta(id, "Nome A", TipoConta.CORRENTE, SALDO_100, true, t, t);
-        Conta conta2 = new Conta(id, "Nome B", TipoConta.POUPANCA, SALDO_ZERO, false, t, t);
+        Conta conta1 = new Conta(
+                id, null, "Nome A", TipoConta.CORRENTE,
+                SALDO_100, SALDO_100, null,
+                null, null, true, t, t
+        );
+        Conta conta2 = new Conta(
+                id, null, "Nome B", TipoConta.POUPANCA,
+                SALDO_ZERO, SALDO_ZERO, null,
+                null, null, false, t, t
+        );
         assertThat(conta1).isEqualTo(conta2);
     }
 
@@ -247,8 +350,16 @@ class ContaTest {
     void hashCodeConsistenteComEquals() {
         UUID id = UUID.randomUUID();
         Instant t = Instant.now();
-        Conta conta1 = new Conta(id, "Nome A", TipoConta.CORRENTE, SALDO_100, true, t, t);
-        Conta conta2 = new Conta(id, "Nome B", TipoConta.POUPANCA, SALDO_ZERO, false, t, t);
+        Conta conta1 = new Conta(
+                id, null, "Nome A", TipoConta.CORRENTE,
+                SALDO_100, SALDO_100, null,
+                null, null, true, t, t
+        );
+        Conta conta2 = new Conta(
+                id, null, "Nome B", TipoConta.POUPANCA,
+                SALDO_ZERO, SALDO_ZERO, null,
+                null, null, false, t, t
+        );
         assertThat(conta1.hashCode()).isEqualTo(conta2.hashCode());
     }
 
