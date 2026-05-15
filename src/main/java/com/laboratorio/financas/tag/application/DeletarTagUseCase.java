@@ -17,8 +17,8 @@ public class DeletarTagUseCase {
 
     @Transactional
     public void executar(UUID id, UUID userId) {
-        tagRepository.findByIdAndUserId(id, userId)
+        tagRepository.buscarPorIdEUserId(id, userId)
                 .orElseThrow(() -> new TagNaoEncontradaException(id));
-        tagRepository.deleteById(id);
+        tagRepository.deletar(id);
     }
 }

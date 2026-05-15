@@ -35,8 +35,8 @@ class AtualizarTagUseCaseTest {
     void executarAtualizaNomeECor() {
         Tag existente = new Tag(TAG_ID, USER_ID, "Velha", "#000000", Instant.now());
         Tag atualizada = new Tag(TAG_ID, USER_ID, "Nova", "#FFFFFF", Instant.now());
-        when(repository.findByIdAndUserId(TAG_ID, USER_ID)).thenReturn(Optional.of(existente));
-        when(repository.save(any(Tag.class))).thenReturn(atualizada);
+        when(repository.buscarPorIdEUserId(TAG_ID, USER_ID)).thenReturn(Optional.of(existente));
+        when(repository.salvar(any(Tag.class))).thenReturn(atualizada);
 
         AtualizarTagUseCase.Comando comando = new AtualizarTagUseCase.Comando(TAG_ID, USER_ID, "Nova", "#FFFFFF");
         Tag resultado = useCase.executar(comando);
@@ -48,8 +48,8 @@ class AtualizarTagUseCaseTest {
     @Test
     void executarComNomeNuloMantemNomeExistente() {
         Tag existente = new Tag(TAG_ID, USER_ID, "Essencial", "#FF0000", Instant.now());
-        when(repository.findByIdAndUserId(TAG_ID, USER_ID)).thenReturn(Optional.of(existente));
-        when(repository.save(any(Tag.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(repository.buscarPorIdEUserId(TAG_ID, USER_ID)).thenReturn(Optional.of(existente));
+        when(repository.salvar(any(Tag.class))).thenAnswer(inv -> inv.getArgument(0));
 
         AtualizarTagUseCase.Comando comando = new AtualizarTagUseCase.Comando(TAG_ID, USER_ID, null, "#00FF00");
         Tag resultado = useCase.executar(comando);
@@ -60,8 +60,8 @@ class AtualizarTagUseCaseTest {
     @Test
     void executarComCorNulaMantemCorExistente() {
         Tag existente = new Tag(TAG_ID, USER_ID, "Essencial", "#FF0000", Instant.now());
-        when(repository.findByIdAndUserId(TAG_ID, USER_ID)).thenReturn(Optional.of(existente));
-        when(repository.save(any(Tag.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(repository.buscarPorIdEUserId(TAG_ID, USER_ID)).thenReturn(Optional.of(existente));
+        when(repository.salvar(any(Tag.class))).thenAnswer(inv -> inv.getArgument(0));
 
         AtualizarTagUseCase.Comando comando = new AtualizarTagUseCase.Comando(TAG_ID, USER_ID, "Nova", null);
         Tag resultado = useCase.executar(comando);
@@ -71,13 +71,13 @@ class AtualizarTagUseCaseTest {
 
     @Test
     void executarTagNaoEncontradaLancaException() {
-        when(repository.findByIdAndUserId(TAG_ID, USER_ID)).thenReturn(Optional.empty());
+        when(repository.buscarPorIdEUserId(TAG_ID, USER_ID)).thenReturn(Optional.empty());
 
         AtualizarTagUseCase.Comando comando = new AtualizarTagUseCase.Comando(TAG_ID, USER_ID, "Nova", null);
 
         assertThatThrownBy(() -> useCase.executar(comando))
                 .isInstanceOf(TagNaoEncontradaException.class);
 
-        verify(repository, never()).save(any(Tag.class));
+        verify(repository, never()).salvar(any(Tag.class));
     }
 }

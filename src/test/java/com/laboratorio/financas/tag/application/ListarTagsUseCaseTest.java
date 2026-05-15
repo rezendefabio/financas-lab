@@ -29,7 +29,7 @@ class ListarTagsUseCaseTest {
     void executarRetornaListaDeTags() {
         Tag t1 = new Tag(UUID.randomUUID(), USER_ID, "Essencial", null, Instant.now());
         Tag t2 = new Tag(UUID.randomUUID(), USER_ID, "Lazer", "#00FF00", Instant.now());
-        when(repository.findByUserId(USER_ID)).thenReturn(List.of(t1, t2));
+        when(repository.buscarPorUserId(USER_ID)).thenReturn(List.of(t1, t2));
 
         List<Tag> resultado = useCase.executar(USER_ID);
 
@@ -39,7 +39,7 @@ class ListarTagsUseCaseTest {
 
     @Test
     void executarRetornaListaVaziaQuandoNaoHaTags() {
-        when(repository.findByUserId(USER_ID)).thenReturn(List.of());
+        when(repository.buscarPorUserId(USER_ID)).thenReturn(List.of());
 
         List<Tag> resultado = useCase.executar(USER_ID);
 
@@ -48,10 +48,10 @@ class ListarTagsUseCaseTest {
 
     @Test
     void executarPassaUserIdCorretoParaRepositorio() {
-        when(repository.findByUserId(USER_ID)).thenReturn(List.of());
+        when(repository.buscarPorUserId(USER_ID)).thenReturn(List.of());
 
         useCase.executar(USER_ID);
 
-        Mockito.verify(repository).findByUserId(USER_ID);
+        Mockito.verify(repository).buscarPorUserId(USER_ID);
     }
 }

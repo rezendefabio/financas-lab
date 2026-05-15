@@ -19,31 +19,31 @@ public class TagRepositoryImpl implements TagRepository {
     }
 
     @Override
-    public Optional<Tag> findById(UUID id) {
+    public Optional<Tag> buscarPorId(UUID id) {
         return jpaRepository.findById(id).map(mapper::toDomain);
     }
 
     @Override
-    public List<Tag> findByUserId(UUID userId) {
+    public List<Tag> buscarPorUserId(UUID userId) {
         return jpaRepository.findByUserId(userId).stream()
                 .map(mapper::toDomain)
                 .toList();
     }
 
     @Override
-    public Optional<Tag> findByIdAndUserId(UUID id, UUID userId) {
+    public Optional<Tag> buscarPorIdEUserId(UUID id, UUID userId) {
         return jpaRepository.findByIdAndUserId(id, userId).map(mapper::toDomain);
     }
 
     @Override
-    public Tag save(Tag tag) {
+    public Tag salvar(Tag tag) {
         TagEntity entity = mapper.toEntity(tag);
         TagEntity saved = jpaRepository.save(entity);
         return mapper.toDomain(saved);
     }
 
     @Override
-    public void deleteById(UUID id) {
+    public void deletar(UUID id) {
         jpaRepository.deleteById(id);
     }
 }
