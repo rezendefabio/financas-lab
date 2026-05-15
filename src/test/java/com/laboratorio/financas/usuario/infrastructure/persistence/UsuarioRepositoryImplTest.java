@@ -5,7 +5,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.laboratorio.financas.shared.AbstractIntegrationTest;
 import com.laboratorio.financas.usuario.domain.Usuario;
 import com.laboratorio.financas.usuario.domain.UsuarioRepository;
+import java.time.Instant;
 import java.util.Optional;
+import java.util.UUID;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,6 +37,21 @@ class UsuarioRepositoryImplTest extends AbstractIntegrationTest {
         assertThat(salvo.getEmail()).isEqualTo("test@email.com");
         assertThat(salvo.getSenhaHash()).isEqualTo("hash_bcrypt");
         assertThat(salvo.isAtivo()).isTrue();
+        assertThat(salvo.getName()).isNull();
+        assertThat(salvo.getUpdatedAt()).isNotNull();
+    }
+
+    @Test
+    void salvarUsuarioComNamePersistERetornaName() {
+        UUID id = UUID.randomUUID();
+        Instant criadoEm = Instant.now();
+        Instant updatedAt = Instant.now();
+        Usuario usuario = new Usuario(id, "named@email.com", "hash_bcrypt", true, criadoEm, "Fabio", updatedAt);
+
+        Usuario salvo = repository.salvar(usuario);
+
+        assertThat(salvo.getName()).isEqualTo("Fabio");
+        assertThat(salvo.getUpdatedAt()).isNotNull();
     }
 
     @Test

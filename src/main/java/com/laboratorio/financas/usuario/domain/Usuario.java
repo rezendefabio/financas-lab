@@ -11,6 +11,8 @@ public final class Usuario {
     private final String senhaHash;
     private final boolean ativo;
     private final Instant criadoEm;
+    private final String name;
+    private final Instant updatedAt;
 
     public Usuario(String email, String senhaHash) {
         Objects.requireNonNull(email, "email nao pode ser nulo");
@@ -23,6 +25,8 @@ public final class Usuario {
         this.senhaHash = senhaHash;
         this.ativo = true;
         this.criadoEm = Instant.now();
+        this.name = null;
+        this.updatedAt = Instant.now();
     }
 
     public Usuario(UUID id, String email, String senhaHash, boolean ativo, Instant criadoEm) {
@@ -35,6 +39,23 @@ public final class Usuario {
         this.senhaHash = senhaHash;
         this.ativo = ativo;
         this.criadoEm = criadoEm;
+        this.name = null;
+        this.updatedAt = null;
+    }
+
+    public Usuario(UUID id, String email, String senhaHash, boolean ativo, Instant criadoEm,
+                   String name, Instant updatedAt) {
+        Objects.requireNonNull(id, "id nao pode ser nulo");
+        Objects.requireNonNull(email, "email nao pode ser nulo");
+        Objects.requireNonNull(senhaHash, "senhaHash nao pode ser nulo");
+        Objects.requireNonNull(criadoEm, "criadoEm nao pode ser nulo");
+        this.id = id;
+        this.email = email;
+        this.senhaHash = senhaHash;
+        this.ativo = ativo;
+        this.criadoEm = criadoEm;
+        this.name = name;
+        this.updatedAt = updatedAt;
     }
 
     public UUID getId() {
@@ -55,6 +76,14 @@ public final class Usuario {
 
     public Instant getCriadoEm() {
         return criadoEm;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public Instant getUpdatedAt() {
+        return updatedAt;
     }
 
     @Override
