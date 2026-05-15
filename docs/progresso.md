@@ -3,7 +3,7 @@
 > Documento de tracking. Mostra **onde estamos** na construção da fábrica e do produto.
 > Atualizado conforme camadas avançam. Diferente do `decisoes.md` (que registra escolhas) e dos `adrs.md` (que registram porquês), este documento responde a pergunta: "em que ponto eu estou?".
 
-**Última atualização:** 2026-05-15 (Sub-etapa 5.63 -- /plan auditoria previa e fatia vertical)
+**Última atualização:** 2026-05-15 (Sub-etapa 5.64 -- fix PowerShell em contexto bash)
 
 ---
 
@@ -159,6 +159,19 @@ Configurar `CLAUDE.md` rico, criar 3-5 subagents focados, criar 5-10 skills (sla
 Ativar a fábrica de fato: rodar features no Tier 2, configurar 3 routines Tier 1, validar paralelismo se necessário.
 
 ### Sub-etapas concluídas
+
+- **5.64 -- fix PowerShell em contexto bash (babysit-prs + executor templates)** (2026-05-15):
+  Dois bugs com a mesma causa raiz: codigo PowerShell enviado ao Bash tool (`/usr/bin/bash`),
+  que nao reconhece cmdlets PS. **(1) babysit-prs/SKILL.md:** Passo 0 convertido para
+  bash (`if [ -f ... ]; then cat; else echo; fi`); parse JSON via
+  `powershell -NoProfile -Command "Get-Content ... | ConvertFrom-Json"`. Passo 0.5 (bloco
+  longo) convertido para `powershell -NoProfile -File` com script temporario `.ps1`.
+  Passos 2/3: todos os blocos `ConvertFrom-Json`, state updates e `Set-Location` convertidos
+  para `powershell -Command` ou equivalentes bash. Adicao de nota de convencao no topo do
+  skill. **(2) plan/SKILL.md e batch/SKILL.md:** Remove-Item ausente (ja usavam `rm -f`);
+  secao "Convencao de ambiente: bash vs PowerShell" adicionada no template do executor
+  apos "Limpeza obrigatoria antes de encerrar" -- lista os equivalentes bash para cmdlets PS
+  mais comuns. PR aberto.
 
 - **5.63 -- /plan -- auditoria previa e fatia vertical obrigatoria** (2026-05-15):
   Dois problemas corrigidos no planejador da skill `/plan`. **(1) Auditoria previa (Passo 1.5):**
