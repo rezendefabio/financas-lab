@@ -15,9 +15,14 @@ public interface ContaMapper {
         }
         return new ContaEntity(
                 conta.getId(),
+                conta.getUserId(),
                 conta.getNome(),
                 conta.getTipo(),
                 toMoneyEmbeddable(conta.getSaldoInicial()),
+                toMoneyEmbeddable(conta.getSaldoAtual()),
+                toMoneyEmbeddable(conta.getLimiteCredito()),
+                conta.getDiaFechamento(),
+                conta.getDiaVencimento(),
                 conta.isAtiva(),
                 conta.getCriadoEm(),
                 conta.getAtualizadoEm()
@@ -30,9 +35,14 @@ public interface ContaMapper {
         }
         return new Conta(
                 entity.getId(),
+                entity.getUserId(),
                 entity.getNome(),
                 entity.getTipo(),
                 toMoney(entity.getSaldoInicial()),
+                toMoney(entity.getSaldoAtual()),
+                toMoney(entity.getLimiteCredito()),
+                entity.getDiaFechamento(),
+                entity.getDiaVencimento(),
                 entity.isAtiva(),
                 entity.getCriadoEm(),
                 entity.getAtualizadoEm()
