@@ -15,7 +15,9 @@ public interface UsuarioMapper {
                 usuario.getEmail(),
                 usuario.getSenhaHash(),
                 usuario.isAtivo(),
-                usuario.getCriadoEm()
+                usuario.getCriadoEm(),
+                usuario.getName(),
+                usuario.getUpdatedAt()
         );
     }
 
@@ -28,7 +30,9 @@ public interface UsuarioMapper {
                 entity.getEmail(),
                 entity.getSenhaHash(),
                 entity.isAtivo(),
-                entity.getCriadoEm()
+                entity.getCriadoEm(),
+                entity.getName(),
+                entity.getUpdatedAt()
         );
     }
 }

@@ -27,15 +27,24 @@ public class UsuarioEntity {
     @Column(name = "criado_em", nullable = false, updatable = false)
     private Instant criadoEm;
 
+    @Column(name = "name", length = 100)
+    private String name;
+
+    @Column(name = "updated_at")
+    private Instant updatedAt;
+
     protected UsuarioEntity() {
     }
 
-    public UsuarioEntity(UUID id, String email, String senhaHash, boolean ativo, Instant criadoEm) {
+    public UsuarioEntity(UUID id, String email, String senhaHash, boolean ativo, Instant criadoEm,
+                         String name, Instant updatedAt) {
         this.id = id;
         this.email = email;
         this.senhaHash = senhaHash;
         this.ativo = ativo;
         this.criadoEm = criadoEm;
+        this.name = name;
+        this.updatedAt = updatedAt;
     }
 
     public UUID getId() {
@@ -56,5 +65,13 @@ public class UsuarioEntity {
 
     public Instant getCriadoEm() {
         return criadoEm;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public Instant getUpdatedAt() {
+        return updatedAt;
     }
 }
