@@ -3,7 +3,7 @@
 > Documento de tracking. Mostra **onde estamos** na construção da fábrica e do produto.
 > Atualizado conforme camadas avançam. Diferente do `decisoes.md` (que registra escolhas) e dos `adrs.md` (que registram porquês), este documento responde a pergunta: "em que ponto eu estou?".
 
-**Última atualização:** 2026-05-15 (Sub-etapa 5.51 -- hooks java-spring: baseline-on-migrate e ordem Lombok/MapStruct)
+**Última atualização:** 2026-05-15 (Sub-etapa 5.53 -- hook java-spring: @Entity modificada avisa sobre migration)
 
 ---
 
@@ -159,6 +159,17 @@ Configurar `CLAUDE.md` rico, criar 3-5 subagents focados, criar 5-10 skills (sla
 Ativar a fábrica de fato: rodar features no Tier 2, configurar 3 routines Tier 1, validar paralelismo se necessário.
 
 ### Sub-etapas concluídas
+
+- **5.53 -- hook java-spring: @Entity modificada avisa sobre migration** (2026-05-15):
+  Extensao do hook 4.7 (`entity-migration.ps1`) para cobrir o caso edge de modificacao
+  de `@Entity` existente (status M). Implementado em modo **warn** (exit 0 sempre --
+  falsos positivos possiveis em refactors). Hook `entity-migration-modified.ps1` usa
+  `git diff --cached -U0` para inspecionar linhas adicionadas: dispara apenas se o diff
+  adiciona declaracoes de campo novo (`private\s+\w`, `@Column`, `@Id`, `@Embedded`).
+  Registrado no orquestrador `pre-commit.ps1` apos `entity-migration.ps1`. 3 cenarios
+  destrutivos validados: (A) @Entity com campo novo -- exibe AVISO amarelo, nao bloqueia;
+  (B) @Entity com comentario modificado -- silencioso; (C) UseCase sem @Entity -- silencioso.
+  Cobre debito explicito registrado desde a 4.7. PR aberto.
 
 - **5.51 -- hooks java-spring: baseline-on-migrate e ordem Lombok/MapStruct** (2026-05-15):
   Dois novos hooks pre-commit para o escopo `java-spring`. **(1) `baseline-on-migrate.ps1`:**
