@@ -4,6 +4,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.laboratorio.financas.tag.domain.Tag;
 import com.laboratorio.financas.shared.AbstractIntegrationTest;
+import com.laboratorio.financas.usuario.infrastructure.persistence.UsuarioEntity;
+import com.laboratorio.financas.usuario.infrastructure.persistence.UsuarioJpaRepository;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -20,17 +23,39 @@ class TagRepositoryImplTest extends AbstractIntegrationTest {
     @Autowired
     private TagJpaRepository jpaRepository;
 
-    private static final UUID USER_ID_A = UUID.fromString("aaaaaaaa-0000-0000-0000-000000000001");
-    private static final UUID USER_ID_B = UUID.fromString("bbbbbbbb-0000-0000-0000-000000000002");
+    @Autowired
+    private UsuarioJpaRepository usuarioJpaRepository;
+
+    private UUID USER_ID_A;
+    private UUID USER_ID_B;
 
     @BeforeEach
     void limparAntes() {
         jpaRepository.deleteAll();
+        usuarioJpaRepository.deleteAll();
+        USER_ID_A = criarUsuarioPersistido();
+        USER_ID_B = criarUsuarioPersistido();
     }
 
     @AfterEach
     void limpar() {
         jpaRepository.deleteAll();
+        usuarioJpaRepository.deleteAll();
+    }
+
+    private UUID criarUsuarioPersistido() {
+        UUID id = UUID.randomUUID();
+        UsuarioEntity entity = new UsuarioEntity(
+                id,
+                "teste+" + id + "@test.com",
+                "hash_bcrypt",
+                true,
+                Instant.now(),
+                null,
+                Instant.now()
+        );
+        usuarioJpaRepository.save(entity);
+        return id;
     }
 
     @Test
