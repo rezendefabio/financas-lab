@@ -27,7 +27,7 @@ public class EvolucaoSaldoUseCase {
         this.transacaoRepository = transacaoRepository;
     }
 
-    public record Consulta(LocalDate dataInicio, LocalDate dataFim, UUID contaId) { }
+    public record Consulta(LocalDate dataInicio, LocalDate dataFim, UUID contaId, UUID userId) { }
 
     public record ItemEvolucaoMes(
             LocalDate mes,
@@ -56,7 +56,8 @@ public class EvolucaoSaldoUseCase {
                 consulta.dataInicio(),
                 consulta.dataFim(),
                 null,
-                null
+                null,
+                consulta.userId()
         );
 
         List<Transacao> transacoes = transacaoRepository

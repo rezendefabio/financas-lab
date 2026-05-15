@@ -31,7 +31,7 @@ public class GastosPorCategoriaUseCase {
         this.categoriaRepository = categoriaRepository;
     }
 
-    public record Consulta(LocalDate dataInicio, LocalDate dataFim, UUID contaId) { }
+    public record Consulta(LocalDate dataInicio, LocalDate dataFim, UUID contaId, UUID userId) { }
 
     public record ItemGastoPorCategoria(UUID categoriaId, String nomeCategoria, Money totalGasto) { }
 
@@ -53,7 +53,8 @@ public class GastosPorCategoriaUseCase {
                 consulta.dataInicio(),
                 consulta.dataFim(),
                 TipoTransacao.DESPESA,
-                null
+                null,
+                consulta.userId()
         );
 
         List<Transacao> transacoes = transacaoRepository
