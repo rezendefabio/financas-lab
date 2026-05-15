@@ -88,7 +88,7 @@ Se houver entradas: adicionar ao relatorio do Passo 4 a linha:
 
 ### Passo 1 -- Listar PRs abertos
 
-```powershell
+```bash
 gh pr list --state open --json number,title,headRefName,mergeable,mergeStateStatus
 ```
 
@@ -306,6 +306,7 @@ atualizar state com `last_action = "ok"` via `powershell -NoProfile -Command`:
 
 ```bash
 powershell -NoProfile -Command "
+  \$headSha = (gh pr view <NUMBER> --json headRefOid | ConvertFrom-Json).headRefOid
   \$freshStatus = (gh pr view <NUMBER> --json mergeStateStatus | ConvertFrom-Json).mergeStateStatus
   \$state.prs['<NUMBER>'] = @{
     last_action        = 'ok'
