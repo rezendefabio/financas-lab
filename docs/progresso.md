@@ -182,6 +182,17 @@ Ativar a fábrica de fato: rodar features no Tier 2, configurar 3 routines Tier 
   Cenario B (Write-Host + exit -> silencioso), Cenario C (.java staged -> hook nao age).
   Hook registrado em `.githooks/pre-commit.ps1`. PR aberto.
 
+- **5.54 -- Hook java-spring: convencoes de teste (sufixo Test e abstract)** (2026-05-15):
+  Cria `.claude/hooks/java-spring/test-conventions.ps1` com duas regras em modo fail.
+  **Regra 1 -- Sufixo Test:** classes de teste em `src/test/java/` devem terminar com
+  `Test` ou comecar com `Abstract`. Sem o sufixo, Maven Surefire nao descobre a classe
+  e os testes nunca rodam silenciosamente. **Regra 2 -- Abstract em shared:** classes
+  em `*/shared/` com prefixo `Abstract` devem ter modificador `abstract`. Sem ele,
+  JUnit tenta instanciar a classe base, duplicando execucoes e causando falhas confusas
+  de contexto Spring. Hook registrado no orquestrador `.githooks/pre-commit.ps1`.
+  Validacao destrutiva: 4 cenarios (A: sem sufixo bloqueia; B: prefixo Abstract passa;
+  C: shared sem abstract bloqueia; D: src/main/ nao dispara). Origem: licao 2.1. PR aberto.
+
 - **5.53 -- hook java-spring: @Entity modificada avisa sobre migration** (2026-05-15):
   Extensao do hook 4.7 (`entity-migration.ps1`) para cobrir o caso edge de modificacao
   de `@Entity` existente (status M). Implementado em modo **warn** (exit 0 sempre --

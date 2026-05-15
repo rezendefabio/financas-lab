@@ -4,7 +4,7 @@
 > Input direto para a Camada 3 (Configuração do Claude Code), quando hooks formais entrarem.
 > Atualizado conforme novas lições aparecem.
 
-**Última atualização:** 2026-05-15 (Sub-etapa 5.53 -- hook java-spring: @Entity modificada avisa sobre migration)
+**Ultima atualizacao:** 2026-05-15 (Sub-etapa 5.54 -- hook test-conventions)
 
 ---
 
@@ -82,8 +82,8 @@ A seção "Débitos de configuração" deste documento (`application-prod.yml` a
 
 - **Versão de plugin Maven validada via Maven Central** antes de ser fixada. (Etapa 1.4) Não usar memória do agente — versões podem estar desatualizadas.
 - ~~**Modificacao de `@Entity` JPA existente exige migration Flyway no mesmo PR.**~~ Implementado na 5.53 como hook warn -- ver secao "Hooks implementados".
-- **Classe base de teste sem `abstract` em pacote de shared test.** (Etapa 2.1) Validar que classes base de teste em `src/test/java/.../shared/` têm modificador `abstract` — sem ele, JUnit tenta instanciar e duplica execuções.
-- **Sufixo de classe de teste segue padrão do projeto.** (Etapa 2.2) Sufixo `Test` (singular) para classes novas — `IT` não é usado neste projeto (Failsafe não configurado).
+- ~~**Classe base de teste sem `abstract` em pacote de shared test.**~~ Implementado na 5.54 como hook fail -- ver secao "Hooks implementados".
+- ~~**Sufixo de classe de teste segue padrão do projeto.**~~ Implementado na 5.54 como hook fail -- ver secao "Hooks implementados".
 
 ## Hooks GitHub Actions / CI
 
@@ -157,6 +157,15 @@ Itens originalmente listados em "Hooks Markdown / docs" ou outras secoes, agora 
   -Dtest=<Classe>Test` se arquivo de teste existir; silencioso caso contrario.
   Timeout 60s. Non-blocking (PostToolUse nao bloqueia por design). Escopo futuro:
   integration tests para `*RepositoryImpl.java` se performance permitir.
+
+- **Convencoes de teste (sufixo Test e abstract)** (Sub-etapa 5.54). Implementado em
+  `.claude/hooks/java-spring/test-conventions.ps1`, invocado via `.githooks/pre-commit`
+  (orquestrador) no evento `pre-commit`. **Regra 1:** classes de teste em `src/test/java/`
+  devem terminar com `Test` ou comecar com `Abstract` -- sem sufixo, Maven Surefire nao
+  descobre a classe e os testes nunca rodam. **Regra 2:** classes em `*/shared/` com
+  prefixo `Abstract` devem ter modificador `abstract` -- sem ele, JUnit tenta instanciar
+  a classe base, duplicando execucoes e causando falhas confusas de contexto Spring.
+  Ambas as regras em modo **fail**. Origem: licao 2.1.
 
 - **Write-Error seguido de exit em .ps1** (Sub-etapa 5.55). Implementado em `.claude/hooks/windows/write-error-exit.ps1`, invocado via `.githooks/pre-commit` (orquestrador) no evento `pre-commit`. Filtra arquivos `.ps1` staged (qualquer path). Para cada `.ps1`, percorre linhas buscando `Write-Error`; se encontrado, verifica janela de 5 linhas seguintes para `exit`. Se padrao detectado, exibe aviso em amarelo com explicacao do problema e substituicao recomendada (`Write-Host -ForegroundColor Red + exit N`), mas NAO bloqueia (exit 0). Modo **warn** (heuristica -- analise de fluxo completa requerida para certeza; aviso serve para revisao humana). Primeira ocupacao de `.claude/hooks/windows/`.
 
