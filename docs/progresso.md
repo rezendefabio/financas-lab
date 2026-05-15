@@ -174,6 +174,22 @@ Ativar a fábrica de fato: rodar features no Tier 2, configurar 3 routines Tier 
   raiz de arquivos residuais em `package.json`/`package-lock.json` do repositorio
   principal apos execucoes de executores spawados. PR aberto.
 
+- **5.48 -- Macro-skill `/init-project` + skills `/setup-architecture` e `/setup-infra`** (2026-05-14):
+  Macro-skill `/init-project` orquestra inicializacao de projeto novo em 3 sub-etapas sequenciais.
+  **(1) `/setup-architecture`:** recebe descricao do projeto, analisa o dominio, propoe linguagem +
+  framework + estilo arquitetural (DDD/Clean/Hexagonal/CRUD) + banco de dados + estrategia de
+  testes + estrutura de pacotes, aguarda aprovacao via AskUserQuestion, gera `docs/architecture.md`.
+  **(2) `/setup-design`:** delegada ao `SKILL.md` ja existente (sub-etapa anterior); `/init-project`
+  le e executa manualmente, passando descricao e url Figma se presente.
+  **(3) `/setup-infra`:** recebe descricao do projeto, le `docs/architecture.md` se existir,
+  propoe jobs CI/CD (GitHub Actions), servicos Docker Compose, hooks de qualidade recomendados
+  e variaveis de ambiente; aguarda aprovacao; gera `.github/workflows/ci.yml` e
+  `docker-compose.yml` (se nao existir). `/init-project` exibe plano completo das 3 sub-etapas
+  antes de iniciar, aguarda aprovacao global via AskUserQuestion, executa cada sub-etapa
+  sequencialmente lendo os SKILL.md correspondentes -- nunca usa Skill tool
+  (todas com `disable-model-invocation: true`). Relatorio final lista status de cada sub-etapa
+  e proximos passos. PR aberto.
+
 - **5.47 -- Skill `/setup-design` com sub-agente design-planner** (2026-05-14):
   Nova skill para inicializacao de design system dado o dominio do projeto. Fluxo:
   operador invoca `/setup-design "<dominio>" [--figma <url>]`; skill spawna sub-agente
