@@ -3,7 +3,7 @@
 > Documento de tracking. Mostra **onde estamos** na construção da fábrica e do produto.
 > Atualizado conforme camadas avançam. Diferente do `decisoes.md` (que registra escolhas) e dos `adrs.md` (que registram porquês), este documento responde a pergunta: "em que ponto eu estou?".
 
-**Última atualização:** 2026-05-14 (Sub-etapa 5.49 -- /plan e /batch: isolamento npm install)
+**Última atualização:** 2026-05-15 (Sub-etapa 5.50 -- babysit-prs: intervalo 5 min + auto-cleanup de worktrees orphan)
 
 ---
 
@@ -159,6 +159,16 @@ Configurar `CLAUDE.md` rico, criar 3-5 subagents focados, criar 5-10 skills (sla
 Ativar a fábrica de fato: rodar features no Tier 2, configurar 3 routines Tier 1, validar paralelismo se necessário.
 
 ### Sub-etapas concluídas
+
+- **5.50 -- babysit-prs: intervalo 5 min + auto-cleanup de worktrees orphan** (2026-05-15):
+  Dois ajustes na skill `/babysit-prs`. **(1) Intervalo 10->5 min:** 3 ocorrencias
+  atualizadas (frontmatter `description`, Passo 4 relatorio, Passo 5 `delaySeconds: 600->300`).
+  Resposta mais rapida a conflitos e PRs BEHIND. **(2) Passo 0.5 -- auto-cleanup de worktrees
+  orphan:** detecta worktrees com lock cujo PID nao existe mais (processo morto), remove-os
+  automaticamente com `git worktree remove -f -f` antes de iniciar o loop de PRs.
+  Silencioso quando nenhum orphan encontrado; registra caminhos removidos no relatorio
+  do Passo 4. Resolve problema reportado na memoria do projeto: babysitter bloqueado por
+  worktrees de executores anteriores. PR aberto.
 
 - **5.49 -- /plan e /batch: isolamento de npm install em worktrees** (2026-05-14):
   Ampliacoes cirurgicas nas skills `/plan` e `/batch` para reforcar isolamento de
