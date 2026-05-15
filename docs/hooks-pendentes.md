@@ -172,6 +172,7 @@ Itens originalmente listados em "Hooks Markdown / docs" ou outras secoes, agora 
 
 - **LASTEXITCODE sem suspensao local sob Stop (modo warn)** (Sub-etapa 5.58). Implementado em `.claude/hooks/windows/lastexitcode-stop.ps1`, invocado via `.githooks/pre-commit` (orquestrador) no evento `pre-commit`. Filtra `.ps1` staged que contenham `$ErrorActionPreference = "Stop"` e `$LASTEXITCODE` mas nao contenham suspensao local (`$ErrorActionPreference = "Continue"`). Exibe AVISO amarelo com padrao correto de suspensao local. Modo **warn** (heuristica -- analise de fluxo completa seria necessaria para certeza). Licao 2.6.2: sob Stop, stderr de comando nativo pode lancar excecao terminating antes do `if ($LASTEXITCODE`, propagando exit code errado.
 
+
 - **Write-Error seguido de exit em .ps1** (Sub-etapa 5.55). Implementado em `.claude/hooks/windows/write-error-exit.ps1`, invocado via `.githooks/pre-commit` (orquestrador) no evento `pre-commit`. Filtra arquivos `.ps1` staged (qualquer path). Para cada `.ps1`, percorre linhas buscando `Write-Error`; se encontrado, verifica janela de 5 linhas seguintes para `exit`. Se padrao detectado, exibe aviso em amarelo com explicacao do problema e substituicao recomendada (`Write-Host -ForegroundColor Red + exit N`), mas NAO bloqueia (exit 0). Modo **warn** (heuristica -- analise de fluxo completa requerida para certeza; aviso serve para revisao humana). Primeira ocupacao de `.claude/hooks/windows/`.
 
 ## Notas de cuidado para validacao destrutiva
