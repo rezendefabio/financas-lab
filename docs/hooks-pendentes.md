@@ -40,7 +40,6 @@ Conforme ADR-009, cada hook nasce na pasta `.claude/hooks/<escopo>/` corresponde
 | `mvnw` com bit de execução no git index | java-spring | `.claude/hooks/java-spring/` |
 | Scripts Windows não usam ferramentas Unix | windows | `.claude/hooks/windows/` |
 | Toda configuração de branch protection passou por teste destrutivo | universal (processo) | (não é hook automatizável — mantém em documentação de processo) |
-| `Write-Error` + `exit N` em `.ps1` | windows | `.claude/hooks/windows/` |
 | Comando nativo + `$LASTEXITCODE` sem suspensão de `Stop` | windows | `.claude/hooks/windows/` |
 | Encoding UTF-8 sem BOM em `.ps1` | windows | `.claude/hooks/windows/` |
 | `shadcn init --defaults` deixa `button.tsx` | next | `.claude/hooks/next/` |
@@ -94,9 +93,8 @@ A seção "Débitos de configuração" deste documento (`application-prod.yml` a
 
 ## Hooks PowerShell
 
-- **`Write-Error` seguido de `exit N` em arquivos `.ps1`.** (Etapa 2.6.1) Sob `$ErrorActionPreference = "Stop"`, `Write-Error` lança exceção terminating e nunca atinge `exit N` — exit code propaga errado em sessão dot-source. Padrão correto: `Write-Host -ForegroundColor Red` + `exit N`.
 - **Comando nativo seguido de `if ($LASTEXITCODE -ne 0)` sem suspensão local de `$ErrorActionPreference`.** (Etapa 2.6.2) Indica risco do bug que a 2.6.2 corrigiu — stderr nativo vazando sob `Stop`. Esboço: `grep -B1 -A2 "if (\$LASTEXITCODE" scripts/*.ps1` revisado caso a caso.
-- **Encoding UTF-8 sem BOM em `.ps1`.** (Etapa 2.6) BOM quebra algumas validações e pode afetar `javac` em arquivos vizinhos. Hook: primeiros bytes do arquivo ≠ `EF BB BF`.
+- **Encoding UTF-8 sem BOM em `.ps1`.** (Etapa 2.6) BOM quebra algumas validações e pode afetar `javac` em arquivos vizinhos. Nota: ja coberto por `.claude/hooks/universal/encoding-utf8.ps1` (Sub-etapa 4.2) que rejeita BOM em `.ps1`.
 
 ## Hooks Frontend / Next.js
 
@@ -156,6 +154,8 @@ Itens originalmente listados em "Hooks Markdown / docs" ou outras secoes, agora 
   -Dtest=<Classe>Test` se arquivo de teste existir; silencioso caso contrario.
   Timeout 60s. Non-blocking (PostToolUse nao bloqueia por design). Escopo futuro:
   integration tests para `*RepositoryImpl.java` se performance permitir.
+
+- **Write-Error seguido de exit em .ps1** (Sub-etapa 5.55). Implementado em `.claude/hooks/windows/write-error-exit.ps1`, invocado via `.githooks/pre-commit` (orquestrador) no evento `pre-commit`. Filtra arquivos `.ps1` staged (qualquer path). Para cada `.ps1`, percorre linhas buscando `Write-Error`; se encontrado, verifica janela de 5 linhas seguintes para `exit`. Se padrao detectado, exibe aviso em amarelo com explicacao do problema e substituicao recomendada (`Write-Host -ForegroundColor Red + exit N`), mas NAO bloqueia (exit 0). Modo **warn** (heuristica -- analise de fluxo completa requerida para certeza; aviso serve para revisao humana). Primeira ocupacao de `.claude/hooks/windows/`.
 
 ## Notas de cuidado para validacao destrutiva
 
