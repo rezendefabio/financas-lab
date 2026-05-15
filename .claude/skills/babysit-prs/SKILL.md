@@ -36,31 +36,32 @@ $worktreeRaw = git worktree list --porcelain
 # Parsear blocos separados por linha vazia
 $blocks = ($worktreeRaw -join "`n") -split "`n`n"
 
+$orphansRemoved = @()
+
 foreach ($block in $blocks) {
     $lines = $block -split "`n"
-    $pathLine  = $lines | Where-Object { $_ -match "^worktree " }
-    $lockLine  = $lines | Where-Object { $_ -match "^locked " }
+    $pathLine = $lines | Where-Object { $_ -match "^worktree " } | Select-Object -First 1
+    $lockLine = $lines | Where-Object { $_ -match "^locked " }   | Select-Object -First 1
 
-    if (-not $lockLine) { continue }  # nao e locked, pular
+    if (-not $lockLine) { continue }
 
     $wtPath = $pathLine -replace "^worktree ", ""
 
-    # Extrair PID do lock reason (formato: "... (pid XXXXX)")
     if ($lockLine -match "\(pid (\d+)\)") {
-        $pid = [int]$matches[1]
-        $proc = Get-Process -Id $pid -ErrorAction SilentlyContinue
+        $orphanPid = [int]$matches[1]
+        $proc = Get-Process -Id $orphanPid -ErrorAction SilentlyContinue
         if ($null -eq $proc) {
-            # Processo morto -- worktree orphan, remover
             git worktree remove -f -f $wtPath 2>&1 | Out-Null
-            Write-Host "Worktree orphan removido: $wtPath (pid $pid morto)"
+            $orphansRemoved += $wtPath
         }
     }
 }
 ```
 
-Se nenhum worktree orphan for encontrado: nenhuma mensagem (silencioso).
-Se algum for removido: registrar no relatorio do Passo 4 como linha adicional:
-`Worktrees orphan removidos: <lista de paths ou "nenhum">`
+Se $orphansRemoved estiver vazio: silencioso, nenhuma linha extra no relatorio.
+Se houver entradas: adicionar ao relatorio do Passo 4 a linha:
+  Worktrees orphan removidos: <caminho1>, <caminho2> ...
+Nao usar Write-Host inline no foreach.
 
 ### Passo 1 -- Listar PRs abertos
 
@@ -280,6 +281,6 @@ Se qualquer erro irrecuperavel ocorreu durante a iteracao, reportar ao operador
 e encerrar sem agendar.
 
 Usar ScheduleWakeup:
-- delaySeconds: 300
+- delaySeconds: 270
 - reason: "proxima iteracao do babysit-prs"
 - prompt: `<<autonomous-loop-dynamic>>`

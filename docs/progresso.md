@@ -3,7 +3,7 @@
 > Documento de tracking. Mostra **onde estamos** na construção da fábrica e do produto.
 > Atualizado conforme camadas avançam. Diferente do `decisoes.md` (que registra escolhas) e dos `adrs.md` (que registram porquês), este documento responde a pergunta: "em que ponto eu estou?".
 
-**Última atualização:** 2026-05-15 (Sub-etapa 5.50 -- babysit-prs: intervalo 5 min + auto-cleanup de worktrees orphan)
+**Última atualização:** 2026-05-15 (Sub-etapa 5.50-fix -- babysit-prs: correcoes pos-review)
 
 ---
 
@@ -168,7 +168,11 @@ Ativar a fábrica de fato: rodar features no Tier 2, configurar 3 routines Tier 
   automaticamente com `git worktree remove -f -f` antes de iniciar o loop de PRs.
   Silencioso quando nenhum orphan encontrado; registra caminhos removidos no relatorio
   do Passo 4. Resolve problema reportado na memoria do projeto: babysitter bloqueado por
-  worktrees de executores anteriores. PR aberto.
+  worktrees de executores anteriores. PR aberto. **Correcoes pos-review (2026-05-15):**
+  (1) `delaySeconds: 300->270` -- evita cache miss na fronteira exata do TTL de 5 min;
+  (2) `$pid->$orphanPid` -- evita colisao com variavel automatica reservada do PS5.1;
+  (3) relatorio consolidado -- acumula `$orphansRemoved` no foreach em vez de Write-Host
+  inline, eliminando saida duplicada com o Passo 4.
 
 - **5.49 -- /plan e /batch: isolamento de npm install em worktrees** (2026-05-14):
   Ampliacoes cirurgicas nas skills `/plan` e `/batch` para reforcar isolamento de
