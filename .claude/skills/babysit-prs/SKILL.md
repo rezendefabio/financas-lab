@@ -7,27 +7,48 @@ disable-model-invocation: true
 Voce e o babysitter de PRs do projeto financas-lab. Execute uma iteracao
 completa e agende a proxima ao final.
 
+**CONVENCAO DE EXECUCAO:** O Bash tool usa `/usr/bin/bash` (Git Bash), NAO
+PowerShell. Para operacoes simples de arquivo: usar bash (`cat`, `rm -f`,
+`if [ -f ... ]`). Para logica PowerShell complexa (ConvertFrom-Json, loops,
+Where-Object, Get-Process): envolver em `powershell -NoProfile -Command "..."`
+(curtos) ou escrever script `.ps1` com Write tool e executar com
+`powershell -NoProfile -File <script>` (longos). Variaveis bash: `VAR=$(cmd)`,
+nao `$var = cmd`. Condicional bash: `if [ -f arquivo ]; then ...; fi`.
+
 No inicio de cada iteracao, capturar o diretorio raiz do repositorio usando o
-Bash tool com o comando `pwd`, e guardar o resultado como $repoRoot para uso
-nos passos seguintes.
+Bash tool com o comando `pwd`, e guardar o resultado como variavel bash
+`repo_root` para uso nos passos seguintes.
 
 ## Iteracao
 
 ### Passo 0 -- Carregar state file
 
-Verificar se `.claude/babysit-prs.state` existe:
+Verificar se `.claude/babysit-prs.state` existe e ler o conteudo:
 
-```powershell
-$stateFile = "$repoRoot/.claude/babysit-prs.state"
+```bash
+if [ -f ".claude/babysit-prs.state" ]; then cat ".claude/babysit-prs.state"; else echo '{"prs":{}}'; fi
 ```
 
-- Se existir: ler e parsear o JSON usando `Get-Content $stateFile | ConvertFrom-Json`.
+- Se existir: parsear o JSON via `powershell -NoProfile -Command`:
+  ```bash
+  powershell -NoProfile -Command "Get-Content '.claude/babysit-prs.state' | ConvertFrom-Json"
+  ```
   Se o parse falhar (JSON invalido): reinicializar com `@{ prs = @{} }`.
 - Se nao existir: inicializar com `@{ prs = @{} }`.
 
 Guardar o objeto como `$state` para uso nos passos seguintes.
 
 ### Passo 0.5 -- Limpar worktrees orphan
+
+Escrever o script abaixo em `.claude/tmp-babysit-cleanup.ps1` com o Write
+tool e executar via `-File`. Remover o script apos a execucao:
+
+```bash
+powershell -NoProfile -File .claude/tmp-babysit-cleanup.ps1
+rm -f .claude/tmp-babysit-cleanup.ps1
+```
+
+Conteudo do script `.claude/tmp-babysit-cleanup.ps1`:
 
 ```powershell
 # Listar todos os worktrees com informacao de lock
@@ -56,12 +77,14 @@ foreach ($block in $blocks) {
         }
     }
 }
+
+# Retornar lista de orphans removidos (uma por linha)
+$orphansRemoved
 ```
 
-Se $orphansRemoved estiver vazio: silencioso, nenhuma linha extra no relatorio.
+Se a saida do script estiver vazia: silencioso, nenhuma linha extra no relatorio.
 Se houver entradas: adicionar ao relatorio do Passo 4 a linha:
   Worktrees orphan removidos: <caminho1>, <caminho2> ...
-Nao usar Write-Host inline no foreach.
 
 ### Passo 1 -- Listar PRs abertos
 
@@ -78,18 +101,18 @@ Para cada PR na lista:
 
 **2.0 -- Verificar se PR foi tratado recentemente (anti-reprocessamento):**
 
-Obter SHA atual do HEAD do branch do PR:
+Obter SHA atual do HEAD do branch do PR via `powershell -NoProfile -Command`:
 
-```powershell
-$headSha = (gh pr view $number --json headRefOid | ConvertFrom-Json).headRefOid
+```bash
+powershell -NoProfile -Command "(gh pr view <NUMBER> --json headRefOid | ConvertFrom-Json).headRefOid"
 ```
 
 Se `$state.prs` contem entrada para este PR (chave `"$number"`):
 - Calcular diferenca em minutos entre agora (UTC) e `last_checked` do state.
 - Se `head_sha == $headSha` E diferenca < 30 minutos:
-  - Obter mergeStateStatus atual do PR:
-    ```powershell
-    $currentStatus = (gh pr view $number --json mergeStateStatus | ConvertFrom-Json).mergeStateStatus
+  - Obter mergeStateStatus atual do PR via `powershell -NoProfile -Command`:
+    ```bash
+    powershell -NoProfile -Command "(gh pr view <NUMBER> --json mergeStateStatus | ConvertFrom-Json).mergeStateStatus"
     ```
   - Se `$currentStatus == $state.prs["$number"].merge_state_status`:
     - Registrar no relatorio: "PR #N: IGNORADO (sem mudanca desde ultimo tratamento)"
@@ -103,8 +126,8 @@ Se nao contem entrada para este PR: processar normalmente.
 
 **2a -- Verificar conflito com main:**
 
-```powershell
-$pr = gh pr view <number> --json mergeable,headRefName,mergeStateStatus | ConvertFrom-Json
+```bash
+powershell -NoProfile -Command "gh pr view <NUMBER> --json mergeable,headRefName,mergeStateStatus | ConvertFrom-Json"
 ```
 
 Se `mergeable == "CONFLICTING"`: executar auto-rebase (Passo 3a).
@@ -125,9 +148,12 @@ Logica:
 
 **2b -- Verificar CI:**
 
-```powershell
-$checks = gh pr checks $number --json name,state,conclusion | ConvertFrom-Json
-$failing = $checks | Where-Object { $_.conclusion -eq "FAILURE" -or $_.state -eq "FAILURE" }
+```bash
+powershell -NoProfile -Command "
+  \$checks = gh pr checks <NUMBER> --json name,state,conclusion | ConvertFrom-Json
+  \$failing = \$checks | Where-Object { \$_.conclusion -eq 'FAILURE' -or \$_.state -eq 'FAILURE' }
+  \$failing
+"
 ```
 
 Se `$failing` nao for vazio: executar auto-fix (Passo 3b).
@@ -135,72 +161,81 @@ Se todos passando ou pendentes: sem acao.
 
 ### Passo 3a -- Auto-rebase (apenas se CONFLICTING)
 
-Para o PR com conflito:
+Para o PR com conflito, usar comandos bash:
 
-```powershell
-$branch = $pr.headRefName
-$worktreePath = "$repoRoot/.claude/worktrees/babysit-pr-$number"
+```bash
+# Obter nome do branch via powershell (ConvertFrom-Json)
+branch=$(powershell -NoProfile -Command "(gh pr view <NUMBER> --json headRefName | ConvertFrom-Json).headRefName")
+worktree_path="$repo_root/.claude/worktrees/babysit-pr-<NUMBER>"
 
 # Criar worktree para o branch do PR
 git fetch origin
-git worktree add $worktreePath $branch
+git worktree add "$worktree_path" "$branch"
 
 # Rebase sobre main atualizado
-Set-Location $worktreePath
-git rebase origin/main
+cd "$worktree_path" && git rebase origin/main
 ```
 
-Se o rebase falhar (`$LASTEXITCODE -ne 0`):
+Se o rebase falhar (`$?` false):
 
   **Spawnar sub-agente para resolver os conflitos:**
 
   Usar o Agent tool com subagent_type `general-purpose`. Ler o arquivo
   `.claude/agents/conflict-resolver.md` e passar seu conteudo (body apos o
   frontmatter YAML) como prompt, substituindo as variaveis de ambiente:
-  - $WORKTREE_PATH pelo valor real de $worktreePath
+  - $WORKTREE_PATH pelo valor real de `$worktree_path`
   - $PR_NUMBER pelo numero do PR
 
   Com base no retorno do sub-agente:
-  - Se `RESOLVIDO`: `git push origin $branch --force-with-lease`, remover worktree,
+  - Se `RESOLVIDO`: `git push origin "$branch" --force-with-lease`, remover worktree,
     registrar "PR #N: rebase com resolucao inteligente OK"
   - Se `ABORTADO`: remover worktree, registrar a mensagem como motivo
-  - Em ambos os casos: `Set-Location $repoRoot`
+  - Em ambos os casos: `cd "$repo_root"`
 
 Se o rebase suceder:
-```powershell
-git push origin $branch --force-with-lease
-git worktree remove $worktreePath
-Set-Location $repoRoot
+```bash
+git push origin "$branch" --force-with-lease
+git worktree remove "$worktree_path"
+cd "$repo_root"
 ```
 - Registrar no relatorio: "PR #N: rebase executado com sucesso"
 
-Apos acao (sucesso ou falha), atualizar state:
-```powershell
-$headSha = (gh pr view $number --json headRefOid | ConvertFrom-Json).headRefOid
-$freshStatus = (gh pr view $number --json mergeStateStatus | ConvertFrom-Json).mergeStateStatus
-$state.prs["$number"] = @{
-    last_action        = "rebase"
-    last_checked       = (Get-Date).ToUniversalTime().ToString("o")
-    head_sha           = $headSha
-    merge_state_status = $freshStatus
-}
+Apos acao (sucesso ou falha), atualizar state via `powershell -NoProfile -Command`:
+
+```bash
+powershell -NoProfile -Command "
+  \$headSha = (gh pr view <NUMBER> --json headRefOid | ConvertFrom-Json).headRefOid
+  \$freshStatus = (gh pr view <NUMBER> --json mergeStateStatus | ConvertFrom-Json).mergeStateStatus
+  \$state.prs['<NUMBER>'] = @{
+    last_action        = 'rebase'
+    last_checked       = (Get-Date).ToUniversalTime().ToString('o')
+    head_sha           = \$headSha
+    merge_state_status = \$freshStatus
+  }
+"
 ```
 
 ### Passo 3b -- Auto-fix de CI
 
-Para cada PR com CI falhando:
+Para cada PR com CI falhando, obter branch, worktree path, runId e logs via
+`powershell -NoProfile -Command`:
 
-```powershell
-$branch = (gh pr view $number --json headRefName | ConvertFrom-Json).headRefName
-$worktreePath = "$repoRoot/.claude/worktrees/babysit-ci-$number"
+```bash
+powershell -NoProfile -Command "
+  \$branch = (gh pr view <NUMBER> --json headRefName | ConvertFrom-Json).headRefName
+  \$runId = (gh run list --branch \$branch --json databaseId,conclusion |
+    ConvertFrom-Json |
+    Where-Object { \$_.conclusion -eq 'failure' } |
+    Select-Object -First 1).databaseId
+  Write-Output \$branch
+  Write-Output \$runId
+"
+```
 
-# Obter logs do run com falha
-$runId = (gh run list --branch $branch --json databaseId,conclusion `
-    | ConvertFrom-Json `
-    | Where-Object { $_.conclusion -eq "failure" } `
-    | Select-Object -First 1).databaseId
+Depois capturar os logs do run com falha:
 
-$logsFailed = gh run view $runId --log-failed
+```bash
+gh run view <RUN_ID> --log-failed
 ```
 
 Usar o Agent tool com subagent_type `general-purpose`. Ler o arquivo
@@ -217,60 +252,68 @@ substituindo as variaveis:
 Com base no retorno do sub-agente:
 - Se `CORRIGIDO`: registrar "PR #N: CI auto-fix OK -- <descricao>"
 - Se `NAO CORRIGIDO`: registrar "PR #N: CI falhou -- auto-fix nao aplicavel: <motivo>"
-- Em ambos os casos: `Set-Location $repoRoot`
+- Em ambos os casos: `cd "$repo_root"`
 
-Apos acao (corrigido ou nao), atualizar state:
-```powershell
-$headSha = (gh pr view $number --json headRefOid | ConvertFrom-Json).headRefOid
-$freshStatus = (gh pr view $number --json mergeStateStatus | ConvertFrom-Json).mergeStateStatus
-$state.prs["$number"] = @{
-    last_action        = "ci-fix"
-    last_checked       = (Get-Date).ToUniversalTime().ToString("o")
-    head_sha           = $headSha
-    merge_state_status = $freshStatus
-}
+Apos acao (corrigido ou nao), atualizar state via `powershell -NoProfile -Command`:
+
+```bash
+powershell -NoProfile -Command "
+  \$headSha = (gh pr view <NUMBER> --json headRefOid | ConvertFrom-Json).headRefOid
+  \$freshStatus = (gh pr view <NUMBER> --json mergeStateStatus | ConvertFrom-Json).mergeStateStatus
+  \$state.prs['<NUMBER>'] = @{
+    last_action        = 'ci-fix'
+    last_checked       = (Get-Date).ToUniversalTime().ToString('o')
+    head_sha           = \$headSha
+    merge_state_status = \$freshStatus
+  }
+"
 ```
 
 ### Passo 3c -- Auto-update (apenas se BEHIND e nao CONFLICTING)
 
 Para o PR com `mergeStateStatus == "BEHIND"` e `mergeable != "CONFLICTING"`:
 
-```powershell
-gh pr update-branch <number>
+```bash
+gh pr update-branch <NUMBER>
 ```
 
-Se retornar sucesso (`$LASTEXITCODE -eq 0`):
+Se retornar sucesso (`$?` true):
 - Registrar no relatorio: "PR #N: atualizado via update-branch (estava BEHIND)"
 
 Se retornar erro:
 - Registrar no relatorio: "PR #N: update-branch falhou -- <mensagem de erro>"
 - Nao spawnar sub-agente, nao criar worktree. O erro e passivo.
 
-Apos acao (sucesso ou falha), atualizar state:
-```powershell
-$headSha = (gh pr view $number --json headRefOid | ConvertFrom-Json).headRefOid
-$freshStatus = (gh pr view $number --json mergeStateStatus | ConvertFrom-Json).mergeStateStatus
-$state.prs["$number"] = @{
-    last_action        = "update-branch"
-    last_checked       = (Get-Date).ToUniversalTime().ToString("o")
-    head_sha           = $headSha
-    merge_state_status = $freshStatus
-}
+Apos acao (sucesso ou falha), atualizar state via `powershell -NoProfile -Command`:
+
+```bash
+powershell -NoProfile -Command "
+  \$headSha = (gh pr view <NUMBER> --json headRefOid | ConvertFrom-Json).headRefOid
+  \$freshStatus = (gh pr view <NUMBER> --json mergeStateStatus | ConvertFrom-Json).mergeStateStatus
+  \$state.prs['<NUMBER>'] = @{
+    last_action        = 'update-branch'
+    last_checked       = (Get-Date).ToUniversalTime().ToString('o')
+    head_sha           = \$headSha
+    merge_state_status = \$freshStatus
+  }
+"
 ```
 
 ### Passo 3d -- Atualizar state para PRs sem acao
 
 Se nenhuma acao foi executada para um PR (nao CONFLICTING, nao BEHIND, CI ok),
-atualizar state com `last_action = "ok"`:
+atualizar state com `last_action = "ok"` via `powershell -NoProfile -Command`:
 
-```powershell
-$freshStatus = (gh pr view $number --json mergeStateStatus | ConvertFrom-Json).mergeStateStatus
-$state.prs["$number"] = @{
-    last_action        = "ok"
-    last_checked       = (Get-Date).ToUniversalTime().ToString("o")
-    head_sha           = $headSha
-    merge_state_status = $freshStatus
-}
+```bash
+powershell -NoProfile -Command "
+  \$freshStatus = (gh pr view <NUMBER> --json mergeStateStatus | ConvertFrom-Json).mergeStateStatus
+  \$state.prs['<NUMBER>'] = @{
+    last_action        = 'ok'
+    last_checked       = (Get-Date).ToUniversalTime().ToString('o')
+    head_sha           = \$headSha
+    merge_state_status = \$freshStatus
+  }
+"
 ```
 
 Depois de processar todos os PRs, salvar o state atualizado em disco usando o

@@ -90,6 +90,15 @@ git status --short | grep "^??" | grep -v ".claude/tasks.json"
 Se houver arquivos `??` inesperados: remover com `rm -f <arquivo>` antes
 de encerrar. Nunca deixar arquivos residuais no worktree.
 
+## Convencao de ambiente: bash vs PowerShell
+
+O Bash tool usa `/usr/bin/bash` (Git Bash), NAO PowerShell.
+- Para operacoes de arquivo: usar `rm -f`, `cat`, `ls`, `mkdir` (nao `Remove-Item`,
+  `Get-Content`, `Get-ChildItem`, `New-Item`)
+- Para logica PowerShell complexa: envolver em `powershell -NoProfile -Command "..."`
+- Variaveis bash: `VAR=$(comando)`, nao `$var = comando`
+- Condicional bash: `if [ -f arquivo ]; then ...; fi`, nao `if (Test-Path ...)`
+
 ## Restricao de ambiente e dependencias
 
 - Voce esta num worktree git ISOLADO. A branch `main` e BLOQUEADA.
