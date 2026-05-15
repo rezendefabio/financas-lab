@@ -29,6 +29,7 @@ $hooks = @(
     (Join-Path $repoRoot ".claude\hooks\windows\unix-commands.ps1")
     (Join-Path $repoRoot ".claude\hooks\windows\lastexitcode-stop.ps1")
     (Join-Path $repoRoot ".claude\hooks\next\shadcn-artifacts.ps1")
+    (Join-Path $repoRoot ".claude\hooks\java-spring\maven-central-versions.ps1")
 )
 
 $failed = $false
