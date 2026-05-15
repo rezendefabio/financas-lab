@@ -7,6 +7,7 @@ import com.laboratorio.financas.transacao.domain.TransacaoRepository;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.UUID;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,11 +31,11 @@ public class FluxoCaixaUseCase {
     ) { }
 
     @Transactional(readOnly = true)
-    public FluxoCaixaResponse executar(int ano, int mes) {
+    public FluxoCaixaResponse executar(int ano, int mes, UUID userId) {
         LocalDate inicio = LocalDate.of(ano, mes, 1);
         LocalDate fim = inicio.withDayOfMonth(inicio.lengthOfMonth());
 
-        FiltrosTransacao filtros = new FiltrosTransacao(null, inicio, fim, null, null);
+        FiltrosTransacao filtros = new FiltrosTransacao(null, inicio, fim, null, null, userId);
 
         List<Transacao> transacoes = transacaoRepository
                 .listarComFiltros(filtros, Pageable.unpaged())

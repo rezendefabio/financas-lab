@@ -64,6 +64,7 @@ public class TransacaoRepositoryImpl implements TransacaoRepository {
                 filtros.dataFim(),
                 filtros.tipo(),
                 filtros.categoriaId(),
+                filtros.userId(),
                 pageable
         ).map(mapper::toDomain);
     }

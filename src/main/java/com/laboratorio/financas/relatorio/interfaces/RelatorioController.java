@@ -5,12 +5,16 @@ import com.laboratorio.financas.relatorio.application.FluxoCaixaUseCase;
 import com.laboratorio.financas.relatorio.application.GastosPorCategoriaUseCase;
 import com.laboratorio.financas.relatorio.interfaces.dto.EvolucaoSaldoResponse;
 import com.laboratorio.financas.relatorio.interfaces.dto.GastosPorCategoriaResponse;
+import com.laboratorio.financas.usuario.domain.Usuario;
+import com.laboratorio.financas.usuario.domain.UsuarioRepository;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import java.time.LocalDate;
 import java.util.UUID;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -25,13 +29,16 @@ public class RelatorioController {
     private final GastosPorCategoriaUseCase gastosPorCategoriaUseCase;
     private final EvolucaoSaldoUseCase evolucaoSaldoUseCase;
     private final FluxoCaixaUseCase fluxoCaixaUseCase;
+    private final UsuarioRepository usuarioRepository;
 
     public RelatorioController(GastosPorCategoriaUseCase gastosPorCategoriaUseCase,
                                EvolucaoSaldoUseCase evolucaoSaldoUseCase,
-                               FluxoCaixaUseCase fluxoCaixaUseCase) {
+                               FluxoCaixaUseCase fluxoCaixaUseCase,
+                               UsuarioRepository usuarioRepository) {
         this.gastosPorCategoriaUseCase = gastosPorCategoriaUseCase;
         this.evolucaoSaldoUseCase = evolucaoSaldoUseCase;
         this.fluxoCaixaUseCase = fluxoCaixaUseCase;
+        this.usuarioRepository = usuarioRepository;
     }
 
     @GetMapping("/gastos-por-categoria")
@@ -58,6 +65,15 @@ public class RelatorioController {
     public ResponseEntity<FluxoCaixaUseCase.FluxoCaixaResponse> fluxoCaixa(
             @RequestParam int ano,
             @RequestParam @Min(1) @Max(12) int mes) {
-        return ResponseEntity.ok(fluxoCaixaUseCase.executar(ano, mes));
+        UUID userId = resolverUserId();
+        return ResponseEntity.ok(fluxoCaixaUseCase.executar(ano, mes, userId));
+    }
+
+    private UUID resolverUserId() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String email = (String) auth.getPrincipal();
+        Usuario usuario = usuarioRepository.buscarPorEmail(email)
+                .orElseThrow(() -> new IllegalStateException("Usuario autenticado nao encontrado: " + email));
+        return usuario.getId();
     }
 }

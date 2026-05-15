@@ -26,7 +26,7 @@ public interface TransacaoJpaRepository extends JpaRepository<TransacaoEntity, U
     @Query("UPDATE TransacaoEntity t SET t.deletedAt = CURRENT_TIMESTAMP, t.atualizadoEm = CURRENT_TIMESTAMP WHERE t.id = :id")
     void softDeleteById(@Param("id") UUID id);
 
-    /** Lista com filtros, excluindo soft-deleted. */
+    /** Lista com filtros, excluindo soft-deleted. userId null significa sem filtro por usuario. */
     @Query("""
             SELECT t FROM TransacaoEntity t
             WHERE (:contaId IS NULL OR t.contaId = :contaId)
@@ -34,6 +34,7 @@ public interface TransacaoJpaRepository extends JpaRepository<TransacaoEntity, U
               AND t.data <= COALESCE(:dataFim, t.data)
               AND (:tipo IS NULL OR t.tipo = :tipo)
               AND (:categoriaId IS NULL OR t.categoriaId = :categoriaId)
+              AND (:userId IS NULL OR t.userId = :userId)
               AND t.deletedAt IS NULL
             """)
     Page<TransacaoEntity> findComFiltros(
@@ -42,6 +43,7 @@ public interface TransacaoJpaRepository extends JpaRepository<TransacaoEntity, U
             @Param("dataFim") LocalDate dataFim,
             @Param("tipo") TipoTransacao tipo,
             @Param("categoriaId") UUID categoriaId,
+            @Param("userId") UUID userId,
             Pageable pageable
     );
 
