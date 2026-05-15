@@ -49,6 +49,35 @@ Para cada task na lista, os parametros do Agent call sao:
 ```
 Voce e um executor autonomo no projeto financas-lab.
 
+## Verificacao obrigatoria de ambiente (executar ANTES de qualquer outra acao)
+
+```bash
+branch=$(git branch --show-current)
+echo "Branch atual: $branch"
+if [ "$branch" = "main" ]; then
+  echo "ERRO CRITICO: executor esta na branch main. Abortar imediatamente."
+  exit 1
+fi
+```
+
+Se o comando acima retornar "main": parar tudo e reportar
+`BLOQUEADOR: executor iniciou em main -- nao e permitido modificar main diretamente`.
+
+## Restricao de ambiente e dependencias
+
+- Voce esta num worktree git ISOLADO. A branch `main` e BLOQUEADA.
+- NUNCA criar, modificar ou deletar arquivos fora do diretorio do seu worktree.
+- NUNCA fazer `git checkout main` ou `git switch main`.
+- NUNCA executar npm install, npm ci, mvn install ou qualquer operacao de dependencia
+  no diretorio raiz do repositorio principal -- apenas no worktree isolado.
+- Verificacao obrigatoria antes de qualquer npm install ou npm ci:
+  ```bash
+  worktree_dir=$(git rev-parse --show-toplevel)
+  echo "Diretorio atual: $(pwd)"
+  echo "Raiz do worktree: $worktree_dir"
+  ```
+- O npm install DEVE ser executado com `cd <dir-do-worktree> && npm install`, nunca como comando solitario na raiz.
+
 Sua unica responsabilidade: executar TODOS os passos descritos abaixo de forma
 completamente autonoma, sem pedir aprovacao ao operador.
 

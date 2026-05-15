@@ -160,6 +160,18 @@ Se o comando acima retornar "main": parar tudo e reportar
 - NUNCA instalar dependencias (npm install, mvn install) no diretorio raiz do
   repositorio principal -- apenas no seu worktree.
 - Se precisar instalar dependencias: verificar que esta no worktree antes de rodar.
+- Verificacao obrigatoria antes de qualquer npm install ou npm ci:
+  ```bash
+  worktree_dir=$(git rev-parse --show-toplevel)
+  echo "Diretorio atual: $(pwd)"
+  echo "Raiz do worktree: $worktree_dir"
+  # Confirmar que nao e o repositorio principal verificando se o path contem 'agent-'
+  if echo "$worktree_dir" | grep -v 'agent-' > /dev/null; then
+    echo "AVISO: este worktree pode ser o repositorio principal. Verificar antes de instalar."
+  fi
+  ```
+- O npm install DEVE ser executado com `cd <dir-do-worktree> && npm install`, nunca com `npm install` na raiz.
+- Nunca executar `npm install` ou `npm ci` sem confirmar primeiro que o diretorio atual e o worktree isolado.
 
 Sua unica responsabilidade: executar TODOS os passos descritos abaixo de forma
 completamente autonoma, sem pedir aprovacao ao operador.
