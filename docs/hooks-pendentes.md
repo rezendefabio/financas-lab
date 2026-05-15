@@ -4,7 +4,7 @@
 > Input direto para a Camada 3 (Configuração do Claude Code), quando hooks formais entrarem.
 > Atualizado conforme novas lições aparecem.
 
-**Ultima atualizacao:** 2026-05-15 (Sub-etapa 5.54 -- hook test-conventions)
+**Ultima atualizacao:** 2026-05-15 (Sub-etapa 5.58 -- hooks windows unix-commands e lastexitcode-stop)
 
 ---
 
@@ -87,12 +87,12 @@ A seção "Débitos de configuração" deste documento (`application-prod.yml` a
 
 ## Hooks GitHub Actions / CI
 
-- **Comandos em scripts/instruções para Windows não usam ferramentas Unix.** (Etapa 1.5) `tail`, `head`, `grep`, `sed`, `awk` não existem no PowerShell. Equivalentes: `Select-Object`, `Select-String`.
+- ~~**Comandos em scripts/instruções para Windows não usam ferramentas Unix.**~~ Implementado na 5.58 como hook warn -- ver secao "Hooks implementados".
 - **Toda configuração de branch protection passou por teste destrutivo.** (Etapa 1.5) PR proposital com CI falhando, confirmar bloqueio do merge — antes de declarar concluída.
 
 ## Hooks PowerShell
 
-- **Comando nativo seguido de `if ($LASTEXITCODE -ne 0)` sem suspensão local de `$ErrorActionPreference`.** (Etapa 2.6.2) Indica risco do bug que a 2.6.2 corrigiu — stderr nativo vazando sob `Stop`. Esboço: `grep -B1 -A2 "if (\$LASTEXITCODE" scripts/*.ps1` revisado caso a caso.
+- ~~**Comando nativo seguido de `if ($LASTEXITCODE -ne 0)` sem suspensão local de `$ErrorActionPreference`.**~~ Implementado na 5.58 como hook warn -- ver secao "Hooks implementados".
 - **Encoding UTF-8 sem BOM em `.ps1`.** (Etapa 2.6) BOM quebra algumas validações e pode afetar `javac` em arquivos vizinhos. Nota: ja coberto por `.claude/hooks/universal/encoding-utf8.ps1` (Sub-etapa 4.2) que rejeita BOM em `.ps1`.
 
 ## Hooks Frontend / Next.js
@@ -167,6 +167,11 @@ Itens originalmente listados em "Hooks Markdown / docs" ou outras secoes, agora 
   prefixo `Abstract` devem ter modificador `abstract` -- sem ele, JUnit tenta instanciar
   a classe base, duplicando execucoes e causando falhas confusas de contexto Spring.
   Ambas as regras em modo **fail**. Origem: licao 2.1.
+
+- **Comandos Unix em scripts .ps1 (modo warn)** (Sub-etapa 5.58). Implementado em `.claude/hooks/windows/unix-commands.ps1`, invocado via `.githooks/pre-commit` (orquestrador) no evento `pre-commit`. Filtra arquivos `.ps1` staged. Para cada `.ps1`, percorre linhas nao-comentadas buscando tokens `tail`, `head`, `grep`, `sed`, `awk`. Exibe AVISO amarelo listando arquivo/linha/comando e sugere equivalentes PowerShell nativos. Modo **warn** (exit 0 -- contexto Git Bash legitimo possivel; aviso serve para revisao humana). Licao 1.5: essas ferramentas nao existem no PowerShell nativo -- scripts que as usam falham em Windows sem Git Bash no PATH.
+
+- **LASTEXITCODE sem suspensao local sob Stop (modo warn)** (Sub-etapa 5.58). Implementado em `.claude/hooks/windows/lastexitcode-stop.ps1`, invocado via `.githooks/pre-commit` (orquestrador) no evento `pre-commit`. Filtra `.ps1` staged que contenham `$ErrorActionPreference = "Stop"` e `$LASTEXITCODE` mas nao contenham suspensao local (`$ErrorActionPreference = "Continue"`). Exibe AVISO amarelo com padrao correto de suspensao local. Modo **warn** (heuristica -- analise de fluxo completa seria necessaria para certeza). Licao 2.6.2: sob Stop, stderr de comando nativo pode lancar excecao terminating antes do `if ($LASTEXITCODE`, propagando exit code errado.
+
 
 - **Write-Error seguido de exit em .ps1** (Sub-etapa 5.55). Implementado em `.claude/hooks/windows/write-error-exit.ps1`, invocado via `.githooks/pre-commit` (orquestrador) no evento `pre-commit`. Filtra arquivos `.ps1` staged (qualquer path). Para cada `.ps1`, percorre linhas buscando `Write-Error`; se encontrado, verifica janela de 5 linhas seguintes para `exit`. Se padrao detectado, exibe aviso em amarelo com explicacao do problema e substituicao recomendada (`Write-Host -ForegroundColor Red + exit N`), mas NAO bloqueia (exit 0). Modo **warn** (heuristica -- analise de fluxo completa requerida para certeza; aviso serve para revisao humana). Primeira ocupacao de `.claude/hooks/windows/`.
 

@@ -3,7 +3,7 @@
 > Documento de tracking. Mostra **onde estamos** na construção da fábrica e do produto.
 > Atualizado conforme camadas avançam. Diferente do `decisoes.md` (que registra escolhas) e dos `adrs.md` (que registram porquês), este documento responde a pergunta: "em que ponto eu estou?".
 
-**Última atualização:** 2026-05-15 (Sub-etapa 5.57 -- babysit-prs: anti-reprocessamento considera mergeStateStatus)
+**Última atualização:** 2026-05-15 (Sub-etapa 5.58 -- hooks windows: comandos Unix em .ps1 e LASTEXITCODE sem Stop)
 
 ---
 
@@ -159,6 +159,22 @@ Configurar `CLAUDE.md` rico, criar 3-5 subagents focados, criar 5-10 skills (sla
 Ativar a fábrica de fato: rodar features no Tier 2, configurar 3 routines Tier 1, validar paralelismo se necessário.
 
 ### Sub-etapas concluídas
+
+- **5.58 -- hooks windows: comandos Unix em .ps1 e LASTEXITCODE sem Stop** (2026-05-15):
+  Dois novos hooks pre-commit para o escopo `windows`, ambos em modo **warn**.
+  **(1) unix-commands.ps1:** detecta comandos Unix (`tail`, `head`, `grep`, `sed`, `awk`)
+  em arquivos `.ps1` staged. Linhas comentadas sao ignoradas. Exibe AVISO amarelo listando
+  arquivo/linha/comando e sugere equivalentes PowerShell (`Select-Object -Last/-First N`,
+  `Select-String`). Problema: essas ferramentas nao existem no PowerShell nativo -- scripts
+  que as usam falham em Windows sem Git Bash no PATH (licao 1.5).
+  **(2) lastexitcode-stop.ps1:** detecta combinacao de `$ErrorActionPreference = "Stop"` +
+  `$LASTEXITCODE` sem suspensao local (`"Continue"`) no mesmo arquivo. Exibe AVISO amarelo
+  com o padrao correto de suspensao local. Problema: sob Stop, stderr de comando nativo pode
+  lancar excecao terminating antes do `if ($LASTEXITCODE` -- exit code propaga errado
+  (licao 2.6.2). Ambos registrados no orquestrador `.githooks/pre-commit.ps1` apos
+  `write-error-exit.ps1`. Validacao destrutiva: 4 cenarios (A: grep em .ps1 -> aviso;
+  B: Select-String -> silencioso; C: Stop+LASTEXITCODE sem suspensao -> aviso;
+  D: Stop+LASTEXITCODE com suspensao -> silencioso). PR aberto.
 
 - **5.57 -- babysit-prs: anti-reprocessamento considera mergeStateStatus** (2026-05-15):
   Bug no Passo 2.0 onde o anti-reprocessamento ignorava PRs cujo SHA nao mudara mas
