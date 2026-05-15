@@ -3,6 +3,9 @@ package com.laboratorio.financas.transacao.domain;
 import com.laboratorio.financas.shared.domain.Money;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -16,13 +19,28 @@ public final class Transacao {
     private final LocalDate data;
     private final String descricao;
     private final UUID contaId;
-    private final UUID contaDestinoId;
     private final UUID categoriaId;
     private final Instant criadoEm;
     private final Instant atualizadoEm;
 
+    // Campos novos da Fase 1
+    private final UUID userId;
+    private final StatusTransacao status;
+    private final Instant deletedAt;
+    private final UUID payeeId;
+    private final UUID transferGroupId;
+    private final UUID transferPairId;
+    private final List<UUID> tagIds;
+
     /**
-     * Construtor para criar nova Transacao. Gera id, define criadoEm=atualizadoEm=now.
+     * Par de transacoes gerado por uma transferencia entre contas.
+     * A despesa e registrada na conta origem; a receita na conta destino.
+     */
+    public record TransferenciaPar(Transacao despesa, Transacao receita) { }
+
+    /**
+     * Construtor para criar nova Transacao simples (RECEITA ou DESPESA).
+     * Gera id, define criadoEm=atualizadoEm=now, status=CLEARED, tagIds vazio.
      */
     public Transacao(
             TipoTransacao tipo,
@@ -30,8 +48,11 @@ public final class Transacao {
             LocalDate data,
             String descricao,
             UUID contaId,
-            UUID contaDestinoId,
-            UUID categoriaId
+            UUID categoriaId,
+            UUID userId,
+            StatusTransacao status,
+            UUID payeeId,
+            List<UUID> tagIds
     ) {
         this(
                 UUID.randomUUID(),
@@ -40,10 +61,16 @@ public final class Transacao {
                 data,
                 descricao,
                 contaId,
-                contaDestinoId,
                 categoriaId,
                 Instant.now(),
-                null
+                null,
+                userId,
+                status,
+                null,
+                payeeId,
+                null,
+                null,
+                tagIds
         );
     }
 
@@ -57,10 +84,16 @@ public final class Transacao {
             LocalDate data,
             String descricao,
             UUID contaId,
-            UUID contaDestinoId,
             UUID categoriaId,
             Instant criadoEm,
-            Instant atualizadoEm
+            Instant atualizadoEm,
+            UUID userId,
+            StatusTransacao status,
+            Instant deletedAt,
+            UUID payeeId,
+            UUID transferGroupId,
+            UUID transferPairId,
+            List<UUID> tagIds
     ) {
         Objects.requireNonNull(id, "id nao pode ser nulo");
         Objects.requireNonNull(tipo, "tipo nao pode ser nulo");
@@ -70,7 +103,6 @@ public final class Transacao {
         Objects.requireNonNull(criadoEm, "criadoEm nao pode ser nulo");
         validarDescricao(descricao);
         validarValor(valor);
-        validarRegrasDeTransferencia(tipo, contaId, contaDestinoId, categoriaId);
 
         this.id = id;
         this.tipo = tipo;
@@ -78,10 +110,91 @@ public final class Transacao {
         this.data = data;
         this.descricao = descricao.trim();
         this.contaId = contaId;
-        this.contaDestinoId = contaDestinoId;
         this.categoriaId = categoriaId;
         this.criadoEm = criadoEm;
         this.atualizadoEm = (atualizadoEm != null) ? atualizadoEm : criadoEm;
+        this.userId = userId;
+        this.status = (status != null) ? status : StatusTransacao.CLEARED;
+        this.deletedAt = deletedAt;
+        this.payeeId = payeeId;
+        this.transferGroupId = transferGroupId;
+        this.transferPairId = transferPairId;
+        this.tagIds = (tagIds != null) ? Collections.unmodifiableList(new ArrayList<>(tagIds))
+                : Collections.emptyList();
+    }
+
+    /**
+     * Cria par de transacoes representando uma transferencia entre contas.
+     * O modelo Fase 1 substitui o campo conta_destino_id por dois registros:
+     * uma DESPESA na conta origem e uma RECEITA na conta destino,
+     * ligados por transfer_group_id e transfer_pair_id cruzados.
+     */
+    public static TransferenciaPar criarParTransferencia(
+            UUID userId,
+            Money valor,
+            UUID contaOrigemId,
+            UUID contaDestinoId,
+            LocalDate data,
+            String descricao,
+            UUID categoriaId
+    ) {
+        Objects.requireNonNull(contaOrigemId, "contaOrigemId nao pode ser nulo");
+        Objects.requireNonNull(contaDestinoId, "contaDestinoId nao pode ser nulo");
+        if (contaOrigemId.equals(contaDestinoId)) {
+            throw new IllegalArgumentException(
+                    "TRANSFERENCIA nao pode ter contaOrigemId igual a contaDestinoId"
+            );
+        }
+
+        UUID groupId = UUID.randomUUID();
+        UUID idDespesa = UUID.randomUUID();
+        UUID idReceita = UUID.randomUUID();
+        Instant agora = Instant.now();
+
+        Transacao despesa = new Transacao(
+                idDespesa,
+                TipoTransacao.DESPESA,
+                valor,
+                data,
+                descricao,
+                contaOrigemId,
+                categoriaId,
+                agora,
+                agora,
+                userId,
+                StatusTransacao.CLEARED,
+                null,
+                null,
+                groupId,
+                idReceita,
+                Collections.emptyList()
+        );
+
+        Transacao receita = new Transacao(
+                idReceita,
+                TipoTransacao.RECEITA,
+                valor,
+                data,
+                descricao,
+                contaDestinoId,
+                categoriaId,
+                agora,
+                agora,
+                userId,
+                StatusTransacao.CLEARED,
+                null,
+                null,
+                groupId,
+                idDespesa,
+                Collections.emptyList()
+        );
+
+        return new TransferenciaPar(despesa, receita);
+    }
+
+    /** Retorna true se esta transacao foi marcada como deletada (soft delete). */
+    public boolean isDeleted() {
+        return deletedAt != null;
     }
 
     private static void validarDescricao(String descricao) {
@@ -100,37 +213,6 @@ public final class Transacao {
     private static void validarValor(Money valor) {
         if (!valor.ehPositivo()) {
             throw new IllegalArgumentException("valor deve ser positivo");
-        }
-    }
-
-    private static void validarRegrasDeTransferencia(
-            TipoTransacao tipo,
-            UUID contaId,
-            UUID contaDestinoId,
-            UUID categoriaId
-    ) {
-        if (tipo == TipoTransacao.TRANSFERENCIA) {
-            if (contaDestinoId == null) {
-                throw new IllegalArgumentException(
-                        "TRANSFERENCIA exige contaDestinoId"
-                );
-            }
-            if (contaId.equals(contaDestinoId)) {
-                throw new IllegalArgumentException(
-                        "TRANSFERENCIA nao pode ter contaId igual a contaDestinoId"
-                );
-            }
-            if (categoriaId != null) {
-                throw new IllegalArgumentException(
-                        "TRANSFERENCIA nao deve ter categoriaId"
-                );
-            }
-        } else {
-            if (contaDestinoId != null) {
-                throw new IllegalArgumentException(
-                        tipo + " nao deve ter contaDestinoId"
-                );
-            }
         }
     }
 
@@ -158,10 +240,6 @@ public final class Transacao {
         return contaId;
     }
 
-    public UUID getContaDestinoId() {
-        return contaDestinoId;
-    }
-
     public UUID getCategoriaId() {
         return categoriaId;
     }
@@ -172,6 +250,34 @@ public final class Transacao {
 
     public Instant getAtualizadoEm() {
         return atualizadoEm;
+    }
+
+    public UUID getUserId() {
+        return userId;
+    }
+
+    public StatusTransacao getStatus() {
+        return status;
+    }
+
+    public Instant getDeletedAt() {
+        return deletedAt;
+    }
+
+    public UUID getPayeeId() {
+        return payeeId;
+    }
+
+    public UUID getTransferGroupId() {
+        return transferGroupId;
+    }
+
+    public UUID getTransferPairId() {
+        return transferPairId;
+    }
+
+    public List<UUID> getTagIds() {
+        return tagIds;
     }
 
     @Override
