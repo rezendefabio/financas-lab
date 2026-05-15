@@ -101,6 +101,48 @@ class CriarCategoriaUseCaseTest {
     }
 
     @Test
+    void executarComTipoNeutralRetornaCategoria() {
+        // Given
+        UUID userId = null;
+        Categoria categoriaSalva = new Categoria(
+                UUID.randomUUID(), "Transferencia", TipoCategoria.NEUTRAL,
+                null, userId, true, java.time.Instant.now(), null
+        );
+        when(repository.salvar(any(Categoria.class))).thenReturn(categoriaSalva);
+        CriarCategoriaUseCase.Comando comando = new CriarCategoriaUseCase.Comando(
+                "Transferencia", TipoCategoria.NEUTRAL, null, null, true
+        );
+
+        // When
+        Categoria resultado = useCase.executar(comando);
+
+        // Then
+        assertThat(resultado.getTipo()).isEqualTo(TipoCategoria.NEUTRAL);
+        assertThat(resultado.isSystem()).isTrue();
+    }
+
+    @Test
+    void executarComUserIdPreservaCampo() {
+        // Given
+        UUID userId = UUID.randomUUID();
+        Categoria categoriaSalva = new Categoria(
+                UUID.randomUUID(), "Mercado", TipoCategoria.DESPESA,
+                null, userId, false, java.time.Instant.now(), null
+        );
+        when(repository.salvar(any(Categoria.class))).thenReturn(categoriaSalva);
+        CriarCategoriaUseCase.Comando comando = new CriarCategoriaUseCase.Comando(
+                "Mercado", TipoCategoria.DESPESA, null, userId, false
+        );
+
+        // When
+        Categoria resultado = useCase.executar(comando);
+
+        // Then
+        assertThat(resultado.getUserId()).isEqualTo(userId);
+        assertThat(resultado.isSystem()).isFalse();
+    }
+
+    @Test
     void executarComCategoriaPaiValidaCriaSubcategoria() {
         // Given
         UUID paiId = UUID.randomUUID();

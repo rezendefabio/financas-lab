@@ -12,9 +12,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.laboratorio.financas.categoria.infrastructure.persistence.CategoriaJpaRepository;
 import com.laboratorio.financas.shared.AbstractAuthenticatedIntegrationTest;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -30,7 +32,7 @@ class CategoriaControllerTest extends AbstractAuthenticatedIntegrationTest {
     @Autowired
     private CategoriaJpaRepository jpaRepository;
 
-    @org.junit.jupiter.api.BeforeEach
+    @BeforeEach
     void limparAntes() {
         jpaRepository.deleteAll();
     }
@@ -65,7 +67,8 @@ class CategoriaControllerTest extends AbstractAuthenticatedIntegrationTest {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id", notNullValue()))
                 .andExpect(jsonPath("$.nome", equalTo("Salario")))
-                .andExpect(jsonPath("$.tipo", equalTo("RECEITA")));
+                .andExpect(jsonPath("$.tipo", equalTo("RECEITA")))
+                .andExpect(jsonPath("$.system", equalTo(false)));
     }
 
     @Test
@@ -80,7 +83,7 @@ class CategoriaControllerTest extends AbstractAuthenticatedIntegrationTest {
 
     @Test
     void postCategoriaTipoNullRetorna400() throws Exception {
-        Map<String, Object> body = new java.util.HashMap<>();
+        Map<String, Object> body = new HashMap<>();
         body.put("nome", "Salario");
         body.put("tipo", null);
         mockMvc.perform(comAuth(post("/api/categorias")
@@ -96,6 +99,32 @@ class CategoriaControllerTest extends AbstractAuthenticatedIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body)))
                 .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void postCategoriaComTipoNeutralRetorna201() throws Exception {
+        Map<String, Object> body = Map.of("nome", "Transferencia entre contas", "tipo", "NEUTRAL", "system", true);
+        mockMvc.perform(comAuth(post("/api/categorias")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(body))))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.tipo", equalTo("NEUTRAL")))
+                .andExpect(jsonPath("$.system", equalTo(true)));
+    }
+
+    @Test
+    void postCategoriaComUserIdRetorna201() throws Exception {
+        UUID userId = UUID.randomUUID();
+        Map<String, Object> body = new HashMap<>();
+        body.put("nome", "Mercado");
+        body.put("tipo", "DESPESA");
+        body.put("userId", userId.toString());
+        mockMvc.perform(comAuth(post("/api/categorias")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(body))))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.userId", equalTo(userId.toString())))
+                .andExpect(jsonPath("$.system", equalTo(false)));
     }
 
     @Test
@@ -178,7 +207,7 @@ class CategoriaControllerTest extends AbstractAuthenticatedIntegrationTest {
     void postCategoriaComCategoriaPaiValidaRetorna201ComCategoriaPaiId() throws Exception {
         String paiId = criarCategoriaRetornaId("Alimentacao", "DESPESA");
 
-        Map<String, Object> body = new java.util.HashMap<>();
+        Map<String, Object> body = new HashMap<>();
         body.put("nome", "Mercado");
         body.put("tipo", "DESPESA");
         body.put("categoriaPaiId", paiId);

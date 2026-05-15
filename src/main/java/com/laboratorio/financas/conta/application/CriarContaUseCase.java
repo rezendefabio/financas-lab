@@ -6,6 +6,7 @@ import com.laboratorio.financas.conta.domain.TipoConta;
 import com.laboratorio.financas.shared.domain.Money;
 import java.math.BigDecimal;
 import java.util.Currency;
+import java.util.UUID;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,14 +23,39 @@ public class CriarContaUseCase {
             String nome,
             TipoConta tipo,
             BigDecimal saldoInicialValor,
-            String saldoInicialMoeda
+            String saldoInicialMoeda,
+            UUID userId,
+            BigDecimal limiteCreditoValor,
+            String limiteCreditoMoeda,
+            Integer diaFechamento,
+            Integer diaVencimento
     ) { }
 
     @Transactional
     public Conta executar(Comando comando) {
         Currency moeda = Currency.getInstance(comando.saldoInicialMoeda());
         Money saldoInicial = new Money(comando.saldoInicialValor(), moeda);
-        Conta nova = new Conta(comando.nome(), comando.tipo(), saldoInicial);
+
+        Money limiteCredito = null;
+        if (comando.limiteCreditoValor() != null && comando.limiteCreditoMoeda() != null) {
+            Currency moedaLimite = Currency.getInstance(comando.limiteCreditoMoeda());
+            limiteCredito = new Money(comando.limiteCreditoValor(), moedaLimite);
+        }
+
+        Conta nova = new Conta(
+                UUID.randomUUID(),
+                comando.userId(),
+                comando.nome(),
+                comando.tipo(),
+                saldoInicial,
+                saldoInicial,
+                limiteCredito,
+                comando.diaFechamento(),
+                comando.diaVencimento(),
+                true,
+                java.time.Instant.now(),
+                null
+        );
         return repository.salvar(nova);
     }
 }

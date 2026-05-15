@@ -17,7 +17,18 @@ public class CriarCategoriaUseCase {
         this.repository = repository;
     }
 
-    public record Comando(String nome, TipoCategoria tipo, UUID categoriaPaiId) { }
+    public record Comando(
+            String nome,
+            TipoCategoria tipo,
+            UUID categoriaPaiId,
+            UUID userId,
+            boolean system
+    ) {
+        // Construtor de compatibilidade retroativa sem userId/system
+        public Comando(String nome, TipoCategoria tipo, UUID categoriaPaiId) {
+            this(nome, tipo, categoriaPaiId, null, false);
+        }
+    }
 
     @Transactional
     public Categoria executar(Comando comando) {
@@ -28,7 +39,16 @@ public class CriarCategoriaUseCase {
                 throw new IllegalArgumentException("Nao e permitido criar subcategoria de subcategoria");
             }
         }
-        Categoria nova = new Categoria(comando.nome(), comando.tipo(), comando.categoriaPaiId());
+        Categoria nova = new Categoria(
+                UUID.randomUUID(),
+                comando.nome(),
+                comando.tipo(),
+                comando.categoriaPaiId(),
+                comando.userId(),
+                comando.system(),
+                java.time.Instant.now(),
+                null
+        );
         return repository.salvar(nova);
     }
 }
