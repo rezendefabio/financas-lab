@@ -53,7 +53,8 @@ class ImportarTransacoesCsvUseCaseTest {
         assertThat(resultado.importadas()).isEqualTo(3);
         assertThat(resultado.falhas()).isEqualTo(0);
         assertThat(resultado.erros()).isEmpty();
-        verify(transacaoRepository, times(3)).salvar(any(Transacao.class));
+        // TRANSFERENCIA gera par (2 chamadas); DESPESA e RECEITA geram 1 cada -- total 4
+        verify(transacaoRepository, times(4)).salvar(any(Transacao.class));
     }
 
     @Test
