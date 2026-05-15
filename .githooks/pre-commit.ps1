@@ -23,6 +23,7 @@ $hooks = @(
     (Join-Path $repoRoot ".claude\hooks\java-spring\lombok-mapstruct-order.ps1")
     (Join-Path $repoRoot ".claude\hooks\java-spring\mvnw-profile.ps1")
     (Join-Path $repoRoot ".claude\hooks\java-spring\mvnw-executable.ps1")
+    (Join-Path $repoRoot ".claude\hooks\java-spring\maven-central-versions.ps1")
     (Join-Path $repoRoot ".claude\hooks\universal\secret-scanning.ps1")
     (Join-Path $repoRoot ".claude\hooks\java-spring\test-conventions.ps1")
     (Join-Path $repoRoot ".claude\hooks\windows\write-error-exit.ps1")

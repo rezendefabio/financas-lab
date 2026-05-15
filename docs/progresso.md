@@ -3,7 +3,7 @@
 > Documento de tracking. Mostra **onde estamos** na construção da fábrica e do produto.
 > Atualizado conforme camadas avançam. Diferente do `decisoes.md` (que registra escolhas) e dos `adrs.md` (que registram porquês), este documento responde a pergunta: "em que ponto eu estou?".
 
-**Última atualização:** 2026-05-15 (Sub-etapa 5.61 -- routine /factory-metrics)
+**Última atualização:** 2026-05-15 (Sub-etapa 5.62 -- hook maven-central-versions)
 
 ---
 
@@ -159,6 +159,16 @@ Configurar `CLAUDE.md` rico, criar 3-5 subagents focados, criar 5-10 skills (sla
 Ativar a fábrica de fato: rodar features no Tier 2, configurar 3 routines Tier 1, validar paralelismo se necessário.
 
 ### Sub-etapas concluídas
+
+- **5.62 -- hook java-spring maven-central-versions (versoes de artefatos Maven)** (2026-05-15):
+  Ultimo hook do backlog `hooks-pendentes.md`. Parseia `pom.xml` como XML e coleta artefatos
+  com versao explicita (sem `${...}`) em plugins, annotationProcessorPaths e dependencies.
+  Para cada artefato, consulta `search.maven.org/solrsearch/select` com timeout 5s.
+  Se `latestVersion` diverge da versao atual, exibe AVISO amarelo listando `atual` vs
+  `Maven Central`. Falha de rede capturada em `catch` silenciosamente -- nunca bloqueia.
+  Modo **warn** (exit 0 sempre): rede pode estar indisponivel e versao nova pode ter
+  breaking changes. Cenario C (rede indisponivel) validado por inspecao do codigo.
+  Implementado em `.claude/hooks/java-spring/maven-central-versions.ps1`. PR aberto.
 
 - **5.61 -- routine /factory-metrics (metricas da fabrica)** (2026-05-15):
   Skill Tier 1 que coleta metricas da fabrica AI-native de forma retroativa e continua.

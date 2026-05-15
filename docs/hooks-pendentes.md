@@ -4,7 +4,7 @@
 > Input direto para a Camada 3 (Configuração do Claude Code), quando hooks formais entrarem.
 > Atualizado conforme novas lições aparecem.
 
-**Ultima atualizacao:** 2026-05-15 (Sub-etapa 5.58 -- hooks windows unix-commands e lastexitcode-stop)
+**Ultima atualizacao:** 2026-05-15 (Sub-etapa 5.62 -- hook java-spring maven-central-versions)
 
 ---
 
@@ -80,7 +80,7 @@ A seção "Débitos de configuração" deste documento (`application-prod.yml` a
 
 ## Hooks Maven / Java
 
-- **Versão de plugin Maven validada via Maven Central** antes de ser fixada. (Etapa 1.4) Não usar memória do agente — versões podem estar desatualizadas.
+- ~~**Versao de plugin Maven validada via Maven Central** antes de ser fixada. (Etapa 1.4) Nao usar memoria do agente -- versoes podem estar desatualizadas.~~ Implementado na 5.62 como hook warn -- ver secao "Hooks implementados".
 - ~~**Modificacao de `@Entity` JPA existente exige migration Flyway no mesmo PR.**~~ Implementado na 5.53 como hook warn -- ver secao "Hooks implementados".
 - ~~**Classe base de teste sem `abstract` em pacote de shared test.**~~ Implementado na 5.54 como hook fail -- ver secao "Hooks implementados".
 - ~~**Sufixo de classe de teste segue padrão do projeto.**~~ Implementado na 5.54 como hook fail -- ver secao "Hooks implementados".
@@ -171,6 +171,8 @@ Itens originalmente listados em "Hooks Markdown / docs" ou outras secoes, agora 
 - **Comandos Unix em scripts .ps1 (modo warn)** (Sub-etapa 5.58). Implementado em `.claude/hooks/windows/unix-commands.ps1`, invocado via `.githooks/pre-commit` (orquestrador) no evento `pre-commit`. Filtra arquivos `.ps1` staged. Para cada `.ps1`, percorre linhas nao-comentadas buscando tokens `tail`, `head`, `grep`, `sed`, `awk`. Exibe AVISO amarelo listando arquivo/linha/comando e sugere equivalentes PowerShell nativos. Modo **warn** (exit 0 -- contexto Git Bash legitimo possivel; aviso serve para revisao humana). Licao 1.5: essas ferramentas nao existem no PowerShell nativo -- scripts que as usam falham em Windows sem Git Bash no PATH.
 
 - **LASTEXITCODE sem suspensao local sob Stop (modo warn)** (Sub-etapa 5.58). Implementado em `.claude/hooks/windows/lastexitcode-stop.ps1`, invocado via `.githooks/pre-commit` (orquestrador) no evento `pre-commit`. Filtra `.ps1` staged que contenham `$ErrorActionPreference = "Stop"` e `$LASTEXITCODE` mas nao contenham suspensao local (`$ErrorActionPreference = "Continue"`). Exibe AVISO amarelo com padrao correto de suspensao local. Modo **warn** (heuristica -- analise de fluxo completa seria necessaria para certeza). Licao 2.6.2: sob Stop, stderr de comando nativo pode lancar excecao terminating antes do `if ($LASTEXITCODE`, propagando exit code errado.
+
+- **Versoes de artefatos Maven vs Maven Central (modo warn)** (Sub-etapa 5.62). Implementado em `.claude/hooks/java-spring/maven-central-versions.ps1`, invocado via `.githooks/pre-commit` (orquestrador) no evento `pre-commit`. Age apenas se `pom.xml` esta no diff staged. Parseia `pom.xml` como XML (`[xml]$pom`), coleta artefatos com versao explicita (sem `${...}`) em plugins, annotationProcessorPaths e dependencies. Para cada artefato, consulta `search.maven.org/solrsearch/select` com timeout 5s. Se `latestVersion` diverge da versao atual, adiciona a lista de desatualizados. Exibe AVISO amarelo listando `atual` vs `Maven Central`. Falha de rede capturada em `catch` silenciosamente -- hook nunca bloqueia. Modo **warn** (exit 0 sempre): rede pode estar indisponivel e versao mais nova pode ter breaking changes. Licao 1.4: memoria do agente pode estar desatualizada -- consultar Maven Central antes de fixar versao.
 
 
 - **Write-Error seguido de exit em .ps1** (Sub-etapa 5.55). Implementado em `.claude/hooks/windows/write-error-exit.ps1`, invocado via `.githooks/pre-commit` (orquestrador) no evento `pre-commit`. Filtra arquivos `.ps1` staged (qualquer path). Para cada `.ps1`, percorre linhas buscando `Write-Error`; se encontrado, verifica janela de 5 linhas seguintes para `exit`. Se padrao detectado, exibe aviso em amarelo com explicacao do problema e substituicao recomendada (`Write-Host -ForegroundColor Red + exit N`), mas NAO bloqueia (exit 0). Modo **warn** (heuristica -- analise de fluxo completa requerida para certeza; aviso serve para revisao humana). Primeira ocupacao de `.claude/hooks/windows/`.
