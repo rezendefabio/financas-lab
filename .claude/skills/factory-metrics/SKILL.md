@@ -65,6 +65,8 @@ foreach ($pr in $prsNovos) {
     $todosCommits = @($commitsData.commits)
     $primeiroCommit = $todosCommits | Sort-Object authoredDate | Select-Object -First 1
 
+    # tempo_spec_pr_min: diferenca entre abertura do PR e primeiro commit (proxy de "work to PR").
+    # Negativo = clock skew ou PR aberto antes do primeiro commit -> registrado como null.
     $tempoMin = if ($primeiroCommit) {
         $diff = ([datetime]$pr.createdAt - [datetime]$primeiroCommit.authoredDate).TotalMinutes
         if ($diff -lt 0) { $null } else { [math]::Round($diff, 0) }
@@ -77,6 +79,8 @@ foreach ($pr in $prsNovos) {
     $prBody = gh pr view $pr.number --json body | ConvertFrom-Json
     $teveBloqueador = [bool]($prBody.body -match 'BLOQUEADOR')
 
+    # teve_correcao_autonoma: heuristica -- commits fix( presentes E mais de 1 commit total.
+    # Detecta "iteracao com correcao" mas nao distingue correcao por feedback humano vs autonoma.
     $entrada = [PSCustomObject]@{
         pr_number              = $pr.number
         titulo                 = $pr.title
