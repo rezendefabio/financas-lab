@@ -15,11 +15,15 @@ public class DeletarTransacaoUseCase {
         this.repository = repository;
     }
 
+    /**
+     * Soft delete: define deleted_at sem remover fisicamente do banco.
+     * Transacoes deletadas ficam invisiveis para todas as queries padrao.
+     */
     @Transactional
     public void executar(UUID id) {
         if (repository.buscarPorId(id).isEmpty()) {
             throw new TransacaoNaoEncontradaException(id);
         }
-        repository.deletar(id);
+        repository.softDelete(id);
     }
 }

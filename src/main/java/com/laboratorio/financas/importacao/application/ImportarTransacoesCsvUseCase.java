@@ -199,8 +199,11 @@ public class ImportarTransacoesCsvUseCase {
                         lv.data(),
                         lv.descricao(),
                         lv.contaId(),
-                        lv.contaDestinoId(),
-                        lv.categoriaId()
+                        lv.categoriaId(),
+                        null,
+                        com.laboratorio.financas.transacao.domain.StatusTransacao.CLEARED,
+                        null,
+                        java.util.List.of()
                 );
                 transacaoRepository.salvar(transacao);
                 importadas++;

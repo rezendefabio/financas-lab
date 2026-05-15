@@ -1,10 +1,12 @@
 package com.laboratorio.financas.transacao.interfaces.dto;
 
+import com.laboratorio.financas.transacao.domain.StatusTransacao;
 import com.laboratorio.financas.transacao.domain.TipoTransacao;
 import com.laboratorio.financas.transacao.domain.Transacao;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.UUID;
 
 public record TransacaoResponse(
@@ -15,10 +17,13 @@ public record TransacaoResponse(
         LocalDate data,
         String descricao,
         UUID contaId,
-        UUID contaDestinoId,
         UUID categoriaId,
         Instant criadoEm,
-        Instant atualizadoEm
+        Instant atualizadoEm,
+        StatusTransacao status,
+        UUID payeeId,
+        List<UUID> tagIds,
+        UUID transferGroupId
 ) {
     public static TransacaoResponse fromDomain(Transacao t) {
         return new TransacaoResponse(
@@ -29,10 +34,13 @@ public record TransacaoResponse(
                 t.getData(),
                 t.getDescricao(),
                 t.getContaId(),
-                t.getContaDestinoId(),
                 t.getCategoriaId(),
                 t.getCriadoEm(),
-                t.getAtualizadoEm()
+                t.getAtualizadoEm(),
+                t.getStatus(),
+                t.getPayeeId(),
+                t.getTagIds(),
+                t.getTransferGroupId()
         );
     }
 }

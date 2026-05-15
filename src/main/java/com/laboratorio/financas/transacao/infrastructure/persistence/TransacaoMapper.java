@@ -3,7 +3,11 @@ package com.laboratorio.financas.transacao.infrastructure.persistence;
 import com.laboratorio.financas.shared.domain.Money;
 import com.laboratorio.financas.shared.infrastructure.persistence.MoneyEmbeddable;
 import com.laboratorio.financas.transacao.domain.Transacao;
+import java.util.ArrayList;
 import java.util.Currency;
+import java.util.HashSet;
+import java.util.List;
+import java.util.UUID;
 import org.mapstruct.Mapper;
 
 @Mapper(componentModel = "spring")
@@ -20,10 +24,16 @@ public interface TransacaoMapper {
                 transacao.getData(),
                 transacao.getDescricao(),
                 transacao.getContaId(),
-                transacao.getContaDestinoId(),
                 transacao.getCategoriaId(),
                 transacao.getCriadoEm(),
-                transacao.getAtualizadoEm()
+                transacao.getAtualizadoEm(),
+                transacao.getUserId(),
+                transacao.getStatus(),
+                transacao.getDeletedAt(),
+                transacao.getPayeeId(),
+                transacao.getTransferGroupId(),
+                transacao.getTransferPairId(),
+                new HashSet<>(transacao.getTagIds())
         );
     }
 
@@ -31,6 +41,7 @@ public interface TransacaoMapper {
         if (entity == null) {
             return null;
         }
+        List<UUID> tagIds = new ArrayList<>(entity.getTagIds());
         return new Transacao(
                 entity.getId(),
                 entity.getTipo(),
@@ -38,10 +49,16 @@ public interface TransacaoMapper {
                 entity.getData(),
                 entity.getDescricao(),
                 entity.getContaId(),
-                entity.getContaDestinoId(),
                 entity.getCategoriaId(),
                 entity.getCriadoEm(),
-                entity.getAtualizadoEm()
+                entity.getAtualizadoEm(),
+                entity.getUserId(),
+                entity.getStatus(),
+                entity.getDeletedAt(),
+                entity.getPayeeId(),
+                entity.getTransferGroupId(),
+                entity.getTransferPairId(),
+                tagIds
         );
     }
 

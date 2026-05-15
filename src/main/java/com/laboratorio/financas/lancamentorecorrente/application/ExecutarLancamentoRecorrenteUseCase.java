@@ -48,8 +48,11 @@ public class ExecutarLancamentoRecorrenteUseCase {
                 lancamento.getProximaOcorrencia(),
                 lancamento.getDescricao(),
                 lancamento.getContaId(),
+                lancamento.getCategoriaId(),
                 null,
-                lancamento.getCategoriaId()
+                com.laboratorio.financas.transacao.domain.StatusTransacao.CLEARED,
+                null,
+                java.util.List.of()
         );
         Transacao transacaoSalva = transacaoRepository.salvar(transacao);
 
