@@ -6,6 +6,8 @@ import com.laboratorio.financas.conta.domain.Conta;
 import com.laboratorio.financas.conta.domain.TipoConta;
 import com.laboratorio.financas.shared.AbstractIntegrationTest;
 import com.laboratorio.financas.shared.domain.Money;
+import com.laboratorio.financas.usuario.infrastructure.persistence.UsuarioEntity;
+import com.laboratorio.financas.usuario.infrastructure.persistence.UsuarioJpaRepository;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -27,9 +29,28 @@ class ContaRepositoryImplTest extends AbstractIntegrationTest {
     @Autowired
     private ContaJpaRepository jpaRepository;
 
+    @Autowired
+    private UsuarioJpaRepository usuarioJpaRepository;
+
     @AfterEach
     void limpar() {
         jpaRepository.deleteAll();
+        usuarioJpaRepository.deleteAll();
+    }
+
+    private UUID criarUsuarioPersistido() {
+        UUID id = UUID.randomUUID();
+        UsuarioEntity entity = new UsuarioEntity(
+                id,
+                "teste+" + id + "@test.com",
+                "hash_bcrypt",
+                true,
+                Instant.now(),
+                null,
+                Instant.now()
+        );
+        usuarioJpaRepository.save(entity);
+        return id;
     }
 
     @Test
@@ -237,7 +258,7 @@ class ContaRepositoryImplTest extends AbstractIntegrationTest {
     @Test
     void salvarComUserIdPersisteCorretamente() {
         // Given
-        UUID userId = UUID.randomUUID();
+        UUID userId = criarUsuarioPersistido();
         Conta nova = new Conta(
                 UUID.randomUUID(),
                 userId,

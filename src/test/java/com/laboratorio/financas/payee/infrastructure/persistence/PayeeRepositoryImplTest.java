@@ -4,6 +4,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.laboratorio.financas.payee.domain.Payee;
 import com.laboratorio.financas.shared.AbstractIntegrationTest;
+import com.laboratorio.financas.usuario.infrastructure.persistence.UsuarioEntity;
+import com.laboratorio.financas.usuario.infrastructure.persistence.UsuarioJpaRepository;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -20,34 +23,56 @@ class PayeeRepositoryImplTest extends AbstractIntegrationTest {
     @Autowired
     private PayeeJpaRepository jpaRepository;
 
-    private static final UUID USER_ID = UUID.randomUUID();
-    private static final UUID OUTRO_USER_ID = UUID.randomUUID();
+    @Autowired
+    private UsuarioJpaRepository usuarioJpaRepository;
+
+    private UUID userId;
+    private UUID outroUserId;
 
     @BeforeEach
     void limparAntes() {
         jpaRepository.deleteAll();
+        usuarioJpaRepository.deleteAll();
+        userId = criarUsuarioPersistido();
+        outroUserId = criarUsuarioPersistido();
     }
 
     @AfterEach
     void limpar() {
         jpaRepository.deleteAll();
+        usuarioJpaRepository.deleteAll();
+    }
+
+    private UUID criarUsuarioPersistido() {
+        UUID id = UUID.randomUUID();
+        UsuarioEntity entity = new UsuarioEntity(
+                id,
+                "teste+" + id + "@test.com",
+                "hash_bcrypt",
+                true,
+                Instant.now(),
+                null,
+                Instant.now()
+        );
+        usuarioJpaRepository.save(entity);
+        return id;
     }
 
     @Test
     void savePersisteERetornaInstanciaEquivalente() {
-        Payee novo = new Payee(USER_ID, "Supermercado", null);
+        Payee novo = new Payee(userId, "Supermercado", null);
 
         Payee salvo = repository.save(novo);
 
         assertThat(salvo.getId()).isEqualTo(novo.getId());
-        assertThat(salvo.getUserId()).isEqualTo(USER_ID);
+        assertThat(salvo.getUserId()).isEqualTo(userId);
         assertThat(salvo.getNome()).isEqualTo("Supermercado");
         assertThat(salvo.getCategoriaPadraoId()).isNull();
     }
 
     @Test
     void findByIdRetornaPayeeQuandoExiste() {
-        Payee novo = new Payee(USER_ID, "Farmacia", null);
+        Payee novo = new Payee(userId, "Farmacia", null);
         repository.save(novo);
 
         Optional<Payee> resultado = repository.findById(novo.getId());
@@ -65,28 +90,28 @@ class PayeeRepositoryImplTest extends AbstractIntegrationTest {
 
     @Test
     void findByUserIdRetornaApenasPayeesDoUsuario() {
-        repository.save(new Payee(USER_ID, "Supermercado", null));
-        repository.save(new Payee(USER_ID, "Farmacia", null));
-        repository.save(new Payee(OUTRO_USER_ID, "Padaria", null));
+        repository.save(new Payee(userId, "Supermercado", null));
+        repository.save(new Payee(userId, "Farmacia", null));
+        repository.save(new Payee(outroUserId, "Padaria", null));
 
-        List<Payee> resultado = repository.findByUserId(USER_ID);
+        List<Payee> resultado = repository.findByUserId(userId);
 
         assertThat(resultado).hasSize(2);
-        assertThat(resultado).allMatch(p -> p.getUserId().equals(USER_ID));
+        assertThat(resultado).allMatch(p -> p.getUserId().equals(userId));
     }
 
     @Test
     void findByUserIdRetornaListaVaziaQuandoNaoHaPayees() {
-        List<Payee> resultado = repository.findByUserId(USER_ID);
+        List<Payee> resultado = repository.findByUserId(userId);
         assertThat(resultado).isEmpty();
     }
 
     @Test
     void findByIdAndUserIdRetornaPayeeQuandoExisteEPertenceAoUsuario() {
-        Payee novo = new Payee(USER_ID, "Academia", null);
+        Payee novo = new Payee(userId, "Academia", null);
         repository.save(novo);
 
-        Optional<Payee> resultado = repository.findByIdAndUserId(novo.getId(), USER_ID);
+        Optional<Payee> resultado = repository.findByIdAndUserId(novo.getId(), userId);
 
         assertThat(resultado).isPresent();
         assertThat(resultado.get().getId()).isEqualTo(novo.getId());
@@ -94,23 +119,23 @@ class PayeeRepositoryImplTest extends AbstractIntegrationTest {
 
     @Test
     void findByIdAndUserIdRetornaVazioQuandoUserIdDiferente() {
-        Payee novo = new Payee(USER_ID, "Academia", null);
+        Payee novo = new Payee(userId, "Academia", null);
         repository.save(novo);
 
-        Optional<Payee> resultado = repository.findByIdAndUserId(novo.getId(), OUTRO_USER_ID);
+        Optional<Payee> resultado = repository.findByIdAndUserId(novo.getId(), outroUserId);
 
         assertThat(resultado).isEmpty();
     }
 
     @Test
     void findByIdAndUserIdRetornaVazioQuandoNaoExiste() {
-        Optional<Payee> resultado = repository.findByIdAndUserId(UUID.randomUUID(), USER_ID);
+        Optional<Payee> resultado = repository.findByIdAndUserId(UUID.randomUUID(), userId);
         assertThat(resultado).isEmpty();
     }
 
     @Test
     void deleteByIdRemoveDosBanco() {
-        Payee novo = new Payee(USER_ID, "Restaurante", null);
+        Payee novo = new Payee(userId, "Restaurante", null);
         repository.save(novo);
 
         repository.deleteById(novo.getId());
@@ -128,7 +153,7 @@ class PayeeRepositoryImplTest extends AbstractIntegrationTest {
     @Test
     void saveComCategoriaPadraoIdPreservaCampo() {
         UUID categoriaId = UUID.randomUUID();
-        Payee novo = new Payee(USER_ID, "Mercado", categoriaId);
+        Payee novo = new Payee(userId, "Mercado", categoriaId);
 
         Payee salvo = repository.save(novo);
 
