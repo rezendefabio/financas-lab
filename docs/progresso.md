@@ -3,7 +3,7 @@
 > Documento de tracking. Mostra **onde estamos** na construção da fábrica e do produto.
 > Atualizado conforme camadas avançam. Diferente do `decisoes.md` (que registra escolhas) e dos `adrs.md` (que registram porquês), este documento responde a pergunta: "em que ponto eu estou?".
 
-**Última atualização:** 2026-05-15 (Sub-etapa 5.50-fix -- babysit-prs: correcoes pos-review)
+**Última atualização:** 2026-05-15 (Sub-etapa 5.51 -- hooks java-spring: baseline-on-migrate e ordem Lombok/MapStruct)
 
 ---
 
@@ -159,6 +159,21 @@ Configurar `CLAUDE.md` rico, criar 3-5 subagents focados, criar 5-10 skills (sla
 Ativar a fábrica de fato: rodar features no Tier 2, configurar 3 routines Tier 1, validar paralelismo se necessário.
 
 ### Sub-etapas concluídas
+
+- **5.51 -- hooks java-spring: baseline-on-migrate e ordem Lombok/MapStruct** (2026-05-15):
+  Dois novos hooks pre-commit para o escopo `java-spring`. **(1) `baseline-on-migrate.ps1`:**
+  bloqueia commit de qualquer `application*.yml` em `src/main/resources/` que contenha
+  `baseline-on-migrate: true`, exceto `application-test.yml` e `application-dev.yml`.
+  Modo fail. Licao 2.1: em prod, `baseline-on-migrate: true` faz o Flyway marcar todas
+  as migrations anteriores como ja executadas, resultando em tabelas faltando no schema real.
+  **(2) `lombok-mapstruct-order.ps1`:** age apenas quando `pom.xml` esta staged. Extrai o
+  bloco `<annotationProcessorPaths>` e verifica se `mapstruct-processor` aparece antes de
+  `lombok` via `.IndexOf()`. Bloqueia se sim. Modo fail. Licao 1.4: MapStruct precisa de
+  getters/setters/builders do Lombok no momento do processamento -- ordem invertida quebra
+  o build de forma nao-obvia. Ambos registrados no orquestrador `.githooks/pre-commit.ps1`
+  apos `entity-migration.ps1`. 4 cenarios destrutivos sob ADR-011 validados: (A) baseline
+  em application.yml bloqueou, (B) baseline em application-test.yml passou, (C) mapstruct
+  antes de lombok bloqueou, (D) commit sem pom.xml nao ativou hook de ordem. PR aberto.
 
 - **5.50 -- babysit-prs: intervalo 5 min + auto-cleanup de worktrees orphan** (2026-05-15):
   Dois ajustes na skill `/babysit-prs`. **(1) Intervalo 10->5 min:** 3 ocorrencias
