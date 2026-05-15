@@ -3,7 +3,7 @@
 > Documento de tracking. Mostra **onde estamos** na construção da fábrica e do produto.
 > Atualizado conforme camadas avançam. Diferente do `decisoes.md` (que registra escolhas) e dos `adrs.md` (que registram porquês), este documento responde a pergunta: "em que ponto eu estou?".
 
-**Última atualização:** 2026-05-15 (Sub-etapa 5.64 -- fix PowerShell em contexto bash)
+**Última atualização:** 2026-05-15 (Sub-etapa 5.65 -- corrigir modelo de dados Conta no frontend)
 
 ---
 
@@ -159,6 +159,18 @@ Configurar `CLAUDE.md` rico, criar 3-5 subagents focados, criar 5-10 skills (sla
 Ativar a fábrica de fato: rodar features no Tier 2, configurar 3 routines Tier 1, validar paralelismo se necessário.
 
 ### Sub-etapas concluídas
+
+- **5.65 -- corrigir modelo de dados Conta no frontend** (2026-05-15):
+  Alinhamento de tipos frontend com o backend real. **(1) TipoConta:** adicionados
+  `INVESTIMENTO` e `OUTRO` ao union type (espelha enum Java com 6 valores). **(2) Interface Conta:**
+  expandida com todos os campos do `ContaResponse.java` ausentes: `userId`, `saldoAtualValor`,
+  `saldoAtualMoeda`, `limiteCreditoValor`, `limiteCreditoMoeda`, `diaFechamento`, `diaVencimento`
+  (campos nullable mapeados como `T | null`). **(3) CriarContaRequest no service:** ampliada com
+  campos opcionais do backend (`userId`, `limiteCreditoValor`, `limiteCreditoMoeda`,
+  `diaFechamento`, `diaVencimento`). **(4) formatTipoConta:** adicionadas labels para
+  `INVESTIMENTO` e `OUTRO`. Fixtures de teste corrigidas com novos campos nulos.
+  Teste obsoleto (`INVESTIMENTO as never`) atualizado para verificar label `Investimento`.
+  206 testes passando, lint e build verdes. PR aberto.
 
 - **5.64 -- fix PowerShell em contexto bash (babysit-prs + executor templates)** (2026-05-15):
   Dois bugs com a mesma causa raiz: codigo PowerShell enviado ao Bash tool (`/usr/bin/bash`),
