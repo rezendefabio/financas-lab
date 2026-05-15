@@ -27,4 +27,13 @@
         <Class name="~.*Config"/>
         <Bug pattern="UPM_UNCALLED_PRIVATE_METHOD"/>
     </Match>
+
+    <!--
+        Use cases com injecao de repositorio via construtor sao padrao Spring.
+        EI_EXPOSE_REP2 e falso positivo para interfaces injetadas por DI.
+    -->
+    <Match>
+        <Bug pattern="EI_EXPOSE_REP2"/>
+        <Class name="~.*UseCase"/>
+    </Match>
 </FindBugsFilter>
