@@ -480,3 +480,11 @@ remover qualquer arquivo `??` inesperado.
   subagent). Padrao novo: skill procedural usa Write + Bash sem fork. Criterio de
   escolha entre skill-com-fork e skill-direta registrado. Categoria "primeira aplicacao
   de padrao em eixo novo". Smoke parcial honesto (segunda aplicacao do padrao). PR #65.
+- **2026-05-15** -- Sub-etapa 5.61 concluida: skill `/factory-metrics` (routine Tier 1).
+  Decisoes de design: (1) throttle 20h reutiliza padrao do daily-summary; (2) filtro de
+  branch `^(feat|fix|docs)/` exclui `refactor/` deliberadamente (raros, nao afetam metrica
+  de producao da fabrica); (3) `tempo_spec_pr_min` mede diferenca entre abertura do PR e
+  data do primeiro commit -- proxy de "work to PR", nao "spec to PR" (nome historico, mantido
+  por compatibilidade com o state file); (4) `teve_correcao_autonoma` e heuristica baseada
+  em commits `fix(` + mais de 1 commit total -- detecta iteracao com correcao, mas nao
+  distingue feedback humano de correcao autonoma exata. PR #145.

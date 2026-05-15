@@ -3,7 +3,7 @@
 > Documento de tracking. Mostra **onde estamos** na construção da fábrica e do produto.
 > Atualizado conforme camadas avançam. Diferente do `decisoes.md` (que registra escolhas) e dos `adrs.md` (que registram porquês), este documento responde a pergunta: "em que ponto eu estou?".
 
-**Última atualização:** 2026-05-15 (Sub-etapa 5.60 -- atualizacao documental + insights Boris Cherny)
+**Última atualização:** 2026-05-15 (Sub-etapa 5.61 -- routine /factory-metrics)
 
 ---
 
@@ -159,6 +159,20 @@ Configurar `CLAUDE.md` rico, criar 3-5 subagents focados, criar 5-10 skills (sla
 Ativar a fábrica de fato: rodar features no Tier 2, configurar 3 routines Tier 1, validar paralelismo se necessário.
 
 ### Sub-etapas concluídas
+
+- **5.61 -- routine /factory-metrics (metricas da fabrica)** (2026-05-15):
+  Skill Tier 1 que coleta metricas da fabrica AI-native de forma retroativa e continua.
+  Armazena em `.claude/factory-metrics.json` (gitignored). Metricas por PR: `tempo_spec_pr_min`
+  (de primeiro commit ate PR aberto), `commits_fix`, `teve_correcao_autonoma`
+  (`commits_fix > 0 AND commits_total > 1`), `teve_bloqueador` (body contem "BLOQUEADOR").
+  Relatorio semanal exibe: media e mediana de tempo spec->PR, PRs/dia (media 7d), taxa de
+  correcao autonoma, taxa de bloqueador humano, top 3 mais rapidos, total historico.
+  Anti-duplicata via `prsRegistrados` -- append incremental. Mesmo padrao de throttle
+  do daily-summary (>= 20h entre coletas). Auto-agenda via `ScheduleWakeup 3600s`.
+  Validacao destrutiva: Cenario A (primeira execucao sem state -- 50 PRs retroativos
+  registrados); Cenario B (re-execucao imediata -- "proximo em 20h", sem recoleta);
+  Cenario C (formato do state -- campos `pr_number`, `tempo_spec_pr_min`,
+  `teve_correcao_autonoma` presentes e corretos). PR aberto.
 
 - **5.60 -- atualizacao documental + insights Boris Cherny** (2026-05-15):
   Tres lacunas documentais acumuladas desde 5.3 corrigidas. **(1) `decisoes-claude-code.md`:**
