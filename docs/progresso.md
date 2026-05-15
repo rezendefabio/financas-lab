@@ -3,7 +3,7 @@
 > Documento de tracking. Mostra **onde estamos** na construção da fábrica e do produto.
 > Atualizado conforme camadas avançam. Diferente do `decisoes.md` (que registra escolhas) e dos `adrs.md` (que registram porquês), este documento responde a pergunta: "em que ponto eu estou?".
 
-**Última atualização:** 2026-05-15 (Sub-etapa 5.53 -- hook java-spring: @Entity modificada avisa sobre migration)
+**Última atualização:** 2026-05-15 (Sub-etapa 5.57 -- babysit-prs: anti-reprocessamento considera mergeStateStatus)
 
 ---
 
@@ -159,6 +159,28 @@ Configurar `CLAUDE.md` rico, criar 3-5 subagents focados, criar 5-10 skills (sla
 Ativar a fábrica de fato: rodar features no Tier 2, configurar 3 routines Tier 1, validar paralelismo se necessário.
 
 ### Sub-etapas concluídas
+
+- **5.57 -- babysit-prs: anti-reprocessamento considera mergeStateStatus** (2026-05-15):
+  Bug no Passo 2.0 onde o anti-reprocessamento ignorava PRs cujo SHA nao mudara mas
+  cujo `mergeStateStatus` havia mudado (ex: CLEAN -> CONFLICTING por avanco da main).
+  **Mudanca 1 (Passo 2.0):** quando `head_sha` coincide e diferenca < 30 min, agora
+  consulta `mergeStateStatus` atual via `gh pr view`; se mudou em relacao ao valor
+  salvo no state, processa normalmente em vez de ignorar. **Mudanca 2 (Passos 3a/3b/3c/3d):**
+  todos os blocos de atualizacao do state passam a salvar `merge_state_status = $pr.mergeStateStatus`
+  no objeto persistido (4 pontos). **Mudanca 3 (Passo 4):** relatorio menciona quando o
+  reprocessamento foi disparado por mudanca de status com a nota
+  `PR #N: reprocessado (mergeStateStatus mudou: <anterior> -> <atual>)`. PR aberto.
+
+- **5.55 -- hook windows: Write-Error seguido de exit em .ps1** (2026-05-15):
+  Novo hook pre-commit no escopo `windows`. Detecta padrao `Write-Error` seguido de
+  `exit N` em janela de 5 linhas em arquivos `.ps1` staged. Problema: `Write-Error`
+  sob `$ErrorActionPreference = "Stop"` lanca excecao terminating antes de atingir o
+  `exit N` seguinte, propagando exit code errado quando invocado com dot-source.
+  Modo **warn** (heuristica -- nao e possivel saber sem analise de fluxo completo se
+  o `Write-Error` esta sob Stop). Sugestao: `Write-Host -ForegroundColor Red "<msg>"` +
+  `exit N`. Validacao destrutiva: Cenario A (Write-Error + exit -> aviso sem bloqueio),
+  Cenario B (Write-Host + exit -> silencioso), Cenario C (.java staged -> hook nao age).
+  Hook registrado em `.githooks/pre-commit.ps1`. PR aberto.
 
 - **5.53 -- hook java-spring: @Entity modificada avisa sobre migration** (2026-05-15):
   Extensao do hook 4.7 (`entity-migration.ps1`) para cobrir o caso edge de modificacao
