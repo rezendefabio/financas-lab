@@ -3,7 +3,7 @@
 > Documento de tracking. Mostra **onde estamos** na construção da fábrica e do produto.
 > Atualizado conforme camadas avançam. Diferente do `decisoes.md` (que registra escolhas) e dos `adrs.md` (que registram porquês), este documento responde a pergunta: "em que ponto eu estou?".
 
-**Última atualização:** 2026-05-15 (Sub-etapa 5.57 -- babysit-prs: anti-reprocessamento considera mergeStateStatus)
+**Última atualização:** 2026-05-15 (Sub-etapa 5.58 -- hooks windows: comandos Unix em .ps1 e LASTEXITCODE sem Stop)
 
 ---
 
@@ -160,6 +160,22 @@ Ativar a fábrica de fato: rodar features no Tier 2, configurar 3 routines Tier 
 
 ### Sub-etapas concluídas
 
+- **5.58 -- hooks windows: comandos Unix em .ps1 e LASTEXITCODE sem Stop** (2026-05-15):
+  Dois novos hooks pre-commit para o escopo `windows`, ambos em modo **warn**.
+  **(1) unix-commands.ps1:** detecta comandos Unix (`tail`, `head`, `grep`, `sed`, `awk`)
+  em arquivos `.ps1` staged. Linhas comentadas sao ignoradas. Exibe AVISO amarelo listando
+  arquivo/linha/comando e sugere equivalentes PowerShell (`Select-Object -Last/-First N`,
+  `Select-String`). Problema: essas ferramentas nao existem no PowerShell nativo -- scripts
+  que as usam falham em Windows sem Git Bash no PATH (licao 1.5).
+  **(2) lastexitcode-stop.ps1:** detecta combinacao de `$ErrorActionPreference = "Stop"` +
+  `$LASTEXITCODE` sem suspensao local (`"Continue"`) no mesmo arquivo. Exibe AVISO amarelo
+  com o padrao correto de suspensao local. Problema: sob Stop, stderr de comando nativo pode
+  lancar excecao terminating antes do `if ($LASTEXITCODE` -- exit code propaga errado
+  (licao 2.6.2). Ambos registrados no orquestrador `.githooks/pre-commit.ps1` apos
+  `write-error-exit.ps1`. Validacao destrutiva: 4 cenarios (A: grep em .ps1 -> aviso;
+  B: Select-String -> silencioso; C: Stop+LASTEXITCODE sem suspensao -> aviso;
+  D: Stop+LASTEXITCODE com suspensao -> silencioso). PR aberto.
+
 - **5.57 -- babysit-prs: anti-reprocessamento considera mergeStateStatus** (2026-05-15):
   Bug no Passo 2.0 onde o anti-reprocessamento ignorava PRs cujo SHA nao mudara mas
   cujo `mergeStateStatus` havia mudado (ex: CLEAN -> CONFLICTING por avanco da main).
@@ -193,6 +209,17 @@ Ativar a fábrica de fato: rodar features no Tier 2, configurar 3 routines Tier 
   `exit N`. Validacao destrutiva: Cenario A (Write-Error + exit -> aviso sem bloqueio),
   Cenario B (Write-Host + exit -> silencioso), Cenario C (.java staged -> hook nao age).
   Hook registrado em `.githooks/pre-commit.ps1`. PR aberto.
+
+- **5.54 -- Hook java-spring: convencoes de teste (sufixo Test e abstract)** (2026-05-15):
+  Cria `.claude/hooks/java-spring/test-conventions.ps1` com duas regras em modo fail.
+  **Regra 1 -- Sufixo Test:** classes de teste em `src/test/java/` devem terminar com
+  `Test` ou comecar com `Abstract`. Sem o sufixo, Maven Surefire nao descobre a classe
+  e os testes nunca rodam silenciosamente. **Regra 2 -- Abstract em shared:** classes
+  em `*/shared/` com prefixo `Abstract` devem ter modificador `abstract`. Sem ele,
+  JUnit tenta instanciar a classe base, duplicando execucoes e causando falhas confusas
+  de contexto Spring. Hook registrado no orquestrador `.githooks/pre-commit.ps1`.
+  Validacao destrutiva: 4 cenarios (A: sem sufixo bloqueia; B: prefixo Abstract passa;
+  C: shared sem abstract bloqueia; D: src/main/ nao dispara). Origem: licao 2.1. PR aberto.
 
 - **5.53 -- hook java-spring: @Entity modificada avisa sobre migration** (2026-05-15):
   Extensao do hook 4.7 (`entity-migration.ps1`) para cobrir o caso edge de modificacao
