@@ -89,7 +89,8 @@ public class TransacaoController {
             @RequestParam(name = "page", defaultValue = "0") @Min(0) int page,
             @RequestParam(name = "size", defaultValue = "20") @Min(1) @Max(SIZE_MAX) int size
     ) {
-        FiltrosTransacao filtros = new FiltrosTransacao(contaId, dataInicio, dataFim, tipo, categoriaId);
+        UUID userId = resolverUserId();
+        FiltrosTransacao filtros = new FiltrosTransacao(contaId, dataInicio, dataFim, tipo, categoriaId, userId);
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "data"));
         Page<Transacao> resultado = listarTransacoesUseCase.executar(filtros, pageable);
         return resultado.map(TransacaoResponse::fromDomain);

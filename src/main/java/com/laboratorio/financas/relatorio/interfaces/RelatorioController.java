@@ -46,8 +46,9 @@ public class RelatorioController {
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dataInicio,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dataFim,
             @RequestParam(required = false) UUID contaId) {
+        UUID userId = resolverUserId();
         var resultado = gastosPorCategoriaUseCase.executar(
-                new GastosPorCategoriaUseCase.Consulta(dataInicio, dataFim, contaId));
+                new GastosPorCategoriaUseCase.Consulta(dataInicio, dataFim, contaId, userId));
         return GastosPorCategoriaResponse.fromResultado(resultado);
     }
 
@@ -56,8 +57,9 @@ public class RelatorioController {
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dataInicio,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dataFim,
             @RequestParam(required = false) UUID contaId) {
+        UUID userId = resolverUserId();
         var resultado = evolucaoSaldoUseCase.executar(
-                new EvolucaoSaldoUseCase.Consulta(dataInicio, dataFim, contaId));
+                new EvolucaoSaldoUseCase.Consulta(dataInicio, dataFim, contaId, userId));
         return EvolucaoSaldoResponse.fromResultado(resultado);
     }
 

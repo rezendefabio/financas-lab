@@ -45,7 +45,7 @@ class GastosPorCategoriaUseCaseTest {
         when(transacaoRepository.listarComFiltros(any(), any()))
                 .thenReturn(new PageImpl<>(List.of()));
 
-        var resultado = useCase.executar(new GastosPorCategoriaUseCase.Consulta(INICIO, FIM, null));
+        var resultado = useCase.executar(new GastosPorCategoriaUseCase.Consulta(INICIO, FIM, null, null));
 
         assertThat(resultado.totalGeral().valor()).isEqualByComparingTo("0.00");
         assertThat(resultado.itensPorCategoria()).isEmpty();
@@ -59,7 +59,7 @@ class GastosPorCategoriaUseCaseTest {
         when(transacaoRepository.listarComFiltros(any(), any()))
                 .thenReturn(new PageImpl<>(List.of(transacao)));
 
-        var resultado = useCase.executar(new GastosPorCategoriaUseCase.Consulta(INICIO, FIM, null));
+        var resultado = useCase.executar(new GastosPorCategoriaUseCase.Consulta(INICIO, FIM, null, null));
 
         assertThat(resultado.itensPorCategoria()).hasSize(1);
         var item = resultado.itensPorCategoria().get(0);
@@ -78,7 +78,7 @@ class GastosPorCategoriaUseCaseTest {
         when(categoriaRepository.buscarPorId(categoriaId))
                 .thenReturn(Optional.of(categoria));
 
-        var resultado = useCase.executar(new GastosPorCategoriaUseCase.Consulta(INICIO, FIM, null));
+        var resultado = useCase.executar(new GastosPorCategoriaUseCase.Consulta(INICIO, FIM, null, null));
 
         assertThat(resultado.itensPorCategoria()).hasSize(1);
         assertThat(resultado.itensPorCategoria().get(0).nomeCategoria()).isEqualTo("Alimentacao");
@@ -92,7 +92,7 @@ class GastosPorCategoriaUseCaseTest {
                 .thenReturn(new PageImpl<>(List.of(transacao)));
         when(categoriaRepository.buscarPorId(categoriaId)).thenReturn(Optional.empty());
 
-        var resultado = useCase.executar(new GastosPorCategoriaUseCase.Consulta(INICIO, FIM, null));
+        var resultado = useCase.executar(new GastosPorCategoriaUseCase.Consulta(INICIO, FIM, null, null));
 
         assertThat(resultado.itensPorCategoria().get(0).nomeCategoria())
                 .isEqualTo("Categoria desconhecida");
@@ -113,7 +113,7 @@ class GastosPorCategoriaUseCaseTest {
         when(categoriaRepository.buscarPorId(cat2))
                 .thenReturn(Optional.of(new Categoria("Alimentacao", TipoCategoria.DESPESA)));
 
-        var resultado = useCase.executar(new GastosPorCategoriaUseCase.Consulta(INICIO, FIM, null));
+        var resultado = useCase.executar(new GastosPorCategoriaUseCase.Consulta(INICIO, FIM, null, null));
 
         assertThat(resultado.itensPorCategoria()).hasSize(2);
         assertThat(resultado.itensPorCategoria().get(0).totalGasto().valor())
@@ -134,13 +134,27 @@ class GastosPorCategoriaUseCaseTest {
         when(transacaoRepository.listarComFiltros(captor.capture(), any()))
                 .thenReturn(new PageImpl<>(List.of()));
 
-        useCase.executar(new GastosPorCategoriaUseCase.Consulta(INICIO, FIM, contaId));
+        useCase.executar(new GastosPorCategoriaUseCase.Consulta(INICIO, FIM, contaId, null));
 
         var filtros = captor.getValue();
         assertThat(filtros.contaId()).isEqualTo(contaId);
         assertThat(filtros.tipo()).isEqualTo(TipoTransacao.DESPESA);
         assertThat(filtros.dataInicio()).isEqualTo(INICIO);
         assertThat(filtros.dataFim()).isEqualTo(FIM);
+    }
+
+    @Test
+    void filtroPassaUserIdParaRepositorio() {
+        UUID userId = UUID.randomUUID();
+        var captor = ArgumentCaptor.forClass(
+                com.laboratorio.financas.transacao.domain.FiltrosTransacao.class);
+        when(transacaoRepository.listarComFiltros(captor.capture(), any()))
+                .thenReturn(new PageImpl<>(List.of()));
+
+        useCase.executar(new GastosPorCategoriaUseCase.Consulta(INICIO, FIM, null, userId));
+
+        var filtros = captor.getValue();
+        assertThat(filtros.userId()).isEqualTo(userId);
     }
 
     private Transacao despesa(BigDecimal valor, UUID categoriaId) {
