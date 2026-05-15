@@ -26,6 +26,7 @@ $hooks = @(
     (Join-Path $repoRoot ".claude\hooks\universal\secret-scanning.ps1")
     (Join-Path $repoRoot ".claude\hooks\java-spring\test-conventions.ps1")
     (Join-Path $repoRoot ".claude\hooks\windows\write-error-exit.ps1")
+    (Join-Path $repoRoot ".claude\hooks\next\shadcn-artifacts.ps1")
 )
 
 $failed = $false

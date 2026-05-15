@@ -97,8 +97,7 @@ A seção "Débitos de configuração" deste documento (`application-prod.yml` a
 
 ## Hooks Frontend / Next.js
 
-- **`npx shadcn@latest init --defaults` instala componente `button.tsx` automaticamente.** (Etapa 2.7) Em etapas que proíbem componentes, detectar e remover `src/components/ui/*.tsx` gerado pelo init antes do commit.
-- **`AGENTS.md` ou `CLAUDE.md` em subdiretórios gerados por scaffold.** (Etapa 2.7) Quando framework gera, decidir conscientemente manter/remover. Conteúdo específico (avisos sobre training data desatualizada) tende a valer; conteúdo genérico tende a remover.
+(Todos os itens deste grupo foram implementados na 5.56 -- shadcn-artifacts.ps1.)
 
 ## Débitos de configuração
 
@@ -149,6 +148,8 @@ Itens originalmente listados em "Hooks Markdown / docs" ou outras secoes, agora 
 - **mvnw bit de execucao no indice git** (Sub-etapa 5.52). Implementado em `.claude/hooks/java-spring/mvnw-executable.ps1`, invocado via `.githooks/pre-commit` (orquestrador) no evento `pre-commit`. Executa `git ls-files --stage mvnw` e valida que o modo e `100755`. Se `mvnw` nao esta no indice, hook e silencioso (exit 0). Licao 1.5: sem bit de execucao, CI Linux falha com `Permission denied`; localmente no Windows nao ha impacto. Modo **fail**.
 
 - **@Entity modificada com campo novo avisa sobre migration Flyway (modo warn)** (Sub-etapa 5.53). Implementado em `.claude/hooks/java-spring/entity-migration-modified.ps1`, invocado via `.githooks/pre-commit` (orquestrador) no evento `pre-commit`. Complementa o hook 4.7 (que cobre Entity nova/status A). Usa `git diff --cached -U0` para inspecionar linhas adicionadas em arquivos `.java` modificados (status M) que contenham `@Entity`. Dispara se alguma linha adicionada corresponde a campo novo: `private\s+\w`, `@Column`, `@Id` ou `@Embedded`. Modo **warn** (exit 0 sempre): falsos positivos possiveis em refactors de campos existentes; desenvolvedor decide se precisa de migration. Exibe AVISO amarelo listando arquivos suspeitos e orienta criacao de `ALTER TABLE ADD COLUMN` ou ignora se for refactor puro.
+
+- **Artefatos de scaffold Next.js/shadcn (modo warn)** (Sub-etapa 5.56). Implementado em `.claude/hooks/next/shadcn-artifacts.ps1`, invocado via `.githooks/pre-commit` (orquestrador) no evento `pre-commit`. Aviso 1: detecta `frontend/src/components/ui/button.tsx` staged -- `npx shadcn@latest init --defaults` instala esse componente automaticamente; modo warn sugere remocao consciente. Aviso 2: detecta `AGENTS.md` ou `CLAUDE.md` com path comecando por `frontend/` -- frameworks de scaffold geram esses arquivos; modo warn sugere revisao e decisao consciente. Ambos os avisos em modo **warn** (exit 0): decisao de manter/remover e humana. CLAUDE.md na raiz e arquivos frontend comuns nao ativam o hook.
 
 - **Hook post-edit unit tests** (Sub-etapa 4.22, PR #68). Hook nativo Claude Code
   (`PostToolUse`) em `.claude/hooks/post-edit/run-tests.ps1`, referenciado por
