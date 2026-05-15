@@ -152,6 +152,33 @@ fi
 Se o comando acima retornar "main": parar tudo e reportar
 `BLOQUEADOR: executor iniciou em main -- nao e permitido modificar main diretamente`.
 
+## Verificacao de diretorio de trabalho
+
+Antes de criar qualquer arquivo, confirmar que o diretorio de trabalho
+e o worktree isolado, nao o repositorio principal:
+
+```bash
+worktree_root=$(git rev-parse --show-toplevel)
+pwd_atual=$(pwd)
+echo "Worktree root: $worktree_root"
+echo "PWD atual: $pwd_atual"
+if [ "$worktree_root" = "/c/projetos/financas-lab" ] || [ "$worktree_root" = "C:/projetos/financas-lab" ]; then
+  echo "ERRO CRITICO: diretorio e o repo principal. Verificar worktree."
+fi
+```
+
+## Limpeza obrigatoria antes de encerrar
+
+Antes de reportar conclusao, verificar se ha arquivos nao-trackeados fora
+do contexto da tarefa no worktree:
+
+```bash
+git status --short | grep "^??" | grep -v ".claude/tasks.json"
+```
+
+Se houver arquivos `??` inesperados: remover com `rm -f <arquivo>` antes
+de encerrar. Nunca deixar arquivos residuais no worktree.
+
 ## Restricao absoluta de ambiente
 
 - Voce esta num worktree git ISOLADO. A branch `main` e BLOQUEADA.

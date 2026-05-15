@@ -35,8 +35,9 @@ foreach ($file in $ps1Files) {
     for ($i = 0; $i -lt $lines.Count; $i++) {
         $line = $lines[$i]
         if ($line -match '^\s*#') { continue }
+        $linhaLimpa = $line -replace '"[^"]*"', '' -replace "'[^']*'", ''
         foreach ($cmd in $unixCmds) {
-            if ($line -match "\b$cmd\b") {
+            if ($linhaLimpa -match "\b$cmd\b") {
                 $ocorrencias += "$file (linha $($i + 1)): $cmd"
                 break
             }
