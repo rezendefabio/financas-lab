@@ -20,6 +20,15 @@
     </Match>
 
     <!--
+        Use cases com injecao de dependencia Spring: repositorio injetado via
+        construtor e singleton gerenciado pelo contexto, nao exposicao de mutabilidade.
+    -->
+    <Match>
+        <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2"/>
+        <Class name="~.*UseCase"/>
+    </Match>
+
+    <!--
         Classes @Configuration: metodos @Bean retornando objeto novo
         sao padrao Spring, nao "returned object never used".
     -->
