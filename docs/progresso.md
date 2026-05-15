@@ -3,7 +3,7 @@
 > Documento de tracking. Mostra **onde estamos** na construção da fábrica e do produto.
 > Atualizado conforme camadas avançam. Diferente do `decisoes.md` (que registra escolhas) e dos `adrs.md` (que registram porquês), este documento responde a pergunta: "em que ponto eu estou?".
 
-**Última atualização:** 2026-05-15 (Sub-etapa 5.58 -- hooks windows: comandos Unix em .ps1 e LASTEXITCODE sem Stop)
+**Última atualização:** 2026-05-15 (Sub-etapa 5.59 -- fix unix-commands falso positivo + guard worktree em batch e plan)
 
 ---
 
@@ -159,6 +159,19 @@ Configurar `CLAUDE.md` rico, criar 3-5 subagents focados, criar 5-10 skills (sla
 Ativar a fábrica de fato: rodar features no Tier 2, configurar 3 routines Tier 1, validar paralelismo se necessário.
 
 ### Sub-etapas concluídas
+
+- **5.59 -- fix unix-commands falso positivo + guard worktree em batch e plan** (2026-05-15):
+  Dois fixes independentes. **(1) unix-commands.ps1:** deteccao de comandos Unix gerava falso
+  positivo quando o token (`grep`, `tail`, etc.) aparecia dentro de uma string literal em
+  `.ps1`. Fix: antes de checar cada linha, remover conteudo entre aspas duplas e simples
+  (`$linhaLimpa = $line -replace '"[^"]*"', '' -replace "'[^']*'", ''`). Validacao destrutiva:
+  cenario A (`$msg = "use grep para buscar"` -- silencioso), cenario B (`grep "p" f.txt` --
+  aviso disparado). **(2) Guard de worktree em /batch e /plan:** executores ocasionalmente
+  criavam arquivos residuais no repo principal por usar path relativo com CWD errado.
+  Adicionadas duas secoes ao template do sub-agente em ambas as skills: "Verificacao de
+  diretorio de trabalho" (confirma que toplevel nao e o repo principal antes de criar
+  arquivos) e "Limpeza obrigatoria antes de encerrar" (verifica e remove `??` inesperados
+  antes de reportar conclusao). PR aberto.
 
 - **5.58 -- hooks windows: comandos Unix em .ps1 e LASTEXITCODE sem Stop** (2026-05-15):
   Dois novos hooks pre-commit para o escopo `windows`, ambos em modo **warn**.
