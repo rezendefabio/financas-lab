@@ -40,7 +40,7 @@ class EvolucaoSaldoUseCaseTest {
         when(transacaoRepository.listarComFiltros(any(), any()))
                 .thenReturn(new PageImpl<>(List.of()));
 
-        var resultado = useCase.executar(new EvolucaoSaldoUseCase.Consulta(INICIO, FIM, null));
+        var resultado = useCase.executar(new EvolucaoSaldoUseCase.Consulta(INICIO, FIM, null, null));
 
         assertThat(resultado.totalReceitas().valor()).isEqualByComparingTo("0.00");
         assertThat(resultado.totalDespesas().valor()).isEqualByComparingTo("0.00");
@@ -76,7 +76,7 @@ class EvolucaoSaldoUseCaseTest {
 
         LocalDate inicio = LocalDate.of(2026, 1, 1);
         LocalDate fim = LocalDate.of(2026, 1, 31);
-        var resultado = useCase.executar(new EvolucaoSaldoUseCase.Consulta(inicio, fim, null));
+        var resultado = useCase.executar(new EvolucaoSaldoUseCase.Consulta(inicio, fim, null, null));
 
         // DESPESA de transferencia conta no total de despesas
         assertThat(resultado.totalDespesas().valor()).isEqualByComparingTo("500.00");
@@ -95,7 +95,7 @@ class EvolucaoSaldoUseCaseTest {
                         despesa(new BigDecimal("200.00"), LocalDate.of(2026, 1, 20), contaId)
                 )));
 
-        var resultado = useCase.executar(new EvolucaoSaldoUseCase.Consulta(inicio, fim, null));
+        var resultado = useCase.executar(new EvolucaoSaldoUseCase.Consulta(inicio, fim, null, null));
 
         assertThat(resultado.totalReceitas().valor()).isEqualByComparingTo("1000.00");
         assertThat(resultado.totalDespesas().valor()).isEqualByComparingTo("500.00");
@@ -118,7 +118,7 @@ class EvolucaoSaldoUseCaseTest {
                         despesa(new BigDecimal("100.00"), LocalDate.of(2026, 2, 20), contaId)
                 )));
 
-        var resultado = useCase.executar(new EvolucaoSaldoUseCase.Consulta(INICIO, FIM, null));
+        var resultado = useCase.executar(new EvolucaoSaldoUseCase.Consulta(INICIO, FIM, null, null));
 
         assertThat(resultado.evolucaoPorMes()).hasSize(3);
         var jan = resultado.evolucaoPorMes().get(0);
@@ -143,13 +143,26 @@ class EvolucaoSaldoUseCaseTest {
         when(transacaoRepository.listarComFiltros(captor.capture(), any()))
                 .thenReturn(new PageImpl<>(List.of()));
 
-        useCase.executar(new EvolucaoSaldoUseCase.Consulta(INICIO, FIM, contaId));
+        useCase.executar(new EvolucaoSaldoUseCase.Consulta(INICIO, FIM, contaId, null));
 
         var filtros = captor.getValue();
         assertThat(filtros.contaId()).isEqualTo(contaId);
         assertThat(filtros.tipo()).isNull();
         assertThat(filtros.dataInicio()).isEqualTo(INICIO);
         assertThat(filtros.dataFim()).isEqualTo(FIM);
+    }
+
+    @Test
+    void filtroPassaUserIdParaRepositorio() {
+        UUID userId = UUID.randomUUID();
+        var captor = ArgumentCaptor.forClass(FiltrosTransacao.class);
+        when(transacaoRepository.listarComFiltros(captor.capture(), any()))
+                .thenReturn(new PageImpl<>(List.of()));
+
+        useCase.executar(new EvolucaoSaldoUseCase.Consulta(INICIO, FIM, null, userId));
+
+        var filtros = captor.getValue();
+        assertThat(filtros.userId()).isEqualTo(userId);
     }
 
     @Test
@@ -163,7 +176,7 @@ class EvolucaoSaldoUseCaseTest {
                         despesa(new BigDecimal("400.00"), LocalDate.of(2026, 2, 10), contaId)
                 )));
 
-        var resultado = useCase.executar(new EvolucaoSaldoUseCase.Consulta(INICIO, FIM, null));
+        var resultado = useCase.executar(new EvolucaoSaldoUseCase.Consulta(INICIO, FIM, null, null));
 
         assertThat(resultado.totalReceitas().valor()).isEqualByComparingTo("3000.00");
         assertThat(resultado.totalDespesas().valor()).isEqualByComparingTo("700.00");
