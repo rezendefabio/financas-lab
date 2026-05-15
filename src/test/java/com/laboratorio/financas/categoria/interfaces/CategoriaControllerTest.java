@@ -114,16 +114,15 @@ class CategoriaControllerTest extends AbstractAuthenticatedIntegrationTest {
 
     @Test
     void postCategoriaComUserIdRetorna201() throws Exception {
-        UUID userId = UUID.randomUUID();
         Map<String, Object> body = new HashMap<>();
         body.put("nome", "Mercado");
         body.put("tipo", "DESPESA");
-        body.put("userId", userId.toString());
+        body.put("userId", authenticatedUserId.toString());
         mockMvc.perform(comAuth(post("/api/categorias")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(body))))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.userId", equalTo(userId.toString())))
+                .andExpect(jsonPath("$.userId", equalTo(authenticatedUserId.toString())))
                 .andExpect(jsonPath("$.system", equalTo(false)));
     }
 
