@@ -26,15 +26,15 @@ class TagRepositoryImplTest extends AbstractIntegrationTest {
     @Autowired
     private UsuarioJpaRepository usuarioJpaRepository;
 
-    private UUID USER_ID_A;
-    private UUID USER_ID_B;
+    private UUID userIdA;
+    private UUID userIdB;
 
     @BeforeEach
     void limparAntes() {
         jpaRepository.deleteAll();
         usuarioJpaRepository.deleteAll();
-        USER_ID_A = criarUsuarioPersistido();
-        USER_ID_B = criarUsuarioPersistido();
+        userIdA = criarUsuarioPersistido();
+        userIdB = criarUsuarioPersistido();
     }
 
     @AfterEach
@@ -60,19 +60,19 @@ class TagRepositoryImplTest extends AbstractIntegrationTest {
 
     @Test
     void savePersisteERetornaTag() {
-        Tag tag = new Tag(USER_ID_A, "Essencial", "#FF0000");
+        Tag tag = new Tag(userIdA, "Essencial", "#FF0000");
 
         Tag salva = repository.salvar(tag);
 
         assertThat(salva.getId()).isEqualTo(tag.getId());
-        assertThat(salva.getUserId()).isEqualTo(USER_ID_A);
+        assertThat(salva.getUserId()).isEqualTo(userIdA);
         assertThat(salva.getNome()).isEqualTo("Essencial");
         assertThat(salva.getCor()).isEqualTo("#FF0000");
     }
 
     @Test
     void findByIdRetornaTagQuandoExiste() {
-        Tag tag = new Tag(USER_ID_A, "Lazer", null);
+        Tag tag = new Tag(userIdA, "Lazer", null);
         repository.salvar(tag);
 
         Optional<Tag> resultado = repository.buscarPorId(tag.getId());
@@ -90,14 +90,14 @@ class TagRepositoryImplTest extends AbstractIntegrationTest {
 
     @Test
     void findByUserIdRetornaApenasTagsDoUsuario() {
-        repository.salvar(new Tag(USER_ID_A, "Tag A1", null));
-        repository.salvar(new Tag(USER_ID_A, "Tag A2", null));
-        repository.salvar(new Tag(USER_ID_B, "Tag B1", null));
+        repository.salvar(new Tag(userIdA, "Tag A1", null));
+        repository.salvar(new Tag(userIdA, "Tag A2", null));
+        repository.salvar(new Tag(userIdB, "Tag B1", null));
 
-        List<Tag> tagsA = repository.buscarPorUserId(USER_ID_A);
+        List<Tag> tagsA = repository.buscarPorUserId(userIdA);
 
         assertThat(tagsA).hasSize(2);
-        assertThat(tagsA).allMatch(t -> t.getUserId().equals(USER_ID_A));
+        assertThat(tagsA).allMatch(t -> t.getUserId().equals(userIdA));
     }
 
     @Test
@@ -109,10 +109,10 @@ class TagRepositoryImplTest extends AbstractIntegrationTest {
 
     @Test
     void findByIdAndUserIdRetornaTagQuandoExisteParaUsuario() {
-        Tag tag = new Tag(USER_ID_A, "Viagem", "#0000FF");
+        Tag tag = new Tag(userIdA, "Viagem", "#0000FF");
         repository.salvar(tag);
 
-        Optional<Tag> resultado = repository.buscarPorIdEUserId(tag.getId(), USER_ID_A);
+        Optional<Tag> resultado = repository.buscarPorIdEUserId(tag.getId(), userIdA);
 
         assertThat(resultado).isPresent();
         assertThat(resultado.get().getId()).isEqualTo(tag.getId());
@@ -120,17 +120,17 @@ class TagRepositoryImplTest extends AbstractIntegrationTest {
 
     @Test
     void findByIdAndUserIdRetornaVazioParaOutroUsuario() {
-        Tag tag = new Tag(USER_ID_A, "Viagem", null);
+        Tag tag = new Tag(userIdA, "Viagem", null);
         repository.salvar(tag);
 
-        Optional<Tag> resultado = repository.buscarPorIdEUserId(tag.getId(), USER_ID_B);
+        Optional<Tag> resultado = repository.buscarPorIdEUserId(tag.getId(), userIdB);
 
         assertThat(resultado).isEmpty();
     }
 
     @Test
     void deleteByIdRemoveTag() {
-        Tag tag = new Tag(USER_ID_A, "Remover", null);
+        Tag tag = new Tag(userIdA, "Remover", null);
         repository.salvar(tag);
 
         repository.deletar(tag.getId());
@@ -140,10 +140,10 @@ class TagRepositoryImplTest extends AbstractIntegrationTest {
 
     @Test
     void saveAtualizaTagExistente() {
-        Tag tag = new Tag(USER_ID_A, "Antiga", "#000000");
+        Tag tag = new Tag(userIdA, "Antiga", "#000000");
         repository.salvar(tag);
 
-        Tag atualizada = new Tag(tag.getId(), USER_ID_A, "Nova", "#FFFFFF", tag.getCriadoEm());
+        Tag atualizada = new Tag(tag.getId(), userIdA, "Nova", "#FFFFFF", tag.getCriadoEm());
         Tag resultado = repository.salvar(atualizada);
 
         assertThat(resultado.getNome()).isEqualTo("Nova");
