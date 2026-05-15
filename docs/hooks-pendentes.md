@@ -4,7 +4,7 @@
 > Input direto para a Camada 3 (Configuração do Claude Code), quando hooks formais entrarem.
 > Atualizado conforme novas lições aparecem.
 
-**Última atualização:** 2026-05-15 (Sub-etapa 5.51 -- hooks java-spring: baseline-on-migrate e ordem Lombok/MapStruct)
+**Última atualização:** 2026-05-15 (Sub-etapa 5.53 -- hook java-spring: @Entity modificada avisa sobre migration)
 
 ---
 
@@ -73,7 +73,7 @@ A seção "Débitos de configuração" deste documento (`application-prod.yml` a
 
 ## Hooks de setup / ambiente
 
-- **Validar que scripts que invocam `mvnw spring-boot:run` passam `-Dspring-boot.run.profiles=<profile>` explicitamente.** (Etapa 3.3.1) Sem a flag, Spring usa profile `default` que não tem datasource → `Failed to configure a DataSource`. Hook leve: `grep -nE "mvnw\s+spring-boot:run" scripts/*.ps1 | grep -v "spring-boot.run.profiles"` deve retornar zero linhas.
+(Todos os itens deste grupo foram implementados -- mvnw sem profile implementado na 5.52.)
 
 ## Hooks Markdown / docs
 
@@ -88,7 +88,6 @@ A seção "Débitos de configuração" deste documento (`application-prod.yml` a
 
 ## Hooks GitHub Actions / CI
 
-- **`mvnw` com bit de execução no git index.** (Etapa 1.5) `git update-index --chmod=+x mvnw` — sem isso, CI Linux falha com `Permission denied`. Esboço: validar `git ls-files --stage mvnw | grep -c "^100755"`.
 - **Comandos em scripts/instruções para Windows não usam ferramentas Unix.** (Etapa 1.5) `tail`, `head`, `grep`, `sed`, `awk` não existem no PowerShell. Equivalentes: `Select-Object`, `Select-String`.
 - **Toda configuração de branch protection passou por teste destrutivo.** (Etapa 1.5) PR proposital com CI falhando, confirmar bloqueio do merge — antes de declarar concluída.
 
@@ -146,6 +145,10 @@ Itens originalmente listados em "Hooks Markdown / docs" ou outras secoes, agora 
 - **baseline-on-migrate apenas em test/dev** (Sub-etapa 5.51). Implementado em `.claude/hooks/java-spring/baseline-on-migrate.ps1`, invocado via `.githooks/pre-commit` (orquestrador) no evento `pre-commit`. Age apenas em `application*.yml` staged em `src/main/resources/`. Permite `baseline-on-migrate: true` somente em `application-test.yml` e `application-dev.yml`. Modo fail. Licao 2.1: em producao, `baseline-on-migrate: true` faz o Flyway marcar todas as migrations existentes como ja executadas, resultando em tabelas faltando no schema real.
 
 - **Ordem Lombok antes de MapStruct em annotationProcessorPaths** (Sub-etapa 5.51). Implementado em `.claude/hooks/java-spring/lombok-mapstruct-order.ps1`, invocado via `.githooks/pre-commit` (orquestrador) no evento `pre-commit`. Age apenas quando `pom.xml` esta staged. Extrai o bloco `<annotationProcessorPaths>` e compara posicoes de `lombok` e `mapstruct-processor` via `.IndexOf()`. Bloqueia se `mapstruct-processor` aparece antes de `lombok`. Modo fail. Licao 1.4: MapStruct precisa dos metodos gerados pelo Lombok (getters, setters, builders) no momento do processamento -- ordem invertida quebra o build de forma nao-obvia.
+
+- **mvnw sem profile** (Sub-etapa 5.52). Implementado em `.claude/hooks/java-spring/mvnw-profile.ps1`, invocado via `.githooks/pre-commit` (orquestrador) no evento `pre-commit`. Hook age apenas se ha arquivos `.ps1` em `scripts/` no diff staged. Para cada arquivo, varre linhas em busca de `mvnw spring-boot:run` sem `-Dspring-boot.run.profiles=`. Licao 3.3.1: profile `default` nao tem datasource configurado, gerando `Failed to configure a DataSource`. Modo **fail**.
+
+- **mvnw bit de execucao no indice git** (Sub-etapa 5.52). Implementado em `.claude/hooks/java-spring/mvnw-executable.ps1`, invocado via `.githooks/pre-commit` (orquestrador) no evento `pre-commit`. Executa `git ls-files --stage mvnw` e valida que o modo e `100755`. Se `mvnw` nao esta no indice, hook e silencioso (exit 0). Licao 1.5: sem bit de execucao, CI Linux falha com `Permission denied`; localmente no Windows nao ha impacto. Modo **fail**.
 
 - **@Entity modificada com campo novo avisa sobre migration Flyway (modo warn)** (Sub-etapa 5.53). Implementado em `.claude/hooks/java-spring/entity-migration-modified.ps1`, invocado via `.githooks/pre-commit` (orquestrador) no evento `pre-commit`. Complementa o hook 4.7 (que cobre Entity nova/status A). Usa `git diff --cached -U0` para inspecionar linhas adicionadas em arquivos `.java` modificados (status M) que contenham `@Entity`. Dispara se alguma linha adicionada corresponde a campo novo: `private\s+\w`, `@Column`, `@Id` ou `@Embedded`. Modo **warn** (exit 0 sempre): falsos positivos possiveis em refactors de campos existentes; desenvolvedor decide se precisa de migration. Exibe AVISO amarelo listando arquivos suspeitos e orienta criacao de `ALTER TABLE ADD COLUMN` ou ignora se for refactor puro.
 
