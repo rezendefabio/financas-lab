@@ -171,6 +171,18 @@ Ativar a fábrica de fato: rodar features no Tier 2, configurar 3 routines Tier 
   reprocessamento foi disparado por mudanca de status com a nota
   `PR #N: reprocessado (mergeStateStatus mudou: <anterior> -> <atual>)`. PR aberto.
 
+- **5.56 -- hook next: artefatos de scaffold shadcn e AGENTS.md** (2026-05-15):
+  Cria `.claude/hooks/next/shadcn-artifacts.ps1` em modo **warn** com dois avisos.
+  **Aviso 1:** detecta `frontend/src/components/ui/button.tsx` no commit staged --
+  `npx shadcn@latest init --defaults` instala esse componente automaticamente; em
+  sub-etapas que proibem UI components sem revisao, sugerir remocao consciente.
+  **Aviso 2:** detecta `AGENTS.md` ou `CLAUDE.md` dentro de `frontend/` no commit staged
+  -- frameworks (Next.js, Vite, CRA) geram esses arquivos com instrucoes genericas de
+  training data; sugerir revisao e decisao consciente de manter/remover.
+  Registrado no orquestrador `.githooks/pre-commit.ps1`. Validacao destrutiva: 4 cenarios
+  A (button.tsx warn), B (AGENTS.md warn), C (CLAUDE.md raiz -- sem aviso), D (frontend
+  normal -- sem aviso) todos passaram com exit 0.
+
 - **5.55 -- hook windows: Write-Error seguido de exit em .ps1** (2026-05-15):
   Novo hook pre-commit no escopo `windows`. Detecta padrao `Write-Error` seguido de
   `exit N` em janela de 5 linhas em arquivos `.ps1` staged. Problema: `Write-Error`
