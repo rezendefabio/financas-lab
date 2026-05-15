@@ -90,9 +90,9 @@ A fábrica será considerada validada se, ao final do MVP:
 
 1. Existe uma esteira reprodutível de Camadas 1-4 documentada e funcional
 2. Pelo menos 60% das features finais foram implementadas em fluxo Tier 2 (gate humano no PR, não no commit)
-3. Pelo menos 3 routines/loops Tier 1 estão rodando com valor demonstrável
+3. Pelo menos 3 routines/loops Tier 1 estão rodando com valor demonstrável **(atingido na 5.31/5.32)**
 4. CI é confiável o suficiente para que green build = código mergeable sem segunda revisão manual
-5. Tempo entre "spec de feature pronta" e "PR aberto" caiu pelo menos 50% comparado ao baseline manual
+5. Tempo entre "spec de feature pronta" e "PR aberto" caiu pelo menos 50% comparado ao baseline manual — não medido formalmente; estimativa empírica: ~80% de redução para features Tier 2 (spec a PR em <30min vs ~3h manual)
 6. Houve pelo menos uma situação onde o desenvolvedor fechou o laptop com agentes trabalhando e voltou para revisar resultado — sem ansiedade
 
 ### Para o produto (propósito secundário)
@@ -120,6 +120,51 @@ O produto será considerado funcional se:
 - **MVP:** 6-8 semanas a partir da Camada 1 começar (não da Camada 0).
 - **Camada 0 (este momento):** 1-2 dias para consolidar documentos fundadores. Não mais.
 - **Reavaliação:** ao final do MVP, decidir se vale evoluir o produto ou se a fábrica está madura o suficiente para migrar para projeto de cliente.
+
+---
+
+## Validações externas — Boris Cherny (criador do Claude Code, maio/2026)
+
+> Registro de alinhamentos e insights colhidos de entrevista pública de Boris Cherny
+> (criador do Claude Code) na Sequoia em maio/2026. Não muda a visão — a confirma.
+
+### O que este projeto já faz que Boris valida como certo
+
+- **Loops/routines como padrão central:** Boris opera com "dezenas de loops rodando a
+  qualquer momento" — babysit-prs (CI + conflitos), watch-ci, daily-summary. Camada B
+  da fábrica valida essa direção.
+- **Execução paralela massiva (/batch):** Boris descreve 150 PRs num único dia via
+  agentes paralelos. `/batch` implementa exatamente esse padrão.
+- **"Process lead" > "technology lead":** Boris afirma que a vantagem real da Anthropic
+  não é tecnologia (modelo disponível para todos) mas mudança organizacional — estrutura,
+  processo, forma de trabalhar. Este projeto é exatamente esse experimento.
+- **Todo SQL escrito por modelos:** migration-writer já faz isso.
+- **Agentes que se auto-agendam:** ScheduleWakeup + `/loop` = o que Boris chama de
+  "routines server-side que sobrevivem ao fechamento do laptop".
+
+### O que Boris sugere que ainda não fizemos
+
+- **Feedback clustering loop:** Boris tem uma routine que agrega feedback do Twitter
+  a cada 30 minutos e clusters para ele. Equivalente: loop que agrega comentários de
+  PR, sugestões de review e anotações de progresso em resumo semanal da fábrica.
+- **Métricas de fábrica capturadas automaticamente:** Boris monitora PRs/dia como
+  métrica. Nossa fábrica não captura sistematicamente: tempo spec→PR, taxa de aprovação
+  na primeira revisão, bloqueadores por executor. Candidato a Tier 1 routine.
+- **Comunicação entre agentes via Slack/MCP:** Boris descreve Claudes de membros
+  diferentes do time comunicando sobre Slack para resolver incertezas entre si. Exige
+  MCP Slack — fora do escopo atual, mas direção futura.
+
+### Insights sobre o futuro do modelo (para o blueprint)
+
+- **"A harness fica menos importante conforme o modelo melhora."** Safety mechanisms
+  como prompt injection, static verification, human-in-the-loop vão diminuir de
+  importância. O que não muda: arquitetura de feedback, loops e paralelismo.
+- **"Coding will be democratized like literacy."** O accountant escreverá o software
+  contábil melhor que o engenheiro, porque conhece o domínio. Implicação para o
+  blueprint: o artefato mais valioso é o modelo operacional, não o código.
+- **Stack on-distribution importa (hoje) menos que antes.** Em 2024 escolher TypeScript/React
+  era crucial para performance do modelo. Em 2026 com Opus 4.7, o modelo escreve qualquer
+  stack. A escolha de Java/Spring/Next.js continua válida por outras razões (robustez, DDD).
 
 ---
 
