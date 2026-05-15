@@ -15,12 +15,16 @@ import com.laboratorio.financas.shared.AbstractIntegrationTest;
 import com.laboratorio.financas.shared.domain.Money;
 import com.laboratorio.financas.shared.infrastructure.persistence.MoneyEmbeddable;
 import com.laboratorio.financas.transacao.domain.FiltrosTransacao;
+import com.laboratorio.financas.transacao.domain.StatusTransacao;
 import com.laboratorio.financas.transacao.domain.Transacao;
 import com.laboratorio.financas.transacao.domain.TipoTransacao;
 import com.laboratorio.financas.transacao.domain.TotaisTransacaoPorConta;
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.Currency;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
@@ -73,14 +77,26 @@ class TransacaoRepositoryImplTest extends AbstractIntegrationTest {
         return cat.getId();
     }
 
+    private Transacao novaReceita(UUID contaId, UUID categoriaId) {
+        return new Transacao(
+                TipoTransacao.RECEITA, VALOR_100, HOJE, "Salario", contaId,
+                categoriaId, null, StatusTransacao.CLEARED, null, List.of()
+        );
+    }
+
+    private Transacao novaDespesa(UUID contaId) {
+        return new Transacao(
+                TipoTransacao.DESPESA, VALOR_100, HOJE, "Mercado", contaId,
+                null, null, StatusTransacao.CLEARED, null, List.of()
+        );
+    }
+
     @Test
     void salvarERecuperarReceitaPreservaTodosOsCampos() {
         // Given
         UUID contaId = criarContaPersistida();
         UUID categoriaId = criarCategoriaPersistida(TipoCategoria.RECEITA);
-        Transacao nova = new Transacao(
-                TipoTransacao.RECEITA, VALOR_100, HOJE, "Salario", contaId, null, categoriaId
-        );
+        Transacao nova = novaReceita(contaId, categoriaId);
 
         // When
         Transacao salva = repository.salvar(nova);
@@ -95,8 +111,9 @@ class TransacaoRepositoryImplTest extends AbstractIntegrationTest {
         assertThat(t.getData()).isEqualTo(HOJE);
         assertThat(t.getDescricao()).isEqualTo("Salario");
         assertThat(t.getContaId()).isEqualTo(contaId);
-        assertThat(t.getContaDestinoId()).isNull();
         assertThat(t.getCategoriaId()).isEqualTo(categoriaId);
+        assertThat(t.getStatus()).isEqualTo(StatusTransacao.CLEARED);
+        assertThat(t.isDeleted()).isFalse();
     }
 
     @Test
@@ -105,7 +122,8 @@ class TransacaoRepositoryImplTest extends AbstractIntegrationTest {
         UUID contaId = criarContaPersistida();
         Money valorDecimal = new Money(new BigDecimal("49.99"), BRL);
         Transacao nova = new Transacao(
-                TipoTransacao.DESPESA, valorDecimal, HOJE, "Mercado", contaId, null, null
+                TipoTransacao.DESPESA, valorDecimal, HOJE, "Mercado", contaId,
+                null, null, StatusTransacao.CLEARED, null, List.of()
         );
 
         // When
@@ -118,32 +136,13 @@ class TransacaoRepositoryImplTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void salvarERecuperarTransferenciaComContaDestinoPreservada() {
-        // Given
-        UUID contaOrigemId = criarContaPersistida();
-        UUID contaDestinoId = criarContaPersistida();
-        Transacao nova = new Transacao(
-                TipoTransacao.TRANSFERENCIA, VALOR_100, HOJE, "TED",
-                contaOrigemId, contaDestinoId, null
-        );
-
-        // When
-        repository.salvar(nova);
-        Optional<Transacao> recuperada = repository.buscarPorId(nova.getId());
-
-        // Then
-        assertThat(recuperada).isPresent();
-        assertThat(recuperada.get().getContaDestinoId()).isEqualTo(contaDestinoId);
-        assertThat(recuperada.get().getCategoriaId()).isNull();
-    }
-
-    @Test
     void salvarERecuperarLocalDateSemTimezoneShift() {
         // Given
         UUID contaId = criarContaPersistida();
         LocalDate dataEspecifica = LocalDate.of(2026, 1, 15);
         Transacao nova = new Transacao(
-                TipoTransacao.RECEITA, VALOR_100, dataEspecifica, "Bonus", contaId, null, null
+                TipoTransacao.RECEITA, VALOR_100, dataEspecifica, "Bonus", contaId,
+                null, null, StatusTransacao.CLEARED, null, List.of()
         );
 
         // When
@@ -161,7 +160,8 @@ class TransacaoRepositoryImplTest extends AbstractIntegrationTest {
         UUID contaId = criarContaPersistida();
         String descricao200 = "X".repeat(200);
         Transacao nova = new Transacao(
-                TipoTransacao.RECEITA, VALOR_100, HOJE, descricao200, contaId, null, null
+                TipoTransacao.RECEITA, VALOR_100, HOJE, descricao200, contaId,
+                null, null, StatusTransacao.CLEARED, null, List.of()
         );
 
         // When
@@ -186,16 +186,14 @@ class TransacaoRepositoryImplTest extends AbstractIntegrationTest {
     void deletarRemoveDosBanco() {
         // Given
         UUID contaId = criarContaPersistida();
-        Transacao nova = new Transacao(
-                TipoTransacao.RECEITA, VALOR_100, HOJE, "Salario", contaId, null, null
-        );
+        Transacao nova = novaReceita(contaId, null);
         repository.salvar(nova);
 
         // When
         repository.deletar(nova.getId());
 
         // Then
-        assertThat(repository.buscarPorId(nova.getId())).isEmpty();
+        assertThat(jpaRepository.findById(nova.getId())).isEmpty();
     }
 
     @Test
@@ -205,9 +203,94 @@ class TransacaoRepositoryImplTest extends AbstractIntegrationTest {
         // se chegar aqui sem excecao, o comportamento esta correto
     }
 
+    // --- Soft delete ---
+
+    @Test
+    void softDeleteMarcaDeletedAtETransacaoSumeDaBusca() {
+        // Given
+        UUID contaId = criarContaPersistida();
+        Transacao nova = novaReceita(contaId, null);
+        repository.salvar(nova);
+
+        // When
+        repository.softDelete(nova.getId());
+
+        // Then -- buscarPorId filtra deleted_at IS NULL
+        assertThat(repository.buscarPorId(nova.getId())).isEmpty();
+        // Registro ainda existe fisicamente no banco
+        assertThat(jpaRepository.findById(nova.getId())).isPresent();
+        assertThat(jpaRepository.findById(nova.getId()).get().getDeletedAt()).isNotNull();
+    }
+
+    @Test
+    void softDeleteNaoAparecaNaListagem() {
+        // Given
+        UUID contaId = criarContaPersistida();
+        Transacao t1 = novaReceita(contaId, null);
+        Transacao t2 = novaDespesa(contaId);
+        repository.salvar(t1);
+        repository.salvar(t2);
+
+        // When
+        repository.softDelete(t1.getId());
+
+        // Then -- listagem deve excluir deletadas
+        FiltrosTransacao filtros = new FiltrosTransacao(null, null, null, null, null);
+        Page<Transacao> resultado = repository.listarComFiltros(filtros, PageRequest.of(0, 10));
+
+        assertThat(resultado.getTotalElements()).isEqualTo(1);
+        assertThat(resultado.getContent().get(0).getId()).isEqualTo(t2.getId());
+    }
+
+    // --- Par de transferencia ---
+
+    @Test
+    void salvarParTransferenciaERecuperarPorGroupId() {
+        // Given
+        UUID contaOrigemId = criarContaPersistida();
+        UUID contaDestinoId = criarContaPersistida();
+
+        Transacao.TransferenciaPar par = Transacao.criarParTransferencia(
+                null, VALOR_100, contaOrigemId, contaDestinoId, HOJE, "TED", null
+        );
+        repository.salvar(par.despesa());
+        repository.salvar(par.receita());
+
+        // When
+        List<Transacao> grupo = repository.findByTransferGroupId(par.despesa().getTransferGroupId());
+
+        // Then
+        assertThat(grupo).hasSize(2);
+        assertThat(grupo.stream().map(Transacao::getId))
+                .containsExactlyInAnyOrder(par.despesa().getId(), par.receita().getId());
+    }
+
+    @Test
+    void parTransferenciaTransferPairIdCruzado() {
+        // Given
+        UUID contaOrigemId = criarContaPersistida();
+        UUID contaDestinoId = criarContaPersistida();
+
+        Transacao.TransferenciaPar par = Transacao.criarParTransferencia(
+                null, VALOR_100, contaOrigemId, contaDestinoId, HOJE, "TED", null
+        );
+        repository.salvar(par.despesa());
+        repository.salvar(par.receita());
+
+        // When
+        Optional<Transacao> despesaRecuperada = repository.buscarPorId(par.despesa().getId());
+        Optional<Transacao> receitaRecuperada = repository.buscarPorId(par.receita().getId());
+
+        // Then
+        assertThat(despesaRecuperada).isPresent();
+        assertThat(receitaRecuperada).isPresent();
+        assertThat(despesaRecuperada.get().getTransferPairId()).isEqualTo(par.receita().getId());
+        assertThat(receitaRecuperada.get().getTransferPairId()).isEqualTo(par.despesa().getId());
+    }
+
     @Test
     void salvarViolaFkQuandoContaIdNaoExiste() {
-        // Given — TransacaoEntity criada diretamente, bypassando domain validation
+        // Given -- TransacaoEntity criada diretamente, bypassando domain validation
         UUID contaInexistente = UUID.randomUUID();
         TransacaoEntity entityInvalida = new TransacaoEntity(
                 UUID.randomUUID(),
@@ -217,19 +300,25 @@ class TransacaoRepositoryImplTest extends AbstractIntegrationTest {
                 "Teste FK",
                 contaInexistente,
                 null,
+                Instant.now(),
+                Instant.now(),
                 null,
-                java.time.Instant.now(),
-                java.time.Instant.now()
+                StatusTransacao.CLEARED,
+                null,
+                null,
+                null,
+                null,
+                new HashSet<>()
         );
 
-        // Then — banco rejeita violacao de FK (defesa em profundidade)
+        // Then -- banco rejeita violacao de FK (defesa em profundidade)
         assertThatThrownBy(() -> jpaRepository.saveAndFlush(entityInvalida))
                 .isInstanceOf(DataIntegrityViolationException.class);
     }
 
     @Test
     void salvarViolaCheckConstraintQuandoValorNegativo() {
-        // Given — TransacaoEntity criada diretamente com valor negativo, bypassando domain validation
+        // Given -- TransacaoEntity criada diretamente com valor negativo, bypassando domain validation
         UUID contaId = criarContaPersistida();
         TransacaoEntity entityInvalida = new TransacaoEntity(
                 UUID.randomUUID(),
@@ -239,12 +328,18 @@ class TransacaoRepositoryImplTest extends AbstractIntegrationTest {
                 "Teste CHECK",
                 contaId,
                 null,
+                Instant.now(),
+                Instant.now(),
                 null,
-                java.time.Instant.now(),
-                java.time.Instant.now()
+                StatusTransacao.CLEARED,
+                null,
+                null,
+                null,
+                null,
+                new HashSet<>()
         );
 
-        // Then — banco rejeita violacao de CHECK constraint (defesa em profundidade)
+        // Then -- banco rejeita violacao de CHECK constraint (defesa em profundidade)
         assertThatThrownBy(() -> jpaRepository.saveAndFlush(entityInvalida))
                 .isInstanceOf(DataIntegrityViolationException.class);
     }
@@ -259,11 +354,14 @@ class TransacaoRepositoryImplTest extends AbstractIntegrationTest {
         UUID categoriaDespesa = criarCategoriaPersistida(TipoCategoria.DESPESA);
 
         repository.salvar(new Transacao(
-                TipoTransacao.RECEITA, new Money(new BigDecimal("500.00"), BRL), HOJE, "Salario", contaId, null, categoriaReceita));
+                TipoTransacao.RECEITA, new Money(new BigDecimal("500.00"), BRL), HOJE, "Salario", contaId,
+                categoriaReceita, null, StatusTransacao.CLEARED, null, List.of()));
         repository.salvar(new Transacao(
-                TipoTransacao.RECEITA, new Money(new BigDecimal("200.00"), BRL), HOJE, "Freelance", contaId, null, categoriaReceita));
+                TipoTransacao.RECEITA, new Money(new BigDecimal("200.00"), BRL), HOJE, "Freelance", contaId,
+                categoriaReceita, null, StatusTransacao.CLEARED, null, List.of()));
         repository.salvar(new Transacao(
-                TipoTransacao.DESPESA, new Money(new BigDecimal("150.00"), BRL), HOJE, "Aluguel", contaId, null, categoriaDespesa));
+                TipoTransacao.DESPESA, new Money(new BigDecimal("150.00"), BRL), HOJE, "Aluguel", contaId,
+                categoriaDespesa, null, StatusTransacao.CLEARED, null, List.of()));
 
         // When
         TotaisTransacaoPorConta totais = repository.calcularTotaisPorConta(contaId);
@@ -283,38 +381,12 @@ class TransacaoRepositoryImplTest extends AbstractIntegrationTest {
         // When
         TotaisTransacaoPorConta totais = repository.calcularTotaisPorConta(contaId);
 
-        // Then — Hibernate com agregacao sem GROUP BY retorna linha com zeros (COALESCE), nunca null
+        // Then
         assertThat(totais).isNotNull();
         assertThat(totais.totalReceitas()).isEqualByComparingTo(BigDecimal.ZERO);
         assertThat(totais.totalDespesas()).isEqualByComparingTo(BigDecimal.ZERO);
         assertThat(totais.totalTransferenciasEnviadas()).isEqualByComparingTo(BigDecimal.ZERO);
         assertThat(totais.totalTransferenciasRecebidas()).isEqualByComparingTo(BigDecimal.ZERO);
-    }
-
-    @Test
-    void calcularTotaisContabilizaTransferenciaEnviadaERecebidaSeparadamente() {
-        // Given
-        UUID contaOrigemId = criarContaPersistida();
-        UUID contaDestinoId = criarContaPersistida();
-
-        repository.salvar(new Transacao(
-                TipoTransacao.TRANSFERENCIA, new Money(new BigDecimal("300.00"), BRL), HOJE, "TED", contaOrigemId, contaDestinoId, null));
-
-        // When — totais da conta de origem
-        TotaisTransacaoPorConta totaisOrigem = repository.calcularTotaisPorConta(contaOrigemId);
-
-        // Then
-        assertThat(totaisOrigem.totalTransferenciasEnviadas()).isEqualByComparingTo(new BigDecimal("300.00"));
-        assertThat(totaisOrigem.totalTransferenciasRecebidas()).isEqualByComparingTo(BigDecimal.ZERO);
-        assertThat(totaisOrigem.totalReceitas()).isEqualByComparingTo(BigDecimal.ZERO);
-        assertThat(totaisOrigem.totalDespesas()).isEqualByComparingTo(BigDecimal.ZERO);
-
-        // When — totais da conta de destino
-        TotaisTransacaoPorConta totaisDestino = repository.calcularTotaisPorConta(contaDestinoId);
-
-        // Then
-        assertThat(totaisDestino.totalTransferenciasRecebidas()).isEqualByComparingTo(new BigDecimal("300.00"));
-        assertThat(totaisDestino.totalTransferenciasEnviadas()).isEqualByComparingTo(BigDecimal.ZERO);
     }
 
     @Test
@@ -325,15 +397,32 @@ class TransacaoRepositoryImplTest extends AbstractIntegrationTest {
         UUID categoriaId = criarCategoriaPersistida(TipoCategoria.RECEITA);
 
         repository.salvar(new Transacao(
-                TipoTransacao.RECEITA, new Money(new BigDecimal("1000.00"), BRL), HOJE, "Receita alvo", contaAlvoId, null, categoriaId));
+                TipoTransacao.RECEITA, new Money(new BigDecimal("1000.00"), BRL), HOJE, "Receita alvo", contaAlvoId,
+                categoriaId, null, StatusTransacao.CLEARED, null, List.of()));
         repository.salvar(new Transacao(
-                TipoTransacao.RECEITA, new Money(new BigDecimal("9999.00"), BRL), HOJE, "Receita outra", outraContaId, null, categoriaId));
+                TipoTransacao.RECEITA, new Money(new BigDecimal("9999.00"), BRL), HOJE, "Receita outra", outraContaId,
+                categoriaId, null, StatusTransacao.CLEARED, null, List.of()));
 
         // When
         TotaisTransacaoPorConta totais = repository.calcularTotaisPorConta(contaAlvoId);
 
-        // Then — apenas transacoes da contaAlvo devem ser somadas
+        // Then
         assertThat(totais.totalReceitas()).isEqualByComparingTo(new BigDecimal("1000.00"));
+    }
+
+    @Test
+    void calcularTotaisNaoContaTrasacoesDeletedasSoftDeleted() {
+        // Given
+        UUID contaId = criarContaPersistida();
+        Transacao nova = novaReceita(contaId, null);
+        repository.salvar(nova);
+        repository.softDelete(nova.getId());
+
+        // When
+        TotaisTransacaoPorConta totais = repository.calcularTotaisPorConta(contaId);
+
+        // Then
+        assertThat(totais.totalReceitas()).isEqualByComparingTo(BigDecimal.ZERO);
     }
 
     // --- listarComFiltros ---
@@ -344,8 +433,8 @@ class TransacaoRepositoryImplTest extends AbstractIntegrationTest {
         UUID contaId = criarContaPersistida();
         UUID categoriaId = criarCategoriaPersistida(TipoCategoria.RECEITA);
 
-        repository.salvar(new Transacao(TipoTransacao.RECEITA, VALOR_100, HOJE, "T1", contaId, null, categoriaId));
-        repository.salvar(new Transacao(TipoTransacao.DESPESA, VALOR_100, HOJE, "T2", contaId, null, null));
+        repository.salvar(novaReceita(contaId, categoriaId));
+        repository.salvar(novaDespesa(contaId));
 
         FiltrosTransacao filtros = new FiltrosTransacao(null, null, null, null, null);
 
@@ -363,8 +452,12 @@ class TransacaoRepositoryImplTest extends AbstractIntegrationTest {
         UUID outraContaId = criarContaPersistida();
         UUID categoriaId = criarCategoriaPersistida(TipoCategoria.RECEITA);
 
-        repository.salvar(new Transacao(TipoTransacao.RECEITA, VALOR_100, HOJE, "Alvo", contaAlvoId, null, categoriaId));
-        repository.salvar(new Transacao(TipoTransacao.RECEITA, VALOR_100, HOJE, "Outra", outraContaId, null, categoriaId));
+        repository.salvar(new Transacao(
+                TipoTransacao.RECEITA, VALOR_100, HOJE, "Alvo", contaAlvoId,
+                categoriaId, null, StatusTransacao.CLEARED, null, List.of()));
+        repository.salvar(new Transacao(
+                TipoTransacao.RECEITA, VALOR_100, HOJE, "Outra", outraContaId,
+                categoriaId, null, StatusTransacao.CLEARED, null, List.of()));
 
         FiltrosTransacao filtros = new FiltrosTransacao(contaAlvoId, null, null, null, null);
 
@@ -382,8 +475,8 @@ class TransacaoRepositoryImplTest extends AbstractIntegrationTest {
         UUID contaId = criarContaPersistida();
         UUID categoriaId = criarCategoriaPersistida(TipoCategoria.RECEITA);
 
-        repository.salvar(new Transacao(TipoTransacao.RECEITA, VALOR_100, HOJE, "Receita", contaId, null, categoriaId));
-        repository.salvar(new Transacao(TipoTransacao.DESPESA, VALOR_100, HOJE, "Despesa", contaId, null, null));
+        repository.salvar(novaReceita(contaId, categoriaId));
+        repository.salvar(novaDespesa(contaId));
 
         FiltrosTransacao filtros = new FiltrosTransacao(null, null, null, TipoTransacao.RECEITA, null);
 
@@ -403,8 +496,10 @@ class TransacaoRepositoryImplTest extends AbstractIntegrationTest {
         LocalDate dataRecente = LocalDate.of(2026, 5, 10);
         UUID categoriaId = criarCategoriaPersistida(TipoCategoria.RECEITA);
 
-        repository.salvar(new Transacao(TipoTransacao.RECEITA, VALOR_100, dataPassada, "Janeiro", contaId, null, categoriaId));
-        repository.salvar(new Transacao(TipoTransacao.RECEITA, VALOR_100, dataRecente, "Maio", contaId, null, categoriaId));
+        repository.salvar(new Transacao(TipoTransacao.RECEITA, VALOR_100, dataPassada, "Janeiro", contaId,
+                categoriaId, null, StatusTransacao.CLEARED, null, List.of()));
+        repository.salvar(new Transacao(TipoTransacao.RECEITA, VALOR_100, dataRecente, "Maio", contaId,
+                categoriaId, null, StatusTransacao.CLEARED, null, List.of()));
 
         FiltrosTransacao filtros = new FiltrosTransacao(null, LocalDate.of(2026, 5, 1), LocalDate.of(2026, 5, 31), null, null);
 
@@ -423,8 +518,10 @@ class TransacaoRepositoryImplTest extends AbstractIntegrationTest {
         UUID categoriaAlvoId = criarCategoriaPersistida(TipoCategoria.RECEITA);
         UUID outraCategoriaId = criarCategoriaPersistida(TipoCategoria.RECEITA);
 
-        repository.salvar(new Transacao(TipoTransacao.RECEITA, VALOR_100, HOJE, "Com categoria alvo", contaId, null, categoriaAlvoId));
-        repository.salvar(new Transacao(TipoTransacao.RECEITA, VALOR_100, HOJE, "Com outra categoria", contaId, null, outraCategoriaId));
+        repository.salvar(new Transacao(TipoTransacao.RECEITA, VALOR_100, HOJE, "Com categoria alvo", contaId,
+                categoriaAlvoId, null, StatusTransacao.CLEARED, null, List.of()));
+        repository.salvar(new Transacao(TipoTransacao.RECEITA, VALOR_100, HOJE, "Com outra categoria", contaId,
+                outraCategoriaId, null, StatusTransacao.CLEARED, null, List.of()));
 
         FiltrosTransacao filtros = new FiltrosTransacao(null, null, null, null, categoriaAlvoId);
 
@@ -443,7 +540,8 @@ class TransacaoRepositoryImplTest extends AbstractIntegrationTest {
         UUID categoriaId = criarCategoriaPersistida(TipoCategoria.RECEITA);
 
         for (int i = 1; i <= 5; i++) {
-            repository.salvar(new Transacao(TipoTransacao.RECEITA, VALOR_100, HOJE, "T" + i, contaId, null, categoriaId));
+            repository.salvar(new Transacao(TipoTransacao.RECEITA, VALOR_100, HOJE, "T" + i, contaId,
+                    categoriaId, null, StatusTransacao.CLEARED, null, List.of()));
         }
 
         FiltrosTransacao filtros = new FiltrosTransacao(null, null, null, null, null);
@@ -460,19 +558,21 @@ class TransacaoRepositoryImplTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void listarComFiltrosTransferenciaApareceComotransferenciaDaContaOrigem() {
-        // Given — transferencia deve aparecer quando filtrado pela conta origem OU destino
-        UUID contaOrigemId = criarContaPersistida();
-        UUID contaDestinoId = criarContaPersistida();
+    void listarNaoRetornaTransacoesSoftDeleted() {
+        // Given
+        UUID contaId = criarContaPersistida();
+        Transacao t1 = novaReceita(contaId, null);
+        Transacao t2 = novaDespesa(contaId);
+        repository.salvar(t1);
+        repository.salvar(t2);
+        repository.softDelete(t1.getId());
 
-        repository.salvar(new Transacao(TipoTransacao.TRANSFERENCIA, VALOR_100, HOJE, "TED", contaOrigemId, contaDestinoId, null));
+        FiltrosTransacao filtros = new FiltrosTransacao(null, null, null, null, null);
 
-        // When — filtrando pela conta destino
-        FiltrosTransacao filtrosDestino = new FiltrosTransacao(contaDestinoId, null, null, null, null);
-        Page<Transacao> resultadoDestino = repository.listarComFiltros(filtrosDestino, PageRequest.of(0, 10));
+        // When
+        Page<Transacao> resultado = repository.listarComFiltros(filtros, PageRequest.of(0, 10));
 
         // Then
-        assertThat(resultadoDestino.getTotalElements()).isEqualTo(1);
-        assertThat(resultadoDestino.getContent().get(0).getContaDestinoId()).isEqualTo(contaDestinoId);
+        assertThat(resultado.getTotalElements()).isEqualTo(1);
     }
 }

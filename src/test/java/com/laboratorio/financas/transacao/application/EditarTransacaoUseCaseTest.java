@@ -12,6 +12,7 @@ import com.laboratorio.financas.conta.domain.Conta;
 import com.laboratorio.financas.conta.domain.ContaRepository;
 import com.laboratorio.financas.conta.domain.TipoConta;
 import com.laboratorio.financas.shared.domain.Money;
+import com.laboratorio.financas.transacao.domain.StatusTransacao;
 import com.laboratorio.financas.transacao.domain.Transacao;
 import com.laboratorio.financas.transacao.domain.TransacaoComReferenciaInvalidaException;
 import com.laboratorio.financas.transacao.domain.TransacaoNaoEncontradaException;
@@ -21,6 +22,7 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.Currency;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -58,9 +60,15 @@ class EditarTransacaoUseCaseTest {
                 "Salario antigo",
                 contaId,
                 null,
-                null,
                 Instant.parse("2025-01-01T10:00:00Z"),
-                null
+                null,
+                null,
+                StatusTransacao.CLEARED,
+                null,
+                null,
+                null,
+                null,
+                List.of()
         );
     }
 
@@ -72,16 +80,10 @@ class EditarTransacaoUseCaseTest {
         Conta conta = contaValida();
         Transacao existente = transacaoExistente(id, contaId);
         Transacao atualizada = new Transacao(
-                id,
-                TipoTransacao.RECEITA,
-                new Money(BigDecimal.valueOf(150), BRL),
-                DATA,
-                "Salario atualizado",
-                contaId,
-                null,
-                null,
-                existente.getCriadoEm(),
-                Instant.now()
+                id, TipoTransacao.RECEITA, new Money(BigDecimal.valueOf(150), BRL),
+                DATA, "Salario atualizado", contaId, null,
+                existente.getCriadoEm(), Instant.now(),
+                null, StatusTransacao.CLEARED, null, null, null, null, List.of()
         );
         when(transacaoRepository.buscarPorId(id)).thenReturn(Optional.of(existente));
         when(contaRepository.buscarPorId(contaId)).thenReturn(Optional.of(conta));
@@ -89,7 +91,8 @@ class EditarTransacaoUseCaseTest {
 
         CriarTransacaoUseCase.Comando comando = new CriarTransacaoUseCase.Comando(
                 TipoTransacao.RECEITA, BigDecimal.valueOf(150), "BRL",
-                DATA, "Salario atualizado", contaId, null, null
+                DATA, "Salario atualizado", contaId, null, null,
+                null, StatusTransacao.CLEARED, null, List.of()
         );
 
         // When
@@ -109,7 +112,8 @@ class EditarTransacaoUseCaseTest {
 
         CriarTransacaoUseCase.Comando comando = new CriarTransacaoUseCase.Comando(
                 TipoTransacao.RECEITA, BigDecimal.valueOf(100), "BRL",
-                DATA, "Salario", contaId, null, null
+                DATA, "Salario", contaId, null, null,
+                null, StatusTransacao.CLEARED, null, List.of()
         );
 
         // When / Then
@@ -132,7 +136,8 @@ class EditarTransacaoUseCaseTest {
 
         CriarTransacaoUseCase.Comando comando = new CriarTransacaoUseCase.Comando(
                 TipoTransacao.RECEITA, BigDecimal.valueOf(100), "BRL",
-                DATA, "Salario", contaId, null, null
+                DATA, "Salario", contaId, null, null,
+                null, StatusTransacao.CLEARED, null, List.of()
         );
 
         // When / Then
@@ -153,16 +158,10 @@ class EditarTransacaoUseCaseTest {
         Conta conta = contaValida();
         Instant criadoEmOriginal = Instant.parse("2025-01-01T10:00:00Z");
         Transacao existente = new Transacao(
-                id,
-                TipoTransacao.RECEITA,
-                new Money(BigDecimal.valueOf(100), BRL),
-                DATA,
-                "Salario",
-                contaId,
-                null,
-                null,
-                criadoEmOriginal,
-                null
+                id, TipoTransacao.RECEITA, new Money(BigDecimal.valueOf(100), BRL),
+                DATA, "Salario", contaId, null,
+                criadoEmOriginal, null,
+                null, StatusTransacao.CLEARED, null, null, null, null, List.of()
         );
         when(transacaoRepository.buscarPorId(id)).thenReturn(Optional.of(existente));
         when(contaRepository.buscarPorId(contaId)).thenReturn(Optional.of(conta));
@@ -170,7 +169,8 @@ class EditarTransacaoUseCaseTest {
 
         CriarTransacaoUseCase.Comando comando = new CriarTransacaoUseCase.Comando(
                 TipoTransacao.RECEITA, BigDecimal.valueOf(200), "BRL",
-                DATA, "Salario editado", contaId, null, null
+                DATA, "Salario editado", contaId, null, null,
+                null, StatusTransacao.CLEARED, null, List.of()
         );
 
         // When
@@ -189,7 +189,8 @@ class EditarTransacaoUseCaseTest {
 
         CriarTransacaoUseCase.Comando comando = new CriarTransacaoUseCase.Comando(
                 TipoTransacao.RECEITA, BigDecimal.valueOf(100), "BRL",
-                DATA, "Salario", contaId, null, null
+                DATA, "Salario", contaId, null, null,
+                null, StatusTransacao.CLEARED, null, List.of()
         );
 
         // When
@@ -204,57 +205,20 @@ class EditarTransacaoUseCaseTest {
     }
 
     @Test
-    void executarPermiteAlterarTipoParaTransferencia() {
-        // Given
-        UUID id = UUID.randomUUID();
-        UUID contaId = UUID.randomUUID();
-        UUID contaDestinoId = UUID.randomUUID();
-        Conta conta = contaValida();
-        Transacao existente = transacaoExistente(id, contaId);
-        Transacao atualizada = new Transacao(
-                id,
-                TipoTransacao.TRANSFERENCIA,
-                new Money(BigDecimal.valueOf(100), BRL),
-                DATA,
-                "Mudou para transferencia",
-                contaId,
-                contaDestinoId,
-                null,
-                existente.getCriadoEm(),
-                Instant.now()
-        );
-        when(transacaoRepository.buscarPorId(id)).thenReturn(Optional.of(existente));
-        when(contaRepository.buscarPorId(contaId)).thenReturn(Optional.of(conta));
-        when(contaRepository.buscarPorId(contaDestinoId)).thenReturn(Optional.of(conta));
-        when(transacaoRepository.salvar(any(Transacao.class))).thenReturn(atualizada);
-
-        CriarTransacaoUseCase.Comando comando = new CriarTransacaoUseCase.Comando(
-                TipoTransacao.TRANSFERENCIA, BigDecimal.valueOf(100), "BRL",
-                DATA, "Mudou para transferencia", contaId, contaDestinoId, null
-        );
-
-        // When
-        Transacao resultado = useCase.executar(id, comando);
-
-        // Then
-        assertThat(resultado.getTipo()).isEqualTo(TipoTransacao.TRANSFERENCIA);
-    }
-
-    @Test
     void executarChamaRepositorioBuscarPorIdUmaVez() {
         // Given
         UUID id = UUID.randomUUID();
         UUID contaId = UUID.randomUUID();
         Conta conta = contaValida();
         Transacao existente = transacaoExistente(id, contaId);
-        Transacao atualizada = transacaoExistente(id, contaId);
         when(transacaoRepository.buscarPorId(id)).thenReturn(Optional.of(existente));
         when(contaRepository.buscarPorId(contaId)).thenReturn(Optional.of(conta));
-        when(transacaoRepository.salvar(any(Transacao.class))).thenReturn(atualizada);
+        when(transacaoRepository.salvar(any(Transacao.class))).thenReturn(existente);
 
         CriarTransacaoUseCase.Comando comando = new CriarTransacaoUseCase.Comando(
                 TipoTransacao.RECEITA, BigDecimal.valueOf(100), "BRL",
-                DATA, "Salario", contaId, null, null
+                DATA, "Salario", contaId, null, null,
+                null, StatusTransacao.CLEARED, null, List.of()
         );
 
         // When
@@ -277,8 +241,9 @@ class EditarTransacaoUseCaseTest {
         when(contaRepository.buscarPorId(contaDestinoId)).thenReturn(Optional.empty());
 
         CriarTransacaoUseCase.Comando comando = new CriarTransacaoUseCase.Comando(
-                TipoTransacao.TRANSFERENCIA, BigDecimal.valueOf(100), "BRL",
-                DATA, "Transferencia", contaId, contaDestinoId, null
+                TipoTransacao.RECEITA, BigDecimal.valueOf(100), "BRL",
+                DATA, "Salario", contaId, contaDestinoId, null,
+                null, StatusTransacao.CLEARED, null, List.of()
         );
 
         // When / Then

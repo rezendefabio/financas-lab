@@ -181,6 +181,8 @@ class CalcularProgressoDoOrcamentoUseCaseTest {
 
     private Transacao despesa(BigDecimal valor, UUID categoriaId) {
         return new Transacao(TipoTransacao.DESPESA, new Money(valor, BRL), MES,
-                "despesa teste", UUID.randomUUID(), null, categoriaId);
+                "despesa teste", UUID.randomUUID(), categoriaId, null,
+                com.laboratorio.financas.transacao.domain.StatusTransacao.CLEARED, null,
+                java.util.List.of());
     }
 }

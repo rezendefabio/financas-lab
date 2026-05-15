@@ -7,6 +7,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.laboratorio.financas.shared.domain.Money;
+import com.laboratorio.financas.transacao.domain.StatusTransacao;
 import com.laboratorio.financas.transacao.domain.Transacao;
 import com.laboratorio.financas.transacao.domain.TransacaoNaoEncontradaException;
 import com.laboratorio.financas.transacao.domain.TransacaoRepository;
@@ -14,6 +15,7 @@ import com.laboratorio.financas.transacao.domain.TipoTransacao;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.Currency;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -33,19 +35,26 @@ class BuscarTransacaoPorIdUseCaseTest {
         useCase = new BuscarTransacaoPorIdUseCase(repository);
     }
 
-    @Test
-    void executarRetornaTransacaoQuandoExiste() {
-        // Given
-        UUID id = UUID.randomUUID();
-        Transacao transacao = new Transacao(
+    private Transacao transacaoReceita() {
+        return new Transacao(
                 TipoTransacao.RECEITA,
                 new Money(BigDecimal.valueOf(100), BRL),
                 LocalDate.of(2025, 1, 15),
                 "Salario",
                 UUID.randomUUID(),
                 null,
-                null
+                null,
+                StatusTransacao.CLEARED,
+                null,
+                List.of()
         );
+    }
+
+    @Test
+    void executarRetornaTransacaoQuandoExiste() {
+        // Given
+        UUID id = UUID.randomUUID();
+        Transacao transacao = transacaoReceita();
         when(repository.buscarPorId(id)).thenReturn(Optional.of(transacao));
 
         // When
@@ -81,7 +90,10 @@ class BuscarTransacaoPorIdUseCaseTest {
                 "Mercado",
                 UUID.randomUUID(),
                 null,
-                null
+                null,
+                StatusTransacao.CLEARED,
+                null,
+                List.of()
         );
         when(repository.buscarPorId(id)).thenReturn(Optional.of(transacao));
 

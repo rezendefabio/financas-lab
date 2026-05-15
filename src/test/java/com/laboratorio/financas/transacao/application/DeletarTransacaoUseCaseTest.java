@@ -1,11 +1,13 @@
 package com.laboratorio.financas.transacao.application;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.laboratorio.financas.shared.domain.Money;
+import com.laboratorio.financas.transacao.domain.StatusTransacao;
 import com.laboratorio.financas.transacao.domain.Transacao;
 import com.laboratorio.financas.transacao.domain.TransacaoNaoEncontradaException;
 import com.laboratorio.financas.transacao.domain.TransacaoRepository;
@@ -13,6 +15,7 @@ import com.laboratorio.financas.transacao.domain.TipoTransacao;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.Currency;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -40,12 +43,15 @@ class DeletarTransacaoUseCaseTest {
                 "Salario",
                 contaId,
                 null,
-                null
+                null,
+                StatusTransacao.CLEARED,
+                null,
+                List.of()
         );
     }
 
     @Test
-    void executarCaminhoFelizChamaRepositorioDeletar() {
+    void executarCaminhoFelizChamaRepositorioSoftDelete() {
         // Given
         UUID id = UUID.randomUUID();
         UUID contaId = UUID.randomUUID();
@@ -54,8 +60,9 @@ class DeletarTransacaoUseCaseTest {
         // When
         useCase.executar(id);
 
-        // Then
-        verify(repository, times(1)).deletar(id);
+        // Then -- soft delete, nao delete fisico
+        verify(repository, times(1)).softDelete(id);
+        verify(repository, never()).deletar(id);
     }
 
     @Test
@@ -70,7 +77,7 @@ class DeletarTransacaoUseCaseTest {
     }
 
     @Test
-    void executarNaoDeletaQuandoNaoEncontrada() {
+    void executarNaoFazSoftDeleteQuandoNaoEncontrada() {
         // Given
         UUID id = UUID.randomUUID();
         when(repository.buscarPorId(id)).thenReturn(Optional.empty());
@@ -83,7 +90,8 @@ class DeletarTransacaoUseCaseTest {
         }
 
         // Then
-        verify(repository, times(0)).deletar(id);
+        verify(repository, never()).softDelete(id);
+        verify(repository, never()).deletar(id);
     }
 
     @Test
