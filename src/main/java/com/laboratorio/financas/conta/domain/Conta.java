@@ -10,25 +10,36 @@ public final class Conta {
     private static final int NOME_MAX_LENGTH = 100;
 
     private final UUID id;
+    private final UUID userId;
     private final String nome;
     private final TipoConta tipo;
     private final Money saldoInicial;
+    private final Money saldoAtual;
+    private final Money limiteCredito;
+    private final Integer diaFechamento;
+    private final Integer diaVencimento;
     private final boolean ativa;
     private final Instant criadoEm;
     private final Instant atualizadoEm;
 
     /**
      * Construtor para criar nova Conta. Gera id, define ativa=true, criadoEm=atualizadoEm=now.
+     * saldoAtual e inicializado com o valor de saldoInicial.
      */
     public Conta(String nome, TipoConta tipo, Money saldoInicial) {
         this(
                 UUID.randomUUID(),
+                null,
                 nome,
                 tipo,
                 saldoInicial,
+                saldoInicial,
+                null,
+                null,
+                null,
                 true,
                 Instant.now(),
-                null  // atualizadoEm sera ajustado para criadoEm pelo construtor de reconstrucao
+                null
         );
     }
 
@@ -38,9 +49,14 @@ public final class Conta {
      */
     public Conta(
             UUID id,
+            UUID userId,
             String nome,
             TipoConta tipo,
             Money saldoInicial,
+            Money saldoAtual,
+            Money limiteCredito,
+            Integer diaFechamento,
+            Integer diaVencimento,
             boolean ativa,
             Instant criadoEm,
             Instant atualizadoEm
@@ -52,9 +68,14 @@ public final class Conta {
         validarNome(nome);
 
         this.id = id;
+        this.userId = userId;
         this.nome = nome.trim();
         this.tipo = tipo;
         this.saldoInicial = saldoInicial;
+        this.saldoAtual = (saldoAtual != null) ? saldoAtual : saldoInicial;
+        this.limiteCredito = limiteCredito;
+        this.diaFechamento = diaFechamento;
+        this.diaVencimento = diaVencimento;
         this.ativa = ativa;
         this.criadoEm = criadoEm;
         this.atualizadoEm = (atualizadoEm != null) ? atualizadoEm : criadoEm;
@@ -79,9 +100,14 @@ public final class Conta {
         }
         return new Conta(
                 this.id,
+                this.userId,
                 this.nome,
                 this.tipo,
                 this.saldoInicial,
+                this.saldoAtual,
+                this.limiteCredito,
+                this.diaFechamento,
+                this.diaVencimento,
                 false,
                 this.criadoEm,
                 Instant.now()
@@ -90,6 +116,10 @@ public final class Conta {
 
     public UUID getId() {
         return id;
+    }
+
+    public UUID getUserId() {
+        return userId;
     }
 
     public String getNome() {
@@ -102,6 +132,22 @@ public final class Conta {
 
     public Money getSaldoInicial() {
         return saldoInicial;
+    }
+
+    public Money getSaldoAtual() {
+        return saldoAtual;
+    }
+
+    public Money getLimiteCredito() {
+        return limiteCredito;
+    }
+
+    public Integer getDiaFechamento() {
+        return diaFechamento;
+    }
+
+    public Integer getDiaVencimento() {
+        return diaVencimento;
     }
 
     public boolean isAtiva() {

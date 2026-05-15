@@ -19,7 +19,7 @@ public class RegistrarUsuarioUseCase {
         this.passwordEncoder = passwordEncoder;
     }
 
-    public record Comando(String email, String senha) { }
+    public record Comando(String email, String senha, String name) { }
 
     @Transactional
     public Usuario executar(Comando comando) {
@@ -28,6 +28,17 @@ public class RegistrarUsuarioUseCase {
         }
         String hash = passwordEncoder.encode(comando.senha());
         Usuario usuario = new Usuario(comando.email(), hash);
+        if (comando.name() != null) {
+            usuario = new Usuario(
+                    usuario.getId(),
+                    usuario.getEmail(),
+                    usuario.getSenhaHash(),
+                    usuario.isAtivo(),
+                    usuario.getCriadoEm(),
+                    comando.name(),
+                    usuario.getUpdatedAt()
+            );
+        }
         return usuarioRepository.salvar(usuario);
     }
 }

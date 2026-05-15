@@ -31,8 +31,12 @@ class CalcularSaldoTotalUseCaseTest {
     }
 
     private Conta contaFake(UUID id) {
-        return new Conta(id, "Conta", com.laboratorio.financas.conta.domain.TipoConta.CORRENTE,
-                new Money(BigDecimal.ZERO, BRL), true, Instant.now(), null);
+        Money saldoZero = new Money(BigDecimal.ZERO, BRL);
+        return new Conta(
+                id, null, "Conta", com.laboratorio.financas.conta.domain.TipoConta.CORRENTE,
+                saldoZero, saldoZero, null,
+                null, null, true, Instant.now(), null
+        );
     }
 
     private CalcularSaldoDaContaUseCase.Resultado resultadoFake(UUID contaId, BigDecimal saldo) {
