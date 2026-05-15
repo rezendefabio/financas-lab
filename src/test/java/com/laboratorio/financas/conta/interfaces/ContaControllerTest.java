@@ -401,4 +401,71 @@ class ContaControllerTest extends AbstractAuthenticatedIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", hasSize(0)));
     }
+
+    @Test
+    void postContaCriaComSaldoAtualIgualASaldoInicialRetorna201() throws Exception {
+        Map<String, Object> body = Map.of(
+                "nome", "Carteira",
+                "tipo", "CORRENTE",
+                "saldoInicialValor", BigDecimal.valueOf(500),
+                "saldoInicialMoeda", "BRL"
+        );
+        mockMvc.perform(comAuth(post("/api/contas")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(body))))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.saldoAtualValor", equalTo(500.0)))
+                .andExpect(jsonPath("$.saldoAtualMoeda", equalTo("BRL")));
+    }
+
+    @Test
+    void postContaCartaoCreditoComCamposOpcionaisRetorna201() throws Exception {
+        Map<String, Object> body = new java.util.HashMap<>();
+        body.put("nome", "Cartao Visa");
+        body.put("tipo", "CARTAO_CREDITO");
+        body.put("saldoInicialValor", BigDecimal.ZERO);
+        body.put("saldoInicialMoeda", "BRL");
+        body.put("limiteCreditoValor", BigDecimal.valueOf(5000));
+        body.put("limiteCreditoMoeda", "BRL");
+        body.put("diaFechamento", 10);
+        body.put("diaVencimento", 20);
+        mockMvc.perform(comAuth(post("/api/contas")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(body))))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.limiteCreditoValor", equalTo(5000.0)))
+                .andExpect(jsonPath("$.limiteCreditoMoeda", equalTo("BRL")))
+                .andExpect(jsonPath("$.diaFechamento", equalTo(10)))
+                .andExpect(jsonPath("$.diaVencimento", equalTo(20)));
+    }
+
+    @Test
+    void postContaComTipoInvestimentoRetorna201() throws Exception {
+        Map<String, Object> body = Map.of(
+                "nome", "CDB Nubank",
+                "tipo", "INVESTIMENTO",
+                "saldoInicialValor", BigDecimal.valueOf(1000),
+                "saldoInicialMoeda", "BRL"
+        );
+        mockMvc.perform(comAuth(post("/api/contas")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(body))))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.tipo", equalTo("INVESTIMENTO")));
+    }
+
+    @Test
+    void postContaComTipoOutroRetorna201() throws Exception {
+        Map<String, Object> body = Map.of(
+                "nome", "Outro Tipo",
+                "tipo", "OUTRO",
+                "saldoInicialValor", BigDecimal.ZERO,
+                "saldoInicialMoeda", "BRL"
+        );
+        mockMvc.perform(comAuth(post("/api/contas")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(body))))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.tipo", equalTo("OUTRO")));
+    }
 }

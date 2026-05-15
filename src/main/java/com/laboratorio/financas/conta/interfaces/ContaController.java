@@ -59,7 +59,12 @@ public class ContaController {
                 request.nome(),
                 request.tipo(),
                 request.saldoInicialValor(),
-                request.saldoInicialMoeda()
+                request.saldoInicialMoeda(),
+                request.userId(),
+                request.limiteCreditoValor(),
+                request.limiteCreditoMoeda(),
+                request.diaFechamento(),
+                request.diaVencimento()
         );
         Conta criada = criarContaUseCase.executar(comando);
         return ResponseEntity.status(HttpStatus.CREATED).body(ContaResponse.fromDomain(criada));

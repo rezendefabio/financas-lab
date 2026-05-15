@@ -3,6 +3,7 @@ package com.laboratorio.financas.conta.infrastructure.persistence;
 import com.laboratorio.financas.conta.domain.TipoConta;
 import com.laboratorio.financas.shared.infrastructure.persistence.MoneyEmbeddable;
 import jakarta.persistence.AttributeOverride;
+import jakarta.persistence.AttributeOverrides;
 import jakarta.persistence.Column;
 import jakarta.persistence.Embedded;
 import jakarta.persistence.Entity;
@@ -22,6 +23,9 @@ public class ContaEntity {
     @Column(name = "id", columnDefinition = "uuid", nullable = false, updatable = false)
     private UUID id;
 
+    @Column(name = "user_id", columnDefinition = "uuid")
+    private UUID userId;
+
     @NotNull
     @Column(name = "nome", nullable = false, length = 100)
     private String nome;
@@ -33,9 +37,31 @@ public class ContaEntity {
 
     @NotNull
     @Embedded
-    @AttributeOverride(name = "valor", column = @Column(name = "saldo_inicial_valor", nullable = false, precision = 19, scale = 2))
-    @AttributeOverride(name = "moeda", column = @Column(name = "saldo_inicial_moeda", nullable = false, length = 3))
+    @AttributeOverrides({
+        @AttributeOverride(name = "valor", column = @Column(name = "saldo_inicial_valor", nullable = false, precision = 19, scale = 2)),
+        @AttributeOverride(name = "moeda", column = @Column(name = "saldo_inicial_moeda", nullable = false, length = 3))
+    })
     private MoneyEmbeddable saldoInicial;
+
+    @Embedded
+    @AttributeOverrides({
+        @AttributeOverride(name = "valor", column = @Column(name = "saldo_atual_valor", precision = 15, scale = 2)),
+        @AttributeOverride(name = "moeda", column = @Column(name = "saldo_atual_moeda", length = 3))
+    })
+    private MoneyEmbeddable saldoAtual;
+
+    @Embedded
+    @AttributeOverrides({
+        @AttributeOverride(name = "valor", column = @Column(name = "limite_credito_valor", precision = 15, scale = 2)),
+        @AttributeOverride(name = "moeda", column = @Column(name = "limite_credito_moeda", length = 3))
+    })
+    private MoneyEmbeddable limiteCredito;
+
+    @Column(name = "dia_fechamento")
+    private Integer diaFechamento;
+
+    @Column(name = "dia_vencimento")
+    private Integer diaVencimento;
 
     @Column(name = "ativa", nullable = false)
     private boolean ativa;
@@ -54,17 +80,27 @@ public class ContaEntity {
 
     public ContaEntity(
             UUID id,
+            UUID userId,
             String nome,
             TipoConta tipo,
             MoneyEmbeddable saldoInicial,
+            MoneyEmbeddable saldoAtual,
+            MoneyEmbeddable limiteCredito,
+            Integer diaFechamento,
+            Integer diaVencimento,
             boolean ativa,
             Instant criadoEm,
             Instant atualizadoEm
     ) {
         this.id = id;
+        this.userId = userId;
         this.nome = nome;
         this.tipo = tipo;
         this.saldoInicial = saldoInicial;
+        this.saldoAtual = saldoAtual;
+        this.limiteCredito = limiteCredito;
+        this.diaFechamento = diaFechamento;
+        this.diaVencimento = diaVencimento;
         this.ativa = ativa;
         this.criadoEm = criadoEm;
         this.atualizadoEm = atualizadoEm;
@@ -72,6 +108,10 @@ public class ContaEntity {
 
     public UUID getId() {
         return id;
+    }
+
+    public UUID getUserId() {
+        return userId;
     }
 
     public String getNome() {
@@ -84,6 +124,22 @@ public class ContaEntity {
 
     public MoneyEmbeddable getSaldoInicial() {
         return saldoInicial;
+    }
+
+    public MoneyEmbeddable getSaldoAtual() {
+        return saldoAtual;
+    }
+
+    public MoneyEmbeddable getLimiteCredito() {
+        return limiteCredito;
+    }
+
+    public Integer getDiaFechamento() {
+        return diaFechamento;
+    }
+
+    public Integer getDiaVencimento() {
+        return diaVencimento;
     }
 
     public boolean isAtiva() {

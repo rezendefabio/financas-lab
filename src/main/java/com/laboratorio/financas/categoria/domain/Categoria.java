@@ -12,6 +12,8 @@ public final class Categoria {
     private final String nome;
     private final TipoCategoria tipo;
     private final UUID categoriaPaiId;
+    private final UUID userId;
+    private final boolean system;
     private final Instant criadoEm;
     private final Instant atualizadoEm;
 
@@ -20,7 +22,11 @@ public final class Categoria {
     }
 
     public Categoria(String nome, TipoCategoria tipo, UUID categoriaPaiId) {
-        this(UUID.randomUUID(), nome, tipo, categoriaPaiId, Instant.now(), null);
+        this(UUID.randomUUID(), nome, tipo, categoriaPaiId, null, false, Instant.now(), null);
+    }
+
+    public Categoria(String nome, TipoCategoria tipo, UUID categoriaPaiId, UUID userId) {
+        this(UUID.randomUUID(), nome, tipo, categoriaPaiId, userId, false, Instant.now(), null);
     }
 
     public Categoria(
@@ -30,7 +36,7 @@ public final class Categoria {
             Instant criadoEm,
             Instant atualizadoEm
     ) {
-        this(id, nome, tipo, null, criadoEm, atualizadoEm);
+        this(id, nome, tipo, null, null, false, criadoEm, atualizadoEm);
     }
 
     public Categoria(
@@ -38,6 +44,19 @@ public final class Categoria {
             String nome,
             TipoCategoria tipo,
             UUID categoriaPaiId,
+            Instant criadoEm,
+            Instant atualizadoEm
+    ) {
+        this(id, nome, tipo, categoriaPaiId, null, false, criadoEm, atualizadoEm);
+    }
+
+    public Categoria(
+            UUID id,
+            String nome,
+            TipoCategoria tipo,
+            UUID categoriaPaiId,
+            UUID userId,
+            boolean system,
             Instant criadoEm,
             Instant atualizadoEm
     ) {
@@ -50,6 +69,8 @@ public final class Categoria {
         this.nome = nome.trim();
         this.tipo = tipo;
         this.categoriaPaiId = categoriaPaiId;
+        this.userId = userId;
+        this.system = system;
         this.criadoEm = criadoEm;
         this.atualizadoEm = (atualizadoEm != null) ? atualizadoEm : criadoEm;
     }
@@ -83,6 +104,14 @@ public final class Categoria {
         return categoriaPaiId;
     }
 
+    public UUID getUserId() {
+        return userId;
+    }
+
+    public boolean isSystem() {
+        return system;
+    }
+
     public Instant getCriadoEm() {
         return criadoEm;
     }
@@ -109,6 +138,6 @@ public final class Categoria {
 
     @Override
     public String toString() {
-        return "Categoria{id=" + id + ", nome='" + nome + "', tipo=" + tipo + "}";
+        return "Categoria{id=" + id + ", nome='" + nome + "', tipo=" + tipo + ", system=" + system + "}";
     }
 }

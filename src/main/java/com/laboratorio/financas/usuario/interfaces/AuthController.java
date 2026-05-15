@@ -31,7 +31,7 @@ public class AuthController {
     public ResponseEntity<?> registrar(@RequestBody @Valid RegistrarRequest request) {
         try {
             var usuario = registrarUseCase.executar(
-                    new RegistrarUsuarioUseCase.Comando(request.email(), request.senha()));
+                    new RegistrarUsuarioUseCase.Comando(request.email(), request.senha(), request.name()));
             return ResponseEntity.status(HttpStatus.CREATED)
                     .body(UsuarioResponse.fromDomain(usuario));
         } catch (EmailJaExisteException ex) {
