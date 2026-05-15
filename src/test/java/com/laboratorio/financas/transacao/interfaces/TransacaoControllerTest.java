@@ -113,11 +113,12 @@ class TransacaoControllerTest extends AbstractAuthenticatedIntegrationTest {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id", notNullValue()))
                 .andExpect(jsonPath("$.tipo", equalTo("RECEITA")))
-                .andExpect(jsonPath("$.contaId", equalTo(contaId.toString())));
+                .andExpect(jsonPath("$.contaId", equalTo(contaId.toString())))
+                .andExpect(jsonPath("$.status", equalTo("CLEARED")));
     }
 
     @Test
-    void postTransacaoTransferenciaValidaRetorna201() throws Exception {
+    void postTransacaoTransferenciaValidaRetorna201ECriaPar() throws Exception {
         UUID contaId = criarContaPersistida();
         UUID contaDestinoId = criarContaPersistida();
 
@@ -125,7 +126,13 @@ class TransacaoControllerTest extends AbstractAuthenticatedIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(requestTransferencia(contaId, contaDestinoId)))))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.tipo", equalTo("TRANSFERENCIA")));
+                // Retorna a despesa (conta origem)
+                .andExpect(jsonPath("$.tipo", equalTo("DESPESA")))
+                .andExpect(jsonPath("$.contaId", equalTo(contaId.toString())))
+                .andExpect(jsonPath("$.transferGroupId", notNullValue()));
+
+        // Par criado: 2 transacoes no banco
+        org.assertj.core.api.Assertions.assertThat(transacaoJpaRepository.count()).isEqualTo(2L);
     }
 
     @Test
@@ -245,19 +252,6 @@ class TransacaoControllerTest extends AbstractAuthenticatedIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.totalElements", equalTo(1)))
                 .andExpect(jsonPath("$.content[0].contaId", equalTo(contaId.toString())));
-    }
-
-    @Test
-    void getTransacoesComFiltroContaIdFiltraDestinoEmTransferencia() throws Exception {
-        UUID contaId = criarContaPersistida();
-        UUID contaDestinoId = criarContaPersistida();
-        mockMvc.perform(comAuth(post("/api/transacoes")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(requestTransferencia(contaId, contaDestinoId)))));
-
-        mockMvc.perform(comAuth(get("/api/transacoes").param("contaId", contaDestinoId.toString())))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.totalElements", equalTo(1)));
     }
 
     @Test
@@ -467,7 +461,7 @@ class TransacaoControllerTest extends AbstractAuthenticatedIntegrationTest {
     }
 
     @Test
-    void deleteExistenteRetorna204() throws Exception {
+    void deleteSoftDeleteRetorna204ETransacaoSomeNaBusca() throws Exception {
         UUID contaId = criarContaPersistida();
         MvcResult resultado = mockMvc.perform(comAuth(post("/api/transacoes")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -476,14 +470,49 @@ class TransacaoControllerTest extends AbstractAuthenticatedIntegrationTest {
         String idStr = objectMapper.readTree(resultado.getResponse().getContentAsString())
                 .get("id").asText();
 
+        // Soft delete retorna 204
         mockMvc.perform(comAuth(delete("/api/transacoes/" + idStr)))
                 .andExpect(status().isNoContent());
+
+        // Transacao some da busca
+        mockMvc.perform(comAuth(get("/api/transacoes/" + idStr)))
+                .andExpect(status().isNotFound());
+
+        // Registro ainda existe no banco (soft delete)
+        org.assertj.core.api.Assertions.assertThat(transacaoJpaRepository.count()).isEqualTo(1L);
     }
 
     @Test
     void deleteInexistenteRetorna404() throws Exception {
         mockMvc.perform(comAuth(delete("/api/transacoes/" + UUID.randomUUID())))
                 .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void deleteSoftDeleteTransacaoNaoAparecaNaListagem() throws Exception {
+        UUID contaId = criarContaPersistida();
+
+        // Cria 2 transacoes
+        MvcResult r1 = mockMvc.perform(comAuth(post("/api/transacoes")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(requestReceita(contaId)))))
+                .andReturn();
+        Map<String, Object> outra = requestReceita(contaId);
+        outra.put("descricao", "Outra");
+        mockMvc.perform(comAuth(post("/api/transacoes")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(outra))));
+
+        String idStr = objectMapper.readTree(r1.getResponse().getContentAsString()).get("id").asText();
+
+        // Soft delete na primeira
+        mockMvc.perform(comAuth(delete("/api/transacoes/" + idStr)))
+                .andExpect(status().isNoContent());
+
+        // Listagem retorna apenas 1
+        mockMvc.perform(comAuth(get("/api/transacoes")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalElements", equalTo(1)));
     }
 
     @Test
@@ -514,9 +543,11 @@ class TransacaoControllerTest extends AbstractAuthenticatedIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.descricao", equalTo("Salario revisado")));
 
+        // Soft delete
         mockMvc.perform(comAuth(delete("/api/transacoes/" + idStr)))
                 .andExpect(status().isNoContent());
 
+        // GET retorna 404 apos soft delete
         mockMvc.perform(comAuth(get("/api/transacoes/" + idStr)))
                 .andExpect(status().isNotFound());
     }

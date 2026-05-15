@@ -45,10 +45,16 @@ public class EditarTransacaoUseCase {
                 comando.data(),
                 comando.descricao(),
                 comando.contaId(),
-                comando.contaDestinoId(),
                 comando.categoriaId(),
                 existente.getCriadoEm(),
-                Instant.now()
+                Instant.now(),
+                (comando.userId() != null) ? comando.userId() : existente.getUserId(),
+                (comando.status() != null) ? comando.status() : existente.getStatus(),
+                existente.getDeletedAt(),
+                (comando.payeeId() != null) ? comando.payeeId() : existente.getPayeeId(),
+                existente.getTransferGroupId(),
+                existente.getTransferPairId(),
+                (comando.tagIds() != null) ? comando.tagIds() : existente.getTagIds()
         );
 
         return transacaoRepository.salvar(atualizada);

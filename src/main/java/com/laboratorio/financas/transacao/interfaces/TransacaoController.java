@@ -14,6 +14,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -63,7 +64,9 @@ public class TransacaoController {
 
     @PostMapping
     public ResponseEntity<TransacaoResponse> criar(@Valid @RequestBody TransacaoRequest request) {
-        CriarTransacaoUseCase.Comando comando = toComando(request);
+        // userId extraido do JWT/SecurityContext -- Fase 1: nao ha lookup de usuario por email,
+        // user_id fica null ate que a integracao usuario<->transacao seja implementada
+        CriarTransacaoUseCase.Comando comando = toComando(request, null);
         Transacao criada = criarTransacaoUseCase.executar(comando);
         return ResponseEntity.status(HttpStatus.CREATED).body(TransacaoResponse.fromDomain(criada));
     }
@@ -97,18 +100,23 @@ public class TransacaoController {
             @PathVariable UUID id,
             @Valid @RequestBody TransacaoRequest request
     ) {
-        CriarTransacaoUseCase.Comando comando = toComando(request);
+        CriarTransacaoUseCase.Comando comando = toComando(request, null);
         Transacao atualizada = editarTransacaoUseCase.executar(id, comando);
         return TransacaoResponse.fromDomain(atualizada);
     }
 
+    /**
+     * Soft delete: marca deleted_at sem remover do banco.
+     * Transacao deletada fica invisivel para listagens e buscas padrao.
+     */
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deletar(@PathVariable UUID id) {
         deletarTransacaoUseCase.executar(id);
     }
 
-    private CriarTransacaoUseCase.Comando toComando(TransacaoRequest request) {
+    private CriarTransacaoUseCase.Comando toComando(TransacaoRequest request, UUID userId) {
+        List<UUID> tagIds = (request.tagIds() != null) ? request.tagIds() : List.of();
         return new CriarTransacaoUseCase.Comando(
                 request.tipo(),
                 request.valor(),
@@ -117,7 +125,11 @@ public class TransacaoController {
                 request.descricao(),
                 request.contaId(),
                 request.contaDestinoId(),
-                request.categoriaId()
+                request.categoriaId(),
+                userId,
+                request.status(),
+                request.payeeId(),
+                tagIds
         );
     }
 }

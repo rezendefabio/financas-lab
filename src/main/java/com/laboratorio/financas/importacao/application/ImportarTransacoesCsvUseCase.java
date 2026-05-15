@@ -1,6 +1,7 @@
 package com.laboratorio.financas.importacao.application;
 
 import com.laboratorio.financas.shared.domain.Money;
+import com.laboratorio.financas.transacao.domain.StatusTransacao;
 import com.laboratorio.financas.transacao.domain.TipoTransacao;
 import com.laboratorio.financas.transacao.domain.Transacao;
 import com.laboratorio.financas.transacao.domain.TransacaoRepository;
@@ -193,16 +194,23 @@ public class ImportarTransacoesCsvUseCase {
         int importadas = 0;
         for (LinhaValida lv : linhas) {
             try {
-                Transacao transacao = new Transacao(
-                        lv.tipo(),
-                        new Money(lv.valor(), lv.moeda()),
-                        lv.data(),
-                        lv.descricao(),
-                        lv.contaId(),
-                        lv.contaDestinoId(),
-                        lv.categoriaId()
-                );
-                transacaoRepository.salvar(transacao);
+                Money valor = new Money(lv.valor(), lv.moeda());
+                if (lv.tipo() == TipoTransacao.TRANSFERENCIA) {
+                    // TRANSFERENCIA gera par DESPESA+RECEITA vinculado por transferGroupId
+                    Transacao.TransferenciaPar par = Transacao.criarParTransferencia(
+                            null, valor, lv.contaId(), lv.contaDestinoId(),
+                            lv.data(), lv.descricao(), lv.categoriaId()
+                    );
+                    transacaoRepository.salvar(par.despesa());
+                    transacaoRepository.salvar(par.receita());
+                } else {
+                    Transacao transacao = new Transacao(
+                            lv.tipo(), valor, lv.data(), lv.descricao(),
+                            lv.contaId(), lv.categoriaId(), null,
+                            StatusTransacao.CLEARED, null, java.util.List.of()
+                    );
+                    transacaoRepository.salvar(transacao);
+                }
                 importadas++;
             } catch (Exception e) {
                 erros.add(new ErroImportacao(lv.numero(), e.getMessage()));

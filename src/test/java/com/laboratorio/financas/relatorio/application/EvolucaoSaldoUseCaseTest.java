@@ -54,28 +54,33 @@ class EvolucaoSaldoUseCaseTest {
     }
 
     @Test
-    void transferenciasIgnoradasNaAgregacao() {
+    void transferenciaParContabilizaDespesaEReceita() {
+        // No modelo Fase 1, TRANSFERENCIA gera par DESPESA+RECEITA com transferGroupId.
+        // EvolucaoSaldo soma todas as despesas e receitas independente de serem par de transferencia.
         UUID contaId = UUID.randomUUID();
-        UUID contaDestinoId = UUID.randomUUID();
-        Transacao transferencia = new Transacao(
-                TipoTransacao.TRANSFERENCIA,
+        UUID groupId = UUID.randomUUID();
+        Transacao despesaTransferencia = new Transacao(
+                TipoTransacao.DESPESA,
                 new Money(new BigDecimal("500.00"), BRL),
                 LocalDate.of(2026, 1, 10),
                 "transferencia teste",
                 contaId,
-                contaDestinoId,
-                null
+                null,
+                null,
+                com.laboratorio.financas.transacao.domain.StatusTransacao.CLEARED,
+                null,
+                java.util.List.of()
         );
         when(transacaoRepository.listarComFiltros(any(), any()))
-                .thenReturn(new PageImpl<>(List.of(transferencia)));
+                .thenReturn(new PageImpl<>(List.of(despesaTransferencia)));
 
         LocalDate inicio = LocalDate.of(2026, 1, 1);
         LocalDate fim = LocalDate.of(2026, 1, 31);
         var resultado = useCase.executar(new EvolucaoSaldoUseCase.Consulta(inicio, fim, null));
 
+        // DESPESA de transferencia conta no total de despesas
+        assertThat(resultado.totalDespesas().valor()).isEqualByComparingTo("500.00");
         assertThat(resultado.totalReceitas().valor()).isEqualByComparingTo("0.00");
-        assertThat(resultado.totalDespesas().valor()).isEqualByComparingTo("0.00");
-        assertThat(resultado.saldoLiquido().valor()).isEqualByComparingTo("0.00");
     }
 
     @Test
@@ -167,11 +172,15 @@ class EvolucaoSaldoUseCaseTest {
 
     private Transacao receita(BigDecimal valor, LocalDate data, UUID contaId) {
         return new Transacao(TipoTransacao.RECEITA, new Money(valor, BRL), data,
-                "receita teste", contaId, null, null);
+                "receita teste", contaId, null, null,
+                com.laboratorio.financas.transacao.domain.StatusTransacao.CLEARED, null,
+                java.util.List.of());
     }
 
     private Transacao despesa(BigDecimal valor, LocalDate data, UUID contaId) {
         return new Transacao(TipoTransacao.DESPESA, new Money(valor, BRL), data,
-                "despesa teste", contaId, null, null);
+                "despesa teste", contaId, null, null,
+                com.laboratorio.financas.transacao.domain.StatusTransacao.CLEARED, null,
+                java.util.List.of());
     }
 }

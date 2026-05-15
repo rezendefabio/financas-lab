@@ -3,6 +3,7 @@ package com.laboratorio.financas.lancamentorecorrente.application;
 import com.laboratorio.financas.lancamentorecorrente.domain.LancamentoRecorrente;
 import com.laboratorio.financas.lancamentorecorrente.domain.LancamentoRecorrenteNaoEncontradoException;
 import com.laboratorio.financas.lancamentorecorrente.domain.LancamentoRecorrenteRepository;
+import com.laboratorio.financas.transacao.domain.StatusTransacao;
 import com.laboratorio.financas.transacao.domain.Transacao;
 import com.laboratorio.financas.transacao.domain.TransacaoRepository;
 import java.time.LocalDate;
@@ -48,8 +49,11 @@ public class ExecutarLancamentoRecorrenteUseCase {
                 lancamento.getProximaOcorrencia(),
                 lancamento.getDescricao(),
                 lancamento.getContaId(),
+                lancamento.getCategoriaId(),
                 null,
-                lancamento.getCategoriaId()
+                StatusTransacao.CLEARED,
+                null,
+                java.util.List.of()
         );
         Transacao transacaoSalva = transacaoRepository.salvar(transacao);
 

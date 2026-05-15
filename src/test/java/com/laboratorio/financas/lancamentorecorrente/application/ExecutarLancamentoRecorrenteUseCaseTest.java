@@ -49,7 +49,9 @@ class ExecutarLancamentoRecorrenteUseCaseTest {
     private Transacao transacaoSalva() {
         return new Transacao(
                 TipoTransacao.DESPESA, VALOR_200, LocalDate.now(),
-                "Aluguel", UUID.randomUUID(), null, null);
+                "Aluguel", UUID.randomUUID(), null, null,
+                com.laboratorio.financas.transacao.domain.StatusTransacao.CLEARED, null,
+                java.util.List.of());
     }
 
     @Test

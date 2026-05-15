@@ -5,6 +5,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 import com.laboratorio.financas.shared.domain.Money;
+import com.laboratorio.financas.transacao.domain.StatusTransacao;
 import com.laboratorio.financas.transacao.domain.Transacao;
 import com.laboratorio.financas.transacao.domain.TipoTransacao;
 import com.laboratorio.financas.transacao.domain.TransacaoRepository;
@@ -92,16 +93,17 @@ class FluxoCaixaUseCaseTest {
 
     private Transacao transacao(TipoTransacao tipo, BigDecimal valor) {
         if (tipo == TipoTransacao.TRANSFERENCIA) {
-            UUID contaId = UUID.randomUUID();
-            UUID contaDestinoId = UUID.randomUUID();
             return new Transacao(
                     tipo,
                     new Money(valor, BRL),
                     LocalDate.of(2026, 1, 10),
                     "transferencia teste",
-                    contaId,
-                    contaDestinoId,
-                    null
+                    UUID.randomUUID(),
+                    null,
+                    null,
+                    StatusTransacao.CLEARED,
+                    null,
+                    List.of()
             );
         }
         return new Transacao(
@@ -111,7 +113,10 @@ class FluxoCaixaUseCaseTest {
                 "transacao teste",
                 UUID.randomUUID(),
                 null,
-                null
+                null,
+                StatusTransacao.CLEARED,
+                null,
+                List.of()
         );
     }
 }

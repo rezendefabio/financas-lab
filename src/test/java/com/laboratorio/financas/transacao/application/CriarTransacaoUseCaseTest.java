@@ -12,6 +12,7 @@ import com.laboratorio.financas.conta.domain.Conta;
 import com.laboratorio.financas.conta.domain.ContaRepository;
 import com.laboratorio.financas.conta.domain.TipoConta;
 import com.laboratorio.financas.shared.domain.Money;
+import com.laboratorio.financas.transacao.domain.StatusTransacao;
 import com.laboratorio.financas.transacao.domain.Transacao;
 import com.laboratorio.financas.transacao.domain.TransacaoComReferenciaInvalidaException;
 import com.laboratorio.financas.transacao.domain.TransacaoRepository;
@@ -19,6 +20,7 @@ import com.laboratorio.financas.transacao.domain.TipoTransacao;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.Currency;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -55,7 +57,18 @@ class CriarTransacaoUseCaseTest {
                 "Salario",
                 contaId,
                 null,
-                null
+                null,
+                StatusTransacao.CLEARED,
+                null,
+                List.of()
+        );
+    }
+
+    private CriarTransacaoUseCase.Comando comandoReceita(UUID contaId) {
+        return new CriarTransacaoUseCase.Comando(
+                TipoTransacao.RECEITA, BigDecimal.valueOf(100), "BRL",
+                DATA, "Salario", contaId, null, null,
+                null, StatusTransacao.CLEARED, null, List.of()
         );
     }
 
@@ -68,13 +81,8 @@ class CriarTransacaoUseCaseTest {
         when(contaRepository.buscarPorId(contaId)).thenReturn(Optional.of(conta));
         when(transacaoRepository.salvar(any(Transacao.class))).thenReturn(salva);
 
-        CriarTransacaoUseCase.Comando comando = new CriarTransacaoUseCase.Comando(
-                TipoTransacao.RECEITA, BigDecimal.valueOf(100), "BRL",
-                DATA, "Salario", contaId, null, null
-        );
-
         // When
-        Transacao resultado = useCase.executar(comando);
+        Transacao resultado = useCase.executar(comandoReceita(contaId));
 
         // Then
         assertThat(resultado).isNotNull();
@@ -89,18 +97,15 @@ class CriarTransacaoUseCaseTest {
         Transacao salva = new Transacao(
                 TipoTransacao.DESPESA,
                 new Money(BigDecimal.valueOf(50), BRL),
-                DATA,
-                "Mercado",
-                contaId,
-                null,
-                null
+                DATA, "Mercado", contaId, null, null, StatusTransacao.CLEARED, null, List.of()
         );
         when(contaRepository.buscarPorId(contaId)).thenReturn(Optional.of(conta));
         when(transacaoRepository.salvar(any(Transacao.class))).thenReturn(salva);
 
         CriarTransacaoUseCase.Comando comando = new CriarTransacaoUseCase.Comando(
                 TipoTransacao.DESPESA, BigDecimal.valueOf(50), "BRL",
-                DATA, "Mercado", contaId, null, null
+                DATA, "Mercado", contaId, null, null,
+                null, StatusTransacao.CLEARED, null, List.of()
         );
 
         // When
@@ -111,34 +116,33 @@ class CriarTransacaoUseCaseTest {
     }
 
     @Test
-    void executarTransferenciaComFksValidasRetornaTransacao() {
+    void executarTransferenciaComFksValidasCriaPar() {
         // Given
         UUID contaId = UUID.randomUUID();
         UUID contaDestinoId = UUID.randomUUID();
         Conta conta = contaValida();
-        Transacao salva = new Transacao(
-                TipoTransacao.TRANSFERENCIA,
+        // par de transacoes -- salvar chamado 2x, retorna despesa
+        Transacao despesaSalva = new Transacao(
+                TipoTransacao.DESPESA,
                 new Money(BigDecimal.valueOf(200), BRL),
-                DATA,
-                "Transferencia entre contas",
-                contaId,
-                contaDestinoId,
-                null
+                DATA, "Transferencia entre contas", contaId, null, null, StatusTransacao.CLEARED, null, List.of()
         );
         when(contaRepository.buscarPorId(contaId)).thenReturn(Optional.of(conta));
         when(contaRepository.buscarPorId(contaDestinoId)).thenReturn(Optional.of(conta));
-        when(transacaoRepository.salvar(any(Transacao.class))).thenReturn(salva);
+        when(transacaoRepository.salvar(any(Transacao.class))).thenReturn(despesaSalva);
 
         CriarTransacaoUseCase.Comando comando = new CriarTransacaoUseCase.Comando(
                 TipoTransacao.TRANSFERENCIA, BigDecimal.valueOf(200), "BRL",
-                DATA, "Transferencia entre contas", contaId, contaDestinoId, null
+                DATA, "Transferencia entre contas", contaId, contaDestinoId, null,
+                null, StatusTransacao.CLEARED, null, List.of()
         );
 
         // When
         Transacao resultado = useCase.executar(comando);
 
-        // Then
-        assertThat(resultado.getTipo()).isEqualTo(TipoTransacao.TRANSFERENCIA);
+        // Then -- par salvo: 2 chamadas ao repository
+        verify(transacaoRepository, times(2)).salvar(any(Transacao.class));
+        assertThat(resultado).isNotNull();
     }
 
     @Test
@@ -147,13 +151,8 @@ class CriarTransacaoUseCaseTest {
         UUID contaId = UUID.randomUUID();
         when(contaRepository.buscarPorId(contaId)).thenReturn(Optional.empty());
 
-        CriarTransacaoUseCase.Comando comando = new CriarTransacaoUseCase.Comando(
-                TipoTransacao.RECEITA, BigDecimal.valueOf(100), "BRL",
-                DATA, "Salario", contaId, null, null
-        );
-
         // When / Then
-        assertThatThrownBy(() -> useCase.executar(comando))
+        assertThatThrownBy(() -> useCase.executar(comandoReceita(contaId)))
                 .isInstanceOf(TransacaoComReferenciaInvalidaException.class)
                 .satisfies(ex -> {
                     TransacaoComReferenciaInvalidaException e =
@@ -174,7 +173,8 @@ class CriarTransacaoUseCaseTest {
 
         CriarTransacaoUseCase.Comando comando = new CriarTransacaoUseCase.Comando(
                 TipoTransacao.TRANSFERENCIA, BigDecimal.valueOf(200), "BRL",
-                DATA, "Transferencia", contaId, contaDestinoId, null
+                DATA, "Transferencia", contaId, contaDestinoId, null,
+                null, StatusTransacao.CLEARED, null, List.of()
         );
 
         // When / Then
@@ -198,7 +198,8 @@ class CriarTransacaoUseCaseTest {
 
         CriarTransacaoUseCase.Comando comando = new CriarTransacaoUseCase.Comando(
                 TipoTransacao.RECEITA, BigDecimal.valueOf(100), "BRL",
-                DATA, "Salario", contaId, null, categoriaId
+                DATA, "Salario", contaId, null, categoriaId,
+                null, StatusTransacao.CLEARED, null, List.of()
         );
 
         // When / Then
@@ -213,14 +214,15 @@ class CriarTransacaoUseCaseTest {
 
     @Test
     void executarTransferenciaSemContaDestinoLancaIllegalArgumentException() {
-        // Given
+        // Given -- contaDestinoId nulo para TRANSFERENCIA
         UUID contaId = UUID.randomUUID();
         Conta conta = contaValida();
         when(contaRepository.buscarPorId(contaId)).thenReturn(Optional.of(conta));
 
         CriarTransacaoUseCase.Comando comando = new CriarTransacaoUseCase.Comando(
                 TipoTransacao.TRANSFERENCIA, BigDecimal.valueOf(200), "BRL",
-                DATA, "Transferencia invalida", contaId, null, null
+                DATA, "Transferencia invalida", contaId, null, null,
+                null, StatusTransacao.CLEARED, null, List.of()
         );
 
         // When / Then
@@ -237,13 +239,8 @@ class CriarTransacaoUseCaseTest {
         when(contaRepository.buscarPorId(contaId)).thenReturn(Optional.of(conta));
         when(transacaoRepository.salvar(any(Transacao.class))).thenReturn(salva);
 
-        CriarTransacaoUseCase.Comando comando = new CriarTransacaoUseCase.Comando(
-                TipoTransacao.RECEITA, BigDecimal.valueOf(100), "BRL",
-                DATA, "Salario", contaId, null, null
-        );
-
         // When
-        useCase.executar(comando);
+        useCase.executar(comandoReceita(contaId));
 
         // Then
         verify(transacaoRepository, times(1)).salvar(any(Transacao.class));
@@ -258,7 +255,8 @@ class CriarTransacaoUseCaseTest {
 
         CriarTransacaoUseCase.Comando comando = new CriarTransacaoUseCase.Comando(
                 TipoTransacao.RECEITA, BigDecimal.ZERO, "BRL",
-                DATA, "Salario", contaId, null, null
+                DATA, "Salario", contaId, null, null,
+                null, StatusTransacao.CLEARED, null, List.of()
         );
 
         // When / Then
@@ -275,11 +273,37 @@ class CriarTransacaoUseCaseTest {
 
         CriarTransacaoUseCase.Comando comando = new CriarTransacaoUseCase.Comando(
                 TipoTransacao.RECEITA, BigDecimal.valueOf(100), "XYZ",
-                DATA, "Salario", contaId, null, null
+                DATA, "Salario", contaId, null, null,
+                null, StatusTransacao.CLEARED, null, List.of()
         );
 
         // When / Then
         assertThatThrownBy(() -> useCase.executar(comando))
                 .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    void executarComStatusPendingPreservaStatus() {
+        // Given
+        UUID contaId = UUID.randomUUID();
+        Conta conta = contaValida();
+        Transacao salva = new Transacao(
+                TipoTransacao.RECEITA, new Money(BigDecimal.valueOf(100), BRL),
+                DATA, "Salario", contaId, null, null, StatusTransacao.PENDING, null, List.of()
+        );
+        when(contaRepository.buscarPorId(contaId)).thenReturn(Optional.of(conta));
+        when(transacaoRepository.salvar(any(Transacao.class))).thenReturn(salva);
+
+        CriarTransacaoUseCase.Comando comando = new CriarTransacaoUseCase.Comando(
+                TipoTransacao.RECEITA, BigDecimal.valueOf(100), "BRL",
+                DATA, "Salario", contaId, null, null,
+                null, StatusTransacao.PENDING, null, List.of()
+        );
+
+        // When
+        Transacao resultado = useCase.executar(comando);
+
+        // Then
+        assertThat(resultado.getStatus()).isEqualTo(StatusTransacao.PENDING);
     }
 }
