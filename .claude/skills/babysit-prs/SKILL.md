@@ -1,6 +1,6 @@
 ---
 name: babysit-prs
-description: Loop que monitora PRs abertos a cada 10 minutos: auto-rebase em conflito com main, relatorio de CI falhando. Invocar uma vez -- o loop se auto-agenda via ScheduleWakeup.
+description: Loop que monitora PRs abertos a cada 5 minutos: auto-rebase em conflito com main, relatorio de CI falhando. Invocar uma vez -- o loop se auto-agenda via ScheduleWakeup.
 disable-model-invocation: true
 ---
 
@@ -26,6 +26,41 @@ $stateFile = "$repoRoot/.claude/babysit-prs.state"
 - Se nao existir: inicializar com `@{ prs = @{} }`.
 
 Guardar o objeto como `$state` para uso nos passos seguintes.
+
+### Passo 0.5 -- Limpar worktrees orphan
+
+```powershell
+# Listar todos os worktrees com informacao de lock
+$worktreeRaw = git worktree list --porcelain
+
+# Parsear blocos separados por linha vazia
+$blocks = ($worktreeRaw -join "`n") -split "`n`n"
+
+foreach ($block in $blocks) {
+    $lines = $block -split "`n"
+    $pathLine  = $lines | Where-Object { $_ -match "^worktree " }
+    $lockLine  = $lines | Where-Object { $_ -match "^locked " }
+
+    if (-not $lockLine) { continue }  # nao e locked, pular
+
+    $wtPath = $pathLine -replace "^worktree ", ""
+
+    # Extrair PID do lock reason (formato: "... (pid XXXXX)")
+    if ($lockLine -match "\(pid (\d+)\)") {
+        $pid = [int]$matches[1]
+        $proc = Get-Process -Id $pid -ErrorAction SilentlyContinue
+        if ($null -eq $proc) {
+            # Processo morto -- worktree orphan, remover
+            git worktree remove -f -f $wtPath 2>&1 | Out-Null
+            Write-Host "Worktree orphan removido: $wtPath (pid $pid morto)"
+        }
+    }
+}
+```
+
+Se nenhum worktree orphan for encontrado: nenhuma mensagem (silencioso).
+Se algum for removido: registrar no relatorio do Passo 4 como linha adicional:
+`Worktrees orphan removidos: <lista de paths ou "nenhum">`
 
 ### Passo 1 -- Listar PRs abertos
 
@@ -235,7 +270,7 @@ Exibir resumo:
 <para cada PR:>
   PR #N <titulo>: <REBASE OK | REBASE RESOLVIDO (inteligente) | REBASE ABORTADO: <motivo> | UPDATE-BRANCH OK | UPDATE-BRANCH FALHOU: <motivo> | CI AUTO-FIX OK | CI FALHOU (manual): <motivo> | IGNORADO (sem mudanca desde ultimo tratamento) | OK>
 
-Proxima verificacao em 10 minutos.
+Proxima verificacao em 5 minutos.
 ```
 
 ### Passo 5 -- Agendar proxima iteracao
@@ -245,6 +280,6 @@ Se qualquer erro irrecuperavel ocorreu durante a iteracao, reportar ao operador
 e encerrar sem agendar.
 
 Usar ScheduleWakeup:
-- delaySeconds: 600
+- delaySeconds: 300
 - reason: "proxima iteracao do babysit-prs"
 - prompt: `<<autonomous-loop-dynamic>>`
