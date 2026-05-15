@@ -148,6 +148,60 @@ class RelatorioControllerTest extends AbstractAuthenticatedIntegrationTest {
     }
 
     @Nested
+    @DisplayName("GET /api/relatorios/dashboard/fluxo-caixa")
+    class FluxoCaixa {
+
+        @Test
+        @DisplayName("retorna 200 com zeros quando nao ha transacoes no mes")
+        void semTransacoesRetorna200ComZeros() throws Exception {
+            mockMvc.perform(comAuth(get("/api/relatorios/dashboard/fluxo-caixa")
+                            .param("ano", "2026")
+                            .param("mes", "1")))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.ano").value(2026))
+                    .andExpect(jsonPath("$.mes").value(1))
+                    .andExpect(jsonPath("$.totalReceitas").value(0))
+                    .andExpect(jsonPath("$.totalDespesas").value(0))
+                    .andExpect(jsonPath("$.saldo").value(0))
+                    .andExpect(jsonPath("$.moeda").value("BRL"));
+        }
+
+        @Test
+        @DisplayName("retorna 200 com fluxo calculado quando ha transacoes no mes")
+        void comTransacoesRetorna200ComFluxoCalculado() throws Exception {
+            UUID contaId = criarConta();
+            criarTransacao(contaId, null, "RECEITA", "1000.00", "2026-01-10");
+            criarTransacao(contaId, null, "DESPESA", "300.00", "2026-01-15");
+
+            mockMvc.perform(comAuth(get("/api/relatorios/dashboard/fluxo-caixa")
+                            .param("ano", "2026")
+                            .param("mes", "1")))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.totalReceitas").value(1000.00))
+                    .andExpect(jsonPath("$.totalDespesas").value(300.00))
+                    .andExpect(jsonPath("$.saldo").value(700.00));
+        }
+
+        @Test
+        @DisplayName("retorna 400 quando mes invalido (0)")
+        void mesInvalidoRetorna400() throws Exception {
+            mockMvc.perform(comAuth(get("/api/relatorios/dashboard/fluxo-caixa")
+                            .param("ano", "2026")
+                            .param("mes", "0")))
+                    .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        @DisplayName("retorna 400 quando mes invalido (13)")
+        void mesAcimaDoLimiteRetorna400() throws Exception {
+            mockMvc.perform(comAuth(get("/api/relatorios/dashboard/fluxo-caixa")
+                            .param("ano", "2026")
+                            .param("mes", "13")))
+                    .andExpect(status().isBadRequest());
+        }
+    }
+
+    @Nested
     @DisplayName("GET /api/relatorios/evolucao-saldo")
     class EvolucaoSaldo {
 

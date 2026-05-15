@@ -2,6 +2,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { TrendingUp } from 'lucide-react'
 import { contasService } from '@/features/contas/services/contas.service'
+import { getFluxoCaixa, FluxoCaixaCard } from '@/features/dashboard'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card'
 import { formatBRL } from '@/shared/lib/formatters'
 
@@ -9,6 +10,15 @@ export default function DashboardPage() {
   const { data, isLoading, isError } = useQuery({
     queryKey: ['saldo-total'],
     queryFn: () => contasService.saldoTotal(),
+  })
+
+  const agora = new Date()
+  const anoAtual = agora.getFullYear()
+  const mesAtual = agora.getMonth() + 1
+
+  const { data: fluxoCaixa, isLoading: isLoadingFluxo } = useQuery({
+    queryKey: ['fluxo-caixa', anoAtual, mesAtual],
+    queryFn: () => getFluxoCaixa(anoAtual, mesAtual),
   })
 
   return (
@@ -42,18 +52,6 @@ export default function DashboardPage() {
         <Card className="border-dashed">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              Transacoes este mes
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold text-muted-foreground/40">—</p>
-            <p className="text-xs text-muted-foreground mt-1">em breve</p>
-          </CardContent>
-        </Card>
-
-        <Card className="border-dashed">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
               Orcamento do mes
             </CardTitle>
           </CardHeader>
@@ -62,6 +60,17 @@ export default function DashboardPage() {
             <p className="text-xs text-muted-foreground mt-1">em breve</p>
           </CardContent>
         </Card>
+      </div>
+
+      <div>
+        {fluxoCaixa ? (
+          <FluxoCaixaCard data={fluxoCaixa} isLoading={isLoadingFluxo} />
+        ) : (
+          <FluxoCaixaCard
+            data={{ ano: anoAtual, mes: mesAtual, totalReceitas: 0, totalDespesas: 0, saldo: 0, moeda: 'BRL' }}
+            isLoading={isLoadingFluxo}
+          />
+        )}
       </div>
     </div>
   )
