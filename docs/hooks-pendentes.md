@@ -4,7 +4,7 @@
 > Input direto para a Camada 3 (Configuração do Claude Code), quando hooks formais entrarem.
 > Atualizado conforme novas lições aparecem.
 
-**Última atualização:** 2026-05-11 (Sub-etapa 4.7.1 — registro de licoes da 4.7)
+**Última atualização:** 2026-05-15 (Sub-etapa 5.51 -- hooks java-spring: baseline-on-migrate e ordem Lombok/MapStruct)
 
 ---
 
@@ -81,11 +81,9 @@ A seção "Débitos de configuração" deste documento (`application-prod.yml` a
 
 ## Hooks Maven / Java
 
-- **Ordem "Lombok antes de MapStruct"** em `<annotationProcessorPaths>`. (Etapa 1.4) Inverter quebra build.
 - **Versão de plugin Maven validada via Maven Central** antes de ser fixada. (Etapa 1.4) Não usar memória do agente — versões podem estar desatualizadas.
 - **Modificacao de `@Entity` JPA existente exige migration Flyway no mesmo PR.** (Etapa 2.1, caso edge -- modo conservador na 4.7 cobre apenas Entity nova/status A; modificacao/status M produz falso positivo alto e ficou como debito explicito). Avaliar implementacao sofisticada (parser de diff `git diff --cached -U0`) se aparecer dor real.
 - **Classe base de teste sem `abstract` em pacote de shared test.** (Etapa 2.1) Validar que classes base de teste em `src/test/java/.../shared/` têm modificador `abstract` — sem ele, JUnit tenta instanciar e duplica execuções.
-- **`baseline-on-migrate: true` apenas em profiles de teste/dev.** (Etapa 2.1) Nunca em `application.yml` defaults ou `application-prod.yml`.
 - **Sufixo de classe de teste segue padrão do projeto.** (Etapa 2.2) Sufixo `Test` (singular) para classes novas — `IT` não é usado neste projeto (Failsafe não configurado).
 
 ## Hooks GitHub Actions / CI
@@ -144,6 +142,10 @@ Itens originalmente listados em "Hooks Markdown / docs" ou outras secoes, agora 
 - **@Entity nova sem migration Flyway (modo conservador)** (Sub-etapa 4.7, PR #47). Implementado em `.claude/hooks/java-spring/entity-migration.ps1`, invocado via `.githooks/pre-commit` (orquestrador) no evento `pre-commit`. Hook age apenas se ha `.java` novo (status A) sob `src/main/java/` contendo `@Entity`. Exige pelo menos um arquivo `src/main/resources/db/migration/V<n>__*.sql` novo no mesmo commit. Valida presenca, nao conteudo. Modo fail. Modificacao de Entity existente (status M) **nao dispara** o hook -- caso edge registrado como debito em "Pendentes".
 - **Tamanho de docs em `docs/` (modo warn)** (Sub-etapa 4.4, PR #44; refinado pela 4.14 em PR #58). Implementado em `.claude/hooks/universal/docs-size.ps1`, invocado via `.githooks/pre-commit` (orquestrador) no evento `pre-commit`. Limite: 800 linhas totais. Alerta visual em amarelo, **nao bloqueia commit**. Apenas `.md` em `docs/` — outros `.md` ignorados. **A partir da 4.14:** `docs/prompts/` excluido da verificacao (prompts versionados sao registros historicos por natureza; tamanho nao e criterio de qualidade). Modo `warn` registrado como padrao para regras subjetivas em `decisoes.md`.
 - **Secret Scanning** (Sub-etapa 5.10). Implementado em `.claude/hooks/universal/secret-scanning.ps1`, invocado via `.githooks/pre-commit` (orquestrador) no evento `pre-commit`. Monitora extensoes `.java`, `.ts`, `.tsx`, `.js`, `.jsx`, `.properties`, `.yml`, `.yaml`, `.json`. Aplica 6 padroes (P1 chave PEM privada, P2 AWS Access Key ID, P3 GitHub token, P4 OpenAI/Anthropic API key, P5 password literal, P6 secret/apiKey literal). Exclusoes: `src/test/` (senhas de teste esperadas), arquivos `*.example` e `*-example.*`. P5 e P6 ignoram valores que comecam com `$` ou `{` (placeholders Spring/env). Modo **fail** (secret scanning nunca pode ser warn).
+
+- **baseline-on-migrate apenas em test/dev** (Sub-etapa 5.51). Implementado em `.claude/hooks/java-spring/baseline-on-migrate.ps1`, invocado via `.githooks/pre-commit` (orquestrador) no evento `pre-commit`. Age apenas em `application*.yml` staged em `src/main/resources/`. Permite `baseline-on-migrate: true` somente em `application-test.yml` e `application-dev.yml`. Modo fail. Licao 2.1: em producao, `baseline-on-migrate: true` faz o Flyway marcar todas as migrations existentes como ja executadas, resultando em tabelas faltando no schema real.
+
+- **Ordem Lombok antes de MapStruct em annotationProcessorPaths** (Sub-etapa 5.51). Implementado em `.claude/hooks/java-spring/lombok-mapstruct-order.ps1`, invocado via `.githooks/pre-commit` (orquestrador) no evento `pre-commit`. Age apenas quando `pom.xml` esta staged. Extrai o bloco `<annotationProcessorPaths>` e compara posicoes de `lombok` e `mapstruct-processor` via `.IndexOf()`. Bloqueia se `mapstruct-processor` aparece antes de `lombok`. Modo fail. Licao 1.4: MapStruct precisa dos metodos gerados pelo Lombok (getters, setters, builders) no momento do processamento -- ordem invertida quebra o build de forma nao-obvia.
 
 - **Hook post-edit unit tests** (Sub-etapa 4.22, PR #68). Hook nativo Claude Code
   (`PostToolUse`) em `.claude/hooks/post-edit/run-tests.ps1`, referenciado por

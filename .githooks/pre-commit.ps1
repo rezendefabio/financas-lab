@@ -18,6 +18,8 @@ $hooks = @(
     (Join-Path $repoRoot ".claude\hooks\universal\docs-size.ps1")
     (Join-Path $repoRoot ".claude\hooks\java-spring\maven-release.ps1")
     (Join-Path $repoRoot ".claude\hooks\java-spring\entity-migration.ps1")
+    (Join-Path $repoRoot ".claude\hooks\java-spring\baseline-on-migrate.ps1")
+    (Join-Path $repoRoot ".claude\hooks\java-spring\lombok-mapstruct-order.ps1")
     (Join-Path $repoRoot ".claude\hooks\universal\secret-scanning.ps1")
 )
 
