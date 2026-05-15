@@ -82,7 +82,7 @@ A seção "Débitos de configuração" deste documento (`application-prod.yml` a
 ## Hooks Maven / Java
 
 - **Versão de plugin Maven validada via Maven Central** antes de ser fixada. (Etapa 1.4) Não usar memória do agente — versões podem estar desatualizadas.
-- **Modificacao de `@Entity` JPA existente exige migration Flyway no mesmo PR.** (Etapa 2.1, caso edge -- modo conservador na 4.7 cobre apenas Entity nova/status A; modificacao/status M produz falso positivo alto e ficou como debito explicito). Avaliar implementacao sofisticada (parser de diff `git diff --cached -U0`) se aparecer dor real.
+- ~~**Modificacao de `@Entity` JPA existente exige migration Flyway no mesmo PR.**~~ Implementado na 5.53 como hook warn -- ver secao "Hooks implementados".
 - **Classe base de teste sem `abstract` em pacote de shared test.** (Etapa 2.1) Validar que classes base de teste em `src/test/java/.../shared/` têm modificador `abstract` — sem ele, JUnit tenta instanciar e duplica execuções.
 - **Sufixo de classe de teste segue padrão do projeto.** (Etapa 2.2) Sufixo `Test` (singular) para classes novas — `IT` não é usado neste projeto (Failsafe não configurado).
 
@@ -146,6 +146,8 @@ Itens originalmente listados em "Hooks Markdown / docs" ou outras secoes, agora 
 - **baseline-on-migrate apenas em test/dev** (Sub-etapa 5.51). Implementado em `.claude/hooks/java-spring/baseline-on-migrate.ps1`, invocado via `.githooks/pre-commit` (orquestrador) no evento `pre-commit`. Age apenas em `application*.yml` staged em `src/main/resources/`. Permite `baseline-on-migrate: true` somente em `application-test.yml` e `application-dev.yml`. Modo fail. Licao 2.1: em producao, `baseline-on-migrate: true` faz o Flyway marcar todas as migrations existentes como ja executadas, resultando em tabelas faltando no schema real.
 
 - **Ordem Lombok antes de MapStruct em annotationProcessorPaths** (Sub-etapa 5.51). Implementado em `.claude/hooks/java-spring/lombok-mapstruct-order.ps1`, invocado via `.githooks/pre-commit` (orquestrador) no evento `pre-commit`. Age apenas quando `pom.xml` esta staged. Extrai o bloco `<annotationProcessorPaths>` e compara posicoes de `lombok` e `mapstruct-processor` via `.IndexOf()`. Bloqueia se `mapstruct-processor` aparece antes de `lombok`. Modo fail. Licao 1.4: MapStruct precisa dos metodos gerados pelo Lombok (getters, setters, builders) no momento do processamento -- ordem invertida quebra o build de forma nao-obvia.
+
+- **@Entity modificada com campo novo avisa sobre migration Flyway (modo warn)** (Sub-etapa 5.53). Implementado em `.claude/hooks/java-spring/entity-migration-modified.ps1`, invocado via `.githooks/pre-commit` (orquestrador) no evento `pre-commit`. Complementa o hook 4.7 (que cobre Entity nova/status A). Usa `git diff --cached -U0` para inspecionar linhas adicionadas em arquivos `.java` modificados (status M) que contenham `@Entity`. Dispara se alguma linha adicionada corresponde a campo novo: `private\s+\w`, `@Column`, `@Id` ou `@Embedded`. Modo **warn** (exit 0 sempre): falsos positivos possiveis em refactors de campos existentes; desenvolvedor decide se precisa de migration. Exibe AVISO amarelo listando arquivos suspeitos e orienta criacao de `ALTER TABLE ADD COLUMN` ou ignora se for refactor puro.
 
 - **Hook post-edit unit tests** (Sub-etapa 4.22, PR #68). Hook nativo Claude Code
   (`PostToolUse`) em `.claude/hooks/post-edit/run-tests.ps1`, referenciado por
