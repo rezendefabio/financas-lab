@@ -4,6 +4,7 @@ import com.laboratorio.financas.categoria.domain.Categoria;
 import com.laboratorio.financas.categoria.domain.CategoriaNaoEncontradaException;
 import com.laboratorio.financas.categoria.domain.CategoriaRepository;
 import com.laboratorio.financas.categoria.domain.TipoCategoria;
+import java.time.Instant;
 import java.util.UUID;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -46,7 +47,7 @@ public class CriarCategoriaUseCase {
                 comando.categoriaPaiId(),
                 comando.userId(),
                 comando.system(),
-                java.time.Instant.now(),
+                Instant.now(),
                 null
         );
         return repository.salvar(nova);
