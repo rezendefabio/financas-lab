@@ -7,6 +7,7 @@ import com.laboratorio.financas.lancamentorecorrente.domain.LancamentoRecorrente
 import com.laboratorio.financas.meta.domain.MetaNaoEncontradaException;
 import com.laboratorio.financas.orcamento.domain.OrcamentoNaoEncontradoException;
 import com.laboratorio.financas.payee.domain.PayeeNaoEncontradoException;
+import com.laboratorio.financas.tag.domain.TagNaoEncontradaException;
 import com.laboratorio.financas.transacao.domain.TransacaoComReferenciaInvalidaException;
 import com.laboratorio.financas.transacao.domain.TransacaoNaoEncontradaException;
 import jakarta.validation.ConstraintViolationException;
@@ -143,6 +144,15 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(PayeeNaoEncontradoException.class)
     public ProblemDetail handlePayeeNaoEncontrado(PayeeNaoEncontradoException ex) {
+        ProblemDetail problem = ProblemDetail.forStatus(HttpStatus.NOT_FOUND);
+        problem.setTitle("Not Found");
+        problem.setDetail(ex.getMessage());
+        problem.setProperty("id", ex.getId().toString());
+        return problem;
+    }
+
+    @ExceptionHandler(TagNaoEncontradaException.class)
+    public ProblemDetail handleTagNaoEncontrada(TagNaoEncontradaException ex) {
         ProblemDetail problem = ProblemDetail.forStatus(HttpStatus.NOT_FOUND);
         problem.setTitle("Not Found");
         problem.setDetail(ex.getMessage());
