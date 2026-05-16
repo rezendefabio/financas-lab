@@ -14,7 +14,16 @@ import {
   TableHead,
   TableCell,
 } from '@/shared/components/ui/table'
+import { StatusBadge, type StatusConfig } from '@/shared/components/StatusBadge'
 import { formatBRL, formatTipoTransacao, formatDate } from '@/shared/lib/formatters'
+import type { StatusTransacao } from '@/features/transacoes/types/transacao'
+
+const STATUS_TRANSACAO_CONFIG: Record<StatusTransacao, StatusConfig> = {
+  CLEARED: { label: 'Confirmada', variant: 'default' },
+  PENDING: { label: 'Pendente', variant: 'secondary' },
+  SCHEDULED: { label: 'Agendada', variant: 'outline' },
+  CANCELLED: { label: 'Cancelada', variant: 'destructive' },
+}
 
 function badgeVariant(tipo: string) {
   if (tipo === 'RECEITA') return 'default' as const
@@ -46,6 +55,7 @@ export default function TransacoesPage() {
                 <TableRow>
                   <TableHead>Descricao</TableHead>
                   <TableHead>Tipo</TableHead>
+                  <TableHead>Status</TableHead>
                   <TableHead>Data</TableHead>
                   <TableHead className="text-right">Valor</TableHead>
                 </TableRow>
@@ -55,6 +65,7 @@ export default function TransacoesPage() {
                   <TableRow key={i}>
                     <TableCell><Skeleton className="h-4 w-40" /></TableCell>
                     <TableCell><Skeleton className="h-4 w-20" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-24" /></TableCell>
                     <TableCell><Skeleton className="h-4 w-24" /></TableCell>
                     <TableCell><Skeleton className="h-4 w-28" /></TableCell>
                   </TableRow>
@@ -84,6 +95,7 @@ export default function TransacoesPage() {
                 <TableRow>
                   <TableHead>Descricao</TableHead>
                   <TableHead>Tipo</TableHead>
+                  <TableHead>Status</TableHead>
                   <TableHead>Data</TableHead>
                   <TableHead className="text-right">Valor</TableHead>
                 </TableRow>
@@ -96,6 +108,13 @@ export default function TransacoesPage() {
                       <Badge variant={badgeVariant(t.tipo)}>
                         {formatTipoTransacao(t.tipo)}
                       </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <StatusBadge
+                        status={t.status}
+                        config={STATUS_TRANSACAO_CONFIG}
+                        fallbackLabel={t.status}
+                      />
                     </TableCell>
                     <TableCell>{formatDate(t.data)}</TableCell>
                     <TableCell className="text-right tabular-nums">
