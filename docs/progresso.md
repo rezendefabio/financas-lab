@@ -3,7 +3,7 @@
 > Documento de tracking. Mostra **onde estamos** na construção da fábrica e do produto.
 > Atualizado conforme camadas avançam. Diferente do `decisoes.md` (que registra escolhas) e dos `adrs.md` (que registram porquês), este documento responde a pergunta: "em que ponto eu estou?".
 
-**Última atualização:** 2026-05-15 (Sub-etapa 5.65 -- corrigir modelo de dados Conta no frontend)
+**Última atualização:** 2026-05-15 (Sub-etapa 5.66 -- melhorias de UX na tela de contas)
 
 ---
 
@@ -159,6 +159,17 @@ Configurar `CLAUDE.md` rico, criar 3-5 subagents focados, criar 5-10 skills (sla
 Ativar a fábrica de fato: rodar features no Tier 2, configurar 3 routines Tier 1, validar paralelismo se necessário.
 
 ### Sub-etapas concluídas
+
+- **5.66 -- melhorias de UX na tela de contas** (2026-05-15):
+  Cinco melhorias na tela de contas. **(1) Saldo atual nos cards:** `saldoAtualValor ?? saldoInicialValor`
+  com label "saldo atual" em vez de "saldo inicial". **(2) Card de saldo total:** query
+  `contas-saldo-total` exibe valor e contagem acima da grid. **(3) Filtro de status:**
+  `contasService.listar(ativa?)` aceita filtro opcional; Select Todas/Ativas/Inativas no header.
+  **(4) Campos condicionais de cartao:** formulario exibe limite de credito, dia de fechamento
+  e dia de vencimento apenas quando `tipo === CARTAO_CREDITO`; INVESTIMENTO e OUTRO adicionados
+  ao select. **(5) Detalhe mostra campos de cartao:** campos exibidos condicionalmente quando
+  nao-null. fix: eslint-disable para `form.watch()` em novo/page.tsx e transacoes/novo/page.tsx
+  (pre-existente). 219 testes passando, lint e build verdes. PR aberto.
 
 - **5.65 -- corrigir modelo de dados Conta no frontend** (2026-05-15):
   Alinhamento de tipos frontend com o backend real. **(1) TipoConta:** adicionados
