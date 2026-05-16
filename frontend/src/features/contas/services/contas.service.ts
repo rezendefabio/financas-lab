@@ -24,4 +24,6 @@ export const contasService = {
   saldoTotal: () => apiFetch<SaldoTotalResponse>('/api/contas/saldo-total'),
   desativar: (id: string) =>
     apiFetch<void>(`/api/contas/${id}`, { method: 'DELETE' }),
+  excluir: (id: string) =>
+    apiFetch<void>(`/api/contas/${id}/excluir`, { method: 'DELETE' }),
 }

@@ -13,6 +13,7 @@ vi.mock('@/features/contas/services/contas.service', () => ({
     buscarPorId: vi.fn(),
     calcularSaldo: vi.fn(),
     desativar: vi.fn(),
+    excluir: vi.fn(),
   },
 }))
 
@@ -115,6 +116,17 @@ function mockMutationIdle() {
     mutate: vi.fn(),
     isPending: false,
   } as unknown as ReturnType<typeof useMutation>)
+}
+
+function mockMutationIdleWithFn(mutateDesativar = vi.fn(), mutateExcluir = vi.fn()) {
+  let callCount = 0
+  vi.mocked(useMutation).mockImplementation(() => {
+    callCount++
+    if (callCount === 1) {
+      return { mutate: mutateDesativar, isPending: false } as unknown as ReturnType<typeof useMutation>
+    }
+    return { mutate: mutateExcluir, isPending: false } as unknown as ReturnType<typeof useMutation>
+  })
 }
 
 describe('ContaDetalhePage', () => {
@@ -268,6 +280,49 @@ describe('ContaDetalhePage', () => {
       mockQuerySaldoLoading(contaAtiva)
       render(<ContaDetalhePage />)
       expect(screen.queryByText(/1\.300/)).toBeNull()
+    })
+  })
+
+  describe('fluxo de exclusao', () => {
+    it('exibe botao Excluir conta para conta ativa', () => {
+      mockQueryConta(contaAtiva, saldoResponse)
+      render(<ContaDetalhePage />)
+      expect(screen.getByRole('button', { name: /excluir conta/i })).toBeTruthy()
+    })
+
+    it('exibe botao Excluir conta para conta inativa', () => {
+      mockQueryConta(contaInativa, saldoResponse)
+      render(<ContaDetalhePage />)
+      expect(screen.getByRole('button', { name: /excluir conta/i })).toBeTruthy()
+    })
+
+    it('exibe confirmacao ao clicar em Excluir conta', async () => {
+      mockQueryConta(contaAtiva, saldoResponse)
+      render(<ContaDetalhePage />)
+      await userEvent.click(screen.getByRole('button', { name: /excluir conta/i }))
+      expect(screen.getByText(/Esta acao nao pode ser desfeita/i)).toBeTruthy()
+      expect(screen.getByRole('button', { name: /excluir conta permanentemente/i })).toBeTruthy()
+    })
+
+    it('volta ao estado inicial ao clicar em Cancelar na exclusao', async () => {
+      mockQueryConta(contaAtiva, saldoResponse)
+      render(<ContaDetalhePage />)
+      await userEvent.click(screen.getByRole('button', { name: /excluir conta/i }))
+      const cancelarButtons = screen.getAllByRole('button', { name: /cancelar/i })
+      await userEvent.click(cancelarButtons[0])
+      expect(screen.getByRole('button', { name: /excluir conta/i })).toBeTruthy()
+      expect(screen.queryByText(/Esta acao nao pode ser desfeita/i)).toBeNull()
+    })
+
+    it('chama mutate excluir ao confirmar exclusao', async () => {
+      const mockMutateExcluir = vi.fn()
+      mockMutationIdleWithFn(vi.fn(), mockMutateExcluir)
+
+      mockQueryConta(contaAtiva, saldoResponse)
+      render(<ContaDetalhePage />)
+      await userEvent.click(screen.getByRole('button', { name: /excluir conta/i }))
+      await userEvent.click(screen.getByRole('button', { name: /excluir conta permanentemente/i }))
+      expect(mockMutateExcluir).toHaveBeenCalledOnce()
     })
   })
 
