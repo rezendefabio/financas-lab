@@ -110,7 +110,9 @@ export default function NovaCategoriaPage() {
                     render={({ field }) => (
                       <Select value={field.value} onValueChange={field.onChange}>
                         <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Selecione o tipo" />
+                          <SelectValue placeholder="Selecione o tipo">
+                            {(v: string | null) => TIPOS.find(t => t.value === v)?.label ?? 'Selecione o tipo'}
+                          </SelectValue>
                         </SelectTrigger>
                         <SelectContent>
                           {TIPOS.map((t) => (
@@ -138,7 +140,12 @@ export default function NovaCategoriaPage() {
                       render={({ field }) => (
                         <Select value={field.value ?? ''} onValueChange={(v) => field.onChange(v || undefined)}>
                           <SelectTrigger className="w-full">
-                            <SelectValue placeholder="Nenhuma (categoria raiz)" />
+                            <SelectValue placeholder="Nenhuma (categoria raiz)">
+                              {(v: string | null) => {
+                                if (!v) return 'Nenhuma (categoria raiz)'
+                                return categorias?.find(c => c.id === v)?.nome ?? 'Nenhuma (categoria raiz)'
+                              }}
+                            </SelectValue>
                           </SelectTrigger>
                           <SelectContent>
                             {categorias.map((c) => (

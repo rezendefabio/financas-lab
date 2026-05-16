@@ -168,7 +168,9 @@ export default function NovaTransacaoPage() {
                     render={({ field }) => (
                       <Select value={field.value} onValueChange={field.onChange}>
                         <SelectTrigger className="w-full">
-                          <SelectValue />
+                          <SelectValue>
+                            {(v: string | null) => TIPOS.find(t => t.value === v)?.label ?? 'Selecione o tipo'}
+                          </SelectValue>
                         </SelectTrigger>
                         <SelectContent>
                           {TIPOS.map((t) => (
@@ -234,7 +236,12 @@ export default function NovaTransacaoPage() {
                     render={({ field }) => (
                       <Select value={field.value} onValueChange={field.onChange}>
                         <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Selecione a conta" />
+                          <SelectValue placeholder="Selecione a conta">
+                            {(v: string | null) => {
+                              if (!v) return 'Selecione a conta'
+                              return (contas ?? []).find(c => c.id === v)?.nome ?? 'Selecione a conta'
+                            }}
+                          </SelectValue>
                         </SelectTrigger>
                         <SelectContent>
                           {(contas ?? []).filter(c => c.ativa).map((c) => (
@@ -259,7 +266,12 @@ export default function NovaTransacaoPage() {
                       render={({ field }) => (
                         <Select value={field.value ?? ''} onValueChange={(v) => field.onChange(v || undefined)}>
                           <SelectTrigger className="w-full">
-                            <SelectValue placeholder="Selecione a conta de destino" />
+                            <SelectValue placeholder="Selecione a conta de destino">
+                              {(v: string | null) => {
+                                if (!v) return 'Selecione a conta de destino'
+                                return (contas ?? []).find(c => c.id === v)?.nome ?? 'Selecione a conta de destino'
+                              }}
+                            </SelectValue>
                           </SelectTrigger>
                           <SelectContent>
                             {(contas ?? []).filter(c => c.ativa).map((c) => (
@@ -287,7 +299,12 @@ export default function NovaTransacaoPage() {
                       render={({ field }) => (
                         <Select value={field.value ?? ''} onValueChange={(v) => field.onChange(v || undefined)}>
                           <SelectTrigger className="w-full">
-                            <SelectValue placeholder="Sem categoria" />
+                            <SelectValue placeholder="Sem categoria">
+                              {(v: string | null) => {
+                                if (!v) return 'Sem categoria'
+                                return (categoriasDoTipo ?? []).find(c => c.id === v)?.nome ?? 'Sem categoria'
+                              }}
+                            </SelectValue>
                           </SelectTrigger>
                           <SelectContent>
                             {categoriasDoTipo.map((c) => (
@@ -309,7 +326,9 @@ export default function NovaTransacaoPage() {
                     render={({ field }) => (
                       <Select value={field.value} onValueChange={field.onChange}>
                         <SelectTrigger className="w-full">
-                          <SelectValue />
+                          <SelectValue>
+                            {(v: string | null) => STATUS_OPTIONS.find(s => s.value === v)?.label ?? 'Selecione o status'}
+                          </SelectValue>
                         </SelectTrigger>
                         <SelectContent>
                           {STATUS_OPTIONS.map((s) => (
@@ -337,7 +356,12 @@ export default function NovaTransacaoPage() {
                       render={({ field }) => (
                         <Select value={field.value ?? ''} onValueChange={(v) => field.onChange(v || undefined)}>
                           <SelectTrigger className="w-full">
-                            <SelectValue placeholder="Sem beneficiario" />
+                            <SelectValue placeholder="Sem beneficiario">
+                              {(v: string | null) => {
+                                if (!v) return 'Sem beneficiario'
+                                return (payees ?? []).find(p => p.id === v)?.nome ?? 'Sem beneficiario'
+                              }}
+                            </SelectValue>
                           </SelectTrigger>
                           <SelectContent>
                             {(payees ?? []).map((p) => (

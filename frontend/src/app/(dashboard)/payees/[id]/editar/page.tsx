@@ -152,7 +152,12 @@ export default function EditarPayeePage() {
                         onValueChange={(v) => field.onChange(v || undefined)}
                       >
                         <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Sem categoria padrao" />
+                          <SelectValue placeholder="Sem categoria padrao">
+                            {(v: string | null) => {
+                              if (!v) return 'Sem categoria padrao'
+                              return categorias?.find(c => c.id === v)?.nome ?? 'Sem categoria padrao'
+                            }}
+                          </SelectValue>
                         </SelectTrigger>
                         <SelectContent>
                           {categorias?.map((c) => (

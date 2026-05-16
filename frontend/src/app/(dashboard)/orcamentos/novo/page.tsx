@@ -107,7 +107,12 @@ export default function NovoOrcamentoPage() {
                       <FormControl>
                         <Select value={field.value} onValueChange={field.onChange}>
                           <SelectTrigger className="w-full">
-                            <SelectValue placeholder="Selecione uma categoria" />
+                            <SelectValue placeholder="Selecione uma categoria">
+                              {(v: string | null) => {
+                                if (!v) return 'Selecione uma categoria'
+                                return (categorias ?? []).find(c => c.id === v)?.nome ?? 'Selecione uma categoria'
+                              }}
+                            </SelectValue>
                           </SelectTrigger>
                           <SelectContent>
                             {categoriasDespesa.length > 0 && (

@@ -38,7 +38,36 @@ Ler antes de gerar qualquer campo. Violacao de B7 bloqueia merge.
 
 | Situacao | Input | Exibicao |
 |---|---|---|
-| Enum Java com valores fixos | `<Select>` com mapa de labels (ex: `formatTipoConta`) | Label do mapa, nao o valor raw |
+| Enum Java com valores fixos | `<Select>` com mapa de labels e render function em `Select.Value` (ver secao abaixo) | Label do mapa, nao o valor raw |
+
+### Select: exibicao do valor selecionado (obrigatorio)
+
+`@base-ui/react` v1.4.1 -- `Select.Value` nao espelha automaticamente o texto do item selecionado
+quando o popup esta fechado. **Obrigatorio** usar render function como `children`.
+
+**Para opcoes estaticas (array de constantes):**
+
+```tsx
+<SelectValue placeholder="Selecione">
+  {(v: string | null) => OPTIONS.find(o => o.value === v)?.label ?? 'Selecione'}
+</SelectValue>
+```
+
+**Para opcoes dinamicas (dados da API):**
+
+```tsx
+<SelectValue placeholder="Selecione">
+  {(v: string | null) => {
+    if (!v) return 'Selecione'
+    return (items ?? []).find(i => i.id === v)?.nome ?? 'Selecione'
+  }}
+</SelectValue>
+```
+
+**Nunca usar `<SelectValue />` ou `<SelectValue placeholder="..." />` sem render function.**
+O resultado seria exibir o `value` bruto (UUID, enum string, booleano) no trigger.
+
+Violacao deste padrao e bloqueador B7 (campo implementado sem consultar o catalogo).
 
 ### Strings com restricoes
 
