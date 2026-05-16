@@ -168,7 +168,9 @@ export default function NovoLancamentoRecorrentePage() {
                     render={({ field }) => (
                       <Select value={field.value} onValueChange={field.onChange}>
                         <SelectTrigger className="w-full">
-                          <SelectValue />
+                          <SelectValue>
+                            {(v: string | null) => TIPOS.find(t => t.value === v)?.label ?? 'Selecione o tipo'}
+                          </SelectValue>
                         </SelectTrigger>
                         <SelectContent>
                           {TIPOS.map((t) => (
@@ -210,7 +212,12 @@ export default function NovoLancamentoRecorrentePage() {
                     render={({ field }) => (
                       <Select value={field.value} onValueChange={field.onChange}>
                         <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Selecione a conta" />
+                          <SelectValue placeholder="Selecione a conta">
+                            {(v: string | null) => {
+                              if (!v) return 'Selecione a conta'
+                              return (contas ?? []).find(c => c.id === v)?.nome ?? 'Selecione a conta'
+                            }}
+                          </SelectValue>
                         </SelectTrigger>
                         <SelectContent>
                           {(contas ?? [])
@@ -244,7 +251,12 @@ export default function NovoLancamentoRecorrentePage() {
                           onValueChange={(v) => field.onChange(v || undefined)}
                         >
                           <SelectTrigger className="w-full">
-                            <SelectValue placeholder="Sem categoria" />
+                            <SelectValue placeholder="Sem categoria">
+                              {(v: string | null) => {
+                                if (!v) return 'Sem categoria'
+                                return (categoriasDoTipo ?? []).find(c => c.id === v)?.nome ?? 'Sem categoria'
+                              }}
+                            </SelectValue>
                           </SelectTrigger>
                           <SelectContent>
                             {categoriasDoTipo.map((c) => (
@@ -268,7 +280,9 @@ export default function NovoLancamentoRecorrentePage() {
                     render={({ field }) => (
                       <Select value={field.value} onValueChange={field.onChange}>
                         <SelectTrigger className="w-full">
-                          <SelectValue />
+                          <SelectValue>
+                            {(v: string | null) => PERIODICIDADES.find(p => p.value === v)?.label ?? 'Selecione a periodicidade'}
+                          </SelectValue>
                         </SelectTrigger>
                         <SelectContent>
                           {PERIODICIDADES.map((p) => (

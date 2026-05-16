@@ -138,7 +138,9 @@ export default function NovaConta() {
                     render={({ field }) => (
                       <Select value={field.value} onValueChange={field.onChange}>
                         <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Selecione o tipo" />
+                          <SelectValue placeholder="Selecione o tipo">
+                            {(v: string | null) => TIPOS.find(t => t.value === v)?.label ?? 'Selecione o tipo'}
+                          </SelectValue>
                         </SelectTrigger>
                         <SelectContent>
                           {TIPOS.map((t) => (

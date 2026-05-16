@@ -18,6 +18,12 @@ import {
 } from '@/shared/components/ui/select'
 import type { Conta } from '@/features/contas/types/conta'
 
+const FILTRO_ATIVA_OPTIONS = [
+  { value: 'todas', label: 'Todas' },
+  { value: 'true', label: 'Ativas' },
+  { value: 'false', label: 'Inativas' },
+] as const
+
 function ContaCard({ conta, onClick }: { conta: Conta; onClick: () => void }) {
   return (
     <Card
@@ -70,7 +76,11 @@ export default function ContasPage() {
             onValueChange={(v) => setFiltroAtiva(v === 'todas' ? undefined : v === 'true')}
           >
             <SelectTrigger className="w-36">
-              <SelectValue />
+              <SelectValue>
+                {(v: string | null) =>
+                  FILTRO_ATIVA_OPTIONS.find(o => o.value === (v ?? 'todas'))?.label ?? 'Todas'
+                }
+              </SelectValue>
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="todas">Todas</SelectItem>
