@@ -298,7 +298,7 @@ git diff --name-only HEAD~1..HEAD | grep "^frontend/" | head -1
 ```
 
 Se o comando retornar alguma linha (ha arquivos frontend commitados):
-- Executar `.\scripts\check-front.ps1` (a partir da raiz do worktree)
+- Executar via PowerShell: `powershell -NoProfile -Command '.\scripts\check-front.ps1'`
 - Se exit code != 0: NENHUM push ou PR. Corrigir todos os erros de lint/test/build
   antes de prosseguir. Erros de lint sao bloqueadores -- nao ignorar warnings.
 - Erros comuns a corrigir sem perguntar ao operador:
