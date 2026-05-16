@@ -1,5 +1,6 @@
 package com.laboratorio.financas.shared.infrastructure.web;
 
+import com.laboratorio.financas.categoria.domain.CategoriaJaExisteException;
 import com.laboratorio.financas.categoria.domain.CategoriaNaoEncontradaException;
 import com.laboratorio.financas.conta.domain.ContaNaoEncontradaException;
 import com.laboratorio.financas.instituicao.domain.InstituicaoNaoEncontradaException;
@@ -72,6 +73,14 @@ public class GlobalExceptionHandler {
         problem.setTitle("Not Found");
         problem.setDetail(ex.getMessage());
         problem.setProperty("id", ex.getId().toString());
+        return problem;
+    }
+
+    @ExceptionHandler(CategoriaJaExisteException.class)
+    public ProblemDetail handleCategoriaJaExiste(CategoriaJaExisteException ex) {
+        ProblemDetail problem = ProblemDetail.forStatus(HttpStatus.CONFLICT);
+        problem.setTitle("Conflict");
+        problem.setDetail(ex.getMessage());
         return problem;
     }
 
