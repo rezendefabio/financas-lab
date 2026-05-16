@@ -171,6 +171,43 @@ PRs abertos: N/{total}
 Bloqueadores: <lista ou "nenhum">
 ```
 
+### Sub-passo 5.4 -- Reviews automaticos de PR (obrigatorio)
+
+Para cada task com `status: "completed"` e `pr_url` nao-nulo, executar os
+reviews em sequencia (nao em paralelo -- cada review deve completar antes do
+proximo iniciar):
+
+**Review 1 -- pr-reviewer (sempre):**
+- subagent_type: "pr-reviewer"
+- prompt: "Revise o PR #<numero> do repositorio financas-lab antes do merge."
+  (extrair <numero> do ultimo segmento da pr_url)
+
+Aguardar o resultado. Se reportar bloqueador: registrar no relatorio final.
+
+**Review 2 -- front-reviewer (condicional):**
+
+Verificar se a task tem arquivos frontend. Usar como sinal o campo `tipo` da
+task (se disponivel no tasks.json) ou o titulo/resumo da task:
+- Se `tipo` for "frontend_only" ou "feature_completa": spawnar front-reviewer
+- Se `tipo` for "backend_only": pular
+- Se `tipo` ausente ou "refactor": spawnar front-reviewer por precaucao
+
+- subagent_type: "front-reviewer"
+- prompt: "Revise as mudancas de frontend do PR #<numero> do repositorio financas-lab."
+
+Aguardar o resultado. Se reportar bloqueador: registrar no relatorio final.
+
+Adicionar ao relatorio final (Sub-passo 5.3) uma secao de reviews:
+
+```
+Reviews:
+  [task-001] pr-reviewer:    OK | BLOQUEADOR: <motivo>
+  [task-001] front-reviewer: OK | BLOQUEADOR: <motivo> | N/A (backend-only)
+```
+
+Se multiplas tasks tiverem PR: repetir o ciclo de reviews para cada uma
+antes de exibir o relatorio final consolidado.
+
 ## Passo 6 -- Cleanup de worktrees e branches orfaos
 
 Apos exibir o relatorio final, executar os dois sub-passos de limpeza em ordem.
