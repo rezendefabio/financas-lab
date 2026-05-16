@@ -70,4 +70,12 @@ public class CategoriaRepositoryImpl implements CategoriaRepository {
     public void deletar(UUID id) {
         jpaRepository.deleteById(id);
     }
+
+    @Override
+    public boolean existePorNomeEUserId(String nome, UUID userId) {
+        if (userId != null) {
+            return jpaRepository.existsByNomeAndUserId(nome, userId);
+        }
+        return jpaRepository.existsByNomeAndSystemTrue(nome);
+    }
 }

@@ -21,4 +21,6 @@ public interface CategoriaRepository {
     List<Categoria> listarVisiveisPara(UUID userId);
 
     void deletar(UUID id);
+
+    boolean existePorNomeEUserId(String nome, UUID userId);
 }
