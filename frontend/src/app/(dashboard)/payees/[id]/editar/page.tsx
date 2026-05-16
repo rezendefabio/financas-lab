@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useForm, Controller, type Resolver } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -40,7 +40,6 @@ export default function EditarPayeePage() {
   const id = params.id
   const queryClient = useQueryClient()
   const [apiError, setApiError] = useState<string | null>(null)
-  const [initialized, setInitialized] = useState(false)
 
   const { data: payees, isLoading: payeesLoading, isError: payeesError } = useQuery({
     queryKey: ['payees'],
@@ -54,23 +53,14 @@ export default function EditarPayeePage() {
 
   const payee = payees?.find((p) => p.id === id)
 
+  // Use `values` prop so form re-syncs when payee data arrives
   const form = useForm<FormValues>({
     resolver: zodResolver(schema) as Resolver<FormValues>,
-    defaultValues: {
-      nome: '',
-      categoriaPadraoId: undefined,
-    },
+    defaultValues: { nome: '', categoriaPadraoId: undefined },
+    values: payee
+      ? { nome: payee.nome, categoriaPadraoId: payee.categoriaPadraoId ?? undefined }
+      : undefined,
   })
-
-  useEffect(() => {
-    if (payee && !initialized) {
-      form.reset({
-        nome: payee.nome,
-        categoriaPadraoId: payee.categoriaPadraoId ?? undefined,
-      })
-      setInitialized(true)
-    }
-  }, [payee, initialized, form])
 
   const mutation = useMutation({
     mutationFn: (values: FormValues) =>

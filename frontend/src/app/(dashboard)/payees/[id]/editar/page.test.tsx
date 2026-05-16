@@ -8,9 +8,7 @@ vi.mock('@/features/payee/services/payee-service', () => ({
 }))
 
 vi.mock('@/features/categorias/services/categorias.service', () => ({
-  categoriasService: {
-    listar: vi.fn(),
-  },
+  categoriasService: { listar: vi.fn() },
 }))
 
 const mockPush = vi.fn()
@@ -37,19 +35,14 @@ vi.mock('@tanstack/react-query', async (importOriginal) => {
       isPending: false,
     })),
     useQueryClient: () => ({ invalidateQueries: mockInvalidateQueries }),
-    useQuery: vi.fn(({ queryFn }) => {
-      // Return data based on query function type
+    useQuery: vi.fn(() => {
       return { data: undefined, isLoading: false, isError: false }
     }),
   }
 })
 
-import { listarPayees, atualizarPayee } from '@/features/payee/services/payee-service'
-import { categoriasService } from '@/features/categorias/services/categorias.service'
 import type { Payee } from '@/features/payee/types/payee'
-import type { Categoria } from '@/features/categorias/types/categoria'
 
-// Re-import after mocks are setup
 import EditarPayeePage from './page'
 import { useQuery } from '@tanstack/react-query'
 
@@ -60,15 +53,6 @@ const payeeFixture = (overrides?: Partial<Payee>): Payee => ({
   categoriaPadraoId: undefined,
   criadoEm: '2026-01-01T00:00:00Z',
   atualizadoEm: '2026-01-01T00:00:00Z',
-  ...overrides,
-})
-
-const categoriaFixture = (overrides?: Partial<Categoria>): Categoria => ({
-  id: 'cat-001',
-  nome: 'Alimentacao',
-  tipo: 'DESPESA',
-  categoriaPaiId: null,
-  criadoEm: '2026-01-01T00:00:00Z',
   ...overrides,
 })
 
