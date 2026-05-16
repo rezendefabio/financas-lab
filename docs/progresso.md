@@ -3,7 +3,7 @@
 > Documento de tracking. Mostra **onde estamos** na construção da fábrica e do produto.
 > Atualizado conforme camadas avançam. Diferente do `decisoes.md` (que registra escolhas) e dos `adrs.md` (que registram porquês), este documento responde a pergunta: "em que ponto eu estou?".
 
-**Última atualização:** 2026-05-16 (Sub-etapa 5.67 -- corrige V20 FK violation + regra FK no /plan)
+**Última atualização:** 2026-05-16 (Sub-etapa 5.68 -- fix SelectValue render function em 8 telas)
 
 ---
 
@@ -159,6 +159,19 @@ Configurar `CLAUDE.md` rico, criar 3-5 subagents focados, criar 5-10 skills (sla
 Ativar a fábrica de fato: rodar features no Tier 2, configurar 3 routines Tier 1, validar paralelismo se necessário.
 
 ### Sub-etapas concluídas
+
+- **5.68 -- fix SelectValue render function em 8 telas** (2026-05-16):
+  Bug: `@base-ui/react` v1.4.1 -- `Select.Value` nao espelha automaticamente o label do
+  item selecionado quando o popup esta fechado; o trigger exibia o value raw (UUID, enum
+  string, booleano). Causa raiz: componente requer render function como `children` para
+  resolver o label no client apos os SelectItem serem desmontados. Arquivos corrigidos:
+  `contas/page.tsx` (filtro Todas/Ativas/Inativas), `transacoes/novo/page.tsx` (5 selects:
+  tipo, conta origem, conta destino, categoria, status, payee), `categorias/novo/page.tsx`
+  (tipo e categoria pai), `orcamentos/novo/page.tsx` (categoria), `lancamentos-recorrentes/
+  novo/page.tsx` (tipo, conta, categoria, periodicidade), `contas/novo/page.tsx` (tipo de conta),
+  `payees/novo/page.tsx` e `payees/[id]/editar/page.tsx` (categoria padrao). `docs/field-type-
+  catalog.md` atualizado com secao obrigatoria sobre render function e bloqueador B7. 335 testes
+  passando, typecheck e build verdes. PR aberto.
 
 - **5.67 -- corrige V20 FK violation + regra FK no /plan** (2026-05-16):
   Dois fixes relacionados ao mesmo problema raiz. **(1) V20 migration reescrita:**
