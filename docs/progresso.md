@@ -3,7 +3,7 @@
 > Documento de tracking. Mostra **onde estamos** na construção da fábrica e do produto.
 > Atualizado conforme camadas avançam. Diferente do `decisoes.md` (que registra escolhas) e dos `adrs.md` (que registram porquês), este documento responde a pergunta: "em que ponto eu estou?".
 
-**Última atualização:** 2026-05-16 (Sub-etapa 5.68 -- fix SelectValue render function em 8 telas)
+**Última atualização:** 2026-05-16 (Sub-etapa 5.70 -- melhorias do /plan: exibicao, discussao, check-front, cleanup)
 
 ---
 
@@ -159,6 +159,19 @@ Configurar `CLAUDE.md` rico, criar 3-5 subagents focados, criar 5-10 skills (sla
 Ativar a fábrica de fato: rodar features no Tier 2, configurar 3 routines Tier 1, validar paralelismo se necessário.
 
 ### Sub-etapas concluídas
+
+- **5.70 -- melhorias do /plan (exibicao, discussao, check-front, cleanup)** (2026-05-16):
+  Quatro melhorias no `.claude/skills/plan/SKILL.md`. **(1) Exibicao do plano:** Passo 3
+  agora emite o plano como texto de resposta ao operador ANTES de chamar AskUserQuestion --
+  o operador ve o plano no chat (nao apenas o resultado do Write). **(2) Opcao de discussao:**
+  AskUserQuestion passou de 2 para 3 opcoes: "Sim, spawnar", "Quero discutir ou ajustar" e
+  "Cancelar"; opcao 2 entra em loop iterativo ate o operador aprovar ou cancelar. **(3) Gate
+  check-front no executor:** template do executor ganha secao "Gate frontend" pos-Restricao-
+  absoluta: verifica se ha arquivos `frontend/` commitados; se sim, roda `check-front.ps1`
+  e bloqueia push/PR se exit code != 0; lista erros comuns auto-corrigiveis sem perguntar ao
+  operador. **(4) Cleanup de branches merged:** Passo 6 dividido em Sub-passo 6.1 (worktrees e
+  branches com prefixo `agent-`) e Sub-passo 6.2 (`git fetch --prune` + delete de branches
+  locais cujo upstream foi removido via `git branch -vv | grep ': gone]'`). PR aberto.
 
 - **5.68 -- fix SelectValue render function em 8 telas** (2026-05-16):
   Bug: `@base-ui/react` v1.4.1 -- `Select.Value` nao espelha automaticamente o label do
