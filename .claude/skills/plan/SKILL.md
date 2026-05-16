@@ -170,10 +170,12 @@ Para cada task retornada pelo planejador, adicionar em `.claude/tasks.json`:
 
 ## Passo 3 -- Exibir planejamento e aguardar aprovacao
 
-Exibir ao operador o planejamento completo:
+ANTES de chamar qualquer ferramenta, escrever como texto de resposta ao operador
+(nao como resultado de tool call) o planejamento completo no formato abaixo.
+Este texto DEVE aparecer no chat antes do AskUserQuestion:
 
 ```
-/plan: {N} tasks planejadas para "{OBJETIVO}":
+/plan: {N} tasks planejadas para "{OBJETIVO}"
 
   [1] {task-001 titulo}
       {task-001 resumo}
@@ -184,13 +186,23 @@ Exibir ao operador o planejamento completo:
   ...
 ```
 
-Usar AskUserQuestion com a pergunta "Deseja spawnar os {N} executores agora?"
-e duas opcoes: "Sim, spawnar" e "Nao, cancelar".
+Apos escrever o texto acima, chamar AskUserQuestion com:
+- Pergunta: "O plano esta correto?"
+- Opcao 1: "Sim, spawnar os executores agora"
+- Opcao 2: "Quero discutir ou ajustar o plano"
+- Opcao 3: "Cancelar"
 
-Se o operador escolher "Sim, spawnar": continuar para o Passo 4 (spawnar executores).
-Se o operador escolher "Nao, cancelar" ou qualquer outra resposta: exibir
-"Execucao cancelada. Tasks registradas em .claude/tasks.json com status pending."
-e encerrar sem spawnar nenhum executor.
+**Se "Sim, spawnar":** continuar para o Passo 4.
+
+**Se "Quero discutir / ajustar":** entrar em loop de discussao:
+  1. Perguntar ao operador o que deseja ajustar
+  2. Incorporar o feedback (adicionar, remover ou modificar tasks na lista em memoria)
+  3. Atualizar `.claude/tasks.json` com as tasks revisadas
+  4. Reapresentar o plano atualizado no mesmo formato acima
+  5. Repetir o AskUserQuestion ate o operador escolher "Sim" ou "Cancelar"
+
+**Se "Cancelar":** exibir "Execucao cancelada. Tasks registradas em
+.claude/tasks.json com status pending." e encerrar sem spawnar nenhum executor.
 
 ## Passo 4 -- Spawnar executores
 
@@ -276,6 +288,26 @@ O Bash tool usa `/usr/bin/bash` (Git Bash), NAO PowerShell.
   ```
 - O npm install DEVE ser executado com `cd <dir-do-worktree> && npm install`, nunca com `npm install` na raiz.
 - Nunca executar `npm install` ou `npm ci` sem confirmar primeiro que o diretorio atual e o worktree isolado.
+
+## Gate frontend (obrigatorio quando ha arquivos frontend na task)
+
+Antes de executar /ship, verificar se a task inclui arquivos em `frontend/`:
+
+```bash
+git diff --name-only HEAD~1..HEAD | grep "^frontend/" | head -1
+```
+
+Se o comando retornar alguma linha (ha arquivos frontend commitados):
+- Executar via PowerShell: `powershell -NoProfile -Command '.\scripts\check-front.ps1'`
+- Se exit code != 0: NENHUM push ou PR. Corrigir todos os erros de lint/test/build
+  antes de prosseguir. Erros de lint sao bloqueadores -- nao ignorar warnings.
+- Erros comuns a corrigir sem perguntar ao operador:
+  - `no-unused-vars`: remover import ou variavel nao usada
+  - `no-empty-object-type`: substituir `interface Foo extends Bar {}` por `type Foo = Bar`
+  - `react-hooks/exhaustive-deps`: adicionar dependencia faltante ou usar `// eslint-disable-next-line`
+    apenas se a omissao for intencional e comentada
+
+Se nao houver arquivos frontend: pular este gate.
 
 Sua unica responsabilidade: executar TODOS os passos descritos abaixo de forma
 completamente autonoma, sem pedir aprovacao ao operador.
@@ -371,22 +403,36 @@ Bloqueadores: <lista ou "nenhum">
 
 ## Passo 6 -- Cleanup de worktrees e branches orfaos
 
-Apos exibir o relatorio final, remover worktrees e branches orfaos nessa ordem
-(worktree remove antes de branch -D para evitar erro de branch em uso por worktree registrado):
+Apos exibir o relatorio final, executar os dois sub-passos de limpeza em ordem.
 
-```powershell
-# 1. Remover worktrees registrados cujo path contem 'agent-'
-$wtOutput = git worktree list --porcelain
-foreach ($line in $wtOutput) {
-    if ($line -match '^worktree (.+agent-.+)$') {
-        git worktree remove -f -f $matches[1] 2>$null
-    }
-}
-# 2. Remover branches orfaos
-$orphanBranches = git branch | Where-Object { $_ -match 'worktree-agent-' }
-foreach ($b in @($orphanBranches)) {
-    git branch -D $b.Trim() 2>$null
-}
+### Sub-passo 6.1 -- Remover worktrees e branches com prefixo agent
+
+```bash
+# Remover worktrees registrados cujo path contem 'agent-'
+git worktree list --porcelain | grep "^worktree " | awk '{print $2}' | grep "agent-" | while read wt; do
+  git worktree remove -f "$wt" 2>/dev/null || true
+done
+
+# Remover branches locais com prefixo worktree-agent-
+git branch | grep "worktree-agent-" | while read b; do
+  git branch -D "$(echo $b | tr -d ' *')" 2>/dev/null || true
+done
 ```
+
+### Sub-passo 6.2 -- Remover branches de feature cujo remote foi deletado (merged)
+
+```bash
+# Sincronizar refs remotas (remove tracking de branches deletadas no GitHub)
+git fetch --prune 2>/dev/null || true
+
+# Deletar branches locais cujo upstream foi removido (gone)
+git branch -vv | grep ': gone]' | awk '{print $1}' | while read b; do
+  git branch -d "$b" 2>/dev/null || true
+done
+```
+
+O `-d` (minusculo) so deleta branches totalmente mergeadas -- nao ha risco de
+perda de trabalho nao publicado. Se o branch ainda nao foi mergeado, o comando
+falha silenciosamente (o `|| true` garante que nao aborta o cleanup).
 
 Se nenhum worktree ou branch orfao encontrado: pular silenciosamente.
