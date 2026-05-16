@@ -377,4 +377,32 @@ class ContaRepositoryImplTest extends AbstractIntegrationTest {
         assertThat(recuperada).isPresent();
         assertThat(recuperada.get().getTipo()).isEqualTo(TipoConta.OUTRO);
     }
+
+    @Test
+    void deletarContaExistenteRemoveDoRepositorio() {
+        // Given
+        Conta nova = new Conta(
+                "Conta Para Deletar",
+                TipoConta.CORRENTE,
+                new Money(new BigDecimal("100.00"), BRL)
+        );
+        Conta salva = repository.salvar(nova);
+
+        // When
+        repository.deletar(salva.getId());
+
+        // Then
+        Optional<Conta> resultado = repository.buscarPorId(salva.getId());
+        assertThat(resultado).isEmpty();
+    }
+
+    @Test
+    void deletarContaInexistenteNaoLancaExcecao() {
+        // Given
+        UUID idInexistente = UUID.randomUUID();
+
+        // When / Then -- deleteById no Spring Data nao lanca excecao se id nao existe
+        repository.deletar(idInexistente);
+        // Se chegou aqui sem excecao, o comportamento esta correto
+    }
 }

@@ -13,4 +13,6 @@ public interface ContaRepository {
     List<Conta> listarTodas();
 
     List<Conta> listarAtivas();
+
+    void deletar(UUID id);
 }

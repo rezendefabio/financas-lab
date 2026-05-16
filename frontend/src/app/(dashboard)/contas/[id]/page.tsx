@@ -15,6 +15,7 @@ export default function ContaDetalhePage() {
   const router = useRouter()
   const queryClient = useQueryClient()
   const [confirmando, setConfirmando] = useState(false)
+  const [confirmandoExclusao, setConfirmandoExclusao] = useState(false)
 
   const { data: conta, isLoading: loadingConta, isError: erroConta } = useQuery({
     queryKey: ['conta', id],
@@ -29,6 +30,14 @@ export default function ContaDetalhePage() {
 
   const desativarMutation = useMutation({
     mutationFn: () => contasService.desativar(id),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['contas'] })
+      router.push('/contas')
+    },
+  })
+
+  const excluirMutation = useMutation({
+    mutationFn: () => contasService.excluir(id),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['contas'] })
       router.push('/contas')
@@ -154,6 +163,37 @@ export default function ContaDetalhePage() {
                 )}
               </div>
             )}
+
+            <div className="pt-2 border-t">
+              {!confirmandoExclusao ? (
+                <Button
+                  variant="outline"
+                  className="border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                  onClick={() => setConfirmandoExclusao(true)}
+                >
+                  Excluir conta
+                </Button>
+              ) : (
+                <div className="flex gap-2 items-center">
+                  <p className="text-sm text-muted-foreground">Esta acao nao pode ser desfeita. Confirmar exclusao?</p>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    disabled={excluirMutation.isPending}
+                    onClick={() => excluirMutation.mutate()}
+                  >
+                    {excluirMutation.isPending ? 'Excluindo...' : 'Excluir conta permanentemente'}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setConfirmandoExclusao(false)}
+                  >
+                    Cancelar
+                  </Button>
+                </div>
+              )}
+            </div>
           </CardContent>
         </Card>
       </div>
