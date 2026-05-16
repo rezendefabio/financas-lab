@@ -3,7 +3,7 @@
 > Documento de tracking. Mostra **onde estamos** na construção da fábrica e do produto.
 > Atualizado conforme camadas avançam. Diferente do `decisoes.md` (que registra escolhas) e dos `adrs.md` (que registram porquês), este documento responde a pergunta: "em que ponto eu estou?".
 
-**Última atualização:** 2026-05-16 (Sub-etapa 5.69 -- melhorias do /plan: exibicao, discussao, check-front, cleanup)
+**Última atualização:** 2026-05-16 (Sub-etapa 5.70 -- refatoracao do /plan: task-planner especializado, premissas, reserva de migrations)
 
 ---
 
@@ -159,6 +159,22 @@ Configurar `CLAUDE.md` rico, criar 3-5 subagents focados, criar 5-10 skills (sla
 Ativar a fábrica de fato: rodar features no Tier 2, configurar 3 routines Tier 1, validar paralelismo se necessário.
 
 ### Sub-etapas concluídas
+
+- **5.70 -- refatoracao do /plan (task-planner especializado, premissas, reserva de migrations)** (2026-05-16):
+  Quatro melhorias estruturais no `.claude/skills/plan/`. **(1) task-planner.md:** o prompt
+  do planejador (Passo 1, antes inline com ~120 linhas no SKILL.md) virou arquivo proprio
+  `.claude/skills/plan/prompts/task-planner.md`; o Passo 1 agora le o arquivo e spawna o
+  Agent com `model: "opus"`. **(2) WebSearch no planejador:** task-planner ganha secao que
+  autoriza WebSearch/WebFetch para duvidas tecnicas nao cobertas pelo contexto do projeto.
+  **(3) Premissas visiveis:** novo Passo 1.7 do planejador exige listar premissas inferidas
+  na chave `premissas_globais` do JSON; o Passo 3 da skill exibe as premissas (`[P1]`, `[P2]`)
+  no chat antes do AskUserQuestion, permitindo o operador rejeitar uma premissa errada antes
+  do PR. **(4) Reserva de migrations:** novo item 2b no Passo 1.5 instrui o planejador a
+  atribuir numeros fixos de migration por task (`migracoes_reservadas: ["V{N}"]`), evitando
+  colisao entre executores paralelos; schema JSON estendido com `complexidade`, `risco` e
+  `migracoes_reservadas`. **(5) task-executor.md:** o template do executor (130+ linhas, antes
+  inline no Passo 4) virou arquivo `.claude/skills/plan/prompts/task-executor.md`; o Passo 4
+  le o arquivo e substitui `{CONTEUDO}`/`{LABEL}`. PR aberto.
 
 - **5.69 -- melhorias do /plan (exibicao, discussao, check-front, cleanup)** (2026-05-16):
   Quatro melhorias no `.claude/skills/plan/SKILL.md`. **(1) Exibicao do plano:** Passo 3
