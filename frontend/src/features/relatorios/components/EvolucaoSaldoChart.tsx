@@ -23,6 +23,11 @@ interface EvolucaoSaldoChartProps {
   data: EvolucaoSaldo
 }
 
+// recharts tipa os formatters com valores possivelmente undefined / nao-numericos.
+function formatarEixoBRL(valor: unknown): string {
+  return typeof valor === 'number' ? formatBRL(valor) : ''
+}
+
 function rotuloMes(mesIso: string): string {
   // mesIso vem como data ISO (LocalDate, ex: 2026-05-01); exibir MM/YYYY
   const data = formatDate(mesIso)
@@ -79,9 +84,9 @@ function EvolucaoSaldoChart({ data }: EvolucaoSaldoChartProps) {
               >
                 <CartesianGrid strokeDasharray="3 3" vertical={false} />
                 <XAxis dataKey="mes" fontSize={11} />
-                <YAxis tickFormatter={(v: number) => formatBRL(v)} fontSize={11} />
+                <YAxis tickFormatter={formatarEixoBRL} fontSize={11} />
                 <Tooltip
-                  formatter={(v: number) => formatBRL(v)}
+                  formatter={formatarEixoBRL}
                   labelStyle={{ color: '#0f172a' }}
                 />
                 <Legend />

@@ -26,6 +26,11 @@ const CORES = [
   '#0891b2', '#db2777', '#65a30d', '#ea580c', '#4f46e5',
 ]
 
+// recharts tipa os formatters com valores possivelmente undefined / nao-numericos.
+function formatarEixoBRL(valor: unknown): string {
+  return typeof valor === 'number' ? formatBRL(valor) : ''
+}
+
 function GastosPorCategoriaChart({ data }: GastosPorCategoriaChartProps) {
   const itens = data.itensPorCategoria ?? []
   const vazio = itens.length === 0
@@ -60,7 +65,7 @@ function GastosPorCategoriaChart({ data }: GastosPorCategoriaChartProps) {
                 >
                   <XAxis
                     type="number"
-                    tickFormatter={(v: number) => formatBRL(v)}
+                    tickFormatter={formatarEixoBRL}
                     fontSize={11}
                   />
                   <YAxis
@@ -70,7 +75,7 @@ function GastosPorCategoriaChart({ data }: GastosPorCategoriaChartProps) {
                     fontSize={11}
                   />
                   <Tooltip
-                    formatter={(v: number) => formatBRL(v)}
+                    formatter={formatarEixoBRL}
                     labelStyle={{ color: '#0f172a' }}
                   />
                   <Bar dataKey="valor" radius={[0, 4, 4, 0]}>
