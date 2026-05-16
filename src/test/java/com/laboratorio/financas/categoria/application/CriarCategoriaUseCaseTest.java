@@ -4,11 +4,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.laboratorio.financas.categoria.domain.Categoria;
+import com.laboratorio.financas.categoria.domain.CategoriaJaExisteException;
 import com.laboratorio.financas.categoria.domain.CategoriaNaoEncontradaException;
 import com.laboratorio.financas.categoria.domain.CategoriaRepository;
 import com.laboratorio.financas.categoria.domain.TipoCategoria;
@@ -33,6 +36,7 @@ class CriarCategoriaUseCaseTest {
     void executarCaminhoFelizRetornaCategoria() {
         // Given
         Categoria categoriaSalva = new Categoria("Salario", TipoCategoria.RECEITA);
+        when(repository.existePorNomeEUserId(eq("Salario"), isNull())).thenReturn(false);
         when(repository.salvar(any(Categoria.class))).thenReturn(categoriaSalva);
         CriarCategoriaUseCase.Comando comando = new CriarCategoriaUseCase.Comando("Salario", TipoCategoria.RECEITA, null);
 
@@ -48,6 +52,7 @@ class CriarCategoriaUseCaseTest {
     void executarChamaRepositorioSalvarUmaVez() {
         // Given
         Categoria categoriaSalva = new Categoria("Aluguel", TipoCategoria.DESPESA);
+        when(repository.existePorNomeEUserId(eq("Aluguel"), isNull())).thenReturn(false);
         when(repository.salvar(any(Categoria.class))).thenReturn(categoriaSalva);
         CriarCategoriaUseCase.Comando comando = new CriarCategoriaUseCase.Comando("Aluguel", TipoCategoria.DESPESA, null);
 
@@ -62,6 +67,7 @@ class CriarCategoriaUseCaseTest {
     void executarRetornaOQueRepositorioRetornou() {
         // Given
         Categoria categoriaSalva = new Categoria("Freelance", TipoCategoria.RECEITA);
+        when(repository.existePorNomeEUserId(eq("Freelance"), isNull())).thenReturn(false);
         when(repository.salvar(any(Categoria.class))).thenReturn(categoriaSalva);
         CriarCategoriaUseCase.Comando comando = new CriarCategoriaUseCase.Comando("Freelance", TipoCategoria.RECEITA, null);
 
@@ -76,6 +82,7 @@ class CriarCategoriaUseCaseTest {
     void executarComTipoDesesaRetornaCategoria() {
         // Given
         Categoria categoriaSalva = new Categoria("Mercado", TipoCategoria.DESPESA);
+        when(repository.existePorNomeEUserId(eq("Mercado"), isNull())).thenReturn(false);
         when(repository.salvar(any(Categoria.class))).thenReturn(categoriaSalva);
         CriarCategoriaUseCase.Comando comando = new CriarCategoriaUseCase.Comando("Mercado", TipoCategoria.DESPESA, null);
 
@@ -90,6 +97,7 @@ class CriarCategoriaUseCaseTest {
     void executarComTipoReceitaRetornaCategoria() {
         // Given
         Categoria categoriaSalva = new Categoria("Investimento", TipoCategoria.RECEITA);
+        when(repository.existePorNomeEUserId(eq("Investimento"), isNull())).thenReturn(false);
         when(repository.salvar(any(Categoria.class))).thenReturn(categoriaSalva);
         CriarCategoriaUseCase.Comando comando = new CriarCategoriaUseCase.Comando("Investimento", TipoCategoria.RECEITA, null);
 
@@ -108,6 +116,7 @@ class CriarCategoriaUseCaseTest {
                 UUID.randomUUID(), "Transferencia", TipoCategoria.NEUTRAL,
                 null, userId, true, java.time.Instant.now(), null
         );
+        when(repository.existePorNomeEUserId(eq("Transferencia"), isNull())).thenReturn(false);
         when(repository.salvar(any(Categoria.class))).thenReturn(categoriaSalva);
         CriarCategoriaUseCase.Comando comando = new CriarCategoriaUseCase.Comando(
                 "Transferencia", TipoCategoria.NEUTRAL, null, null, true
@@ -129,6 +138,7 @@ class CriarCategoriaUseCaseTest {
                 UUID.randomUUID(), "Mercado", TipoCategoria.DESPESA,
                 null, userId, false, java.time.Instant.now(), null
         );
+        when(repository.existePorNomeEUserId(eq("Mercado"), eq(userId))).thenReturn(false);
         when(repository.salvar(any(Categoria.class))).thenReturn(categoriaSalva);
         CriarCategoriaUseCase.Comando comando = new CriarCategoriaUseCase.Comando(
                 "Mercado", TipoCategoria.DESPESA, null, userId, false
@@ -149,6 +159,7 @@ class CriarCategoriaUseCaseTest {
         Categoria pai = new Categoria("Alimentacao", TipoCategoria.DESPESA, null);
         Categoria filha = new Categoria("Mercado", TipoCategoria.DESPESA, paiId);
         when(repository.buscarPorId(paiId)).thenReturn(Optional.of(pai));
+        when(repository.existePorNomeEUserId(eq("Mercado"), isNull())).thenReturn(false);
         when(repository.salvar(any(Categoria.class))).thenReturn(filha);
         CriarCategoriaUseCase.Comando comando = new CriarCategoriaUseCase.Comando("Mercado", TipoCategoria.DESPESA, paiId);
 
@@ -185,5 +196,42 @@ class CriarCategoriaUseCaseTest {
         assertThatIllegalArgumentException()
                 .isThrownBy(() -> useCase.executar(comando))
                 .withMessageContaining("subcategoria de subcategoria");
+    }
+
+    @Test
+    void executarComNomeUnicoParaUsuarioCriaCategoria() {
+        // Given
+        UUID userId = UUID.randomUUID();
+        Categoria categoriaSalva = new Categoria(
+                UUID.randomUUID(), "Salario", TipoCategoria.RECEITA,
+                null, userId, false, java.time.Instant.now(), null
+        );
+        when(repository.existePorNomeEUserId(eq("Salario"), eq(userId))).thenReturn(false);
+        when(repository.salvar(any(Categoria.class))).thenReturn(categoriaSalva);
+        CriarCategoriaUseCase.Comando comando = new CriarCategoriaUseCase.Comando(
+                "Salario", TipoCategoria.RECEITA, null, userId, false
+        );
+
+        // When
+        Categoria resultado = useCase.executar(comando);
+
+        // Then
+        assertThat(resultado).isNotNull();
+        assertThat(resultado.getNome()).isEqualTo("Salario");
+    }
+
+    @Test
+    void executarComNomeDuplicadoParaMesmoUsuarioLancaCategoriaJaExisteException() {
+        // Given
+        UUID userId = UUID.randomUUID();
+        when(repository.existePorNomeEUserId(eq("Salario"), eq(userId))).thenReturn(true);
+        CriarCategoriaUseCase.Comando comando = new CriarCategoriaUseCase.Comando(
+                "Salario", TipoCategoria.RECEITA, null, userId, false
+        );
+
+        // When / Then
+        assertThatThrownBy(() -> useCase.executar(comando))
+                .isInstanceOf(CategoriaJaExisteException.class)
+                .hasMessageContaining("Salario");
     }
 }
