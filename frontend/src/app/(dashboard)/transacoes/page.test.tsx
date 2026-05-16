@@ -39,6 +39,10 @@ const transacaoFixture = (overrides?: Partial<Transacao>): Transacao => ({
   categoriaId: null,
   criadoEm: '2026-05-13T00:00:00Z',
   atualizadoEm: '2026-05-13T00:00:00Z',
+  status: 'CLEARED',
+  payeeId: null,
+  tagIds: [],
+  transferGroupId: null,
   ...overrides,
 })
 
@@ -61,7 +65,7 @@ describe('TransacoesPage', () => {
     vi.mocked(transacoesService.listar).mockResolvedValue({
       content: [
         transacaoFixture({ tipo: 'DESPESA', descricao: 'Supermercado', valor: 150.0, moeda: 'BRL' }),
-        transacaoFixture({ id: 'tx-002', tipo: 'RECEITA', descricao: 'Salario', valor: 5000.0, moeda: 'BRL' }),
+        transacaoFixture({ id: 'tx-002', tipo: 'RECEITA', descricao: 'Salario', valor: 5000.0, moeda: 'BRL', status: 'CLEARED' }),
       ],
       totalElements: 2,
     })
@@ -75,6 +79,36 @@ describe('TransacoesPage', () => {
     expect(screen.getByText('Salario')).toBeTruthy()
     expect(screen.getByText('Despesa')).toBeTruthy()
     expect(screen.getByText('Receita')).toBeTruthy()
+  })
+
+  it('exibe coluna Status com badge correto para CLEARED', async () => {
+    vi.mocked(transacoesService.listar).mockResolvedValue({
+      content: [transacaoFixture({ status: 'CLEARED' })],
+      totalElements: 1,
+    })
+
+    render(<TransacoesPage />, { wrapper: makeWrapper() })
+
+    await waitFor(() => {
+      expect(screen.getByText('Supermercado')).toBeTruthy()
+    })
+
+    expect(screen.getByText('Confirmada')).toBeTruthy()
+  })
+
+  it('exibe coluna Status com badge correto para PENDING', async () => {
+    vi.mocked(transacoesService.listar).mockResolvedValue({
+      content: [transacaoFixture({ status: 'PENDING' })],
+      totalElements: 1,
+    })
+
+    render(<TransacoesPage />, { wrapper: makeWrapper() })
+
+    await waitFor(() => {
+      expect(screen.getByText('Supermercado')).toBeTruthy()
+    })
+
+    expect(screen.getByText('Pendente')).toBeTruthy()
   })
 
   it('exibe mensagem vazia quando lista retorna zero transacoes', async () => {

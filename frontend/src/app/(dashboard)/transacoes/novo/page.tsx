@@ -9,6 +9,8 @@ import { ArrowLeft } from 'lucide-react'
 import { transacoesService } from '@/features/transacoes/services/transacoes.service'
 import { contasService } from '@/features/contas/services/contas.service'
 import { categoriasService } from '@/features/categorias/services/categorias.service'
+import { listarPayees } from '@/features/payee/services/payee-service'
+import { listarTags } from '@/features/tag/services/tag-service'
 import { Card, CardContent } from '@/shared/components/ui/card'
 import {
   Form,
@@ -21,6 +23,7 @@ import {
 import { Input } from '@/shared/components/ui/input'
 import { Button } from '@/shared/components/ui/button'
 import { MoneyInput } from '@/shared/components/MoneyInput'
+import { Skeleton } from '@/shared/components/ui/skeleton'
 import {
   Select,
   SelectContent,
@@ -28,6 +31,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/shared/components/ui/select'
+
+const STATUS_OPTIONS = [
+  { value: 'CLEARED', label: 'Confirmada' },
+  { value: 'PENDING', label: 'Pendente' },
+  { value: 'SCHEDULED', label: 'Agendada' },
+  { value: 'CANCELLED', label: 'Cancelada' },
+] as const
 
 const schema = z.object({
   tipo: z.enum(['RECEITA', 'DESPESA', 'TRANSFERENCIA']),
@@ -38,6 +48,9 @@ const schema = z.object({
   contaId: z.string().uuid('Selecione uma conta'),
   contaDestinoId: z.string().uuid().optional(),
   categoriaId: z.string().uuid().optional(),
+  status: z.enum(['CLEARED', 'PENDING', 'SCHEDULED', 'CANCELLED']).default('CLEARED'),
+  payeeId: z.string().uuid().optional(),
+  tagIds: z.array(z.string().uuid()).default([]),
 })
 
 type FormValues = z.infer<typeof schema>
@@ -63,6 +76,16 @@ export default function NovaTransacaoPage() {
     queryFn: categoriasService.listar,
   })
 
+  const { data: payees, isLoading: payeesLoading } = useQuery({
+    queryKey: ['payees'],
+    queryFn: listarPayees,
+  })
+
+  const { data: tags, isLoading: tagsLoading } = useQuery({
+    queryKey: ['tags'],
+    queryFn: listarTags,
+  })
+
   const today = new Date().toISOString().slice(0, 10)
 
   const form = useForm<FormValues>({
@@ -76,11 +99,15 @@ export default function NovaTransacaoPage() {
       contaId: '',
       contaDestinoId: undefined,
       categoriaId: undefined,
+      status: 'CLEARED',
+      payeeId: undefined,
+      tagIds: [],
     },
   })
 
   // eslint-disable-next-line react-hooks/incompatible-library
   const tipoAtual = form.watch('tipo')
+  const tagIdsAtual = form.watch('tagIds')
   const isTransferencia = tipoAtual === 'TRANSFERENCIA'
 
   // Deduplicar por nome dentro do mesmo tipo (IDs distintos, nomes iguais = dado duplicado no banco)
@@ -102,6 +129,9 @@ export default function NovaTransacaoPage() {
         contaId: values.contaId,
         ...(values.contaDestinoId ? { contaDestinoId: values.contaDestinoId } : {}),
         ...(values.categoriaId ? { categoriaId: values.categoriaId } : {}),
+        status: values.status,
+        ...(values.payeeId ? { payeeId: values.payeeId } : {}),
+        ...(values.tagIds.length > 0 ? { tagIds: values.tagIds } : {}),
       }),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['transacoes'] })
@@ -267,6 +297,102 @@ export default function NovaTransacaoPage() {
                         </Select>
                       )}
                     />
+                  </FormItem>
+                )}
+
+                {/* Status */}
+                <FormItem>
+                  <FormLabel>Status</FormLabel>
+                  <Controller
+                    control={form.control}
+                    name="status"
+                    render={({ field }) => (
+                      <Select value={field.value} onValueChange={field.onChange}>
+                        <SelectTrigger className="w-full">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {STATUS_OPTIONS.map((s) => (
+                            <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  />
+                </FormItem>
+
+                {/* Payee (opcional, exibe somente se houver payees carregados) */}
+                {payeesLoading && (
+                  <FormItem>
+                    <FormLabel>Beneficiario (opcional)</FormLabel>
+                    <Skeleton className="h-9 w-full" />
+                  </FormItem>
+                )}
+                {!payeesLoading && (payees ?? []).length > 0 && (
+                  <FormItem>
+                    <FormLabel>Beneficiario (opcional)</FormLabel>
+                    <Controller
+                      control={form.control}
+                      name="payeeId"
+                      render={({ field }) => (
+                        <Select value={field.value ?? ''} onValueChange={(v) => field.onChange(v || undefined)}>
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Sem beneficiario" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {(payees ?? []).map((p) => (
+                              <SelectItem key={p.id} value={p.id}>{p.nome}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      )}
+                    />
+                  </FormItem>
+                )}
+
+                {/* Tags (multipla selecao via checkboxes, exibe somente se houver tags) */}
+                {tagsLoading && (
+                  <FormItem>
+                    <FormLabel>Tags</FormLabel>
+                    <Skeleton className="h-9 w-full" />
+                  </FormItem>
+                )}
+                {!tagsLoading && (tags ?? []).length > 0 && (
+                  <FormItem>
+                    <FormLabel>Tags</FormLabel>
+                    <div className="flex flex-wrap gap-2 pt-1">
+                      {(tags ?? []).map((tag) => {
+                        const checked = tagIdsAtual.includes(tag.id)
+                        return (
+                          <label
+                            key={tag.id}
+                            className="flex items-center gap-1.5 cursor-pointer select-none text-sm"
+                          >
+                            <input
+                              type="checkbox"
+                              checked={checked}
+                              onChange={(e) => {
+                                const current = form.getValues('tagIds')
+                                if (e.target.checked) {
+                                  form.setValue('tagIds', [...current, tag.id])
+                                } else {
+                                  form.setValue('tagIds', current.filter(id => id !== tag.id))
+                                }
+                              }}
+                              className="accent-primary"
+                            />
+                            {tag.cor && (
+                              <span
+                                className="inline-block w-3 h-3 rounded-full"
+                                style={{ backgroundColor: tag.cor }}
+                                aria-hidden="true"
+                              />
+                            )}
+                            {tag.nome}
+                          </label>
+                        )
+                      })}
+                    </div>
                   </FormItem>
                 )}
 

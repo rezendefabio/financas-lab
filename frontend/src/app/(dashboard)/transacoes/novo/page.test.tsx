@@ -20,6 +20,14 @@ vi.mock('@/features/categorias/services/categorias.service', () => ({
   },
 }))
 
+vi.mock('@/features/payee/services/payee-service', () => ({
+  listarPayees: vi.fn().mockResolvedValue([]),
+}))
+
+vi.mock('@/features/tag/services/tag-service', () => ({
+  listarTags: vi.fn().mockResolvedValue([]),
+}))
+
 const mockPush = vi.fn()
 const mockBack = vi.fn()
 vi.mock('next/navigation', () => ({
@@ -76,6 +84,11 @@ describe('NovaTransacaoPage', () => {
   it('renderiza campo Descricao', () => {
     render(<NovaTransacaoPage />)
     expect(screen.getByLabelText(/descricao/i)).toBeTruthy()
+  })
+
+  it('renderiza campo Status', () => {
+    render(<NovaTransacaoPage />)
+    expect(screen.getByText(/^status$/i)).toBeTruthy()
   })
 
   it('renderiza botao Salvar', () => {
