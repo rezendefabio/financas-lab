@@ -1,4 +1,5 @@
 'use client'
+import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
 import { contasService } from '@/features/contas/services/contas.service'
@@ -8,6 +9,13 @@ import { cn } from '@/shared/lib/utils'
 import { Button } from '@/shared/components/ui/button'
 import { Skeleton } from '@/shared/components/ui/skeleton'
 import { formatBRL, formatTipoConta } from '@/shared/lib/formatters'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/shared/components/ui/select'
 import type { Conta } from '@/features/contas/types/conta'
 
 function ContaCard({ conta, onClick }: { conta: Conta; onClick: () => void }) {
@@ -30,9 +38,9 @@ function ContaCard({ conta, onClick }: { conta: Conta; onClick: () => void }) {
       <CardContent>
         <p className="text-sm text-muted-foreground">{formatTipoConta(conta.tipo)}</p>
         <p className="text-xl font-bold tabular-nums mt-2">
-          {formatBRL(conta.saldoInicialValor)}
+          {formatBRL(conta.saldoAtualValor ?? conta.saldoInicialValor)}
         </p>
-        <p className="text-xs text-muted-foreground">saldo inicial</p>
+        <p className="text-xs text-muted-foreground">saldo atual</p>
       </CardContent>
     </Card>
   )
@@ -40,17 +48,51 @@ function ContaCard({ conta, onClick }: { conta: Conta; onClick: () => void }) {
 
 export default function ContasPage() {
   const router = useRouter()
+  const [filtroAtiva, setFiltroAtiva] = useState<boolean | undefined>(undefined)
+
   const { data, isLoading, isError } = useQuery({
-    queryKey: ['contas'],
-    queryFn: contasService.listar,
+    queryKey: ['contas', filtroAtiva],
+    queryFn: () => contasService.listar(filtroAtiva),
+  })
+
+  const { data: saldoTotal } = useQuery({
+    queryKey: ['contas-saldo-total'],
+    queryFn: contasService.saldoTotal,
   })
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold tracking-tight">Contas</h1>
-        <Button onClick={() => router.push('/contas/novo')}>Nova Conta</Button>
+        <div className="flex items-center gap-3">
+          <Select
+            value={filtroAtiva === undefined ? 'todas' : String(filtroAtiva)}
+            onValueChange={(v) => setFiltroAtiva(v === 'todas' ? undefined : v === 'true')}
+          >
+            <SelectTrigger className="w-36">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="todas">Todas</SelectItem>
+              <SelectItem value="true">Ativas</SelectItem>
+              <SelectItem value="false">Inativas</SelectItem>
+            </SelectContent>
+          </Select>
+          <Button onClick={() => router.push('/contas/novo')}>Nova Conta</Button>
+        </div>
       </div>
+
+      {saldoTotal && (
+        <Card className="bg-primary/5 border-primary/20">
+          <CardContent className="pt-4 pb-4">
+            <p className="text-sm text-muted-foreground">Saldo total</p>
+            <p className="text-2xl font-bold tabular-nums">
+              {formatBRL(saldoTotal.valor)}
+            </p>
+            <p className="text-xs text-muted-foreground">{saldoTotal.totalContas} conta(s)</p>
+          </CardContent>
+        </Card>
+      )}
 
       {isLoading && (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">

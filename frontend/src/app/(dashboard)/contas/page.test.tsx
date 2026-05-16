@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 vi.mock('@/features/contas/services/contas.service', () => ({
   contasService: {
     listar: vi.fn(),
+    saldoTotal: vi.fn(),
   },
 }))
 
@@ -16,7 +17,7 @@ vi.mock('next/navigation', () => ({
 
 import ContasPage from './page'
 import { contasService } from '@/features/contas/services/contas.service'
-import type { Conta } from '@/features/contas/types/conta'
+import type { Conta, SaldoTotalResponse } from '@/features/contas/types/conta'
 
 function makeWrapper() {
   const client = new QueryClient({
@@ -34,8 +35,8 @@ const contaFixture = (overrides?: Partial<Conta>): Conta => ({
   tipo: 'CORRENTE',
   saldoInicialValor: 1500.5,
   saldoInicialMoeda: 'BRL',
-  saldoAtualValor: null,
-  saldoAtualMoeda: null,
+  saldoAtualValor: 1500.5,
+  saldoAtualMoeda: 'BRL',
   limiteCreditoValor: null,
   limiteCreditoMoeda: null,
   diaFechamento: null,
@@ -46,9 +47,17 @@ const contaFixture = (overrides?: Partial<Conta>): Conta => ({
   ...overrides,
 })
 
+const saldoTotalFixture = (overrides?: Partial<SaldoTotalResponse>): SaldoTotalResponse => ({
+  valor: 3000,
+  moeda: 'BRL',
+  totalContas: 2,
+  ...overrides,
+})
+
 describe('ContasPage', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    vi.mocked(contasService.saldoTotal).mockReturnValue(new Promise(() => {}))
   })
 
   it('exibe skeleton de loading enquanto dados carregam', () => {
@@ -143,9 +152,9 @@ describe('ContasPage', () => {
     expect(mockPush).toHaveBeenCalledWith('/contas/abc-123')
   })
 
-  it('formata saldo inicial em BRL', async () => {
+  it('exibe label saldo atual nos cards', async () => {
     vi.mocked(contasService.listar).mockResolvedValue([
-      contaFixture({ saldoInicialValor: 1500.5 }),
+      contaFixture({ saldoAtualValor: 2000, saldoInicialValor: 1500.5 }),
     ])
 
     render(<ContasPage />, { wrapper: makeWrapper() })
@@ -154,8 +163,60 @@ describe('ContasPage', () => {
       expect(screen.getByText('Nubank')).toBeTruthy()
     })
 
-    // R$ 1.500,50 — formato pt-BR
+    expect(screen.getByText('saldo atual')).toBeTruthy()
+  })
+
+  it('usa saldoAtualValor quando disponivel', async () => {
+    vi.mocked(contasService.listar).mockResolvedValue([
+      contaFixture({ saldoAtualValor: 2000, saldoInicialValor: 1500.5 }),
+    ])
+
+    render(<ContasPage />, { wrapper: makeWrapper() })
+
+    await waitFor(() => {
+      expect(screen.getByText('Nubank')).toBeTruthy()
+    })
+
+    // R$ 2.000,00 -- saldo atual
+    expect(screen.getByText(/2\.000,00/)).toBeTruthy()
+  })
+
+  it('usa saldoInicialValor como fallback quando saldoAtualValor e null', async () => {
+    vi.mocked(contasService.listar).mockResolvedValue([
+      contaFixture({ saldoAtualValor: null, saldoInicialValor: 1500.5 }),
+    ])
+
+    render(<ContasPage />, { wrapper: makeWrapper() })
+
+    await waitFor(() => {
+      expect(screen.getByText('Nubank')).toBeTruthy()
+    })
+
+    // R$ 1.500,50 -- fallback para saldo inicial
     expect(screen.getByText(/1\.500,50/)).toBeTruthy()
+  })
+
+  it('exibe card de saldo total quando carregado', async () => {
+    vi.mocked(contasService.listar).mockResolvedValue([])
+    vi.mocked(contasService.saldoTotal).mockResolvedValue(saldoTotalFixture())
+
+    render(<ContasPage />, { wrapper: makeWrapper() })
+
+    await waitFor(() => {
+      expect(screen.getByText('Saldo total')).toBeTruthy()
+    })
+
+    expect(screen.getByText(/3\.000/)).toBeTruthy()
+    expect(screen.getByText(/2 conta\(s\)/)).toBeTruthy()
+  })
+
+  it('nao exibe card de saldo total quando ainda carregando', () => {
+    vi.mocked(contasService.listar).mockResolvedValue([])
+    vi.mocked(contasService.saldoTotal).mockReturnValue(new Promise(() => {}))
+
+    render(<ContasPage />, { wrapper: makeWrapper() })
+
+    expect(screen.queryByText('Saldo total')).toBeNull()
   })
 
   it('formata tipo INVESTIMENTO corretamente', async () => {

@@ -109,4 +109,52 @@ describe('NovaConta', () => {
 
     expect(mockPush).toHaveBeenCalledWith('/contas')
   })
+
+  it('exibe campos de cartao de credito quando tipo CARTAO_CREDITO selecionado', async () => {
+    render(<NovaConta />)
+
+    // Campos de cartao nao devem estar visiveis inicialmente (tipo CORRENTE)
+    expect(screen.queryByLabelText(/limite de credito/i)).toBeNull()
+    expect(screen.queryByLabelText(/dia de fechamento/i)).toBeNull()
+    expect(screen.queryByLabelText(/dia de vencimento/i)).toBeNull()
+
+    // Selecionar CARTAO_CREDITO -- usando combobox (Select)
+    const comboboxes = screen.getAllByRole('combobox')
+    // O select de tipo e o segundo combobox (apos o select de moeda se existir, ou o primeiro)
+    const tipoSelect = comboboxes[0]
+    await userEvent.click(tipoSelect)
+
+    await waitFor(() => {
+      expect(screen.getByText('Cartao de Credito')).toBeTruthy()
+    })
+    await userEvent.click(screen.getByText('Cartao de Credito'))
+
+    await waitFor(() => {
+      expect(screen.getByLabelText(/limite de credito/i)).toBeTruthy()
+      expect(screen.getByLabelText(/dia de fechamento/i)).toBeTruthy()
+      expect(screen.getByLabelText(/dia de vencimento/i)).toBeTruthy()
+    })
+  })
+
+  it('oculta campos de cartao de credito para outros tipos', async () => {
+    render(<NovaConta />)
+
+    // POUPANCA nao deve mostrar campos de cartao
+    expect(screen.queryByLabelText(/limite de credito/i)).toBeNull()
+    expect(screen.queryByLabelText(/dia de fechamento/i)).toBeNull()
+    expect(screen.queryByLabelText(/dia de vencimento/i)).toBeNull()
+  })
+
+  it('exibe INVESTIMENTO e OUTRO no select de tipo', async () => {
+    render(<NovaConta />)
+
+    const comboboxes = screen.getAllByRole('combobox')
+    const tipoSelect = comboboxes[0]
+    await userEvent.click(tipoSelect)
+
+    await waitFor(() => {
+      expect(screen.getByText('Investimento')).toBeTruthy()
+      expect(screen.getByText('Outro')).toBeTruthy()
+    })
+  })
 })

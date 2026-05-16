@@ -29,9 +29,13 @@ import {
 
 const schema = z.object({
   nome: z.string().min(1, 'Nome obrigatorio').max(100),
-  tipo: z.enum(['CORRENTE', 'POUPANCA', 'DINHEIRO', 'CARTAO_CREDITO']),
+  tipo: z.enum(['CORRENTE', 'POUPANCA', 'DINHEIRO', 'CARTAO_CREDITO', 'INVESTIMENTO', 'OUTRO']),
   saldoInicialValor: z.coerce.number().min(0, 'Valor deve ser >= 0'),
   saldoInicialMoeda: z.string().length(3).default('BRL'),
+  limiteCreditoValor: z.coerce.number().min(0).optional(),
+  limiteCreditoMoeda: z.string().length(3).default('BRL').optional(),
+  diaFechamento: z.coerce.number().min(1).max(31).optional(),
+  diaVencimento: z.coerce.number().min(1).max(31).optional(),
 })
 
 type FormValues = z.infer<typeof schema>
@@ -41,6 +45,8 @@ const TIPOS = [
   { value: 'POUPANCA', label: 'Poupanca' },
   { value: 'DINHEIRO', label: 'Dinheiro' },
   { value: 'CARTAO_CREDITO', label: 'Cartao de Credito' },
+  { value: 'INVESTIMENTO', label: 'Investimento' },
+  { value: 'OUTRO', label: 'Outro' },
 ] as const
 
 export default function NovaConta() {
@@ -58,6 +64,10 @@ export default function NovaConta() {
     },
   })
 
+  // eslint-disable-next-line react-hooks/incompatible-library
+  const tipoAtual = form.watch('tipo')
+  const isCartaoCredito = tipoAtual === 'CARTAO_CREDITO'
+
   const mutation = useMutation({
     mutationFn: contasService.criar,
     onSuccess: async () => {
@@ -71,7 +81,25 @@ export default function NovaConta() {
 
   async function onSubmit(values: FormValues) {
     setApiError(null)
-    mutation.mutate(values)
+    const payload: Parameters<typeof contasService.criar>[0] = {
+      nome: values.nome,
+      tipo: values.tipo,
+      saldoInicialValor: values.saldoInicialValor,
+      saldoInicialMoeda: values.saldoInicialMoeda ?? 'BRL',
+    }
+    if (isCartaoCredito) {
+      if (values.limiteCreditoValor !== undefined) {
+        payload.limiteCreditoValor = values.limiteCreditoValor
+        payload.limiteCreditoMoeda = 'BRL'
+      }
+      if (values.diaFechamento !== undefined) {
+        payload.diaFechamento = values.diaFechamento
+      }
+      if (values.diaVencimento !== undefined) {
+        payload.diaVencimento = values.diaVencimento
+      }
+    }
+    mutation.mutate(payload)
   }
 
   return (
@@ -148,6 +176,72 @@ export default function NovaConta() {
                 />
 
                 <input type="hidden" {...form.register('saldoInicialMoeda')} />
+
+                {isCartaoCredito && (
+                  <>
+                    <FormField
+                      control={form.control}
+                      name="limiteCreditoValor"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Limite de credito (R$)</FormLabel>
+                          <FormControl>
+                            <MoneyInput
+                              value={field.value ?? 0}
+                              onChange={field.onChange}
+                              id={field.name}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="diaFechamento"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Dia de fechamento</FormLabel>
+                          <FormControl>
+                            <Input
+                              type="number"
+                              min={1}
+                              max={31}
+                              className="w-full"
+                              placeholder="Ex: 25"
+                              {...field}
+                              value={field.value ?? ''}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="diaVencimento"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Dia de vencimento</FormLabel>
+                          <FormControl>
+                            <Input
+                              type="number"
+                              min={1}
+                              max={31}
+                              className="w-full"
+                              placeholder="Ex: 5"
+                              {...field}
+                              value={field.value ?? ''}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </>
+                )}
 
                 {apiError && (
                   <p className="text-sm text-destructive">{apiError}</p>

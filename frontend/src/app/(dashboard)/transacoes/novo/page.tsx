@@ -55,7 +55,7 @@ export default function NovaTransacaoPage() {
 
   const { data: contas } = useQuery({
     queryKey: ['contas'],
-    queryFn: contasService.listar,
+    queryFn: () => contasService.listar(),
   })
 
   const { data: categorias } = useQuery({
@@ -79,6 +79,7 @@ export default function NovaTransacaoPage() {
     },
   })
 
+  // eslint-disable-next-line react-hooks/incompatible-library
   const tipoAtual = form.watch('tipo')
   const isTransferencia = tipoAtual === 'TRANSFERENCIA'
 
