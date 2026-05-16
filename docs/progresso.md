@@ -3,7 +3,7 @@
 > Documento de tracking. Mostra **onde estamos** na construção da fábrica e do produto.
 > Atualizado conforme camadas avançam. Diferente do `decisoes.md` (que registra escolhas) e dos `adrs.md` (que registram porquês), este documento responde a pergunta: "em que ponto eu estou?".
 
-**Última atualização:** 2026-05-16 (Sub-etapa 5.70 -- refatoracao do /plan: task-planner especializado, premissas, reserva de migrations)
+**Última atualização:** 2026-05-16 (Sub-etapa 5.71 -- /plan: reviews automaticos pos-PR no Passo 5.4)
 
 ---
 
@@ -159,6 +159,17 @@ Configurar `CLAUDE.md` rico, criar 3-5 subagents focados, criar 5-10 skills (sla
 Ativar a fábrica de fato: rodar features no Tier 2, configurar 3 routines Tier 1, validar paralelismo se necessário.
 
 ### Sub-etapas concluídas
+
+- **5.71 -- /plan: reviews automaticos pos-PR no Passo 5.4** (2026-05-16):
+  Correcao no `.claude/skills/plan/SKILL.md`. O Passo 5 do `/ship` spawna `pr-reviewer`
+  e `front-reviewer` automaticamente, mas o executor roda como sub-agente em worktree
+  isolado e nao consegue spawnar outros sub-agentes -- os reviews ficavam sem rodar e o
+  executor perguntava ao operador se queria dispara-los (comportamento errado: reviews
+  sao obrigatorios). A correcao move os reviews para o orquestrador: novo **Sub-passo 5.4**
+  no SKILL.md instrui a sessao principal (que tem acesso total ao Agent tool) a disparar,
+  para cada task com PR aberto, `pr-reviewer` (sempre) e `front-reviewer` (condicional ao
+  `tipo` da task), em sequencia. Bloqueadores reportados sao registrados numa secao
+  `Reviews:` do relatorio final. PR aberto.
 
 - **5.70 -- refatoracao do /plan (task-planner especializado, premissas, reserva de migrations)** (2026-05-16):
   Quatro melhorias estruturais no `.claude/skills/plan/`. **(1) task-planner.md:** o prompt
