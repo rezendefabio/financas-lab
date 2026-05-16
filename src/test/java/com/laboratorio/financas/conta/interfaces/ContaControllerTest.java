@@ -468,4 +468,27 @@ class ContaControllerTest extends AbstractAuthenticatedIntegrationTest {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.tipo", equalTo("OUTRO")));
     }
+
+    @Test
+    void deleteExcluirContaExistenteRetorna204ERemoveRegistro() throws Exception {
+        MvcResult resultado = mockMvc.perform(comAuth(post("/api/contas")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(requestValido()))))
+                .andExpect(status().isCreated())
+                .andReturn();
+        String idStr = objectMapper.readTree(resultado.getResponse().getContentAsString()).get("id").asText();
+
+        mockMvc.perform(comAuth(delete("/api/contas/" + idStr + "/excluir")))
+                .andExpect(status().isNoContent());
+
+        mockMvc.perform(comAuth(get("/api/contas/" + idStr)))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void deleteExcluirContaInexistenteRetorna404() throws Exception {
+        UUID idInexistente = UUID.randomUUID();
+        mockMvc.perform(comAuth(delete("/api/contas/" + idInexistente + "/excluir")))
+                .andExpect(status().isNotFound());
+    }
 }

@@ -5,6 +5,7 @@ import com.laboratorio.financas.conta.application.CalcularSaldoDaContaUseCase;
 import com.laboratorio.financas.conta.application.CalcularSaldoTotalUseCase;
 import com.laboratorio.financas.conta.application.CriarContaUseCase;
 import com.laboratorio.financas.conta.application.DesativarContaUseCase;
+import com.laboratorio.financas.conta.application.ExcluirContaUseCase;
 import com.laboratorio.financas.conta.application.ListarContasUseCase;
 import com.laboratorio.financas.conta.domain.Conta;
 import com.laboratorio.financas.conta.interfaces.dto.ContaResponse;
@@ -34,6 +35,7 @@ public class ContaController {
     private final ListarContasUseCase listarContasUseCase;
     private final BuscarContaPorIdUseCase buscarContaPorIdUseCase;
     private final DesativarContaUseCase desativarContaUseCase;
+    private final ExcluirContaUseCase excluirContaUseCase;
     private final CalcularSaldoDaContaUseCase calcularSaldoDaContaUseCase;
     private final CalcularSaldoTotalUseCase calcularSaldoTotalUseCase;
 
@@ -42,6 +44,7 @@ public class ContaController {
             ListarContasUseCase listarContasUseCase,
             BuscarContaPorIdUseCase buscarContaPorIdUseCase,
             DesativarContaUseCase desativarContaUseCase,
+            ExcluirContaUseCase excluirContaUseCase,
             CalcularSaldoDaContaUseCase calcularSaldoDaContaUseCase,
             CalcularSaldoTotalUseCase calcularSaldoTotalUseCase
     ) {
@@ -49,6 +52,7 @@ public class ContaController {
         this.listarContasUseCase = listarContasUseCase;
         this.buscarContaPorIdUseCase = buscarContaPorIdUseCase;
         this.desativarContaUseCase = desativarContaUseCase;
+        this.excluirContaUseCase = excluirContaUseCase;
         this.calcularSaldoDaContaUseCase = calcularSaldoDaContaUseCase;
         this.calcularSaldoTotalUseCase = calcularSaldoTotalUseCase;
     }
@@ -92,6 +96,12 @@ public class ContaController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void desativar(@PathVariable UUID id) {
         desativarContaUseCase.executar(id);
+    }
+
+    @DeleteMapping("/{id}/excluir")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void excluir(@PathVariable UUID id) {
+        excluirContaUseCase.executar(id);
     }
 
     @GetMapping("/{id}/saldo")
