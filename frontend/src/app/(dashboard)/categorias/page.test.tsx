@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 vi.mock('@/features/categorias/services/categorias.service', () => ({
   categoriasService: {
     listar: vi.fn(),
+    buscar: vi.fn(),
   },
 }))
 
@@ -32,7 +33,9 @@ const categoriaFixture = (overrides?: Partial<Categoria>): Categoria => ({
   nome: 'Alimentacao',
   tipo: 'DESPESA',
   categoriaPaiId: null,
+  system: false,
   criadoEm: '2026-01-01T00:00:00Z',
+  atualizadoEm: '2026-01-01T00:00:00Z',
   ...overrides,
 })
 
@@ -51,7 +54,7 @@ describe('CategoriasPage', () => {
     expect(skeletons.length).toBeGreaterThan(0)
   })
 
-  it('exibe cabecalhos de tabela Nome, Tipo e Acoes', async () => {
+  it('exibe cabecalhos de tabela Nome, Tipo, Categoria Pai e Acoes', async () => {
     vi.mocked(categoriasService.listar).mockResolvedValue([
       categoriaFixture(),
     ])
@@ -62,6 +65,7 @@ describe('CategoriasPage', () => {
       expect(screen.getByText('Nome')).toBeTruthy()
     })
     expect(screen.getByText('Tipo')).toBeTruthy()
+    expect(screen.getByText('Categoria Pai')).toBeTruthy()
     expect(screen.getByText('Acoes')).toBeTruthy()
   })
 
@@ -80,6 +84,63 @@ describe('CategoriasPage', () => {
     expect(screen.getByText('Salario')).toBeTruthy()
     expect(screen.getByText('Despesa')).toBeTruthy()
     expect(screen.getByText('Receita')).toBeTruthy()
+  })
+
+  it('exibe nome da categoria pai quando categoriaPaiId esta preenchido', async () => {
+    vi.mocked(categoriasService.listar).mockResolvedValue([
+      categoriaFixture({ id: 'cat-001', nome: 'Contas', tipo: 'DESPESA', categoriaPaiId: null }),
+      categoriaFixture({ id: 'cat-002', nome: 'Agua', tipo: 'DESPESA', categoriaPaiId: 'cat-001' }),
+    ])
+
+    render(<CategoriasPage />, { wrapper: makeWrapper() })
+
+    await waitFor(() => {
+      expect(screen.getByText('Agua')).toBeTruthy()
+    })
+
+    expect(screen.getAllByText('Contas').length).toBeGreaterThanOrEqual(1)
+  })
+
+  it('exibe traço para categoria sem pai', async () => {
+    vi.mocked(categoriasService.listar).mockResolvedValue([
+      categoriaFixture({ categoriaPaiId: null }),
+    ])
+
+    render(<CategoriasPage />, { wrapper: makeWrapper() })
+
+    await waitFor(() => {
+      expect(screen.getByText('Alimentacao')).toBeTruthy()
+    })
+
+    expect(screen.getByText('—')).toBeTruthy()
+  })
+
+  it('exibe badge Sistema para categoria do sistema', async () => {
+    vi.mocked(categoriasService.listar).mockResolvedValue([
+      categoriaFixture({ system: true }),
+    ])
+
+    render(<CategoriasPage />, { wrapper: makeWrapper() })
+
+    await waitFor(() => {
+      expect(screen.getByText('Sistema')).toBeTruthy()
+    })
+  })
+
+  it('navega para detalhe ao clicar na linha', async () => {
+    vi.mocked(categoriasService.listar).mockResolvedValue([
+      categoriaFixture({ id: 'cat-001', nome: 'Alimentacao' }),
+    ])
+
+    render(<CategoriasPage />, { wrapper: makeWrapper() })
+
+    await waitFor(() => {
+      expect(screen.getByText('Alimentacao')).toBeTruthy()
+    })
+
+    await userEvent.click(screen.getByText('Alimentacao'))
+
+    expect(mockPush).toHaveBeenCalledWith('/categorias/cat-001')
   })
 
   it('exibe mensagem vazia quando lista retorna zero categorias', async () => {
