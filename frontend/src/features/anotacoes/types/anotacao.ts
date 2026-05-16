@@ -25,4 +25,4 @@ export interface CriarAnotacaoRequest {
   dataReferencia?: string
 }
 
-export interface AtualizarAnotacaoRequest extends CriarAnotacaoRequest {}
+export type AtualizarAnotacaoRequest = CriarAnotacaoRequest
