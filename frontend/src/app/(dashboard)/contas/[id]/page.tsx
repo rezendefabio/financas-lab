@@ -102,6 +102,24 @@ export default function ContaDetalhePage() {
                 <dt className="text-sm text-muted-foreground">Saldo Inicial</dt>
                 <dd className="tabular-nums">{formatBRL(conta.saldoInicialValor)}</dd>
               </div>
+              {conta.limiteCreditoValor != null && (
+                <div>
+                  <dt className="text-sm text-muted-foreground">Limite de credito</dt>
+                  <dd className="tabular-nums">{formatBRL(conta.limiteCreditoValor)}</dd>
+                </div>
+              )}
+              {conta.diaFechamento != null && (
+                <div>
+                  <dt className="text-sm text-muted-foreground">Dia de fechamento</dt>
+                  <dd>{conta.diaFechamento}</dd>
+                </div>
+              )}
+              {conta.diaVencimento != null && (
+                <div>
+                  <dt className="text-sm text-muted-foreground">Dia de vencimento</dt>
+                  <dd>{conta.diaVencimento}</dd>
+                </div>
+              )}
             </dl>
 
             {conta.ativa && (

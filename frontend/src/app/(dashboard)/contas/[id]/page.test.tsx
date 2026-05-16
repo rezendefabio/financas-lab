@@ -50,6 +50,15 @@ const contaInativa: Conta = {
   ativa: false,
 }
 
+const contaCartaoCredito: Conta = {
+  ...contaAtiva,
+  tipo: 'CARTAO_CREDITO',
+  limiteCreditoValor: 5000,
+  limiteCreditoMoeda: 'BRL',
+  diaFechamento: 25,
+  diaVencimento: 5,
+}
+
 const saldoResponse: SaldoResponse = {
   contaId: 'conta-123',
   saldoInicial: { valor: 1000, moeda: 'BRL' },
@@ -259,6 +268,47 @@ describe('ContaDetalhePage', () => {
       mockQuerySaldoLoading(contaAtiva)
       render(<ContaDetalhePage />)
       expect(screen.queryByText(/1\.300/)).toBeNull()
+    })
+  })
+
+  describe('campos de cartao de credito', () => {
+    it('exibe limite de credito quando presente', () => {
+      mockQueryConta(contaCartaoCredito, saldoResponse)
+      render(<ContaDetalhePage />)
+      expect(screen.getByText('Limite de credito')).toBeTruthy()
+      expect(screen.getByText(/5\.000/)).toBeTruthy()
+    })
+
+    it('exibe dia de fechamento quando presente', () => {
+      mockQueryConta(contaCartaoCredito, saldoResponse)
+      render(<ContaDetalhePage />)
+      expect(screen.getByText('Dia de fechamento')).toBeTruthy()
+      expect(screen.getByText('25')).toBeTruthy()
+    })
+
+    it('exibe dia de vencimento quando presente', () => {
+      mockQueryConta(contaCartaoCredito, saldoResponse)
+      render(<ContaDetalhePage />)
+      expect(screen.getByText('Dia de vencimento')).toBeTruthy()
+      expect(screen.getByText('5')).toBeTruthy()
+    })
+
+    it('nao exibe limite de credito quando null', () => {
+      mockQueryConta(contaAtiva, saldoResponse)
+      render(<ContaDetalhePage />)
+      expect(screen.queryByText('Limite de credito')).toBeNull()
+    })
+
+    it('nao exibe dia de fechamento quando null', () => {
+      mockQueryConta(contaAtiva, saldoResponse)
+      render(<ContaDetalhePage />)
+      expect(screen.queryByText('Dia de fechamento')).toBeNull()
+    })
+
+    it('nao exibe dia de vencimento quando null', () => {
+      mockQueryConta(contaAtiva, saldoResponse)
+      render(<ContaDetalhePage />)
+      expect(screen.queryByText('Dia de vencimento')).toBeNull()
     })
   })
 })

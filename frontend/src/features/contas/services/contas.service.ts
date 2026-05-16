@@ -14,7 +14,9 @@ interface CriarContaRequest {
 }
 
 export const contasService = {
-  listar: () => apiFetch<Conta[]>('/api/contas'),
+  listar: (ativa?: boolean) => apiFetch<Conta[]>(
+    '/api/contas' + (ativa !== undefined ? `?ativa=${ativa}` : '')
+  ),
   criar: (data: CriarContaRequest) =>
     apiFetch<Conta>('/api/contas', { method: 'POST', body: JSON.stringify(data) }),
   buscarPorId: (id: string) => apiFetch<Conta>(`/api/contas/${id}`),
