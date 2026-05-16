@@ -229,6 +229,27 @@ class CategoriaControllerTest extends AbstractAuthenticatedIntegrationTest {
     }
 
     @Test
+    void postCategoriaNomeDuplicadoParaMesmoUsuarioRetorna409() throws Exception {
+        Map<String, Object> body = new HashMap<>();
+        body.put("nome", "Mercado");
+        body.put("tipo", "DESPESA");
+        body.put("userId", authenticatedUserId.toString());
+
+        // Primeira criacao deve ter sucesso
+        mockMvc.perform(comAuth(post("/api/categorias")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(body))))
+                .andExpect(status().isCreated());
+
+        // Segunda criacao com mesmo nome e userId deve retornar 409
+        mockMvc.perform(comAuth(post("/api/categorias")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(body))))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.status", equalTo(409)));
+    }
+
+    @Test
     void cicloCompletoPostGetDeleteGet404() throws Exception {
         MvcResult resultado = mockMvc.perform(comAuth(post("/api/categorias")
                         .contentType(MediaType.APPLICATION_JSON)

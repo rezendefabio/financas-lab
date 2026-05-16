@@ -17,4 +17,9 @@ public interface CategoriaJpaRepository extends JpaRepository<CategoriaEntity, U
 
     @Query("SELECT c FROM CategoriaEntity c WHERE c.system = true OR c.userId = :userId")
     List<CategoriaEntity> findVisiveisPara(@Param("userId") UUID userId);
+
+    boolean existsByNomeAndUserId(String nome, UUID userId);
+
+    @Query("SELECT CASE WHEN COUNT(c) > 0 THEN true ELSE false END FROM CategoriaEntity c WHERE c.nome = :nome AND c.system = true")
+    boolean existsByNomeAndSystemTrue(@Param("nome") String nome);
 }

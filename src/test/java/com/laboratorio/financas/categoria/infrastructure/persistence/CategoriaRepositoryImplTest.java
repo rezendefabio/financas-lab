@@ -273,4 +273,66 @@ class CategoriaRepositoryImplTest extends AbstractIntegrationTest {
         // Then
         assertThat(visiveis).isEmpty();
     }
+
+    @Test
+    void existePorNomeEUserIdRetornaTrueQuandoJaExiste() {
+        // Given
+        UUID userId = criarUsuarioPersistido();
+        repository.salvar(categoriaDeUsuario("Mercado", TipoCategoria.DESPESA, userId));
+
+        // When
+        boolean existe = repository.existePorNomeEUserId("Mercado", userId);
+
+        // Then
+        assertThat(existe).isTrue();
+    }
+
+    @Test
+    void existePorNomeEUserIdRetornaFalseQuandoNaoExiste() {
+        // Given
+        UUID userId = criarUsuarioPersistido();
+
+        // When
+        boolean existe = repository.existePorNomeEUserId("Mercado", userId);
+
+        // Then
+        assertThat(existe).isFalse();
+    }
+
+    @Test
+    void existePorNomeEUserIdNaoConfundeUsuariosDiferentes() {
+        // Given -- usuario A tem "Mercado", usuario B nao tem
+        UUID userIdA = criarUsuarioPersistido();
+        UUID userIdB = criarUsuarioPersistido();
+        repository.salvar(categoriaDeUsuario("Mercado", TipoCategoria.DESPESA, userIdA));
+
+        // When
+        boolean existeParaB = repository.existePorNomeEUserId("Mercado", userIdB);
+
+        // Then
+        assertThat(existeParaB).isFalse();
+    }
+
+    @Test
+    void existePorNomeEUserIdComNullVerificaCategoriasSystem() {
+        // Given -- categoria de sistema com nome "Transferencia"
+        repository.salvar(categoriaSystem("Transferencia", TipoCategoria.NEUTRAL));
+
+        // When
+        boolean existe = repository.existePorNomeEUserId("Transferencia", null);
+
+        // Then
+        assertThat(existe).isTrue();
+    }
+
+    @Test
+    void existePorNomeEUserIdComNullRetornaFalseQuandoNaoExisteSistema() {
+        // Given -- nenhuma categoria de sistema com esse nome
+
+        // When
+        boolean existe = repository.existePorNomeEUserId("NomeInexistente", null);
+
+        // Then
+        assertThat(existe).isFalse();
+    }
 }

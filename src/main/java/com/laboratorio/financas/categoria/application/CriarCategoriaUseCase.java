@@ -1,6 +1,7 @@
 package com.laboratorio.financas.categoria.application;
 
 import com.laboratorio.financas.categoria.domain.Categoria;
+import com.laboratorio.financas.categoria.domain.CategoriaJaExisteException;
 import com.laboratorio.financas.categoria.domain.CategoriaNaoEncontradaException;
 import com.laboratorio.financas.categoria.domain.CategoriaRepository;
 import com.laboratorio.financas.categoria.domain.TipoCategoria;
@@ -39,6 +40,9 @@ public class CriarCategoriaUseCase {
             if (pai.getCategoriaPaiId() != null) {
                 throw new IllegalArgumentException("Nao e permitido criar subcategoria de subcategoria");
             }
+        }
+        if (repository.existePorNomeEUserId(comando.nome(), comando.userId())) {
+            throw new CategoriaJaExisteException(comando.nome());
         }
         Categoria nova = new Categoria(
                 UUID.randomUUID(),
