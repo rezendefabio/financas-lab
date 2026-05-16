@@ -29,10 +29,17 @@ function makeWrapper() {
 
 const contaFixture = (overrides?: Partial<Conta>): Conta => ({
   id: 'abc-123',
+  userId: null,
   nome: 'Nubank',
   tipo: 'CORRENTE',
   saldoInicialValor: 1500.5,
   saldoInicialMoeda: 'BRL',
+  saldoAtualValor: null,
+  saldoAtualMoeda: null,
+  limiteCreditoValor: null,
+  limiteCreditoMoeda: null,
+  diaFechamento: null,
+  diaVencimento: null,
   ativa: true,
   criadoEm: '2024-01-01T00:00:00Z',
   atualizadoEm: '2024-01-01T00:00:00Z',
@@ -151,15 +158,15 @@ describe('ContasPage', () => {
     expect(screen.getByText(/1\.500,50/)).toBeTruthy()
   })
 
-  it('exibe tipo desconhecido literalmente quando nao esta no mapa TIPO_LABEL', async () => {
+  it('formata tipo INVESTIMENTO corretamente', async () => {
     vi.mocked(contasService.listar).mockResolvedValue([
-      contaFixture({ tipo: 'INVESTIMENTO' as never }),
+      contaFixture({ tipo: 'INVESTIMENTO' }),
     ])
 
     render(<ContasPage />, { wrapper: makeWrapper() })
 
     await waitFor(() => {
-      expect(screen.getByText('INVESTIMENTO')).toBeTruthy()
+      expect(screen.getByText('Investimento')).toBeTruthy()
     })
   })
 })
