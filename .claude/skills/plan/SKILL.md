@@ -68,6 +68,18 @@ Ler `docs/progresso.md` secao "Camada 4" para identificar o que ja foi entregue.
 - Se o numero de migration proposto ja existe: usar o proximo disponivel.
 - Nunca propor duplicar logica que ja existe (auth, JWT, repositorios base).
 
+**5. Analise de FK para operacoes de exclusao ou deduplicacao de dados:**
+Se o objetivo envolve deletar, deduplicar ou remover registros de uma tabela:
+- Identificar TODAS as tabelas que tem FK apontando para a tabela-alvo:
+  buscar `REFERENCES <tabela>` nas migrations existentes em
+  `src/main/resources/db/migration/`.
+- Incluir no prompt do executor, ANTES de qualquer DELETE:
+  a) UPDATE de cada tabela filha para redirecionar o `*_id` para o registro
+     que sera mantido (o "keeper")
+  b) Ordem obrigatoria: reatribuir todas as FKs -> depois deletar
+- Nunca propor DELETE em tabela com FK filha sem explicitar o tratamento
+  das referencias. Violacao de FK em migration e bloqueador de startup.
+
 Registrar o resultado da auditoria (bounded contexts encontrados, ultimo V, features
 concluidas relevantes) antes de prosseguir para o Passo 2.
 

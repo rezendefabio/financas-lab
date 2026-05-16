@@ -3,7 +3,7 @@
 > Documento de tracking. Mostra **onde estamos** na construção da fábrica e do produto.
 > Atualizado conforme camadas avançam. Diferente do `decisoes.md` (que registra escolhas) e dos `adrs.md` (que registram porquês), este documento responde a pergunta: "em que ponto eu estou?".
 
-**Última atualização:** 2026-05-15 (Sub-etapa 5.66 -- melhorias de UX na tela de contas)
+**Última atualização:** 2026-05-16 (Sub-etapa 5.67 -- corrige V20 FK violation + regra FK no /plan)
 
 ---
 
@@ -159,6 +159,19 @@ Configurar `CLAUDE.md` rico, criar 3-5 subagents focados, criar 5-10 skills (sla
 Ativar a fábrica de fato: rodar features no Tier 2, configurar 3 routines Tier 1, validar paralelismo se necessário.
 
 ### Sub-etapas concluídas
+
+- **5.67 -- corrige V20 FK violation + regra FK no /plan** (2026-05-16):
+  Dois fixes relacionados ao mesmo problema raiz. **(1) V20 migration reescrita:**
+  `V20__unicidade_nome_categoria.sql` falhava com `ERROR: update or delete on table "categoria"
+  violates foreign key constraint "fk_transacao_categoria"` porque deletava duplicatas sem
+  reatribuir FKs filhas. Reescrita com passos 1a/1b/1c/1d (usuario) e 2a/2b/2c/2d (sistema):
+  para cada grupo de duplicatas, UPDATE em `transacao`, `orcamento` e `lancamento_recorrente`
+  redirecionando para o keeper (mais antigo por `criado_em ASC, id ASC`); DELETE so apos
+  todas as FKs reatribuidas. Auto-referencia `categoria_pai_id` ja tinha `ON DELETE SET NULL`
+  -- nao requereu tratamento. **(2) Regra 5 adicionada ao Passo 1.5 do `/plan`:**
+  planejador agora exige analise de FKs (`REFERENCES <tabela>`) antes de propor DELETE
+  ou deduplicacao; orienta executor a incluir UPDATE de tabelas filhas antes de DELETE.
+  BUILD SUCCESS, 419+ testes passando via Testcontainers. PR aberto.
 
 - **5.66 -- melhorias de UX na tela de contas** (2026-05-15):
   Cinco melhorias na tela de contas. **(1) Saldo atual nos cards:** `saldoAtualValor ?? saldoInicialValor`
