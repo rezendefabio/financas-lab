@@ -38,6 +38,7 @@ export default function CategoriasPage() {
                 <TableRow>
                   <TableHead>Nome</TableHead>
                   <TableHead>Tipo</TableHead>
+                  <TableHead>Categoria Pai</TableHead>
                   <TableHead className="text-right">Acoes</TableHead>
                 </TableRow>
               </TableHeader>
@@ -46,6 +47,7 @@ export default function CategoriasPage() {
                   <TableRow key={i}>
                     <TableCell><Skeleton className="h-4 w-32" /></TableCell>
                     <TableCell><Skeleton className="h-4 w-20" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-24" /></TableCell>
                     <TableCell><Skeleton className="h-4 w-8" /></TableCell>
                   </TableRow>
                 ))}
@@ -74,23 +76,43 @@ export default function CategoriasPage() {
                 <TableRow>
                   <TableHead>Nome</TableHead>
                   <TableHead>Tipo</TableHead>
+                  <TableHead>Categoria Pai</TableHead>
                   <TableHead className="text-right">Acoes</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {data.map((categoria) => (
-                  <TableRow key={categoria.id} className="cursor-pointer hover:bg-muted/50">
-                    <TableCell className="font-medium">{categoria.nome}</TableCell>
-                    <TableCell>
-                      <Badge variant={categoria.tipo === 'RECEITA' ? 'default' : 'destructive'}>
-                        {formatTipoCategoria(categoria.tipo)}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <span className="text-muted-foreground text-sm">--</span>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                {data.map((categoria) => {
+                  const nomePai = categoria.categoriaPaiId
+                    ? (data.find((c) => c.id === categoria.categoriaPaiId)?.nome ?? '—')
+                    : '—'
+                  return (
+                    <TableRow
+                      key={categoria.id}
+                      className="cursor-pointer hover:bg-muted/50"
+                      onClick={() => router.push(`/categorias/${categoria.id}`)}
+                    >
+                      <TableCell className="font-medium">
+                        <span className="flex items-center gap-2">
+                          {categoria.nome}
+                          {categoria.system && (
+                            <Badge variant="secondary">Sistema</Badge>
+                          )}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={categoria.tipo === 'RECEITA' ? 'default' : 'destructive'}>
+                          {formatTipoCategoria(categoria.tipo)}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground text-sm">
+                        {nomePai}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <span className="text-muted-foreground text-sm">--</span>
+                      </TableCell>
+                    </TableRow>
+                  )
+                })}
               </TableBody>
             </Table>
           </CardContent>
