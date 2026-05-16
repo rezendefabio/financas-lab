@@ -43,4 +43,9 @@ public class ContaRepositoryImpl implements ContaRepository {
                 .map(mapper::toDomain)
                 .toList();
     }
+
+    @Override
+    public void deletar(UUID id) {
+        jpaRepository.deleteById(id);
+    }
 }
