@@ -1,12 +1,12 @@
 package com.laboratorio.financas.usuario.infrastructure.persistence;
 
 import com.laboratorio.financas.usuario.domain.Usuario;
-import org.mapstruct.Mapper;
+import org.springframework.stereotype.Component;
 
-@Mapper(componentModel = "spring")
-public interface UsuarioMapper {
+@Component
+public class UsuarioMapper {
 
-    default UsuarioEntity toEntity(Usuario usuario) {
+    public UsuarioEntity toEntity(Usuario usuario) {
         if (usuario == null) {
             return null;
         }
@@ -21,7 +21,7 @@ public interface UsuarioMapper {
         );
     }
 
-    default Usuario toUsuario(UsuarioEntity entity) {
+    public Usuario toUsuario(UsuarioEntity entity) {
         if (entity == null) {
             return null;
         }
