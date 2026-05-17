@@ -488,3 +488,136 @@ remover qualquer arquivo `??` inesperado.
   por compatibilidade com o state file); (4) `teve_correcao_autonoma` e heuristica baseada
   em commits `fix(` + mais de 1 commit total -- detecta iteracao com correcao, mas nao
   distingue feedback humano de correcao autonoma exata. PR #145.
+
+---
+
+## Decisoes Arquiteturais Pendentes de Implementacao (2026-05-17)
+
+Decisoes tomadas em sessao de discussao. Nenhuma sub-etapa aberta ainda --
+registradas aqui para orientar o planejador quando as features entrarem no backlog.
+
+### Relatorios Impressos (PDF)
+
+**Decisao:** `@react-pdf/renderer` no frontend (Next.js), nao JasperReports no backend.
+
+**Racional:** PDF e preocupacao de apresentacao -- pertence a camada de view. O executor
+ja conhece React; `@react-pdf/renderer` usa os mesmos padroes (componentes declarativos,
+props tipadas) que o resto do frontend. JasperReports exigiria que o executor aprendesse
+templates `.jrxml` e a API Java da biblioteca -- conhecimento que nao transfere entre
+bounded contexts e que o operador (unico humano no loop) nao poderia revisar com agilidade.
+
+**Operador tem experiencia com JasperReports** mas isso nao transfere para o executor.
+Consistencia da fabrica prevalece sobre familiaridade do operador com a ferramenta.
+
+**Impacto na fabrica:**
+- Nova dependencia: `@react-pdf/renderer` em `frontend/package.json`
+- `docs/field-type-catalog.md`: adicionar secao "Campos em relatorio impresso" com
+  mapeamento de tipos Java para elementos `@react-pdf/renderer` (`<Text>`, `<View>`,
+  formatters)
+- Pagina de relatorio impresso: componente React isolado, sem `'use client'` de
+  interacao -- exporta `<PDFDownloadLink>` ou `<PDFViewer>` conforme contexto
+- Se necessario arquivar o PDF gerado: frontend gera blob → `POST /api/anexos` via
+  bounded context `anexo` (padrao de gerenciamento de arquivos abaixo)
+
+**Nao se aplica a** dashboards e resumos em tela (Recharts, ja implementado).
+
+---
+
+### Gerenciamento de Arquivos (Upload/Download)
+
+**Decisao:** MinIO no Docker para dev + S3 na nuvem para prod; bounded context `anexo`
+como camada de abstracao transversal.
+
+**Racional:** MinIO e S3-compatible -- mesmo SDK Java (`software.amazon.awssdk:s3`),
+mesma API, configuracao isolada em `application-dev.yml` vs `application-prod.yml`.
+Zero infra adicional para dev (ja temos Docker). Cloudflare R2 e alternativa mais
+barata que S3 para prod -- decisao de infra adiada para quando houver deploy real.
+
+**Bounded context `anexo`:**
+
+```
+Anexo {
+  id:            UUID (PK)
+  entidadeTipo:  ENUM (TRANSACAO, NOTA, META, ...) -- referencia logica, sem FK
+  entidadeId:    UUID
+  nomeOriginal:  String (nome do arquivo que o usuario enviou)
+  nomeStorage:   String (UUID gerado -- evita colisao e nao expoe nome original)
+  contentType:   String (MIME type)
+  tamanhoBytes:  Long
+  criadoEm:      Instant
+}
+```
+
+`entidadeId` e referencia logica (sem FK de banco) para evitar acoplamento estrutural
+entre bounded contexts. Cada bounded context que precisa de anexos injeta `AnexoRepository`
+na camada de application -- nao conhece o storage diretamente.
+
+**Endpoints:**
+- `POST /api/anexos` (multipart/form-data): recebe arquivo, salva no storage, persiste metadados
+- `GET /api/anexos/{id}/download`: retorna redirect para URL pre-assinada (S3/MinIO) ou stream direto
+
+**Impacto na fabrica:**
+- `docs/field-type-catalog.md`: adicionar entrada para campos do tipo "arquivo anexo"
+  (input = `<Input type="file">` com validacao de tipo/tamanho, exibicao = link de download)
+- CLAUDE.md: documentar que bounded contexts com upload nao usam `/feature` puro --
+  dependem do bounded context `anexo` e requerem configuracao de storage no `application*.yml`
+
+---
+
+### Mobile
+
+**Decisao (curto prazo):** PWA -- `manifest.json` + service worker (Workbox) + icones.
+Reusa integralmente o Next.js existente. Previsto no MVP (`visao.md`).
+
+**Decisao (longo prazo, pos-MVP):** React Native com Expo se app nativo for necessario.
+
+**Racional do RN/Expo:** reutiliza tipos TypeScript dos services existentes; executor ja
+conhece o ecossistema React; a fabrica ganha uma skill `/feature-rn` analogica ao
+`/feature-front` sem precisar ensinar Dart/Flutter ao executor. Flutter invalida todo o
+padrao de skills frontend atual -- custo desproporcional.
+
+**App nativo esta explicitamente fora do MVP** (`visao.md`, secao "O que fica fora").
+Reabertura exige justificativa explicita conforme politica do documento de visao.
+
+---
+
+### Complexidade Alem de CRUD
+
+Tres padroes distintos, com estrategias diferentes:
+
+**A. Regras de negocio ricas (dominio com comportamento)**
+
+Padrao atual ja e correto: entidades com metodos (`desativar()`, `registrarDeposito()`).
+O que falta documentar e quando criar **domain events** em vez de logica direta no UseCase.
+
+Criterio: se um UseCase precisar notificar outro bounded context apos uma operacao
+(ex: `TransacaoCriada` → atualizar saldo da `Conta`), usar Spring Application Events
+(`ApplicationEventPublisher` + `@EventListener`). Evita acoplamento direto entre
+repositorios de bounded contexts distintos na camada de application.
+
+Impacto na fabrica: adicionar secao em CLAUDE.md sobre quando usar eventos vs chamada
+direta. O planejador deve detectar dependencias cruzadas entre bounded contexts e
+declarar `tipo: "feature_com_eventos"` na task.
+
+**B. Processamento assincrono leve (operacoes em background)**
+
+Ferramenta: `@Async` do Spring (configurado via `@EnableAsync` + `ThreadPoolTaskExecutor`).
+Casos de uso: recalculo de saldo pos-importacao, envio de notificacao, geracao de PDF
+server-side se necessario.
+
+Sem mensageria, sem infra extra. O UseCase retorna imediatamente; o trabalho pesado
+roda em thread separada do pool. Falhas sao logadas -- sem retry automatico neste nivel.
+
+**C. Processamento assincrono pesado (jobs longos)**
+
+Ferramenta: Spring Batch. Casos de uso: importacao de CSV (prevista no MVP),
+categorizacao automatica por IA (pos-MVP), conciliacao bancaria (pos-MVP).
+
+Spring Batch adiciona suas proprias tabelas de metadados (gerenciadas pelo Flyway).
+Bounded context `job` contem `JobLauncher`, `Job`, `Step` e listeners.
+A fabrica precisaria de uma skill `/feature-job` quando este padrao for inaugurado.
+
+**Ordem de implementacao sugerida:**
+1. `@Async` leve (entra junto com a primeira feature que precisar, sem sub-etapa propria)
+2. Spring Batch (entra na sub-etapa de importacao CSV -- prevista no MVP)
+3. Domain events (entra quando surgir primeira dependencia cruzada real entre bounded contexts)
