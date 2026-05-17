@@ -3,7 +3,7 @@
 > Documento de tracking. Mostra **onde estamos** na construção da fábrica e do produto.
 > Atualizado conforme camadas avançam. Diferente do `decisoes.md` (que registra escolhas) e dos `adrs.md` (que registram porquês), este documento responde a pergunta: "em que ponto eu estou?".
 
-**Última atualização:** 2026-05-17 (Sub-etapa 5.76 -- skill /feature-front: scaffold de feature frontend a partir de DTOs Java)
+**Última atualização:** 2026-05-17 (Sub-etapa 5.77 -- agente report-writer + skill /write-report: relatorios PDF com @react-pdf/renderer)
 
 ---
 
@@ -159,6 +159,28 @@ Configurar `CLAUDE.md` rico, criar 3-5 subagents focados, criar 5-10 skills (sla
 Ativar a fábrica de fato: rodar features no Tier 2, configurar 3 routines Tier 1, validar paralelismo se necessário.
 
 ### Sub-etapas concluídas
+
+- **5.77 -- agente report-writer + skill /write-report: relatorios PDF com @react-pdf/renderer** (2026-05-17):
+  Terceiro subagent gerador do projeto (apos `test-writer` e `migration-writer`), analogo
+  do `migration-writer` para PDFs. `.claude/agents/report-writer.md` (Sonnet) recebe a
+  descricao de um relatorio (nome, dominio, arquivo de tipos, campos, titulo), le os tipos
+  TypeScript do dominio e os formatters do projeto, e gera um componente React de relatorio
+  impresso com `@react-pdf/renderer` -- cabecalho com titulo/periodo, tabela de dados,
+  rodape com total e data de geracao. Skill orquestradora `.claude/skills/write-report/SKILL.md`
+  (`disable-model-invocation: true`, `context: fork`, `agent: report-writer`). Decisao de
+  2026-05-17: relatorios impressos usam `@react-pdf/renderer` no frontend (nao JasperReports).
+  Regras do agente: nunca CSS classes nem componentes shadcn dentro do `<Document>`, apenas
+  `StyleSheet.create()`; valores monetarios via `formatBRL`, datas via `formatDate`; dois
+  componentes por arquivo (documento interno nao-exportado + componente publico com
+  `PDFDownloadLink`). Dependencia `@react-pdf/renderer@^4.5.1` adicionada ao `frontend/`.
+  Smoke (ADR-011): gerado `RelatorioGastosPorCategoria.tsx` a partir dos tipos ja existentes
+  em `features/relatorios/types/relatorio.ts` -- TypeScript compila limpo no arquivo gerado,
+  ESLint limpo, `npm run build` SUCCESS, named export presente, `PDFDownloadLink` presente,
+  nenhum componente shadcn dentro do `<Document>`. Ajuste in-flight do agente: `totalGasto`
+  no tipo de dominio e um objeto composto `ValorMonetario` (`{ valor, moeda }`), nao numero
+  bruto -- o agente extrai `.valor` antes de passar a `formatBRL`; secao "Cuidado com tipos
+  compostos" adicionada ao system prompt para prescrever esse comportamento. Componente de
+  smoke commitado como exemplo de uso valido e exportado no `index.ts` da feature.
 
 - **5.76 -- skill /feature-front: scaffold de feature frontend a partir de DTOs Java** (2026-05-17):
   Nova skill orquestradora `.claude/skills/feature-front/SKILL.md` (`disable-model-invocation: true`).
