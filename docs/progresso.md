@@ -3,7 +3,7 @@
 > Documento de tracking. Mostra **onde estamos** na construção da fábrica e do produto.
 > Atualizado conforme camadas avançam. Diferente do `decisoes.md` (que registra escolhas) e dos `adrs.md` (que registram porquês), este documento responde a pergunta: "em que ponto eu estou?".
 
-**Última atualização:** 2026-05-16 (Sub-etapa 5.75 -- /plan Passo 6: cleanup de worktrees bloqueados e branches locais-only)
+**Última atualização:** 2026-05-16 (Sub-etapa 5.73 -- ApplicationContextTest: smoke test de startup do contexto Spring)
 
 ---
 
@@ -188,6 +188,17 @@ Ativar a fábrica de fato: rodar features no Tier 2, configurar 3 routines Tier 
   para commit anterior a mudanca de `package.json`) detectou a mudanca e rodou `npm install`
   -- que de fato instalou 33 pacotes faltantes no repo principal, confirmando o bug real;
   Cenario B (ORIG_HEAD == HEAD) saiu silencioso com exit 0.
+
+- **5.73 -- ApplicationContextTest: smoke test de startup do contexto Spring** (2026-05-16):
+  Novo teste `src/test/java/com/laboratorio/financas/shared/ApplicationContextTest.java`,
+  com um unico metodo `@Test contextLoads()` vazio, estendendo `AbstractIntegrationTest`
+  (herda `@SpringBootTest` + Testcontainers). Motivacao: a regressao do `UsuarioMapper`
+  sem bean MapStruct causou `APPLICATION FAILED TO START` em producao; embora `mvn verify`
+  ja capture falhas de contexto via os testes de integracao, nao havia teste cuja unica
+  responsabilidade fosse validar o startup. Esse teste falha imediatamente com mensagem
+  clara se o contexto nao sobe, documenta a intencao explicitamente e serve como smoke
+  test isolado executavel via `./mvnw test -Dtest=ApplicationContextTest`. Sem logica de
+  assercao adicional -- nao e lugar para testar comportamento.
 
 - **5.71 -- /plan: reviews automaticos pos-PR no Passo 5.4** (2026-05-16):
   Correcao no `.claude/skills/plan/SKILL.md`. O Passo 5 do `/ship` spawna `pr-reviewer`
