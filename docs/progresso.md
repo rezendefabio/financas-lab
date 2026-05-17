@@ -3,7 +3,7 @@
 > Documento de tracking. Mostra **onde estamos** na construção da fábrica e do produto.
 > Atualizado conforme camadas avançam. Diferente do `decisoes.md` (que registra escolhas) e dos `adrs.md` (que registram porquês), este documento responde a pergunta: "em que ponto eu estou?".
 
-**Última atualização:** 2026-05-17 (Sub-etapa 5.77 -- agente report-writer + skill /write-report: relatorios PDF com @react-pdf/renderer)
+**Última atualização:** 2026-05-17 (Sub-etapa 5.78 -- agente job-writer + skill /write-job: scaffold de job Spring Batch)
 
 ---
 
@@ -159,6 +159,25 @@ Configurar `CLAUDE.md` rico, criar 3-5 subagents focados, criar 5-10 skills (sla
 Ativar a fábrica de fato: rodar features no Tier 2, configurar 3 routines Tier 1, validar paralelismo se necessário.
 
 ### Sub-etapas concluídas
+
+- **5.78 -- agente job-writer + skill /write-job: scaffold de job Spring Batch** (2026-05-17):
+  Novo subagent gerador `.claude/agents/job-writer.md` (`model: sonnet`) e skill orquestradora
+  `.claude/skills/write-job/SKILL.md` (`disable-model-invocation: true`, `context: fork`).
+  `/write-job <descricao multiline>` gera o scaffold completo de um job Spring Batch a partir
+  de uma descricao funcional: `ItemReader`, `ItemProcessor`, `ItemWriter`, `JobConfig` (Job +
+  Step chunk-oriented), `JobListener`, `JobLauncher` (REST) ou `JobScheduler` (`@Scheduled`),
+  migration Flyway para as 6 tabelas `BATCH_*` e a dependencia Maven `spring-boot-starter-batch`.
+  Regras prescritas: chunk-oriented (nunca `Tasklet`), `JobParameters` com timestamp para
+  idempotencia, `faultTolerant().skip().skipLimit()` no Step, Repository do bounded context
+  (nunca `EntityManager` direto), pacote sempre em `infrastructure.batch`. Decisao 2026-05-17:
+  processamento assincrono pesado (importacao CSV, categorizacao em batch) usa Spring Batch.
+  Smoke (ADR-011) gerou o job `ImportacaoCsvTransacoes` no bounded context `transacao` --
+  feature prevista no MVP, portanto os 6 arquivos Java + migration `V22__cria_tabelas_spring_batch.sql`
+  foram mantidos como artefato valido da sub-etapa. `spring-boot-starter-batch` adicionado ao
+  `pom.xml`; `spring.batch.job.enabled: false` e `spring.batch.jdbc.initialize-schema: never`
+  no `application.yml` (jobs disparam so via REST; Flyway e dono das tabelas `BATCH_*`).
+  `./mvnw compile` passa. Correcao in-flight: checkstyle exige logger `static final` em
+  UPPER_CASE -- `log` renomeado para `LOG` nas 4 classes; import `HttpStatus` nao usado removido.
 
 - **5.77 -- agente report-writer + skill /write-report: relatorios PDF com @react-pdf/renderer** (2026-05-17):
   Terceiro subagent gerador do projeto (apos `test-writer` e `migration-writer`), analogo
