@@ -159,6 +159,11 @@ powershell -NoProfile -Command "
 Se `$failing` nao for vazio: executar auto-fix (Passo 3b).
 Se todos passando ou pendentes: sem acao.
 
+> O `@($checks)` e obrigatorio: em PS5.1, quando `gh pr checks` retorna 0 ou 1
+> resultado, `ConvertFrom-Json` produz `$null` ou um objeto escalar. `$null |
+> Where-Object` lanca "elemento pipe vazio nao e permitido". `@(...)` forca
+> contexto de array antes do pipe.
+
 ### Passo 3a -- Auto-rebase (apenas se CONFLICTING)
 
 Para o PR com conflito, usar comandos bash:
