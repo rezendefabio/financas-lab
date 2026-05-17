@@ -23,6 +23,12 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
   }
   if (!res.ok) {
     const body = await res.json().catch(() => ({}))
+    if (res.status === 500 && body.codigoErro) {
+      throw new ApiError(
+        500,
+        `Erro inesperado (${body.codigoErro}). Informe ao suporte.`,
+      )
+    }
     throw new ApiError(res.status, body.message ?? res.statusText)
   }
   return res.json() as Promise<T>
