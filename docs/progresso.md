@@ -3,7 +3,7 @@
 > Documento de tracking. Mostra **onde estamos** na construção da fábrica e do produto.
 > Atualizado conforme camadas avançam. Diferente do `decisoes.md` (que registra escolhas) e dos `adrs.md` (que registram porquês), este documento responde a pergunta: "em que ponto eu estou?".
 
-**Última atualização:** 2026-05-17 (Sub-etapa 5.79 -- correcoes em babysit-prs e batch: 3 bugs observados)
+**Última atualização:** 2026-05-17 (Sub-etapa 5.80 -- atualiza fabrica-referencia.md com 5.77 e 5.78)
 
 ---
 
@@ -159,6 +159,16 @@ Configurar `CLAUDE.md` rico, criar 3-5 subagents focados, criar 5-10 skills (sla
 Ativar a fábrica de fato: rodar features no Tier 2, configurar 3 routines Tier 1, validar paralelismo se necessário.
 
 ### Sub-etapas concluídas
+
+- **5.80 -- atualiza fabrica-referencia.md (5.77 e 5.78)** (2026-05-17):
+  Sub-etapa doc-only de manutencao. `docs/fabrica-referencia.md` foi criado (5.76) antes
+  das sub-etapas 5.77 e 5.78, ficando desatualizado: faltavam as skills `/write-report` e
+  `/write-job` e os agentes geradores `report-writer` e `job-writer`. Tres adicoes apenas
+  por insercao (nenhuma linha existente removida ou alterada): linha de `/write-report` e
+  `/write-job` na tabela "Skills de Geração de Código" (apos `/write-test`); linha de
+  `report-writer` e `job-writer` na tabela "Agentes Geradores" (apos `design-planner`);
+  paths dos novos `.md` no mapa de arquivos (`.claude/agents/` e `.claude/skills/`).
+  Sem gate Java -- apenas arquivo `.md`. PR a abrir.
 
 - **5.79 -- correcoes em babysit-prs e batch (3 bugs observados)** (2026-05-17):
   Sub-etapa de fix doc-only (apenas arquivos `.md` de skills) corrigindo 3 bugs observados
