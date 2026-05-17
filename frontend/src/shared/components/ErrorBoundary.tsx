@@ -38,6 +38,9 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
       stackTrace: (info.componentStack ?? '').slice(0, MAX_STACK_TRACE),
     }
 
+    // Excecao deliberada a regra no-restricted-globals: o registro nao passa
+    // pelo api-client porque pode ocorrer antes de o token estar disponivel.
+    // eslint-disable-next-line no-restricted-globals
     fetch(`${API_BASE}/api/incidentes`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

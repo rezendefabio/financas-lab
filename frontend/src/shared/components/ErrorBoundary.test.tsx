@@ -38,13 +38,11 @@ describe('ErrorBoundary', () => {
   })
 
   it('exibe o fallback e registra o incidente quando um filho lanca erro', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn().mockResolvedValue({
-        ok: true,
-        json: async () => ({ codigo: 'ERR-ABCD1234' }),
-      }),
-    )
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ codigo: 'ERR-ABCD1234' }),
+    })
+    vi.stubGlobal('fetch', fetchMock)
 
     render(
       <ErrorBoundary>
@@ -55,7 +53,7 @@ describe('ErrorBoundary', () => {
     expect(screen.getByText('Erro inesperado')).toBeInTheDocument()
     expect(await screen.findByText('ERR-ABCD1234')).toBeInTheDocument()
 
-    const fetchCall = vi.mocked(fetch).mock.calls[0]
+    const fetchCall = fetchMock.mock.calls[0]
     expect(fetchCall[0]).toContain('/api/incidentes')
     expect((fetchCall[1] as RequestInit)?.method).toBe('POST')
     const payload = JSON.parse((fetchCall[1] as RequestInit)?.body as string)
