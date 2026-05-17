@@ -47,6 +47,8 @@ ele invoca `/plan <objetivo>` e a fábrica entrega PRs prontos para review.
 | `/migrate` | `nome-bounded-context` | Fluxo pós-`/feature`: encadeia `/write-migration` (SQL Flyway) e `/write-test` (unit test da entidade domain) |
 | `/write-migration` | `nome-bounded-context` | Spawna `migration-writer` para gerar `V<N>__cria_tabela_<nome>.sql` a partir das anotações JPA da Entity |
 | `/write-test` | `path-da-classe` | Spawna `test-writer` para gerar testes no nível correto (unit/Mockito/Testcontainers/MockMvc/Vitest) |
+| `/write-report` | descrição multiline do relatório | Spawna `report-writer` para gerar componente React de relatório impresso (`@react-pdf/renderer`). Layout padrão: cabeçalho + tabela + rodapé. Nunca usa shadcn dentro do Document |
+| `/write-job` | descrição multiline do job | Spawna `job-writer` para gerar scaffold completo de job Spring Batch: ItemReader, ItemProcessor, ItemWriter, JobConfig, JobListener, JobLauncher ou Scheduler, migration Flyway para tabelas `BATCH_*` |
 
 ### Skills de Review Manual
 
@@ -103,6 +105,8 @@ invocados diretamente pelo operador — são spawanados por skills.
 | `test-writer` | Sonnet | `/write-test` | Detecta o tipo de classe pelo path e gera o teste correto: unit (domain), Mockito (UseCase), Testcontainers (RepositoryImpl), MockMvc (Controller), Vitest (frontend). Valida rodando os testes antes de reportar |
 | `migration-writer` | Sonnet | `/write-migration` | Lê `*Entity.java`, deriva colunas das anotações JPA (`@Column`, `@Id`, `@Embedded`, `@AttributeOverride`, `@Enumerated`), descobre próximo número Flyway, escreve `V<N>__cria_tabela_<nome>.sql` |
 | `design-planner` | Sonnet | `/setup-design` | Propõe design system completo: paleta, tipografia, componentes, mapeamentos de tipo-de-dado por domínio |
+| `report-writer` | Sonnet | `/write-report` | Gera componente `@react-pdf/renderer` com cabeçalho, tabela mapeada dos campos informados e rodapé. Lê tipos TypeScript do domínio, usa `formatBRL`/`formatDate`, exporta named export com `PDFDownloadLink` |
+| `job-writer` | Sonnet | `/write-job` | Gera scaffold Spring Batch: ItemReader (CSV/stub), ItemProcessor (validação + null para inválidos), ItemWriter (saveAll), JobConfig (chunk configurável), JobListener (logs), JobLauncher REST ou Scheduler. Gera migration `BATCH_*` e adiciona dependência Maven se ausente |
 
 ### Agentes de Manutenção
 
@@ -593,6 +597,8 @@ O `/ship` roda dois gates antes do push. Ambos devem passar com exit 0:
     ci-fixer.md             ← Sonnet, corretor de CI vermelho
     conflict-resolver.md    ← Sonnet, resolvedor de conflitos
     design-planner.md       ← Sonnet, planejador de design system
+    report-writer.md        ← Sonnet, gerador de PDFs com @react-pdf/renderer
+    job-writer.md           ← Sonnet, gerador de scaffold Spring Batch
 
   skills/
     plan/SKILL.md           ← /plan
@@ -603,6 +609,8 @@ O `/ship` roda dois gates antes do push. Ambos devem passar com exit 0:
     migrate/SKILL.md        ← /migrate
     write-test/SKILL.md     ← /write-test
     write-migration/SKILL.md ← /write-migration
+    write-report/SKILL.md   ← /write-report (relatório PDF)
+    write-job/SKILL.md      ← /write-job (scaffold Spring Batch)
     review-pr/SKILL.md      ← /review-pr
     review-arch/SKILL.md    ← /review-arch
     review-front/SKILL.md   ← /review-front
