@@ -3,7 +3,7 @@
 > Documento de tracking. Mostra **onde estamos** na construção da fábrica e do produto.
 > Atualizado conforme camadas avançam. Diferente do `decisoes.md` (que registra escolhas) e dos `adrs.md` (que registram porquês), este documento responde a pergunta: "em que ponto eu estou?".
 
-**Última atualização:** 2026-05-16 (Sub-etapa 5.73 -- ApplicationContextTest: smoke test de startup do contexto Spring)
+**Última atualização:** 2026-05-17 (Sub-etapa 5.76 -- skill /feature-front: scaffold de feature frontend a partir de DTOs Java)
 
 ---
 
@@ -159,6 +159,23 @@ Configurar `CLAUDE.md` rico, criar 3-5 subagents focados, criar 5-10 skills (sla
 Ativar a fábrica de fato: rodar features no Tier 2, configurar 3 routines Tier 1, validar paralelismo se necessário.
 
 ### Sub-etapas concluídas
+
+- **5.76 -- skill /feature-front: scaffold de feature frontend a partir de DTOs Java** (2026-05-17):
+  Nova skill orquestradora `.claude/skills/feature-front/SKILL.md` (`disable-model-invocation: true`).
+  `/feature-front <dominio>` gera 6 arquivos stub de feature frontend (`types/`, `services/`,
+  `index.ts` + 3 paginas em `app/(dashboard)/`) lendo os DTOs Java como fonte de verdade --
+  espelho frontend do `/feature`. Infere tipos TypeScript do `<Pascal>Response.java`, regras
+  Zod do `Criar<Pascal>Request.java` (espelhamento Java <-> Zod, B6) e metodos de service do
+  `*Controller.java`. Cria um unico ponto de manutencao para o padrao frontend. Validacoes
+  ADR-011 no Passo 0: formato do argumento (`^[a-z][a-z0-9_]*$`), existencia dos DTOs Java,
+  feature ainda nao existente. Smoke (Cenario C) com bounded context ficticio `testefronttest`:
+  6 arquivos gerados, TypeScript compila limpo. Bug encontrado e corrigido in-flight: o
+  template da pagina de detalhe (`[id]/page.tsx`) chamava `service.buscar(id)` sempre, mas
+  `buscar` so e gerado quando o Controller tem `@GetMapping("/{id}")` -- dominios sem esse
+  endpoint geravam pagina com erro TS2339. Fix: a skill agora gera a pagina de detalhe em
+  modo reduzido (sem `buscar`, sem `useQuery`) quando o Controller nao expoe busca por id.
+  Cenarios A (argumento invalido) e B (DTOs inexistentes) validados por inspecao das regras
+  do Passo 0.
 
 - **5.75 -- /plan Passo 6: cleanup de worktrees bloqueados e branches locais-only** (2026-05-16):
   Dois gaps no Passo 6 do `.claude/skills/plan/SKILL.md` apos execucao real. **Gap 1
