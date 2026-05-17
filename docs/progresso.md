@@ -3,7 +3,7 @@
 > Documento de tracking. Mostra **onde estamos** na construção da fábrica e do produto.
 > Atualizado conforme camadas avançam. Diferente do `decisoes.md` (que registra escolhas) e dos `adrs.md` (que registram porquês), este documento responde a pergunta: "em que ponto eu estou?".
 
-**Última atualização:** 2026-05-17 (Sub-etapa 5.78 -- agente job-writer + skill /write-job: scaffold de job Spring Batch)
+**Última atualização:** 2026-05-17 (Sub-etapa 5.79 -- correcoes em babysit-prs e batch: 3 bugs observados)
 
 ---
 
@@ -159,6 +159,21 @@ Configurar `CLAUDE.md` rico, criar 3-5 subagents focados, criar 5-10 skills (sla
 Ativar a fábrica de fato: rodar features no Tier 2, configurar 3 routines Tier 1, validar paralelismo se necessário.
 
 ### Sub-etapas concluídas
+
+- **5.79 -- correcoes em babysit-prs e batch (3 bugs observados)** (2026-05-17):
+  Sub-etapa de fix doc-only (apenas arquivos `.md` de skills) corrigindo 3 bugs observados
+  em execucoes reais. **Bug 1 (`batch/SKILL.md`):** o bloco de cleanup de worktrees orfaos
+  era apresentado como codigo PowerShell puro sem instrucao de execucao, levando o executor
+  a gerar comandos bash com sintaxe PowerShell (`2>$null` -> `$null: ambiguous redirect`).
+  Correcao: bloco migrado para o padrao "Write + File" (escrever `.claude/tmp-batch-cleanup.ps1`
+  e executar via `powershell -NoProfile -File`), nota explicita de que redirects em contexto
+  bash usam sempre `2>/dev/null`. **Bug 2 (`babysit-prs/SKILL.md` Passo 3a):** o
+  `git worktree remove` sem `-f -f` falhava silenciosamente, levando a improviso de `rm -rf`
+  no diretorio do worktree -- operacao bloqueada pelo sandbox. Correcao: `git worktree remove -f -f`
+  + `git worktree prune`, com nota proibindo `rm -rf`. **Bug 3 (`babysit-prs/SKILL.md`
+  Passo 2b):** quando `gh pr checks` retorna vazio, `$null | Where-Object` lanca "elemento
+  pipe vazio nao permitido" em PS5.1. Correcao: `@($checks) | Where-Object` (forca contexto
+  de array). Sem gate Java -- validacao manual dos 3 fixes via grep. PR #186.
 
 - **5.78 -- agente job-writer + skill /write-job: scaffold de job Spring Batch** (2026-05-17):
   Novo subagent gerador `.claude/agents/job-writer.md` (`model: sonnet`) e skill orquestradora

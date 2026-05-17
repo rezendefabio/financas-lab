@@ -151,13 +151,18 @@ Logica:
 ```bash
 powershell -NoProfile -Command "
   \$checks = gh pr checks <NUMBER> --json name,state,conclusion | ConvertFrom-Json
-  \$failing = \$checks | Where-Object { \$_.conclusion -eq 'FAILURE' -or \$_.state -eq 'FAILURE' }
+  \$failing = @(\$checks) | Where-Object { \$_.conclusion -eq 'FAILURE' -or \$_.state -eq 'FAILURE' }
   \$failing
 "
 ```
 
 Se `$failing` nao for vazio: executar auto-fix (Passo 3b).
 Se todos passando ou pendentes: sem acao.
+
+> O `@($checks)` e obrigatorio: em PS5.1, quando `gh pr checks` retorna 0 ou 1
+> resultado, `ConvertFrom-Json` produz `$null` ou um objeto escalar. `$null |
+> Where-Object` lanca "elemento pipe vazio nao e permitido". `@(...)` forca
+> contexto de array antes do pipe.
 
 ### Passo 3a -- Auto-rebase (apenas se CONFLICTING)
 
@@ -195,10 +200,14 @@ Se o rebase falhar (`$?` false):
 Se o rebase suceder:
 ```bash
 git push origin "$branch" --force-with-lease
-git worktree remove "$worktree_path"
+git worktree remove -f -f "$worktree_path" 2>/dev/null || true
+git worktree prune
 cd "$repo_root"
 ```
 - Registrar no relatorio: "PR #N: rebase executado com sucesso"
+
+> Nunca usar `rm -rf` para remover diretorio de worktree -- o sandbox bloqueia.
+> `git worktree remove -f -f` + `git worktree prune` e suficiente.
 
 Apos acao (sucesso ou falha), atualizar state via `powershell -NoProfile -Command`:
 
