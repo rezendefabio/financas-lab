@@ -227,7 +227,7 @@ Apos exibir o relatorio final, executar os dois sub-passos de limpeza em ordem.
 ```bash
 # Remover worktrees registrados cujo path contem 'agent-'
 git worktree list --porcelain | grep "^worktree " | awk '{print $2}' | grep "agent-" | while read wt; do
-  git worktree remove -f "$wt" 2>/dev/null || true
+  git worktree remove -f -f "$wt" 2>/dev/null || true
 done
 
 # Remover branches locais com prefixo worktree-agent-
@@ -251,5 +251,21 @@ done
 O `-d` (minusculo) so deleta branches totalmente mergeadas -- nao ha risco de
 perda de trabalho nao publicado. Se o branch ainda nao foi mergeado, o comando
 falha silenciosamente (o `|| true` garante que nao aborta o cleanup).
+
+### Sub-passo 6.3 -- Remover branches locais-only sem tracking (review-*, worktree-*)
+
+Branches criados por sub-agentes reviewers (prefixo `review-`) e por worktrees
+(prefixo `worktree-`) nunca sao publicados no remote -- nao tem upstream configurado
+e nao aparecem no `grep ': gone]'` do Sub-passo 6.2.
+
+```bash
+# Deletar branches locais-only com prefixo review- ou worktree-
+# -D e seguro aqui: esses branches nunca foram publicados
+git branch | grep -E '^\s*(review-|worktree-)' | tr -d ' *' | while read b; do
+  git branch -D "$b" 2>/dev/null || true
+done
+```
+
+Se nenhum branch desse tipo existir: pular silenciosamente.
 
 Se nenhum worktree ou branch orfao encontrado: pular silenciosamente.
