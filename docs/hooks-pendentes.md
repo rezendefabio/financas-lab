@@ -177,6 +177,8 @@ Itens originalmente listados em "Hooks Markdown / docs" ou outras secoes, agora 
 
 - **Write-Error seguido de exit em .ps1** (Sub-etapa 5.55). Implementado em `.claude/hooks/windows/write-error-exit.ps1`, invocado via `.githooks/pre-commit` (orquestrador) no evento `pre-commit`. Filtra arquivos `.ps1` staged (qualquer path). Para cada `.ps1`, percorre linhas buscando `Write-Error`; se encontrado, verifica janela de 5 linhas seguintes para `exit`. Se padrao detectado, exibe aviso em amarelo com explicacao do problema e substituicao recomendada (`Write-Host -ForegroundColor Red + exit N`), mas NAO bloqueia (exit 0). Modo **warn** (heuristica -- analise de fluxo completa requerida para certeza; aviso serve para revisao humana). Primeira ocupacao de `.claude/hooks/windows/`.
 
+- **npm-install-on-package-change** (Sub-etapa 5.74). Implementado em `.claude/hooks/universal/npm-install-on-package-change.ps1`, invocado via `.githooks/post-merge` (orquestrador `.githooks/post-merge.ps1`) no evento `post-merge`. Detecta mudanca em `frontend/package.json` no ultimo merge via `git diff-tree -r --name-only --no-commit-id ORIG_HEAD HEAD` e roda `npm install` automaticamente em `frontend/`. Evita `Module not found` por dependencia instalada em worktree isolado mas nao no `node_modules/` do repo principal apos `git pull`. Silencioso quando `frontend/package.json` nao mudou. Modo **warn** (exit 0 sempre): falha de `npm install` nao bloqueia o merge. Primeiro hook no evento `post-merge`.
+
 ## Notas de cuidado para validacao destrutiva
 
 Itens que nao sao hooks automatizaveis mas precisam ser observados em scripts e prompts futuros. Formalizados em ADR-011.
