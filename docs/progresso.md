@@ -169,7 +169,10 @@ Ativar a fábrica de fato: rodar features no Tier 2, configurar 3 routines Tier 
   no SKILL.md instrui a sessao principal (que tem acesso total ao Agent tool) a disparar,
   para cada task com PR aberto, `pr-reviewer` (sempre) e `front-reviewer` (condicional ao
   `tipo` da task), em sequencia. Bloqueadores reportados sao registrados numa secao
-  `Reviews:` do relatorio final. PR aberto.
+  `Reviews:` do relatorio final. PR #176 mergeado. Follow-up apos review: o
+  `pr-reviewer` apontou ambiguidade na ordem 5.3/5.4 -- o relatorio do 5.3 passou a
+  ser explicitamente "preliminar" e o 5.4 "re-exibe" o relatorio consolidado com a
+  secao `Reviews:`; tratamento de `pr_url` nula adicionado (`INCOMPLETO`).
 
 - **5.70 -- refatoracao do /plan (task-planner especializado, premissas, reserva de migrations)** (2026-05-16):
   Quatro melhorias estruturais no `.claude/skills/plan/`. **(1) task-planner.md:** o prompt

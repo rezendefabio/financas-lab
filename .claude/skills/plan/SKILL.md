@@ -121,8 +121,10 @@ Nao escrever texto entre os tool calls. Nao aguardar resultado de um antes de em
 
 ## Passo 5 -- Atualizar state e consolidar
 
-Apos todos os executores completarem, executar os tres sub-passos abaixo em ordem.
+Apos todos os executores completarem, executar os quatro sub-passos abaixo em ordem.
 Nao exibir o relatorio final antes de concluir 5.1 e 5.2 para TODAS as tasks.
+O relatorio do Sub-passo 5.3 e preliminar; a versao consolidada (com a secao
+`Reviews:`) so e exibida no Sub-passo 5.4, apos os reviews completarem.
 
 ### Sub-passo 5.1 -- Parsear cada relatorio
 
@@ -157,9 +159,11 @@ Para cada task (pelo campo `id`):
 
 Executar para TODAS as tasks antes de prosseguir para 5.3.
 
-### Sub-passo 5.3 -- Exibir relatorio final
+### Sub-passo 5.3 -- Exibir relatorio final preliminar
 
-So exibir apos 5.1 e 5.2 concluidos para todas as tasks:
+So exibir apos 5.1 e 5.2 concluidos para todas as tasks. Este relatorio e
+preliminar -- a secao `Reviews:` ainda nao existe nesta etapa; ela e adicionada
+e o relatorio re-exibido no Sub-passo 5.4.
 
 ```
 /plan concluido: "{OBJETIVO}"
@@ -173,9 +177,14 @@ Bloqueadores: <lista ou "nenhum">
 
 ### Sub-passo 5.4 -- Reviews automaticos de PR (obrigatorio)
 
+Executar APOS o relatorio preliminar do Sub-passo 5.3 ter sido exibido.
+
 Para cada task com `status: "completed"` e `pr_url` nao-nulo, executar os
 reviews em sequencia (nao em paralelo -- cada review deve completar antes do
 proximo iniciar):
+
+Para cada task com `status: "completed"` mas `pr_url` nulo: nao roda review --
+registrar na secao `Reviews:` como `INCOMPLETO (PR nao foi aberto)`.
 
 **Review 1 -- pr-reviewer (sempre):**
 - subagent_type: "pr-reviewer"
@@ -197,7 +206,8 @@ task (se disponivel no tasks.json) ou o titulo/resumo da task:
 
 Aguardar o resultado. Se reportar bloqueador: registrar no relatorio final.
 
-Adicionar ao relatorio final (Sub-passo 5.3) uma secao de reviews:
+Apos todos os reviews completarem, re-exibir o relatorio final consolidado --
+o mesmo formato do Sub-passo 5.3, agora acrescido da secao `Reviews:`:
 
 ```
 Reviews:
@@ -206,7 +216,7 @@ Reviews:
 ```
 
 Se multiplas tasks tiverem PR: repetir o ciclo de reviews para cada uma
-antes de exibir o relatorio final consolidado.
+antes de re-exibir o relatorio final consolidado.
 
 ## Passo 6 -- Cleanup de worktrees e branches orfaos
 
