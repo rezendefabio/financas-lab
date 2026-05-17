@@ -190,8 +190,22 @@ as outras tasks -- cada worktree e isolado e independente.
 
 ### Cleanup de worktrees e branches orfaos
 
+> ATENCAO: nunca executar comandos PowerShell diretamente no Bash tool sem
+> envolver em `powershell -Command "..."` ou `-File`. Redirects em contexto bash
+> SEMPRE usam `2>/dev/null`, nunca `2>$null`.
+
 Apos consolidar o relatorio, remover worktrees e branches orfaos nessa ordem
-(worktree remove antes de branch -D para evitar erro de branch em uso por worktree registrado):
+(worktree remove antes de branch -D para evitar erro de branch em uso por worktree registrado).
+
+Escrever o script abaixo em `.claude/tmp-batch-cleanup.ps1` com o Write tool e
+executar via `-File`. Remover o script apos a execucao:
+
+```bash
+powershell -NoProfile -File .claude/tmp-batch-cleanup.ps1
+rm -f .claude/tmp-batch-cleanup.ps1
+```
+
+Conteudo do script `.claude/tmp-batch-cleanup.ps1`:
 
 ```powershell
 # 1. Remover worktrees registrados cujo path contem 'agent-'
@@ -201,6 +215,7 @@ foreach ($line in $wtOutput) {
         git worktree remove -f -f $matches[1] 2>$null
     }
 }
+git worktree prune
 # 2. Remover branches orfaos
 $orphanBranches = git branch | Where-Object { $_ -match 'worktree-agent-' }
 foreach ($b in @($orphanBranches)) {
