@@ -3,7 +3,7 @@
 > Documento de tracking. Mostra **onde estamos** na construção da fábrica e do produto.
 > Atualizado conforme camadas avançam. Diferente do `decisoes.md` (que registra escolhas) e dos `adrs.md` (que registram porquês), este documento responde a pergunta: "em que ponto eu estou?".
 
-**Última atualização:** 2026-05-16 (Sub-etapa 5.71 -- /plan: reviews automaticos pos-PR no Passo 5.4)
+**Última atualização:** 2026-05-16 (Sub-etapa 5.74 -- hook post-merge: npm install automatico quando frontend/package.json muda)
 
 ---
 
@@ -159,6 +159,22 @@ Configurar `CLAUDE.md` rico, criar 3-5 subagents focados, criar 5-10 skills (sla
 Ativar a fábrica de fato: rodar features no Tier 2, configurar 3 routines Tier 1, validar paralelismo se necessário.
 
 ### Sub-etapas concluídas
+
+- **5.74 -- hook post-merge: npm install automatico quando frontend/package.json muda** (2026-05-16):
+  Novo hook nativo do Git no evento `post-merge`. Bug observado: o executor instala uma
+  dependencia frontend nova (ex: `recharts`) no worktree isolado, commita
+  `frontend/package.json` + `package-lock.json` e abre PR; apos o merge o operador faz
+  `git pull` mas o `frontend/node_modules/` do repo principal nao recebe a nova dependencia
+  -- resultado `Module not found` em runtime. Solucao: `.githooks/post-merge` (entrypoint
+  bash) + `.githooks/post-merge.ps1` (orquestrador) que dot-sourceia
+  `.claude/hooks/universal/npm-install-on-package-change.ps1`. O hook detecta mudanca em
+  `frontend/package.json` via `git diff-tree -r --name-only --no-commit-id ORIG_HEAD HEAD`
+  e roda `npm install` em `frontend/` automaticamente. Modo **warn** (exit 0 sempre):
+  falha de `npm install` nao bloqueia o merge. Silencioso quando `package.json` nao mudou.
+  Primeiro hook no evento `post-merge`. Validacao destrutiva: Cenario A (ORIG_HEAD forjado
+  para commit anterior a mudanca de `package.json`) detectou a mudanca e rodou `npm install`
+  -- que de fato instalou 33 pacotes faltantes no repo principal, confirmando o bug real;
+  Cenario B (ORIG_HEAD == HEAD) saiu silencioso com exit 0.
 
 - **5.71 -- /plan: reviews automaticos pos-PR no Passo 5.4** (2026-05-16):
   Correcao no `.claude/skills/plan/SKILL.md`. O Passo 5 do `/ship` spawna `pr-reviewer`
