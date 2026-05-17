@@ -3,7 +3,7 @@
 > Documento de tracking. Mostra **onde estamos** na construção da fábrica e do produto.
 > Atualizado conforme camadas avançam. Diferente do `decisoes.md` (que registra escolhas) e dos `adrs.md` (que registram porquês), este documento responde a pergunta: "em que ponto eu estou?".
 
-**Última atualização:** 2026-05-16 (Sub-etapa 5.74 -- hook post-merge: npm install automatico quando frontend/package.json muda)
+**Última atualização:** 2026-05-16 (Sub-etapa 5.75 -- /plan Passo 6: cleanup de worktrees bloqueados e branches locais-only)
 
 ---
 
@@ -159,6 +159,19 @@ Configurar `CLAUDE.md` rico, criar 3-5 subagents focados, criar 5-10 skills (sla
 Ativar a fábrica de fato: rodar features no Tier 2, configurar 3 routines Tier 1, validar paralelismo se necessário.
 
 ### Sub-etapas concluídas
+
+- **5.75 -- /plan Passo 6: cleanup de worktrees bloqueados e branches locais-only** (2026-05-16):
+  Dois gaps no Passo 6 do `.claude/skills/plan/SKILL.md` apos execucao real. **Gap 1
+  (Sub-passo 6.1):** `git worktree remove -f` falha silenciosamente em worktrees
+  bloqueados por processo morto (lock file presente, pid inexistente) -- worktree
+  `agent-*` ficava registrado apos o executor encerrar, impedindo o `git branch -d`
+  do branch correspondente. Fix: `git worktree remove -f -f` (double-force). **Gap 2
+  (Sub-passo 6.2):** `git branch -vv | grep ': gone]'` so captura branches com upstream
+  tracking; branches criados por reviewers (ex: `review-175`) nunca tiveram push, nao
+  tem tracking e ficavam de fora, permanecendo locais. Fix: novo **Sub-passo 6.3** que
+  deleta com `git branch -D` (seguro -- nunca publicados) branches locais-only com
+  prefixo `review-` ou `worktree-`. Escopo restrito aos dois fixes -- nenhum outro
+  passo do SKILL.md alterado.
 
 - **5.74 -- hook post-merge: npm install automatico quando frontend/package.json muda** (2026-05-16):
   Novo hook nativo do Git no evento `post-merge`. Bug observado: o executor instala uma
