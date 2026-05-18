@@ -15,6 +15,7 @@ import com.laboratorio.financas.shared.domain.Money;
 import com.laboratorio.financas.transacao.domain.StatusTransacao;
 import com.laboratorio.financas.transacao.domain.Transacao;
 import com.laboratorio.financas.transacao.domain.TransacaoComReferenciaInvalidaException;
+import com.laboratorio.financas.transacao.domain.TransacaoCriadaEvent;
 import com.laboratorio.financas.transacao.domain.TransacaoRepository;
 import com.laboratorio.financas.transacao.domain.TipoTransacao;
 import java.math.BigDecimal;
@@ -25,7 +26,9 @@ import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
+import org.springframework.context.ApplicationEventPublisher;
 
 class CriarTransacaoUseCaseTest {
 
@@ -35,6 +38,7 @@ class CriarTransacaoUseCaseTest {
     private TransacaoRepository transacaoRepository;
     private ContaRepository contaRepository;
     private CategoriaRepository categoriaRepository;
+    private ApplicationEventPublisher eventPublisher;
     private CriarTransacaoUseCase useCase;
 
     @BeforeEach
@@ -42,7 +46,9 @@ class CriarTransacaoUseCaseTest {
         transacaoRepository = Mockito.mock(TransacaoRepository.class);
         contaRepository = Mockito.mock(ContaRepository.class);
         categoriaRepository = Mockito.mock(CategoriaRepository.class);
-        useCase = new CriarTransacaoUseCase(transacaoRepository, contaRepository, categoriaRepository);
+        eventPublisher = Mockito.mock(ApplicationEventPublisher.class);
+        useCase = new CriarTransacaoUseCase(
+                transacaoRepository, contaRepository, categoriaRepository, eventPublisher);
     }
 
     private Conta contaValida() {
@@ -113,6 +119,57 @@ class CriarTransacaoUseCaseTest {
 
         // Then
         assertThat(resultado.getTipo()).isEqualTo(TipoTransacao.DESPESA);
+    }
+
+    @Test
+    void executarTransacaoSimplesPublicaTransacaoCriadaEvent() {
+        // Given
+        UUID contaId = UUID.randomUUID();
+        Conta conta = contaValida();
+        Transacao salva = transacaoReceitaSalva(contaId);
+        when(contaRepository.buscarPorId(contaId)).thenReturn(Optional.of(conta));
+        when(transacaoRepository.salvar(any(Transacao.class))).thenReturn(salva);
+
+        // When
+        useCase.executar(comandoReceita(contaId));
+
+        // Then -- evento publicado uma vez com os dados da transacao salva
+        ArgumentCaptor<TransacaoCriadaEvent> captor =
+                ArgumentCaptor.forClass(TransacaoCriadaEvent.class);
+        verify(eventPublisher, times(1)).publishEvent(captor.capture());
+        TransacaoCriadaEvent evento = captor.getValue();
+        assertThat(evento.transacaoId()).isEqualTo(salva.getId());
+        assertThat(evento.tipo()).isEqualTo(TipoTransacao.RECEITA.name());
+        assertThat(evento.valor()).isEqualByComparingTo(salva.getValor().valor());
+    }
+
+    @Test
+    void executarTransferenciaPublicaUmEventoPorTransacaoDoPar() {
+        // Given
+        UUID contaId = UUID.randomUUID();
+        UUID contaDestinoId = UUID.randomUUID();
+        Conta conta = contaValida();
+        Transacao despesaSalva = new Transacao(
+                TipoTransacao.DESPESA,
+                new Money(BigDecimal.valueOf(200), BRL),
+                DATA, "Transferencia entre contas", contaId, null, null,
+                StatusTransacao.CLEARED, null, List.of()
+        );
+        when(contaRepository.buscarPorId(contaId)).thenReturn(Optional.of(conta));
+        when(contaRepository.buscarPorId(contaDestinoId)).thenReturn(Optional.of(conta));
+        when(transacaoRepository.salvar(any(Transacao.class))).thenReturn(despesaSalva);
+
+        CriarTransacaoUseCase.Comando comando = new CriarTransacaoUseCase.Comando(
+                TipoTransacao.TRANSFERENCIA, BigDecimal.valueOf(200), "BRL",
+                DATA, "Transferencia entre contas", contaId, contaDestinoId, null,
+                null, StatusTransacao.CLEARED, null, List.of()
+        );
+
+        // When
+        useCase.executar(comando);
+
+        // Then -- par gera 2 eventos
+        verify(eventPublisher, times(2)).publishEvent(any(TransacaoCriadaEvent.class));
     }
 
     @Test
