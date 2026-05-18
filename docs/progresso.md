@@ -3,7 +3,7 @@
 > Documento de tracking. Mostra **onde estamos** na construção da fábrica e do produto.
 > Atualizado conforme camadas avançam. Diferente do `decisoes.md` (que registra escolhas) e dos `adrs.md` (que registram porquês), este documento responde a pergunta: "em que ponto eu estou?".
 
-**Última atualização:** 2026-05-18 (Sub-etapa 5.88.1 -- follow-up dos reviews do PR #198)
+**Última atualização:** 2026-05-18 (Sub-etapa 5.90 -- sync progresso + fabrica-referencia)
 
 ---
 
@@ -159,6 +159,53 @@ Configurar `CLAUDE.md` rico, criar 3-5 subagents focados, criar 5-10 skills (sla
 Ativar a fábrica de fato: rodar features no Tier 2, configurar 3 routines Tier 1, validar paralelismo se necessário.
 
 ### Sub-etapas concluídas
+
+- **5.90 -- sync progresso + fabrica-referencia** (2026-05-18):
+  Sub-etapa doc-only de manutencao. Registra sub-etapas 5.86 a 5.89 ausentes do
+  `progresso.md` e corrige `fabrica-referencia.md` (contador de bloqueadores do
+  `front-reviewer` estava desatualizado apos adicao da regra B12 na 5.87). PR aberto.
+
+- **5.89 -- CSV template download (B12)** (2026-05-18):
+  Implementacao da regra B12 na pagina de importacao. **Backend:** novo endpoint
+  `GET /api/jobs/importacao-csv-transacoes/csv/modelo` em `ImportacaoCsvTransacoesJobLauncher`
+  (rota junto ao job, nao em `ImportacaoController`). Retorna os bytes do arquivo CSV modelo
+  com `Content-Disposition: attachment; filename="modelo-importacao-transacoes.csv"` e
+  `Content-Type: text/csv`. Endpoint autenticado; `SecurityConfig` intacto.
+  Teste E2E em `JobLauncherTest`. **Frontend:** novo helper `apiFetchBlob(path)` em
+  `api-client.ts` -- GET autenticado que retorna `Blob`, reaproveitando tratamento de 401
+  e `ApiError` do `apiFetch`. `downloadModelo()` no `importacao-service.ts` usa o helper
+  (resolve tambem sugestao do pr-reviewer sobre `API_BASE` duplicado). Card "Formato esperado"
+  com tabela das 6 colunas (`tipo;valor;data;descricao;contaId;categoriaId`) e botao
+  "Baixar modelo CSV" acima do upload em `/importacao`. 4 testes para `apiFetchBlob` +
+  3 testes Vitest na pagina. 898 testes backend, 427 testes frontend. PRs #203 e followup
+  de B1 (fetch direto corrigido autonomamente pelo executor). PR #203.
+
+- **5.88 -- tela de incidentes: listagem com filtros + detalhe unificado** (2026-05-18):
+  Completa a feature de incidentes com listagem e filtros, substituindo a tela de busca
+  por codigo da 5.88.1 por uma pagina unificada. **Backend:** record `FiltrosIncidente`
+  (`criadoApartirDe`, `criadoAte`, `classeErro`, `operacao`), metodo `listarComFiltros`
+  em `ErroRegistradoRepository` e `ErroRegistradoJpaRepository` (JPQL com `COALESCE` para
+  inferencia de tipo no PostgreSQL -- 2 bugs corrigidos pelo executor em relacao ao prompt
+  original), `ListarIncidentesUseCase`, endpoint `GET /api/incidentes` com 4 `@RequestParam`
+  opcionais (autenticado, ordenado por `criadoEm` DESC). **Frontend:** pagina `/incidentes`
+  unificada com form de filtros (data/hora inicio/fim, classeErro contains, operacao contains),
+  tabela de resultados (clicavel), detalhe expansivel com `stackTrace` em `<pre font-mono>`,
+  card de busca rapida por codigo `ERR-XXXXXXXX`. Removida `/incidentes/buscar` (PR #198/199)
+  e sidebar repontado para `/incidentes`. Decisao de unificacao aprovada pelo operador.
+  898 testes backend, gate frontend verde. PR #201.
+
+- **5.87 -- regra B12: tela de importacao exige link para baixar modelo** (2026-05-18):
+  Sub-etapa doc-only + metadados de agente. Adiciona regra B12 ao `front-reviewer.md`:
+  qualquer pagina com `type="file" accept=".csv"` sem link ou botao "Baixar modelo" e
+  bloqueador. Regra registrada tambem em `docs/decisoes.md` (secao frontend). Motivacao:
+  o usuario importa dados mas nao sabe o layout esperado -- sem modelo, a tela e inutilizavel.
+  Aplica-se retroativamente a `/importacao` (resolvido em 5.89). PR #197.
+
+- **5.86 -- sync progresso.md (5.81 a 5.85)** (2026-05-18):
+  Sub-etapa doc-only de manutencao. `progresso.md` estava desatualizado: faltava a
+  entrada da 5.81 (bounded context `incidente`) e as entradas 5.83-5.85 tinham "PR a abrir"
+  em vez do numero real. Correcoes: 5.81 adicionada (PR #189); 5.83 -> PR #190; 5.84 -> PR
+  #191; 5.85 -> PR #192. "Ultima atualizacao" atualizada. PR #196.
 
 - **5.88.1 -- follow-up dos reviews do PR #198 (incidente frontend)** (2026-05-18):
   Sub-etapa de follow-up tratando duas observacoes nao-bloqueantes levantadas pelos
@@ -1630,6 +1677,9 @@ Definir como capturar quando chegarmos na Camada 4 — não criar burocracia ago
 
 ## Histórico de mudanças deste documento
 
+- **2026-05-18** -- Sub-etapas 5.86 a 5.90 registradas: sync progresso, B12,
+  tela incidentes unificada, CSV template download, fabrica-referencia atualizada
+  (front-reviewer: 5 -> 6 bloqueadores). PRs #196, #197, #201, #203.
 - **2026-05-13** -- Sub-etapa 5.12 concluida: agente front-reviewer + skill /review-front.
   Review 3 condicional no /ship. Smoke validou B3 (URL hardcoded) contra PR #84. PR aberto.
 - **2026-05-13** -- Sub-etapa 5.11 concluida: check-front.ps1 + Passo 1.1 condicional no /ship.
