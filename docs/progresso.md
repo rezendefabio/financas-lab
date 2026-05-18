@@ -3,7 +3,7 @@
 > Documento de tracking. Mostra **onde estamos** na construção da fábrica e do produto.
 > Atualizado conforme camadas avançam. Diferente do `decisoes.md` (que registra escolhas) e dos `adrs.md` (que registram porquês), este documento responde a pergunta: "em que ponto eu estou?".
 
-**Última atualização:** 2026-05-17 (Sub-etapa 5.85 -- PWA: manifest, service worker e pagina offline)
+**Última atualização:** 2026-05-18 (Sub-etapa 5.86 -- sync de progresso.md: 5.81 a 5.85)
 
 ---
 
@@ -175,7 +175,7 @@ Ativar a fábrica de fato: rodar features no Tier 2, configurar 3 routines Tier 
   plugin webpack) e Next.js 16 usa Turbopack por padrao -- o script `build` passou a
   usar `next build --webpack` para o plugin PWA funcionar. Arquivos gerados pelo
   Workbox (`sw.js`, `workbox-*.js`, `swe-worker-*.js`) adicionados ao
-  `frontend/.gitignore`. Gate `check-front.ps1` verde (lint + testes + build). PR a abrir.
+  `frontend/.gitignore`. Gate `check-front.ps1` verde (lint + testes + build). PR #192.
 
 - **5.84 -- tela de relatorios (PDF download) + UI de importacao CSV** (2026-05-17):
   Duas features de frontend que completam funcionalidades cujo backend ja existia.
@@ -192,7 +192,7 @@ Ativar a fábrica de fato: rodar features no Tier 2, configurar 3 routines Tier 
   boundary), reaproveitando o tratamento de erro e auth do `apiFetch`. Link "Importar CSV"
   adicionado ao sidebar apos "Transacoes". Sem alteracao de backend. Gate frontend
   (lint + testes + build) verde: 5 testes novos na pagina de importacao, 1 teste novo
-  na pagina de relatorios.
+  na pagina de relatorios. PR #191.
 
 - **5.83 -- domain events: TransacaoCriada -> OrcamentoProgressoListener** (2026-05-17):
   Primeiro uso real de Spring Application Events para comunicacao cross-context. Quando
@@ -206,7 +206,7 @@ Ativar a fábrica de fato: rodar features no Tier 2, configurar 3 routines Tier 
   no listener nao afete a transacao; try-catch por orcamento isola erros individuais.
   Novo `AsyncConfig` (`shared/infrastructure`) habilita `@EnableAsync` (antes ausente no
   projeto). Para TRANSFERENCIA, o par despesa/receita gera um evento por transacao.
-  842 testes, BUILD SUCCESS. PR a abrir.
+  842 testes, BUILD SUCCESS. PR #190.
 
 - **5.82 -- bounded context `anexo` (gerenciamento de arquivos com MinIO)** (2026-05-17):
   Novo bounded context `anexo` para upload/download de arquivos, com armazenamento via
@@ -236,7 +236,26 @@ Ativar a fábrica de fato: rodar features no Tier 2, configurar 3 routines Tier 
   `/write-job` na tabela "Skills de Geração de Código" (apos `/write-test`); linha de
   `report-writer` e `job-writer` na tabela "Agentes Geradores" (apos `design-planner`);
   paths dos novos `.md` no mapa de arquivos (`.claude/agents/` e `.claude/skills/`).
-  Sem gate Java -- apenas arquivo `.md`. PR a abrir.
+  Sem gate Java -- apenas arquivo `.md`. PR #187.
+
+- **5.81 -- bounded context `incidente` (registro de erros nao tratados)** (2026-05-18):
+  Novo bounded context para rastrear excecoes nao tratadas. Erros nao tratados geram
+  um codigo unico (`ERR-` + primeiros 8 hex chars do UUID), persistem detalhes em banco
+  e retornam o codigo ao cliente -- o usuario informa o codigo ao suporte, o desenvolvedor
+  consulta via `GET /api/incidentes/{codigo}` (autenticado). Domain `ErroRegistrado`
+  imutavel (codigo derivado do id, truncamento defensivo de campos), `ErroRegistradoRepository`,
+  `IncidenteNaoEncontradoException`. Application: `RegistrarErroUseCase`, `BuscarIncidenteUseCase`.
+  Infra: entity/Jpa/Mapper/Impl, migration `V23__cria_tabela_erro_registrado.sql`.
+  Interface: `IncidenteController` (`GET /{codigo}` autenticado, `POST /` publico).
+  `GlobalExceptionHandler.handleGenerico` agora invoca `RegistrarErroUseCase` (try-catch
+  protege contra loop de excecao) e expoe `codigoErro` no body do 500; novo handler 404
+  para `IncidenteNaoEncontradoException`. `SecurityConfig`: `POST /api/incidentes` liberado
+  sem autenticacao. Frontend: `ErrorBoundary` (class component) captura erros de render,
+  registra via `POST /api/incidentes` e exibe o codigo ao usuario; `apiFetch` trata
+  respostas 500 com `codigoErro` como mensagem de erro; `ErrorBoundary` envolve o
+  `layout.tsx` raiz. Correcao in-flight: `fetch` direto no `ErrorBoundary` bloqueado pelo
+  ESLint (`no-restricted-globals`) -- resolvido com `eslint-disable-next-line` justificado
+  e reestruturacao do teste. BUILD SUCCESS, gate frontend verde. PR #189.
 
 - **5.79 -- correcoes em babysit-prs e batch (3 bugs observados)** (2026-05-17):
   Sub-etapa de fix doc-only (apenas arquivos `.md` de skills) corrigindo 3 bugs observados
