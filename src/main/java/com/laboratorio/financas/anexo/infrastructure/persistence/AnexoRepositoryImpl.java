@@ -19,10 +19,10 @@ public class AnexoRepositoryImpl implements AnexoRepository {
     }
 
     @Override
-    public Anexo salvar(Anexo domain) {
-        AnexoEntity entity = mapper.toEntity(domain);
-        AnexoEntity salva = jpaRepository.save(entity);
-        return mapper.toDomain(salva);
+    public Anexo salvar(Anexo anexo) {
+        AnexoEntity entity = mapper.toEntity(anexo);
+        AnexoEntity salvo = jpaRepository.save(entity);
+        return mapper.toDomain(salvo);
     }
 
     @Override
@@ -31,9 +31,14 @@ public class AnexoRepositoryImpl implements AnexoRepository {
     }
 
     @Override
-    public List<Anexo> listarTodos() {
-        return jpaRepository.findAll().stream()
+    public List<Anexo> listarPorEntidade(String entidadeTipo, UUID entidadeId) {
+        return jpaRepository.findByEntidadeTipoAndEntidadeId(entidadeTipo, entidadeId).stream()
                 .map(mapper::toDomain)
                 .toList();
+    }
+
+    @Override
+    public void remover(UUID id) {
+        jpaRepository.deleteById(id);
     }
 }

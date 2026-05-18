@@ -6,9 +6,11 @@ import java.util.UUID;
 
 public interface AnexoRepository {
 
-    Anexo salvar(Anexo domain);
+    Anexo salvar(Anexo anexo);
 
     Optional<Anexo> buscarPorId(UUID id);
 
-    List<Anexo> listarTodos();
+    List<Anexo> listarPorEntidade(String entidadeTipo, UUID entidadeId);
+
+    void remover(UUID id);
 }

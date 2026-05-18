@@ -2,12 +2,12 @@ package com.laboratorio.financas.anexo.domain;
 
 import java.util.UUID;
 
-public class AnexoNaoEncontradaException extends RuntimeException {
+public class AnexoNaoEncontradoException extends RuntimeException {
 
     private final UUID id;
 
-    public AnexoNaoEncontradaException(UUID id) {
-        super("anexo nao encontrado: " + id);
+    public AnexoNaoEncontradoException(UUID id) {
+        super("Anexo nao encontrado: " + id);
         this.id = id;
     }
 
