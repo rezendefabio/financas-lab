@@ -7,3 +7,10 @@ export interface IncidenteResponse {
   stackTrace: string
   criadoEm: string // Instant -> string ISO
 }
+
+export interface FiltrosIncidente {
+  criadoApartirDe?: string // ISO datetime string
+  criadoAte?: string
+  classeErro?: string
+  operacao?: string
+}
