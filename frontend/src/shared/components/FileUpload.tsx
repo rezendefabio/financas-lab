@@ -6,6 +6,9 @@ import { Label } from '@/shared/components/ui/label'
 import { anexosService } from '@/shared/services/anexos.service'
 import { ApiError } from '@/shared/types/api'
 
+/** Limite de tamanho de arquivo aceito pelo backend (FazerUploadAnexoUseCase). */
+const MAX_TAMANHO_BYTES = 10 * 1024 * 1024
+
 interface FileUploadProps {
   entidadeTipo: string
   entidadeId: string
@@ -32,6 +35,13 @@ function FileUpload({
   async function handleChange(event: ChangeEvent<HTMLInputElement>) {
     const arquivo = event.target.files?.[0]
     if (!arquivo) return
+
+    if (arquivo.size > MAX_TAMANHO_BYTES) {
+      setErro('Arquivo excede o limite de 10MB.')
+      // Remontar o input descarta o arquivo selecionado; upload nao prossegue.
+      setInputKey((k) => k + 1)
+      return
+    }
 
     setUploading(true)
     setErro(null)

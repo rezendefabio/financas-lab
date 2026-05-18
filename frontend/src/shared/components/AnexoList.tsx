@@ -10,7 +10,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/shared/components/ui/table'
-import { formatDate, formatTamanho } from '@/shared/lib/formatters'
+import { formatDateTime, formatTamanho } from '@/shared/lib/formatters'
 import { anexosService } from '@/shared/services/anexos.service'
 
 interface AnexoListProps {
@@ -82,7 +82,7 @@ function AnexoList({ entidadeTipo, entidadeId }: AnexoListProps) {
                 <TableCell className="tabular-nums">
                   {formatTamanho(anexo.tamanho)}
                 </TableCell>
-                <TableCell>{formatDate(anexo.criadoEm)}</TableCell>
+                <TableCell>{formatDateTime(anexo.criadoEm)}</TableCell>
                 <TableCell className="space-x-2 text-right">
                   <Button
                     variant="outline"

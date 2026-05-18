@@ -61,6 +61,23 @@ describe('FileUpload', () => {
     await waitFor(() => expect(onUploadConcluido).toHaveBeenCalled())
   })
 
+  it('rejeita arquivo acima de 10MB sem chamar o servico de upload', async () => {
+    const user = userEvent.setup()
+    const arquivoGrande = new File(
+      [new Uint8Array(10 * 1024 * 1024 + 1)],
+      'grande.pdf',
+      { type: 'application/pdf' },
+    )
+    render(<FileUpload entidadeTipo="TRANSACAO" entidadeId="id-1" />)
+
+    await user.upload(screen.getByLabelText('Arquivo'), arquivoGrande)
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Arquivo excede o limite de 10MB.',
+    )
+    expect(anexosService.upload).not.toHaveBeenCalled()
+  })
+
   it('exibe mensagem de erro quando o upload falha', async () => {
     const user = userEvent.setup()
     vi.mocked(anexosService.upload).mockRejectedValue(
