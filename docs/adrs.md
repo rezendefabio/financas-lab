@@ -626,3 +626,82 @@ em `src/shared/`. O unico ponto de `fetch` e `src/services/api-client.ts`.
 - Remover dominio = deletar `features/<dominio>/` sem impacto em outros.
 - Imports mais longos (`@/features/contas/services/contas.service`) mitigados por
   barrel exports (`@/features/contas`).
+
+---
+
+## ADR-014 -- Arquitetura de UI: shell declarativo com Screen Registry, Tab Manager e list-page-template (2026-05-18)
+
+**Status:** Aceito
+
+**Contexto:** O frontend atual tem 13 telas com menu plano, sem hierarquia, sem filtros
+avancados, sem consistencia de formularios e sem audit log. A fabrica precisa de um
+padrao de UX enterprise que os agentes possam replicar sem reinventar o shell a cada
+feature. A referencia completa esta em `docs/frontend-master-spec.md`.
+
+**Decisao:** Adotar arquitetura em quatro camadas, implementadas em ordem:
+
+1. **Shell + Screen Registry + Command Palette** -- `screens.registry.ts` define o
+   manifesto declarativo de cada tela (code, title, menuPath, permissions). O
+   `<SidebarMenu>` agrupa automaticamente por `menuPath`. O `<CommandPalette>` (cmdk)
+   e acionado por Ctrl+K e serve tambem como overlay do menu mobile -- um unico
+   componente para navegacao em qualquer breakpoint. Skill nova: `/register-screen`.
+
+2. **Tab Manager** -- `useTabsStore` (Zustand) controla abas internas do app.
+   Persistencia hibrida: URL `?tabs=...&active=...` (compartilhavel) + localStorage
+   por tab (filtros, scroll, rascunho de formulario nao-sensivel). Limite: 10 abas.
+   Drag-drop em desktop, long-press em mobile. Ultimo tab fechado volta ao Dashboard.
+
+3. **Responsividade do shell** -- quatro faixas: >= 1280px (expandido), 1024-1279px
+   (rail ou expandido), 768-1023px (colapsado em icone), < 768px (colapsado obrigatorio).
+   Menu colapsado e Command Palette sao o mesmo componente com renderizacao diferente.
+   Preferencia de colapso persiste em localStorage por dispositivo.
+
+4. **Audit Log** -- pre-requisito da `list-page-template`. Backend: tabela `audit_log`
+   imutavel (sem UPDATE/DELETE expostos), middleware Spring AOP captura create/update/delete,
+   `GET /api/audit-log` paginado. Escopo: apenas mutacoes (reads nao logados). Retencao:
+   90 dias hot. Skill nova: `/add-entity-to-audit`. Frontend: drawer timeline com diff.
+
+5. **`list-page-template`** -- componente `<ListPage<T>>` declarativo. Contrato JSON
+   define endpoint, colunas (com sortable, formatter), filtros com tipo e operadores,
+   acoes padrao (Log, Export Excel, Print) e acoes customizadas. Filtros avancados em
+   chips empilhaveis estilo Notion/Linear (campo + operador + valor, AND/OR). Persistencia
+   de filtros em URL + localStorage. Substituiu `/feature-front`; nova skill: `/add-screen`.
+
+6. **`form-kit` + `LookupField`** -- `<FormGrid>` com grid 12 obrigatorio. Todo campo
+   declara `colSpan` por breakpoint; lint no pipeline rejeita PR sem `colSpan`. `<LookupField>`
+   com codigo + descricao + lupa (F3 abre modal `<ListPage>`). `lookups.registry.ts` define
+   fontes. Skill: `/add-form-field`.
+
+**Decisoes tecnicas fixadas:**
+
+| Decisao | Escolha |
+|---------|---------|
+| State manager de UI | Zustand (tabs, preferencias); TanStack Query permanece para server state |
+| Command Palette | `cmdk` (ja incluso no shadcn) |
+| Persistencia de tabs | URL + localStorage hibrido |
+| Limite de tabs | 10 (configuravel) |
+| Filtros avancados estilo | Chips empilhaveis (Notion/Linear) |
+| Menu colapsado preferencia | localStorage por dispositivo |
+| Audit Log escopo | Apenas mutacoes (create/update/delete) |
+| Audit Log retencao | 90 dias hot |
+| RBAC | Fora do escopo desta fase; `permissions: []` no registry sem enforcement |
+| Codigo de tela | Formato `MOD-ENT-NNN` (ex: FIN-CTA-001 = listagem de Contas) |
+
+**Alternativas consideradas:**
+
+- **Tabs nativas do navegador** -- rejeitadas porque perdem estado ao trocar de aba
+  e nao permitem controle de experiencia (ex: limite, drag-drop, persistencia de filtros).
+- **Audit Log como opcional** -- rejeitado: sem audit, a action "Log do registro" na
+  list-page-template nao funciona. Implementar depois introduz debito estrutural.
+- **Filtros estilo SAP/linhas tabulares** -- rejeitados; chips sao mais modernos e
+  usados nos referenciais de UX atuais (Linear, Notion, GitHub Issues).
+
+**Consequencias:**
+
+- `/feature-front` (6 arquivos stub) e supersedida por `/add-screen` (contrato declarativo).
+- `register-screen` torna-se skill obrigatoria no fluxo de criacao de qualquer tela.
+- `add-entity-to-audit` torna-se parte do fluxo de bounded context backend.
+- `task-planner.md` e `task-executor.md` passam a referenciar `/add-screen` e
+  `register-screen` em vez de descrever arquivos explicitamente.
+- Refatorar 13 telas existentes para `<ListPage>` e `form-kit` e uma serie de
+  sub-etapas subsequentes (uma por tela ou grupo de telas similares).
