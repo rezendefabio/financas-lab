@@ -129,3 +129,13 @@
     @apply font-sans;
   }
 }
+
+@media print {
+  /* Esconde shell: sidebar, tab bar e header ficam fora da impressao */
+  [data-sidebar="sidebar"],
+  [data-sidebar="rail"],
+  .tab-bar-root,
+  header.shell-header {
+    display: none !important;
+  }
+}

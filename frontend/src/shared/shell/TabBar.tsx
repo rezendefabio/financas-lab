@@ -223,7 +223,7 @@ export function TabBar() {
   }
 
   return (
-    <div className="flex items-center border-b border-border bg-muted/30">
+    <div className="tab-bar-root flex items-center border-b border-border bg-muted/30">
       {/* >= 768px: faixa horizontal scrollavel. */}
       <div
         role="tablist"
