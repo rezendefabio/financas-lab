@@ -23,6 +23,7 @@ describe('SidebarNav', () => {
   beforeEach(() => {
     mockPathname = '/'
     localStorage.clear()
+    // Abrir todos os grupos para que os testes de renderizacao de itens funcionem
     useSidebarStore.setState({ collapsed: [] })
   })
 
@@ -72,5 +73,42 @@ describe('SidebarNav', () => {
     expect(screen.getByText('Contas')).toBeInTheDocument()
     await userEvent.click(screen.getByText('Cadastros'))
     expect(screen.queryByText('Contas')).not.toBeInTheDocument()
+  })
+
+  // --- Busca fixa ---
+
+  it('campo de busca renderiza com placeholder "Buscar tela..."', () => {
+    renderNav()
+    expect(
+      screen.getByPlaceholderText('Buscar tela...'),
+    ).toBeInTheDocument()
+  })
+
+  it('digitar "Contas" no campo exibe item Contas', async () => {
+    renderNav()
+    await userEvent.type(screen.getByPlaceholderText('Buscar tela...'), 'Contas')
+    expect(screen.getByText('Contas')).toBeInTheDocument()
+  })
+
+  it('digitar "FIN-CTA" exibe item Contas (busca por codigo)', async () => {
+    renderNav()
+    await userEvent.type(screen.getByPlaceholderText('Buscar tela...'), 'FIN-CTA')
+    expect(screen.getByText('Contas')).toBeInTheDocument()
+  })
+
+  it('digitar "xyzxyz" exibe mensagem "Nenhuma tela encontrada."', async () => {
+    renderNav()
+    await userEvent.type(screen.getByPlaceholderText('Buscar tela...'), 'xyzxyz')
+    expect(screen.getByText('Nenhuma tela encontrada.')).toBeInTheDocument()
+  })
+
+  it('limpar o campo restaura a view normal com grupos visiveis', async () => {
+    renderNav()
+    const input = screen.getByPlaceholderText('Buscar tela...')
+    await userEvent.type(input, 'xyzxyz')
+    expect(screen.getByText('Nenhuma tela encontrada.')).toBeInTheDocument()
+    await userEvent.clear(input)
+    expect(screen.queryByText('Nenhuma tela encontrada.')).not.toBeInTheDocument()
+    expect(screen.getByText('Cadastros')).toBeInTheDocument()
   })
 })
