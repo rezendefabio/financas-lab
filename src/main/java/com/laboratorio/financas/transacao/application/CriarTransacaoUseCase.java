@@ -6,6 +6,7 @@ import com.laboratorio.financas.shared.domain.Money;
 import com.laboratorio.financas.transacao.domain.StatusTransacao;
 import com.laboratorio.financas.transacao.domain.Transacao;
 import com.laboratorio.financas.transacao.domain.TransacaoComReferenciaInvalidaException;
+import com.laboratorio.financas.transacao.domain.TransacaoCriadaEvent;
 import com.laboratorio.financas.transacao.domain.TransacaoRepository;
 import com.laboratorio.financas.transacao.domain.TipoTransacao;
 import java.math.BigDecimal;
@@ -13,6 +14,7 @@ import java.time.LocalDate;
 import java.util.Currency;
 import java.util.List;
 import java.util.UUID;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,15 +24,18 @@ public class CriarTransacaoUseCase {
     private final TransacaoRepository transacaoRepository;
     private final ContaRepository contaRepository;
     private final CategoriaRepository categoriaRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     public CriarTransacaoUseCase(
             TransacaoRepository transacaoRepository,
             ContaRepository contaRepository,
-            CategoriaRepository categoriaRepository
+            CategoriaRepository categoriaRepository,
+            ApplicationEventPublisher eventPublisher
     ) {
         this.transacaoRepository = transacaoRepository;
         this.contaRepository = contaRepository;
         this.categoriaRepository = categoriaRepository;
+        this.eventPublisher = eventPublisher;
     }
 
     public record Comando(
@@ -89,10 +94,12 @@ public class CriarTransacaoUseCase {
                     comando.descricao(),
                     comando.categoriaId()
             );
-            transacaoRepository.salvar(par.despesa());
-            transacaoRepository.salvar(par.receita());
+            Transacao despesa = transacaoRepository.salvar(par.despesa());
+            Transacao receita = transacaoRepository.salvar(par.receita());
+            publicarEvento(despesa);
+            publicarEvento(receita);
             // Retorna a despesa (transacao da conta origem) como resposta primaria
-            return par.despesa();
+            return despesa;
         }
 
         Transacao nova = new Transacao(
@@ -108,7 +115,22 @@ public class CriarTransacaoUseCase {
                 comando.tagIds()
         );
 
-        return transacaoRepository.salvar(nova);
+        Transacao salva = transacaoRepository.salvar(nova);
+        publicarEvento(salva);
+        return salva;
+    }
+
+    /** Publica {@link TransacaoCriadaEvent} para a transacao recem-persistida. */
+    private void publicarEvento(Transacao transacao) {
+        eventPublisher.publishEvent(new TransacaoCriadaEvent(
+                transacao.getId(),
+                transacao.getCategoriaId(),
+                transacao.getContaId(),
+                transacao.getUserId(),
+                transacao.getValor().valor(),
+                transacao.getData(),
+                transacao.getTipo().name()
+        ));
     }
 
     private void validarReferencias(Comando comando) {
