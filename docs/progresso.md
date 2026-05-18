@@ -208,6 +208,26 @@ Ativar a fábrica de fato: rodar features no Tier 2, configurar 3 routines Tier 
   projeto). Para TRANSFERENCIA, o par despesa/receita gera um evento por transacao.
   842 testes, BUILD SUCCESS. PR a abrir.
 
+- **5.82 -- bounded context `anexo` (gerenciamento de arquivos com MinIO)** (2026-05-17):
+  Novo bounded context `anexo` para upload/download de arquivos, com armazenamento via
+  MinIO local (API S3-compativel; AWS S3 em producao -- decisao de 2026-05-17). Arquivos
+  referenciados por `entidadeTipo` + `entidadeId` (referencia LOGICA, sem FK no banco, para
+  nao acoplar contexts). Fatia vertical completa: domain (`Anexo`, `AnexoRepository`,
+  `ArmazenamentoService` como porta, `AnexoNaoEncontradoException`), application (4 use
+  cases -- `FazerUploadAnexoUseCase` com validacao de 10MB, `ObterUrlDownloadAnexoUseCase`,
+  `RemoverAnexoUseCase` e `ListarAnexosPorEntidadeUseCase`), infrastructure
+  (`MinioArmazenamentoService` adapter, `MinioConfig`, JPA), interface (`AnexoController`,
+  migration `V24__cria_tabela_anexo.sql`) e frontend (`FileUpload.tsx` e `AnexoList.tsx`
+  compartilhados em `src/shared/components/`). Servico `minio` adicionado ao
+  `docker-compose.yml`; testes de integracao self-contained via `MinIOContainer`
+  (Testcontainers) na classe base `AbstractIntegrationTest`, sem exigir `docker compose up`
+  manual. 888 testes, BUILD SUCCESS, gate frontend verde. PR #194 (mergeado).
+  **Licao (ADR-004 -- camadas):** o `AnexoController` nasceu injetando `AnexoRepository`
+  direto e so foi corrigido em refactor posterior (extracao do `ListarAnexosPorEntidadeUseCase`),
+  depois que o SpotBugs acusou `EI_EXPOSE_REP2`. Regra reforcada: um componente deve
+  respeitar a separacao de camadas desde o primeiro commit -- controller depende de use
+  cases, nunca de repositorio direto. Nao deixar a correcao para refactor posterior.
+
 - **5.80 -- atualiza fabrica-referencia.md (5.77 e 5.78)** (2026-05-17):
   Sub-etapa doc-only de manutencao. `docs/fabrica-referencia.md` foi criado (5.76) antes
   das sub-etapas 5.77 e 5.78, ficando desatualizado: faltavam as skills `/write-report` e
