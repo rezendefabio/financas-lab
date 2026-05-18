@@ -6,13 +6,15 @@
  * Zustand para estado de UI).
  *
  * Convencao: o conjunto `collapsed` armazena os nomes de grupo FECHADOS.
- * Um grupo ausente do conjunto esta aberto. Assim o estado default
- * (conjunto vazio) deixa todos os grupos abertos.
+ * Estado default: todos os grupos fechados (getAllGroupKeys popula o array).
  */
 'use client'
 
 import { create } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
+import { buildMenuTree } from './menu-tree'
+import { getAllScreens } from './screens.registry'
+import type { MenuNode } from './menu-tree'
 
 interface SidebarState {
   /** Chaves de grupo atualmente colapsadas (fechadas). */
@@ -23,10 +25,27 @@ interface SidebarState {
   isCollapsed: (groupKey: string) => boolean
 }
 
+/** Coleta todas as chaves de grupos (nos nao-folha) da arvore de menu. */
+function getAllGroupKeys(): string[] {
+  const keys: string[] = []
+  function collect(nodes: MenuNode[]) {
+    for (const node of nodes) {
+      if (node.children && node.children.length > 0) {
+        keys.push(node.key)
+        collect(node.children)
+      }
+    }
+  }
+  collect(buildMenuTree(getAllScreens()))
+  return keys
+}
+
+const initialCollapsed = getAllGroupKeys()
+
 export const useSidebarStore = create<SidebarState>()(
   persist(
     (set, get) => ({
-      collapsed: [],
+      collapsed: initialCollapsed,
       toggleGroup: (groupKey) =>
         set((state) => {
           const isClosed = state.collapsed.includes(groupKey)
@@ -39,7 +58,7 @@ export const useSidebarStore = create<SidebarState>()(
       isCollapsed: (groupKey) => get().collapsed.includes(groupKey),
     }),
     {
-      name: 'financas-lab:sidebar',
+      name: 'financas-lab:sidebar-v2',
       storage: createJSONStorage(() => localStorage),
     },
   ),

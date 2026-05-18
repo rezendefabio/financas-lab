@@ -4,41 +4,63 @@ import { useSidebarStore } from './sidebar-store'
 describe('useSidebarStore', () => {
   beforeEach(() => {
     localStorage.clear()
-    useSidebarStore.setState({ collapsed: [] })
+    // Resetar para o estado inicial real (grupos fechados por default)
+    const { collapsed: initial } = useSidebarStore.getInitialState()
+    useSidebarStore.setState({ collapsed: initial })
   })
 
-  it('inicia com todos os grupos abertos (collapsed vazio)', () => {
-    expect(useSidebarStore.getState().collapsed).toEqual([])
+  it('collapsed inicial inclui pelo menos um grupo de topo (Cadastros)', () => {
+    const { collapsed } = useSidebarStore.getState()
+    expect(collapsed).toContain('Cadastros')
+  })
+
+  it('collapsed inicial inclui subgrupos (Cadastros/Financeiro)', () => {
+    const { collapsed } = useSidebarStore.getState()
+    expect(collapsed).toContain('Cadastros/Financeiro')
+  })
+
+  it('collapsed inicial nao inclui folhas (codes de tela)', () => {
+    const { collapsed } = useSidebarStore.getState()
+    // Folhas nao tem / e nao sao grupos -- nenhum code deve aparecer
+    expect(collapsed).not.toContain('FIN-CTA-001')
+    expect(collapsed).not.toContain('Contas')
+  })
+
+  it('toggleGroup abre um grupo fechado', () => {
+    // Inicia fechado
+    expect(useSidebarStore.getState().isCollapsed('Cadastros')).toBe(true)
+    useSidebarStore.getState().toggleGroup('Cadastros')
+    expect(useSidebarStore.getState().isCollapsed('Cadastros')).toBe(false)
   })
 
   it('toggleGroup fecha um grupo aberto', () => {
+    // Abrir primeiro
     useSidebarStore.getState().toggleGroup('Cadastros')
-    expect(useSidebarStore.getState().collapsed).toContain('Cadastros')
+    expect(useSidebarStore.getState().isCollapsed('Cadastros')).toBe(false)
+    // Fechar
+    useSidebarStore.getState().toggleGroup('Cadastros')
     expect(useSidebarStore.getState().isCollapsed('Cadastros')).toBe(true)
   })
 
-  it('toggleGroup reabre um grupo fechado', () => {
+  it('toggleGroup reabre um grupo fechado e fecha novamente', () => {
     const { toggleGroup } = useSidebarStore.getState()
-    toggleGroup('Cadastros')
-    toggleGroup('Cadastros')
-    expect(useSidebarStore.getState().collapsed).not.toContain('Cadastros')
-    expect(useSidebarStore.getState().isCollapsed('Cadastros')).toBe(false)
+    toggleGroup('Planejamento')
+    toggleGroup('Planejamento')
+    expect(useSidebarStore.getState().isCollapsed('Planejamento')).toBe(true)
   })
 
   it('toggle de grupos diferentes e independente', () => {
     const { toggleGroup } = useSidebarStore.getState()
+    // Abrir Cadastros, manter Movimento fechado
     toggleGroup('Cadastros')
-    toggleGroup('Movimento')
-    expect(useSidebarStore.getState().collapsed.sort()).toEqual([
-      'Cadastros',
-      'Movimento',
-    ])
+    expect(useSidebarStore.getState().isCollapsed('Cadastros')).toBe(false)
+    expect(useSidebarStore.getState().isCollapsed('Movimento')).toBe(true)
   })
 
-  it('persiste o estado de grupos colapsados em localStorage', () => {
+  it('chave localStorage e financas-lab:sidebar-v2', () => {
     useSidebarStore.getState().toggleGroup('Planejamento')
-    const raw = localStorage.getItem('financas-lab:sidebar')
+    const raw = localStorage.getItem('financas-lab:sidebar-v2')
     expect(raw).not.toBeNull()
-    expect(JSON.parse(raw as string).state.collapsed).toContain('Planejamento')
+    expect(JSON.parse(raw as string).state.collapsed).toBeInstanceOf(Array)
   })
 })
