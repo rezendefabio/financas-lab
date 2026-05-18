@@ -44,6 +44,7 @@ Revisor senior de frontend. Pragmatico — nao implica em estilo, implica em vio
 | B9 | Listagem de recurso de dominio como card grid em vez de DataTable | Grep por `grid grid-cols` em pages de listagem (categorias, transacoes, contas, orcamentos, metas) -- se recurso tem acoes por linha e layout e grid, e bloqueador |
 | B10 | Valor monetario em TableCell sem text-right | Grep por `formatBRL` dentro de `<TableCell` sem `text-right` na mesma celula |
 | B11 | Invalid Date em campo de data/timestamp | Grep por `formatDate(` aplicado a campos `Instant` (`criadoEm`, `atualizadoEm`) -- Instant deve usar `formatDateTime`. Causa: string ISO com `Z` passada diretamente a `formatDate` sem conversao correta. |
+| B12 | Tela de importacao de arquivo sem link para baixar o modelo | Grep por `page.tsx` em paths `*/importacao/*` ou qualquer pagina que contenha `type="file" accept=".csv"` -- se nao houver um link ou botao de download do arquivo modelo (CSV, XLSX, etc.), e bloqueador. Regra: toda tela de importacao de dados deve expor o layout esperado como arquivo para download. |
 
 ## Regras -- Sugestoes (nao impede merge)
 

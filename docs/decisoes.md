@@ -326,6 +326,7 @@ Aplicação Next.js em `frontend/`.
 - **shadcn/ui via copy.** Componentes vão para `src/components/ui/` quando instalados via `npx shadcn add <componente>`. Não é dependência de runtime — o código fica versionado no repo. Style `base-nova`, baseColor `neutral`, CSS variables ativas.
 - **`AGENTS.md` e `CLAUDE.md` do scaffold mantidos.** `AGENTS.md` contém aviso do Next.js 16 sobre breaking changes em relação a training data de agentes; `CLAUDE.md` usa sintaxe `@AGENTS.md` para carregar o aviso como contexto quando o Claude Code está trabalhando em `frontend/`. Não conflita com `CLAUDE.md` da raiz (sintaxe aditiva).
 - **CI:** job único com Java + Node executados sequencialmente. Refatorar para dois jobs paralelos só quando justificar.
+- **Tela de importacao de dados exige link para baixar o modelo.** Toda tela que aceita upload de arquivo para importacao em lote (CSV, XLSX, etc.) deve expor o layout esperado como arquivo para download -- um botao ou link "Baixar modelo" que entrega um arquivo de exemplo preenchido ou vazio com cabecalhos. Razao: sem o modelo, o usuario nao tem como saber o formato exato esperado (delimitador, cabecalhos, codificacao). Coberto como bloqueador B12 no `front-reviewer`. Aplicavel ao `ImportacaoController` tambem: `GET /api/importacao/csv/modelo` entrega o arquivo modelo diretamente.
 
 ---
 
