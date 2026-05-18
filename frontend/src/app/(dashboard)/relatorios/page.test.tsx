@@ -42,6 +42,12 @@ vi.mock('@/features/contas/services/contas.service', () => ({
   },
 }))
 
+vi.mock('@/features/relatorios/components/RelatorioGastosPorCategoria', () => ({
+  RelatorioGastosPorCategoria: ({ periodo }: { periodo: string }) => (
+    <button type="button">Baixar PDF {periodo}</button>
+  ),
+}))
+
 import RelatoriosPage from './page'
 import { relatorioService } from '@/features/relatorios'
 import { getFluxoCaixa } from '@/features/dashboard'
@@ -180,6 +186,16 @@ describe('RelatoriosPage', () => {
       expect.any(String),
       undefined,
     )
+  })
+
+  it('renderiza o botao de download do PDF quando os gastos carregam', async () => {
+    render(<RelatoriosPage />, { wrapper: makeWrapper() })
+
+    await waitFor(() => {
+      expect(
+        screen.getByRole('button', { name: /baixar pdf/i }),
+      ).toBeInTheDocument()
+    })
   })
 
   it('exibe mensagem de erro quando a query de gastos falha', async () => {

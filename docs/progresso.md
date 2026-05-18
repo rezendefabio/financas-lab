@@ -177,6 +177,23 @@ Ativar a fábrica de fato: rodar features no Tier 2, configurar 3 routines Tier 
   Workbox (`sw.js`, `workbox-*.js`, `swe-worker-*.js`) adicionados ao
   `frontend/.gitignore`. Gate `check-front.ps1` verde (lint + testes + build). PR a abrir.
 
+- **5.84 -- tela de relatorios (PDF download) + UI de importacao CSV** (2026-05-17):
+  Duas features de frontend que completam funcionalidades cujo backend ja existia.
+  **Feature A:** integracao do componente `RelatorioGastosPorCategoria` (criado na 5.77)
+  na pagina `relatorios/page.tsx`. Importado via `next/dynamic` com `ssr: false`
+  (`PDFDownloadLink` do `@react-pdf/renderer` e client-only). Botao de download aparece
+  apos o grafico `GastosPorCategoriaChart` quando `gastos.data` esta disponivel.
+  **Feature B:** nova feature `importacao` (`src/features/importacao/`) com `types/`,
+  `services/` e `index.ts`, mais a pagina `app/(dashboard)/importacao/page.tsx` para
+  upload de CSV. O service dispara `POST /api/jobs/importacao-csv-transacoes` (Spring
+  Batch job, backend ja existente). Como o `apiFetch` forca `Content-Type: application/json`
+  e o ESLint proibe `fetch` cru fora de `src/services/`, foi adicionado `apiFetchMultipart`
+  ao `api-client.ts` -- envia `FormData` sem definir `Content-Type` (o browser gera o
+  boundary), reaproveitando o tratamento de erro e auth do `apiFetch`. Link "Importar CSV"
+  adicionado ao sidebar apos "Transacoes". Sem alteracao de backend. Gate frontend
+  (lint + testes + build) verde: 5 testes novos na pagina de importacao, 1 teste novo
+  na pagina de relatorios.
+
 - **5.83 -- domain events: TransacaoCriada -> OrcamentoProgressoListener** (2026-05-17):
   Primeiro uso real de Spring Application Events para comunicacao cross-context. Quando
   uma `Transacao` e criada, `CriarTransacaoUseCase` publica um `TransacaoCriadaEvent`
