@@ -8,6 +8,7 @@ vi.mock('next/navigation', () => ({
 }))
 
 import { CommandPalette } from './CommandPalette'
+import { useCommandPaletteStore } from './command-palette-store'
 
 async function pressCtrlK() {
   await userEvent.keyboard('{Control>}k{/Control}')
@@ -16,6 +17,7 @@ async function pressCtrlK() {
 describe('CommandPalette', () => {
   beforeEach(() => {
     mockPush.mockClear()
+    useCommandPaletteStore.setState({ open: false })
   })
 
   it('inicia fechado', () => {
