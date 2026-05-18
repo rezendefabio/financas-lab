@@ -96,7 +96,7 @@ invocados diretamente pelo operador — são spawanados por skills.
 |--------|--------|-------------|-----------|
 | `pr-reviewer` | Haiku | `/ship`, `/review-pr`, `/plan` | Revisa PRs contra convenções do projeto: ADRs, validação destrutiva, cobertura de testes, convenções de commit. Produz: Bloqueadores / Sugestões / Elogios |
 | `architect-reviewer` | Sonnet | `/ship`, `/review-arch`, `/plan` | Revisa decisões estruturais contra ADRs arquiteturais duros: Clean Architecture (ADR-004), JWT, Flyway, testes. Foco em camadas e dependências |
-| `front-reviewer` | Haiku | `/ship`, `/review-front`, `/plan` | Revisa mudanças em `frontend/`: fetch fora de `services/`, `asChild` em base-nova, valores hardcoded de ambiente, `any` em tipos de API, ausência de testes. 5 bloqueadores, 4 sugestões |
+| `front-reviewer` | Haiku | `/ship`, `/review-front`, `/plan` | Revisa mudanças em `frontend/`: fetch fora de `services/`, `asChild` em base-nova, valores hardcoded de ambiente, `any` em tipos de API, ausência de testes, tela de importação sem link para baixar modelo (B12). 6 bloqueadores, 4 sugestões |
 
 ### Agentes Geradores
 
