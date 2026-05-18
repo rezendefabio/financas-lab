@@ -71,3 +71,27 @@ export async function apiFetchMultipart<T>(
   }
   return res.json() as Promise<T>
 }
+
+/**
+ * Faz um GET autenticado e retorna o corpo da resposta como Blob.
+ *
+ * Usado para download de arquivos (CSV, PDF, etc.), onde o corpo nao e JSON.
+ * Mantem o tratamento de 401 e de erro dos demais helpers.
+ */
+export async function apiFetchBlob(path: string): Promise<Blob> {
+  const token = getToken()
+  const res = await fetch(`${API_BASE}${path}`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  })
+  if (res.status === 401) {
+    clearToken()
+    if (typeof window !== 'undefined') {
+      window.location.href = '/login'
+    }
+    throw new ApiError(401, 'Sessao expirada. Faca login novamente.')
+  }
+  if (!res.ok) {
+    throw new ApiError(res.status, res.statusText)
+  }
+  return res.blob()
+}

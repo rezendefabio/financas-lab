@@ -1,4 +1,4 @@
-import { apiFetchMultipart } from '@/services/api-client'
+import { apiFetchBlob, apiFetchMultipart } from '@/services/api-client'
 import type { ImportacaoJobResponse } from '../types/importacao'
 
 /**
@@ -15,5 +15,17 @@ export const importacaoService = {
       '/api/jobs/importacao-csv-transacoes',
       formData,
     )
+  },
+
+  downloadModelo: async (): Promise<void> => {
+    const blob = await apiFetchBlob(
+      '/api/jobs/importacao-csv-transacoes/csv/modelo',
+    )
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'modelo-importacao-transacoes.csv'
+    a.click()
+    URL.revokeObjectURL(url)
   },
 }
