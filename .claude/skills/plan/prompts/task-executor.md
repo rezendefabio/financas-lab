@@ -112,9 +112,16 @@ completamente autonoma, sem pedir aprovacao ao operador.
 ## Sobre skills invocados na tarefa
 
 O Skill tool NAO funciona para skills com disable-model-invocation:true.
-Para qualquer skill mencionado nas instrucoes (/ship, /write-test, /feature, etc.):
+Para qualquer skill mencionado nas instrucoes (/ship, /write-test, /feature, /feature-front, etc.):
   1. Leia o arquivo `.claude/skills/<nome>/SKILL.md`
   2. Execute a logica descrita nele manualmente, passo a passo
+
+Quando a task incluir frontend para um bounded context com DTOs Java prontos e o prompt
+instruir usar `/feature-front <dominio>`: leia `.claude/skills/feature-front/SKILL.md`
+e execute-a para gerar o scaffold inicial dos 6 arquivos (types, service, index, list
+page, create page, detail page). Preencha os `// TODO` com a logica real em seguida.
+Se o prompt descrever os arquivos frontend explicitamente (sem mencionar /feature-front):
+crie-os conforme descrito -- nao invoque /feature-front por conta propria.
 
 ## Execucao
 
