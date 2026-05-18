@@ -4,6 +4,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.testcontainers.containers.MinIOContainer;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
@@ -19,8 +20,15 @@ public abstract class AbstractIntegrationTest {
             .withUsername("test")
             .withPassword("test");
 
+    @SuppressWarnings("resource")
+    protected static final MinIOContainer MINIO =
+            new MinIOContainer("minio/minio:latest")
+            .withUserName("testminio")
+            .withPassword("testminio123");
+
     static {
         POSTGRES.start();
+        MINIO.start();
     }
 
     @DynamicPropertySource
@@ -31,5 +39,9 @@ public abstract class AbstractIntegrationTest {
         registry.add("spring.flyway.url", POSTGRES::getJdbcUrl);
         registry.add("spring.flyway.user", POSTGRES::getUsername);
         registry.add("spring.flyway.password", POSTGRES::getPassword);
+        registry.add("minio.endpoint", MINIO::getS3URL);
+        registry.add("minio.access-key", MINIO::getUserName);
+        registry.add("minio.secret-key", MINIO::getPassword);
+        registry.add("minio.bucket", () -> "financas-lab-test");
     }
 }

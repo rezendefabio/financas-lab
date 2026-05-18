@@ -46,3 +46,16 @@ export function formatDateTime(isoTimestamp: string | null | undefined): string 
   if (!isoTimestamp) return '--'
   return new Date(isoTimestamp).toLocaleString('pt-BR')
 }
+
+/** Formata um tamanho em bytes para a unidade legivel mais proxima (B, KB, MB, GB). */
+export function formatTamanho(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`
+  const unidades = ['KB', 'MB', 'GB']
+  let valor = bytes / 1024
+  let indice = 0
+  while (valor >= 1024 && indice < unidades.length - 1) {
+    valor /= 1024
+    indice += 1
+  }
+  return `${valor.toFixed(1)} ${unidades[indice]}`
+}

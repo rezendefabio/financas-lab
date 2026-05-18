@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { formatBRL, formatTipoConta, formatTipoTransacao, formatDate, formatTipoCategoria, formatDateTime } from './formatters'
+import { formatBRL, formatTipoConta, formatTipoTransacao, formatDate, formatTipoCategoria, formatDateTime, formatTamanho } from './formatters'
 
 describe('formatBRL', () => {
   it('formats a number as BRL currency', () => {
@@ -91,5 +91,23 @@ describe('formatDateTime', () => {
 
   it('retorna -- para undefined', () => {
     expect(formatDateTime(undefined)).toBe('--')
+  })
+})
+
+describe('formatTamanho', () => {
+  it('formata bytes abaixo de 1KB com unidade B', () => {
+    expect(formatTamanho(512)).toBe('512 B')
+  })
+
+  it('formata kilobytes com uma casa decimal', () => {
+    expect(formatTamanho(2048)).toBe('2.0 KB')
+  })
+
+  it('formata megabytes com uma casa decimal', () => {
+    expect(formatTamanho(5 * 1024 * 1024)).toBe('5.0 MB')
+  })
+
+  it('formata gigabytes com uma casa decimal', () => {
+    expect(formatTamanho(3 * 1024 * 1024 * 1024)).toBe('3.0 GB')
   })
 })

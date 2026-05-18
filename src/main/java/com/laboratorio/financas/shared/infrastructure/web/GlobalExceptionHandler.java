@@ -1,5 +1,6 @@
 package com.laboratorio.financas.shared.infrastructure.web;
 
+import com.laboratorio.financas.anexo.domain.AnexoNaoEncontradoException;
 import com.laboratorio.financas.anotacao.domain.AnotacaoNaoEncontradaException;
 import com.laboratorio.financas.categoria.domain.CategoriaJaExisteException;
 import com.laboratorio.financas.categoria.domain.CategoriaNaoEncontradaException;
@@ -183,6 +184,15 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(AnotacaoNaoEncontradaException.class)
     public ProblemDetail handleAnotacaoNaoEncontrada(AnotacaoNaoEncontradaException ex) {
+        ProblemDetail problem = ProblemDetail.forStatus(HttpStatus.NOT_FOUND);
+        problem.setTitle("Not Found");
+        problem.setDetail(ex.getMessage());
+        problem.setProperty("id", ex.getId().toString());
+        return problem;
+    }
+
+    @ExceptionHandler(AnexoNaoEncontradoException.class)
+    public ProblemDetail handleAnexoNaoEncontrado(AnexoNaoEncontradoException ex) {
         ProblemDetail problem = ProblemDetail.forStatus(HttpStatus.NOT_FOUND);
         problem.setTitle("Not Found");
         problem.setDetail(ex.getMessage());
