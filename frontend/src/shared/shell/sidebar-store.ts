@@ -40,7 +40,7 @@ function getAllGroupKeys(): string[] {
   return keys
 }
 
-const initialCollapsed = getAllGroupKeys()
+export const initialCollapsed = getAllGroupKeys()
 
 export const useSidebarStore = create<SidebarState>()(
   persist(
