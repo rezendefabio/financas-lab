@@ -160,6 +160,28 @@ Ativar a fábrica de fato: rodar features no Tier 2, configurar 3 routines Tier 
 
 ### Sub-etapas concluídas
 
+- **UI-1 -- Screen Registry + SidebarMenu hierarquico + Command Palette** (2026-05-18):
+  Primeira fase da arquitetura de shell declarativo (ADR-014, `frontend-master-spec.md`
+  pontos 1 e 3). Quatro artefatos num PR unico. **Screen Registry** em
+  `frontend/src/shared/shell/screens.registry.ts`: tipo `ScreenDefinition`
+  (code MOD-ENT-NNN, title, path, menuPath max 3 niveis, icon, permissions vazio),
+  as 13 telas existentes registradas, helpers `getAllScreens`/`findScreenByCode`/
+  `findScreenByPath`. **SidebarNav** hierarquico (`SidebarNav.tsx` + `menu-tree.ts`)
+  consome o registry, agrupa por `menuPath`, grupos colapsaveis com estado em
+  store Zustand persistido em localStorage (`sidebar-store.ts`), item ativo e
+  breadcrumb de grupo destacados. **CommandPalette** (`CommandPalette.tsx`)
+  acionado por Ctrl+K: motor de busca do `cmdk` + overlay `<Dialog>` do base-nova
+  (evita depender do dialog do radix; cmdk traz `@radix-ui/react-dialog` como
+  dependencia transitiva inevitavel, mas nao e usado). **Skill `/register-screen`**
+  (`.claude/skills/register-screen/SKILL.md`): valida formato/unicidade do code,
+  profundidade do menuPath, injeta `ScreenDefinition` no registry. Mapa estatico
+  `icon-map.tsx` (nome lucide-react -> componente, sem import dinamico).
+  Dependencias novas: `zustand`, `cmdk`. 37 testes Vitest novos (registry, store,
+  menu-tree, SidebarNav, CommandPalette). Polyfills jsdom (`matchMedia`,
+  `ResizeObserver`, `scrollIntoView`) adicionados ao `test/setup.ts`. Escopo
+  limitado a UI-1: Tab Manager (UI-2), responsividade completa (UI-3) e audit log
+  fora do escopo. PR aberto.
+
 - **5.90 -- sync progresso + fabrica-referencia** (2026-05-18):
   Sub-etapa doc-only de manutencao. Registra sub-etapas 5.86 a 5.89 ausentes do
   `progresso.md` e corrige `fabrica-referencia.md` (contador de bloqueadores do
