@@ -99,7 +99,7 @@ class ImportacaoCsvTransacoesJobLauncherTest extends AbstractAuthenticatedIntegr
     }
 
     @Test
-    void downloadModelo_retornaArquivoCsvComCabecalho() throws Exception {
+    void downloadModeloRetornaArquivoCsvComCabecalho() throws Exception {
         mockMvc.perform(comAuth(get("/api/jobs/importacao-csv-transacoes/csv/modelo")))
                 .andExpect(status().isOk())
                 .andExpect(header().string("Content-Disposition",
