@@ -10,6 +10,7 @@ vi.mock('next/navigation', () => ({
 import { SidebarNav } from './SidebarNav'
 import { SidebarProvider } from '@/shared/components/ui/sidebar'
 import { useSidebarStore } from './sidebar-store'
+import { useTabsStore } from './tabs-store'
 
 function renderNav() {
   return render(
@@ -25,6 +26,7 @@ describe('SidebarNav', () => {
     localStorage.clear()
     // Abrir todos os grupos para que os testes de renderizacao de itens funcionem
     useSidebarStore.setState({ collapsed: [] })
+    useTabsStore.setState({ tabs: [], activeId: null })
   })
 
   it('renderiza os grupos de topo do menuPath', () => {
@@ -46,6 +48,8 @@ describe('SidebarNav', () => {
     mockPathname = '/contas'
     renderNav()
     // base-nova emite data-active="" quando ativo e omite o atributo quando nao.
+    // SidebarMenuSubButton mantem a tag <a> (defaultTagName) mesmo apos a
+    // UI-2 trocar a navegacao por onClick.
     const contasLink = screen.getByText('Contas').closest('a')
     expect(contasLink?.hasAttribute('data-active')).toBe(true)
     const tagsLink = screen.getByText('Tags').closest('a')
@@ -66,6 +70,15 @@ describe('SidebarNav', () => {
     renderNav()
     const contasLink = screen.getByText('Contas').closest('a')
     expect(contasLink?.hasAttribute('data-active')).toBe(true)
+  })
+
+  it('clicar numa tela folha abre uma aba no Tab Manager', async () => {
+    renderNav()
+    expect(useTabsStore.getState().tabs).toHaveLength(0)
+    await userEvent.click(screen.getByText('Contas'))
+    const { tabs } = useTabsStore.getState()
+    expect(tabs).toHaveLength(1)
+    expect(tabs[0].screenCode).toBe('FIN-CTA-001')
   })
 
   it('colapsa um grupo ao clicar nele', async () => {

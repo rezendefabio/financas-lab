@@ -17,16 +17,18 @@
  */
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Command } from 'cmdk'
 import { Dialog, DialogContent } from '@/shared/components/ui/dialog'
 import { ScreenIcon } from './icon-map'
 import { getAllScreens } from './screens.registry'
+import { useCommandPaletteStore } from './command-palette-store'
 
 export function CommandPalette() {
   const router = useRouter()
-  const [open, setOpen] = useState(false)
+  const open = useCommandPaletteStore((state) => state.open)
+  const setOpen = useCommandPaletteStore((state) => state.setOpen)
   const screens = getAllScreens()
 
   // Listener global de teclado: Ctrl+K / Cmd+K alterna o palette.
@@ -34,12 +36,12 @@ export function CommandPalette() {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key.toLowerCase() === 'k' && (event.metaKey || event.ctrlKey)) {
         event.preventDefault()
-        setOpen((prev) => !prev)
+        setOpen(!useCommandPaletteStore.getState().open)
       }
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [])
+  }, [setOpen])
 
   const handleSelect = useCallback(
     (path: string) => {
