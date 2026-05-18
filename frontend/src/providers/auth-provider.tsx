@@ -2,6 +2,7 @@
 import { createContext, useContext, useState, useCallback } from 'react'
 import { isAuthenticated, clearToken } from '@/shared/lib/auth'
 import { useTabsStore } from '@/shared/shell/tabs-store'
+import { useSidebarStore, initialCollapsed } from '@/shared/shell/sidebar-store'
 
 interface AuthContextValue {
   loggedIn: boolean
@@ -21,6 +22,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = useCallback(() => {
     clearToken()
     useTabsStore.setState({ tabs: [], activeId: null })
+    useSidebarStore.setState({ collapsed: initialCollapsed })
     setLoggedIn(false)
   }, [])
 

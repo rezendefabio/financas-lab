@@ -77,6 +77,7 @@ function MenuTreeNode({ node, depth, activePath, activeTrail, forceOpen }: NodeP
           <SidebarMenuButton
             onClick={() => openTab(screen.code)}
             isActive={isActive}
+            className="cursor-pointer"
           >
             <ScreenIcon name={screen.icon} className="h-4 w-4" />
             <span>{screen.title}</span>
@@ -90,6 +91,7 @@ function MenuTreeNode({ node, depth, activePath, activeTrail, forceOpen }: NodeP
         <SidebarMenuSubButton
           onClick={() => openTab(screen.code)}
           isActive={isActive}
+          className="cursor-pointer"
         >
           <ScreenIcon name={screen.icon} className="h-4 w-4" />
           <span>{screen.title}</span>
@@ -109,6 +111,7 @@ function MenuTreeNode({ node, depth, activePath, activeTrail, forceOpen }: NodeP
         isActive={isOnActiveTrail}
         aria-expanded={isOpen}
         aria-controls={`menu-group-${node.key}`}
+        className="cursor-pointer"
       >
         <ChevronRight
           className={cn(
