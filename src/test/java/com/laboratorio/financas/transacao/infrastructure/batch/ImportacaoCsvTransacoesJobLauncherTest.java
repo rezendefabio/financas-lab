@@ -1,7 +1,10 @@
 package com.laboratorio.financas.transacao.infrastructure.batch;
 
+import static org.hamcrest.Matchers.containsString;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -93,5 +96,15 @@ class ImportacaoCsvTransacoesJobLauncherTest extends AbstractAuthenticatedIntegr
     void statusDeJobExecutionInexistenteRetorna404() throws Exception {
         mockMvc.perform(comAuth(get("/api/jobs/importacao-csv-transacoes/999999")))
                 .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void downloadModelo_retornaArquivoCsvComCabecalho() throws Exception {
+        mockMvc.perform(comAuth(get("/api/jobs/importacao-csv-transacoes/csv/modelo")))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Content-Disposition",
+                        containsString("modelo-importacao-transacoes.csv")))
+                .andExpect(content().contentTypeCompatibleWith("text/csv"))
+                .andExpect(content().string(containsString("tipo;valor;data")));
     }
 }
