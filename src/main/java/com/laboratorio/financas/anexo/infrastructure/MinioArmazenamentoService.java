@@ -24,6 +24,9 @@ import org.springframework.stereotype.Component;
 @Component
 public class MinioArmazenamentoService implements ArmazenamentoService {
 
+    private static final org.slf4j.Logger log =
+            org.slf4j.LoggerFactory.getLogger(MinioArmazenamentoService.class);
+
     private final MinioClient minioClient;
     private final String bucket;
 
@@ -42,7 +45,8 @@ public class MinioArmazenamentoService implements ArmazenamentoService {
                 minioClient.makeBucket(MakeBucketArgs.builder().bucket(bucket).build());
             }
         } catch (Exception e) {
-            throw new RuntimeException("Falha ao garantir o bucket MinIO: " + bucket, e);
+            log.warn("MinIO indisponivel no startup -- bucket '{}' nao verificado: {}",
+                    bucket, e.getMessage());
         }
     }
 
