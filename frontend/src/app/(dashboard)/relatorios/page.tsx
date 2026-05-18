@@ -6,8 +6,6 @@ import { contasService } from '@/features/contas/services/contas.service'
 import { getFluxoCaixa } from '@/features/dashboard'
 import {
   relatorioService,
-  GastosPorCategoriaChart,
-  EvolucaoSaldoChart,
   FluxoCaixaResumo,
 } from '@/features/relatorios'
 import {
@@ -26,6 +24,16 @@ import {
   SelectValue,
 } from '@/shared/components/ui/select'
 import { Skeleton } from '@/shared/components/ui/skeleton'
+
+const GastosPorCategoriaChart = dynamic(
+  () => import('@/features/relatorios/components/GastosPorCategoriaChart'),
+  { ssr: false },
+)
+
+const EvolucaoSaldoChart = dynamic(
+  () => import('@/features/relatorios/components/EvolucaoSaldoChart'),
+  { ssr: false },
+)
 
 const RelatorioGastosPorCategoriaDownload = dynamic(
   () =>
