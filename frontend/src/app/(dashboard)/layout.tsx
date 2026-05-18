@@ -30,7 +30,7 @@ const navItems = [
   { href: '/payees', label: 'Beneficiarios', icon: Users },
   { href: '/anotacoes', label: 'Anotacoes', icon: StickyNote },
   { href: '/relatorios', label: 'Relatorios', icon: BarChart3 },
-  { href: '/incidentes/buscar', label: 'Incidentes', icon: AlertTriangle },
+  { href: '/incidentes', label: 'Incidentes', icon: AlertTriangle },
 ]
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
