@@ -14,7 +14,6 @@
 
 import { useState } from 'react'
 import { usePathname } from 'next/navigation'
-import Link from 'next/link'
 import { ChevronRight, Search } from 'lucide-react'
 import {
   SidebarMenu,
@@ -30,6 +29,7 @@ import { getAllScreens, findScreenByPath } from './screens.registry'
 import { buildMenuTree, findActiveTrail, type MenuNode } from './menu-tree'
 import { ScreenIcon } from './icon-map'
 import { useSidebarStore } from './sidebar-store'
+import { useTabsStore } from './tabs-store'
 
 /**
  * Filtra a arvore de menu por query (case-insensitive).
@@ -63,8 +63,10 @@ interface NodeProps {
 function MenuTreeNode({ node, depth, activePath, activeTrail, forceOpen }: NodeProps) {
   const collapsed = useSidebarStore((state) => state.collapsed)
   const toggleGroup = useSidebarStore((state) => state.toggleGroup)
+  const openTab = useTabsStore((state) => state.openTab)
 
-  // Folha: tela navegavel.
+  // Folha: tela navegavel. Clicar abre uma aba (Tab Manager, UI-2);
+  // a navegacao acontece via efeito reativo no layout.
   if (node.screen) {
     const screen = node.screen
     const isActive = screen.path === activePath
@@ -73,7 +75,7 @@ function MenuTreeNode({ node, depth, activePath, activeTrail, forceOpen }: NodeP
       return (
         <SidebarMenuItem>
           <SidebarMenuButton
-            render={<Link href={screen.path} />}
+            onClick={() => openTab(screen.code)}
             isActive={isActive}
           >
             <ScreenIcon name={screen.icon} className="h-4 w-4" />
@@ -86,7 +88,7 @@ function MenuTreeNode({ node, depth, activePath, activeTrail, forceOpen }: NodeP
     return (
       <SidebarMenuSubItem>
         <SidebarMenuSubButton
-          render={<Link href={screen.path} />}
+          onClick={() => openTab(screen.code)}
           isActive={isActive}
         >
           <ScreenIcon name={screen.icon} className="h-4 w-4" />
