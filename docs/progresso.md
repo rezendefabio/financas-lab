@@ -3,7 +3,7 @@
 > Documento de tracking. Mostra **onde estamos** na construção da fábrica e do produto.
 > Atualizado conforme camadas avançam. Diferente do `decisoes.md` (que registra escolhas) e dos `adrs.md` (que registram porquês), este documento responde a pergunta: "em que ponto eu estou?".
 
-**Última atualização:** 2026-05-17 (Sub-etapa 5.80 -- atualiza fabrica-referencia.md com 5.77 e 5.78)
+**Última atualização:** 2026-05-17 (Sub-etapa 5.85 -- PWA: manifest, service worker e pagina offline)
 
 ---
 
@@ -159,6 +159,23 @@ Configurar `CLAUDE.md` rico, criar 3-5 subagents focados, criar 5-10 skills (sla
 Ativar a fábrica de fato: rodar features no Tier 2, configurar 3 routines Tier 1, validar paralelismo se necessário.
 
 ### Sub-etapas concluídas
+
+- **5.85 -- PWA (Progressive Web App)** (2026-05-17):
+  Frontend transformado em PWA instalavel para o MVP mobile (decisao de 2026-05-17:
+  mobile = PWA; app nativo RN/Expo fica pos-MVP). Dependencia `@ducanh2912/next-pwa`
+  (substituto oficial do `next-pwa` para Next.js 14+) envolve o `next.config.ts` com
+  `withPWA` (cache de leitura, `reloadOnOnline`, `disable` em desenvolvimento para nao
+  quebrar o hot reload). Criados `public/manifest.json` (nome, theme color `#1e40af`,
+  display `standalone`, orientacao retrato), `public/offline.html` (fallback estatico
+  sem conexao) e icones PNG reais 192/512 gerados de `public/icons/icon.svg` via
+  `scripts/generate-icons.mjs` (usa `sharp`, dependencia transitiva). `layout.tsx`
+  declara `manifest`, `appleWebApp` e `themeColor` pela Metadata/Viewport API do
+  Next.js 16 (idiomatico -- tags `<head>` cruas nao sao o padrao do App Router).
+  **Decisao de ambiente:** `@ducanh2912/next-pwa` v10 so suporta webpack (Workbox e
+  plugin webpack) e Next.js 16 usa Turbopack por padrao -- o script `build` passou a
+  usar `next build --webpack` para o plugin PWA funcionar. Arquivos gerados pelo
+  Workbox (`sw.js`, `workbox-*.js`, `swe-worker-*.js`) adicionados ao
+  `frontend/.gitignore`. Gate `check-front.ps1` verde (lint + testes + build). PR a abrir.
 
 - **5.80 -- atualiza fabrica-referencia.md (5.77 e 5.78)** (2026-05-17):
   Sub-etapa doc-only de manutencao. `docs/fabrica-referencia.md` foi criado (5.76) antes
