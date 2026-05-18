@@ -95,4 +95,19 @@ describe('BuscarIncidentePage', () => {
       ).toBeInTheDocument()
     })
   })
+
+  it('C5: exibe a mensagem de erro generico quando a busca falha por motivo diferente de 404', async () => {
+    vi.mocked(incidenteService.buscarPorCodigo).mockRejectedValue(
+      new ApiError(500, 'Falha interna do servidor.'),
+    )
+    const user = userEvent.setup()
+    render(<BuscarIncidentePage />)
+
+    await user.type(screen.getByLabelText('Codigo'), 'ERR-ABCD1234')
+    await user.click(screen.getByRole('button', { name: 'Buscar' }))
+
+    await waitFor(() => {
+      expect(screen.getByText('Falha interna do servidor.')).toBeInTheDocument()
+    })
+  })
 })
