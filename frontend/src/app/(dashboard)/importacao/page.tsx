@@ -11,6 +11,53 @@ import {
 import { Button } from '@/shared/components/ui/button'
 import { Input } from '@/shared/components/ui/input'
 import { Label } from '@/shared/components/ui/label'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/shared/components/ui/table'
+
+const COLUNAS_FORMATO = [
+  {
+    coluna: 'tipo',
+    obrigatorio: 'Sim',
+    formato: 'RECEITA, DESPESA ou TRANSFERENCIA',
+    exemplo: 'DESPESA',
+  },
+  {
+    coluna: 'valor',
+    obrigatorio: 'Sim',
+    formato: 'Decimal com ponto',
+    exemplo: '150.00',
+  },
+  {
+    coluna: 'data',
+    obrigatorio: 'Sim',
+    formato: 'AAAA-MM-DD',
+    exemplo: '2026-05-18',
+  },
+  {
+    coluna: 'descricao',
+    obrigatorio: 'Nao',
+    formato: 'Texto livre',
+    exemplo: 'Mercado',
+  },
+  {
+    coluna: 'contaId',
+    obrigatorio: 'Sim',
+    formato: 'UUID da conta',
+    exemplo: '(copiar da tela Contas)',
+  },
+  {
+    coluna: 'categoriaId',
+    obrigatorio: 'Nao',
+    formato: 'UUID da categoria',
+    exemplo: '(copiar da tela Categorias)',
+  },
+]
 
 export default function ImportacaoPage() {
   const [arquivo, setArquivo] = useState<File | null>(null)
@@ -36,6 +83,15 @@ export default function ImportacaoPage() {
     }
   }
 
+  async function handleBaixarModelo() {
+    setErro(null)
+    try {
+      await importacaoService.downloadModelo()
+    } catch (e) {
+      setErro(e instanceof Error ? e.message : 'Erro ao baixar o modelo CSV.')
+    }
+  }
+
   return (
     <div className="space-y-6">
       <div className="space-y-1">
@@ -46,6 +102,49 @@ export default function ImportacaoPage() {
           Faca o upload de um arquivo CSV no formato padrao do financas-lab.
         </p>
       </div>
+
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base font-semibold">
+            Formato esperado
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-sm text-muted-foreground">
+            O arquivo deve ser CSV com separador ; (ponto e virgula) e header na
+            primeira linha.
+          </p>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Coluna</TableHead>
+                <TableHead>Obrigatorio</TableHead>
+                <TableHead>Formato</TableHead>
+                <TableHead>Exemplo</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {COLUNAS_FORMATO.map((linha) => (
+                <TableRow key={linha.coluna}>
+                  <TableCell className="font-medium">{linha.coluna}</TableCell>
+                  <TableCell>{linha.obrigatorio}</TableCell>
+                  <TableCell>{linha.formato}</TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {linha.exemplo}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={handleBaixarModelo}
+          >
+            Baixar modelo CSV
+          </Button>
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader className="pb-2">

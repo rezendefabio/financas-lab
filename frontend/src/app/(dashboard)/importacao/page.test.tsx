@@ -5,6 +5,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 vi.mock('@/features/importacao', () => ({
   importacaoService: {
     importarCsv: vi.fn(),
+    downloadModelo: vi.fn(),
   },
 }))
 
@@ -79,5 +80,33 @@ describe('ImportacaoPage', () => {
     await waitFor(() => {
       expect(screen.getByText('Arquivo invalido')).toBeInTheDocument()
     })
+  })
+
+  it('exibe o botao Baixar modelo CSV', () => {
+    render(<ImportacaoPage />)
+    expect(
+      screen.getByRole('button', { name: 'Baixar modelo CSV' }),
+    ).toBeInTheDocument()
+  })
+
+  it('chama downloadModelo ao clicar no botao Baixar modelo CSV', async () => {
+    vi.mocked(importacaoService.downloadModelo).mockResolvedValue(undefined)
+    const user = userEvent.setup()
+    render(<ImportacaoPage />)
+
+    await user.click(
+      screen.getByRole('button', { name: 'Baixar modelo CSV' }),
+    )
+
+    expect(importacaoService.downloadModelo).toHaveBeenCalledTimes(1)
+  })
+
+  it('exibe a tabela de formato com as colunas esperadas', () => {
+    render(<ImportacaoPage />)
+    expect(screen.getByText('contaId')).toBeInTheDocument()
+    expect(screen.getByText('categoriaId')).toBeInTheDocument()
+    expect(
+      screen.getByRole('columnheader', { name: 'Coluna' }),
+    ).toBeInTheDocument()
   })
 })
