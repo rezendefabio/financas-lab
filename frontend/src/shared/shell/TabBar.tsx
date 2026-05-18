@@ -123,9 +123,10 @@ function TabItem({
             <X className="h-3 w-3" />
           </button>
         )}
-        {/* Trigger invisivel: ancora o menu de contexto a esta aba. */}
+        {/* Trigger invisivel: ancora o menu de contexto a esta aba.
+            base-nova exige <button> nativo quando nativeButton=true. */}
         <DropdownMenuTrigger
-          render={<span className="sr-only" aria-hidden />}
+          render={<button type="button" className="sr-only" aria-hidden tabIndex={-1} />}
         />
       </div>
       <DropdownMenuContent>
@@ -184,29 +185,25 @@ export function TabBar() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // Mudancas no store -> URL (replace, sem poluir o historico).
+  // Mudancas no store -> URL + navegacao (replace unico, sem poluir historico).
+  // Usar o path da screen ATIVA como destino evita a race condition com o
+  // efeito de navegacao reativa no layout (que foi removido — UI-2 fix).
   useEffect(() => {
     if (!hydratedFromUrl.current) return
-    const params = new URLSearchParams(window.location.search)
-    if (tabs.length === 0) {
-      params.delete('tabs')
-      params.delete('active')
-    } else {
+    const activeTab = tabs.find((tab) => tab.id === activeId)
+    const targetScreen = activeTab
+      ? findScreenByCode(activeTab.screenCode)
+      : undefined
+    const targetPath = targetScreen?.path ?? window.location.pathname
+
+    const params = new URLSearchParams()
+    if (tabs.length > 0) {
       params.set('tabs', tabs.map((tab) => tab.screenCode).join(','))
-      const activeTab = tabs.find((tab) => tab.id === activeId)
-      if (activeTab) {
-        params.set('active', activeTab.screenCode)
-      } else {
-        params.delete('active')
-      }
+      if (activeTab) params.set('active', activeTab.screenCode)
     }
     const query = params.toString()
-    const url = query ? `${window.location.pathname}?${query}` : window.location.pathname
-    const startTransition =
-      typeof window !== 'undefined' && 'requestAnimationFrame' in window
-        ? window.requestAnimationFrame
-        : (cb: () => void) => cb()
-    startTransition(() => router.replace(url))
+    const url = query ? `${targetPath}?${query}` : targetPath
+    router.replace(url)
   }, [tabs, activeId, router])
 
   if (tabs.length === 0) {

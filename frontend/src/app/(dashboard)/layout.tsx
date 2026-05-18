@@ -17,7 +17,6 @@ import {
   CommandPalette,
   TabBar,
   useTabsStore,
-  findScreenByCode,
   findScreenByPath,
 } from '@/shared/shell'
 
@@ -26,8 +25,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const pathname = usePathname()
   const auth = useAuth()
 
-  const tabs = useTabsStore((state) => state.tabs)
-  const activeId = useTabsStore((state) => state.activeId)
   const openTab = useTabsStore((state) => state.openTab)
 
   useEffect(() => {
@@ -37,6 +34,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }, [auth.loggedIn, router])
 
   // Primeiro acesso (sem abas): abre a aba da tela atual.
+  // Navegacao reativa e feita pelo TabBar (URL sync com targetPath da screen ativa).
   useEffect(() => {
     if (useTabsStore.getState().tabs.length === 0) {
       const screen = findScreenByPath(pathname)
@@ -44,18 +42,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
-
-  // Navegacao reativa: trocar de aba navega para a tela correspondente.
-  useEffect(() => {
-    if (!activeId) return
-    const tab = tabs.find((item) => item.id === activeId)
-    if (!tab) return
-    const screen = findScreenByCode(tab.screenCode)
-    if (screen && pathname !== screen.path) {
-      router.push(screen.path)
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeId])
 
   return (
     <SidebarProvider>
