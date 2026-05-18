@@ -3,7 +3,7 @@
 > Documento de tracking. Mostra **onde estamos** na construção da fábrica e do produto.
 > Atualizado conforme camadas avançam. Diferente do `decisoes.md` (que registra escolhas) e dos `adrs.md` (que registram porquês), este documento responde a pergunta: "em que ponto eu estou?".
 
-**Última atualização:** 2026-05-18 (Sub-etapa 5.86 -- sync de progresso.md: 5.81 a 5.85)
+**Última atualização:** 2026-05-18 (Sub-etapa 5.88.1 -- follow-up dos reviews do PR #198)
 
 ---
 
@@ -159,6 +159,20 @@ Configurar `CLAUDE.md` rico, criar 3-5 subagents focados, criar 5-10 skills (sla
 Ativar a fábrica de fato: rodar features no Tier 2, configurar 3 routines Tier 1, validar paralelismo se necessário.
 
 ### Sub-etapas concluídas
+
+- **5.88.1 -- follow-up dos reviews do PR #198 (incidente frontend)** (2026-05-18):
+  Sub-etapa de follow-up tratando duas observacoes nao-bloqueantes levantadas pelos
+  reviews automaticos do PR #198 (sub-etapa 5.88, feature frontend `incidente`, ja
+  mergeado). **Observacao 1 (teste):** adicionado o cenario `C5` em
+  `incidentes/buscar/page.test.tsx`, cobrindo o ramo de erro generico do `catch` --
+  quando a busca falha por motivo diferente de 404 (ex.: `ApiError(500, ...)`), a
+  pagina renderiza a mensagem do erro. Sem alteracao em `page.tsx` (codigo de
+  producao da pagina). **Observacao 2 (sidebar):** o item `Incidentes` do array
+  `navItems` em `(dashboard)/layout.tsx` foi movido de entre `Anotacoes` e
+  `Relatorios` para o ultimo elemento do menu lateral. A posicao original foi
+  prescrita na 5.88 e a reordenacao foi aprovada pelo operador na discussao do
+  `/plan`. Gate frontend verde (lint + 419 testes + build). PR #198 segue mergeado;
+  novo PR de follow-up.
 
 - **5.85 -- PWA (Progressive Web App)** (2026-05-17):
   Frontend transformado em PWA instalavel para o MVP mobile (decisao de 2026-05-17:
