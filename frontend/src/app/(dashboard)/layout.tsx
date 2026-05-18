@@ -29,8 +29,8 @@ const navItems = [
   { href: '/lancamentos-recorrentes', label: 'Recorrentes', icon: Repeat },
   { href: '/payees', label: 'Beneficiarios', icon: Users },
   { href: '/anotacoes', label: 'Anotacoes', icon: StickyNote },
-  { href: '/incidentes/buscar', label: 'Incidentes', icon: AlertTriangle },
   { href: '/relatorios', label: 'Relatorios', icon: BarChart3 },
+  { href: '/incidentes/buscar', label: 'Incidentes', icon: AlertTriangle },
 ]
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
