@@ -177,6 +177,20 @@ Ativar a fábrica de fato: rodar features no Tier 2, configurar 3 routines Tier 
   Workbox (`sw.js`, `workbox-*.js`, `swe-worker-*.js`) adicionados ao
   `frontend/.gitignore`. Gate `check-front.ps1` verde (lint + testes + build). PR a abrir.
 
+- **5.83 -- domain events: TransacaoCriada -> OrcamentoProgressoListener** (2026-05-17):
+  Primeiro uso real de Spring Application Events para comunicacao cross-context. Quando
+  uma `Transacao` e criada, `CriarTransacaoUseCase` publica um `TransacaoCriadaEvent`
+  (record no package `transacao.domain`) via `ApplicationEventPublisher`. O bounded context
+  `orcamento` consome o evento de forma desacoplada com `OrcamentoProgressoListener`
+  (`@Async` + `@EventListener`): para eventos do tipo `DESPESA` com categoria, recalcula o
+  progresso de cada orcamento ativo da categoria/mes e emite log WARN quando o limite
+  atinge >= 80%. Dependencia unidirecional: `transacao` publica, `orcamento` escuta --
+  nada de `orcamento` e injetado em `CriarTransacaoUseCase`. `@Async` garante que falha
+  no listener nao afete a transacao; try-catch por orcamento isola erros individuais.
+  Novo `AsyncConfig` (`shared/infrastructure`) habilita `@EnableAsync` (antes ausente no
+  projeto). Para TRANSFERENCIA, o par despesa/receita gera um evento por transacao.
+  842 testes, BUILD SUCCESS. PR a abrir.
+
 - **5.80 -- atualiza fabrica-referencia.md (5.77 e 5.78)** (2026-05-17):
   Sub-etapa doc-only de manutencao. `docs/fabrica-referencia.md` foi criado (5.76) antes
   das sub-etapas 5.77 e 5.78, ficando desatualizado: faltavam as skills `/write-report` e
