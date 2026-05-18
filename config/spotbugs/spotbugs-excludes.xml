@@ -36,4 +36,14 @@
         <Class name="~.*Config"/>
         <Bug pattern="UPM_UNCALLED_PRIVATE_METHOD"/>
     </Match>
+
+    <!--
+        Adaptadores de infraestrutura que recebem um client de SDK externo
+        (ex: MinioClient) via construtor: o client e um bean singleton
+        gerenciado pelo contexto Spring, nao exposicao de mutabilidade.
+    -->
+    <Match>
+        <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2"/>
+        <Class name="com.laboratorio.financas.anexo.infrastructure.MinioArmazenamentoService"/>
+    </Match>
 </FindBugsFilter>

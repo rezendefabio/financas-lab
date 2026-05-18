@@ -1,10 +1,10 @@
 package com.laboratorio.financas.anexo.interfaces;
 
 import com.laboratorio.financas.anexo.application.FazerUploadAnexoUseCase;
+import com.laboratorio.financas.anexo.application.ListarAnexosPorEntidadeUseCase;
 import com.laboratorio.financas.anexo.application.ObterUrlDownloadAnexoUseCase;
 import com.laboratorio.financas.anexo.application.RemoverAnexoUseCase;
 import com.laboratorio.financas.anexo.domain.Anexo;
-import com.laboratorio.financas.anexo.domain.AnexoRepository;
 import com.laboratorio.financas.anexo.interfaces.dto.AnexoResponse;
 import java.io.IOException;
 import java.net.URI;
@@ -30,18 +30,18 @@ public class AnexoController {
     private final FazerUploadAnexoUseCase fazerUploadAnexoUseCase;
     private final ObterUrlDownloadAnexoUseCase obterUrlDownloadAnexoUseCase;
     private final RemoverAnexoUseCase removerAnexoUseCase;
-    private final AnexoRepository anexoRepository;
+    private final ListarAnexosPorEntidadeUseCase listarAnexosPorEntidadeUseCase;
 
     public AnexoController(
             FazerUploadAnexoUseCase fazerUploadAnexoUseCase,
             ObterUrlDownloadAnexoUseCase obterUrlDownloadAnexoUseCase,
             RemoverAnexoUseCase removerAnexoUseCase,
-            AnexoRepository anexoRepository
+            ListarAnexosPorEntidadeUseCase listarAnexosPorEntidadeUseCase
     ) {
         this.fazerUploadAnexoUseCase = fazerUploadAnexoUseCase;
         this.obterUrlDownloadAnexoUseCase = obterUrlDownloadAnexoUseCase;
         this.removerAnexoUseCase = removerAnexoUseCase;
-        this.anexoRepository = anexoRepository;
+        this.listarAnexosPorEntidadeUseCase = listarAnexosPorEntidadeUseCase;
     }
 
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -76,7 +76,7 @@ public class AnexoController {
             @RequestParam String entidadeTipo,
             @RequestParam UUID entidadeId
     ) {
-        return anexoRepository.listarPorEntidade(entidadeTipo, entidadeId).stream()
+        return listarAnexosPorEntidadeUseCase.executar(entidadeTipo, entidadeId).stream()
                 .map(AnexoResponse::de)
                 .toList();
     }
