@@ -4,6 +4,8 @@ import com.laboratorio.financas.anotacao.domain.AnotacaoNaoEncontradaException;
 import com.laboratorio.financas.categoria.domain.CategoriaJaExisteException;
 import com.laboratorio.financas.categoria.domain.CategoriaNaoEncontradaException;
 import com.laboratorio.financas.conta.domain.ContaNaoEncontradaException;
+import com.laboratorio.financas.incidente.application.RegistrarErroUseCase;
+import com.laboratorio.financas.incidente.domain.IncidenteNaoEncontradoException;
 import com.laboratorio.financas.instituicao.domain.InstituicaoNaoEncontradaException;
 import com.laboratorio.financas.lancamentorecorrente.domain.LancamentoRecorrenteNaoEncontradoException;
 import com.laboratorio.financas.meta.domain.MetaNaoEncontradaException;
@@ -12,7 +14,10 @@ import com.laboratorio.financas.payee.domain.PayeeNaoEncontradoException;
 import com.laboratorio.financas.tag.domain.TagNaoEncontradaException;
 import com.laboratorio.financas.transacao.domain.TransacaoComReferenciaInvalidaException;
 import com.laboratorio.financas.transacao.domain.TransacaoNaoEncontradaException;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.HashMap;
 import java.util.Map;
 import org.slf4j.Logger;
@@ -29,6 +34,12 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 public class GlobalExceptionHandler {
 
     private static final Logger LOG = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+
+    private final RegistrarErroUseCase registrarErroUseCase;
+
+    public GlobalExceptionHandler(RegistrarErroUseCase registrarErroUseCase) {
+        this.registrarErroUseCase = registrarErroUseCase;
+    }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ProblemDetail handleValidation(MethodArgumentNotValidException ex) {
@@ -195,12 +206,48 @@ public class GlobalExceptionHandler {
         return problem;
     }
 
+    @ExceptionHandler(IncidenteNaoEncontradoException.class)
+    public ProblemDetail handleIncidenteNaoEncontrado(IncidenteNaoEncontradoException ex) {
+        ProblemDetail problem = ProblemDetail.forStatus(HttpStatus.NOT_FOUND);
+        problem.setTitle("Not Found");
+        problem.setDetail(ex.getMessage());
+        problem.setProperty("codigo", ex.getCodigo());
+        return problem;
+    }
+
     @ExceptionHandler(Exception.class)
-    public ProblemDetail handleGenerico(Exception ex) {
-        LOG.error("Erro nao tratado", ex);
+    public ProblemDetail handleGenerico(Exception ex, HttpServletRequest request) {
+        String operacao = request.getMethod() + " " + request.getRequestURI();
+        String classeErro = ex.getClass().getSimpleName();
+        String mensagem = ex.getMessage() != null
+                ? ex.getMessage().substring(0, Math.min(ex.getMessage().length(), 500))
+                : "(sem mensagem)";
+        StringWriter sw = new StringWriter();
+        ex.printStackTrace(new PrintWriter(sw));
+        String stackTrace = sw.toString();
+        if (stackTrace.length() > 4000) {
+            stackTrace = stackTrace.substring(0, 4000);
+        }
+
+        String codigoErro = null;
+        try {
+            codigoErro = registrarErroUseCase.executar(
+                    new RegistrarErroUseCase.Comando(operacao, classeErro, mensagem, stackTrace));
+        } catch (Exception regEx) {
+            LOG.error("Falha ao registrar incidente", regEx);
+        }
+
+        LOG.error("Erro nao tratado [{}]: {} {}", codigoErro != null ? codigoErro : "sem-codigo",
+                operacao, ex.getMessage(), ex);
+
         ProblemDetail problem = ProblemDetail.forStatus(HttpStatus.INTERNAL_SERVER_ERROR);
         problem.setTitle("Internal Server Error");
-        problem.setDetail("Ocorreu um erro interno. Tente novamente mais tarde.");
+        if (codigoErro != null) {
+            problem.setDetail("Erro inesperado. Informe ao suporte o codigo: " + codigoErro);
+            problem.setProperty("codigoErro", codigoErro);
+        } else {
+            problem.setDetail("Ocorreu um erro interno. Tente novamente mais tarde.");
+        }
         return problem;
     }
 }
