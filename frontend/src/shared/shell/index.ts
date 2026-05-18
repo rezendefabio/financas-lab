@@ -12,7 +12,7 @@ export {
 } from './screens.registry'
 export type { MenuNode } from './menu-tree'
 export { buildMenuTree, findActiveTrail } from './menu-tree'
-export { iconMap, resolveIcon } from './icon-map'
+export { iconMap, resolveIcon, ScreenIcon } from './icon-map'
 export { useSidebarStore } from './sidebar-store'
 export { SidebarNav } from './SidebarNav'
 export { CommandPalette } from './CommandPalette'

@@ -25,7 +25,7 @@ import {
 import { cn } from '@/shared/lib/utils'
 import { getAllScreens, findScreenByPath } from './screens.registry'
 import { buildMenuTree, findActiveTrail, type MenuNode } from './menu-tree'
-import { resolveIcon } from './icon-map'
+import { ScreenIcon } from './icon-map'
 import { useSidebarStore } from './sidebar-store'
 
 interface NodeProps {
@@ -43,7 +43,6 @@ function MenuTreeNode({ node, depth, activePath, activeTrail }: NodeProps) {
   if (node.screen) {
     const screen = node.screen
     const isActive = screen.path === activePath
-    const Icon = resolveIcon(screen.icon)
 
     if (depth === 0) {
       return (
@@ -52,7 +51,7 @@ function MenuTreeNode({ node, depth, activePath, activeTrail }: NodeProps) {
             render={<Link href={screen.path} />}
             isActive={isActive}
           >
-            <Icon className="h-4 w-4" />
+            <ScreenIcon name={screen.icon} className="h-4 w-4" />
             <span>{screen.title}</span>
           </SidebarMenuButton>
         </SidebarMenuItem>
@@ -65,7 +64,7 @@ function MenuTreeNode({ node, depth, activePath, activeTrail }: NodeProps) {
           render={<Link href={screen.path} />}
           isActive={isActive}
         >
-          <Icon className="h-4 w-4" />
+          <ScreenIcon name={screen.icon} className="h-4 w-4" />
           <span>{screen.title}</span>
         </SidebarMenuSubButton>
       </SidebarMenuSubItem>

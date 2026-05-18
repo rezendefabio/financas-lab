@@ -6,6 +6,7 @@
  * instrucoes UI-1). Ao registrar uma tela com um icone novo, adicionar a
  * entrada aqui.
  */
+import { createElement } from 'react'
 import {
   Home,
   CreditCard,
@@ -48,4 +49,22 @@ export const iconMap: Record<string, LucideIcon> = {
  */
 export function resolveIcon(name: string): LucideIcon {
   return iconMap[name] ?? Folder
+}
+
+/**
+ * Renderiza o icone de uma tela a partir do nome (campo `icon` do registry).
+ *
+ * Componente declarado em escopo de modulo (nao dentro de render). Usa
+ * `createElement` em vez de instanciar um componente capitalizado local
+ * (`const Icon = ...`) para satisfazer a regra de lint
+ * `react-hooks/static-components`, que proibe criar componentes durante o render.
+ */
+export function ScreenIcon({
+  name,
+  className,
+}: {
+  name: string
+  className?: string
+}) {
+  return createElement(resolveIcon(name), { className })
 }

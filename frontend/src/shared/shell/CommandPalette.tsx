@@ -21,7 +21,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Command } from 'cmdk'
 import { Dialog, DialogContent } from '@/shared/components/ui/dialog'
-import { resolveIcon } from './icon-map'
+import { ScreenIcon } from './icon-map'
 import { getAllScreens } from './screens.registry'
 
 export function CommandPalette() {
@@ -72,28 +72,25 @@ export function CommandPalette() {
             <Command.Empty className="py-6 text-center text-sm text-muted-foreground">
               Nenhuma tela encontrada.
             </Command.Empty>
-            {screens.map((screen) => {
-              const Icon = resolveIcon(screen.icon)
-              return (
-                <Command.Item
-                  key={screen.code}
-                  value={`${screen.code} ${screen.title} ${screen.menuPath.join(' ')}`}
-                  onSelect={() => handleSelect(screen.path)}
-                  className="flex cursor-pointer items-center gap-3 rounded-md px-3 py-2 text-sm data-[selected=true]:bg-accent data-[selected=true]:text-accent-foreground"
-                >
-                  <Icon className="h-4 w-4 shrink-0" />
-                  <div className="flex min-w-0 flex-col">
-                    <span className="truncate">{screen.title}</span>
-                    <span className="truncate text-xs text-muted-foreground">
-                      {screen.menuPath.join(' / ')}
-                    </span>
-                  </div>
-                  <span className="ml-auto shrink-0 font-mono text-xs text-muted-foreground">
-                    {screen.code}
+            {screens.map((screen) => (
+              <Command.Item
+                key={screen.code}
+                value={`${screen.code} ${screen.title} ${screen.menuPath.join(' ')}`}
+                onSelect={() => handleSelect(screen.path)}
+                className="flex cursor-pointer items-center gap-3 rounded-md px-3 py-2 text-sm data-[selected=true]:bg-accent data-[selected=true]:text-accent-foreground"
+              >
+                <ScreenIcon name={screen.icon} className="h-4 w-4 shrink-0" />
+                <div className="flex min-w-0 flex-col">
+                  <span className="truncate">{screen.title}</span>
+                  <span className="truncate text-xs text-muted-foreground">
+                    {screen.menuPath.join(' / ')}
                   </span>
-                </Command.Item>
-              )
-            })}
+                </div>
+                <span className="ml-auto shrink-0 font-mono text-xs text-muted-foreground">
+                  {screen.code}
+                </span>
+              </Command.Item>
+            ))}
           </Command.List>
         </Command>
       </DialogContent>
