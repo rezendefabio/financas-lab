@@ -77,7 +77,7 @@ function EvolucaoSaldoChart({ data }: EvolucaoSaldoChartProps) {
           <p className="text-sm text-muted-foreground">Nenhum dado no periodo</p>
         ) : (
           <div className="h-72 w-full">
-            <ResponsiveContainer width="100%" height="100%">
+            <ResponsiveContainer width="100%" height="100%" minWidth={0}>
               <BarChart
                 data={dadosGrafico}
                 margin={{ top: 8, right: 16, bottom: 8, left: 8 }}
