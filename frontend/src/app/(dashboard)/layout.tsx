@@ -12,7 +12,7 @@ import {
 } from '@/shared/components/ui/sidebar'
 import { LogOut } from 'lucide-react'
 import { Button } from '@/shared/components/ui/button'
-import { SidebarNav } from '@/shared/shell/SidebarNav'
+import { SidebarNav, CommandPalette } from '@/shared/shell'
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter()
@@ -49,6 +49,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           {children}
         </main>
       </SidebarInset>
+      <CommandPalette />
     </SidebarProvider>
   )
 }
