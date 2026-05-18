@@ -104,6 +104,24 @@ Cada task deve entregar uma feature COMPLETA, do banco ate a tela:
 - Interface: controller REST com testes MockMvc
 - **Frontend: pagina(s) Next.js com testes Vitest** (quando a feature tem UI)
 
+**Quando usar `/feature-front` no prompt do executor:**
+Para features cujo frontend e CRUD padrao (listagem + formulario de criacao + detalhe),
+inclua no prompt do executor o seguinte passo ANTES de descrever os arquivos:
+
+  Execute `/feature-front <dominio>` (leia `.claude/skills/feature-front/SKILL.md` e
+  execute manualmente) para gerar o scaffold inicial dos 6 arquivos frontend.
+  Depois preencha os `// TODO` com os campos e logica especificos abaixo.
+
+Indicadores de CRUD padrao (use /feature-front):
+- Feature tem listagem + botao "Novo" + formulario simples + detalhe
+- Exemplo: conta, categoria, transacao, orcamento, meta
+
+Indicadores de frontend customizado (descreva os arquivos explicitamente):
+- Formulario com upload de arquivo, filtros complexos, graficos, detalhe expansivel
+- Componentes compartilhados (nao em features/<dominio>/)
+- Feature sem pagina de criacao padrao (ex: so listagem com acoes inline)
+- Exemplo: importacao, relatorios, incidentes, anexo
+
 **Regra absoluta:** se o objetivo menciona "tela", "pagina", "frontend", "dashboard",
 "formulario" ou qualquer coisa visivel ao usuario, a task DEVE incluir o frontend.
 Nao e permitido criar uma task que so entrega backend quando a feature tem UI.
