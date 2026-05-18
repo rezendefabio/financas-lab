@@ -11,3 +11,21 @@ export const clearToken = (): void =>
 
 export const isAuthenticated = (): boolean =>
   !!getToken()
+
+/** Decodifica o payload do JWT sem verificar assinatura. */
+export function parseJwtPayload(token: string): Record<string, unknown> {
+  try {
+    const part = token.split('.')[1]
+    return JSON.parse(atob(part.replace(/-/g, '+').replace(/_/g, '/')))
+  } catch {
+    return {}
+  }
+}
+
+/** Retorna o email do usuario logado lendo o claim `sub` do JWT, ou null. */
+export function getCurrentUserEmail(): string | null {
+  const token = getToken()
+  if (!token) return null
+  const payload = parseJwtPayload(token)
+  return typeof payload.sub === 'string' ? payload.sub : null
+}
