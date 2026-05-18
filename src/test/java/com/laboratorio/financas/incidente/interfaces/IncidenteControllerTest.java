@@ -104,4 +104,72 @@ class IncidenteControllerTest extends AbstractAuthenticatedIntegrationTest {
                     .andExpect(status().isUnauthorized());
         }
     }
+
+    @Nested
+    @DisplayName("GET /api/incidentes")
+    class Listar {
+
+        private static final String REQUEST_RUNTIME_JSON = """
+                {
+                  "operacao": "POST /api/transacoes",
+                  "classeErro": "RuntimeException",
+                  "mensagem": "valor invalido",
+                  "stackTrace": "at Service (Service.java:10)"
+                }
+                """;
+
+        private void registrar(String json) throws Exception {
+            mockMvc.perform(post("/api/incidentes")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(json))
+                    .andExpect(status().isCreated());
+        }
+
+        @Test
+        @DisplayName("retorna 200 com a lista completa quando sem filtros")
+        void listarSemFiltrosRetornaLista() throws Exception {
+            registrar(REQUEST_JSON);
+            registrar(REQUEST_RUNTIME_JSON);
+
+            mockMvc.perform(comAuth(get("/api/incidentes")))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$").isArray())
+                    .andExpect(jsonPath("$.length()").value(2));
+        }
+
+        @Test
+        @DisplayName("retorna apenas incidentes que casam com o filtro classeErro")
+        void listarComFiltroClasseErroRetornaFiltrado() throws Exception {
+            registrar(REQUEST_JSON);
+            registrar(REQUEST_RUNTIME_JSON);
+
+            mockMvc.perform(comAuth(get("/api/incidentes").param("classeErro", "RuntimeException")))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.length()").value(1))
+                    .andExpect(jsonPath("$[0].classeErro").value("RuntimeException"));
+        }
+
+        @Test
+        @DisplayName("retorna incidentes criados a partir da data informada")
+        void listarComFiltroDataRetornaFiltrado() throws Exception {
+            registrar(REQUEST_JSON);
+
+            mockMvc.perform(comAuth(get("/api/incidentes")
+                            .param("criadoApartirDe", "2000-01-01T00:00:00Z")))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.length()").value(1));
+
+            mockMvc.perform(comAuth(get("/api/incidentes")
+                            .param("criadoApartirDe", "2999-01-01T00:00:00Z")))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.length()").value(0));
+        }
+
+        @Test
+        @DisplayName("retorna 401 quando consultado sem autenticacao")
+        void listarDeveRetornar401SemAuth() throws Exception {
+            mockMvc.perform(get("/api/incidentes"))
+                    .andExpect(status().isUnauthorized());
+        }
+    }
 }

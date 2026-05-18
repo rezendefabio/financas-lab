@@ -3,7 +3,11 @@ package com.laboratorio.financas.incidente.infrastructure.persistence;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.laboratorio.financas.incidente.domain.ErroRegistrado;
+import com.laboratorio.financas.incidente.domain.FiltrosIncidente;
 import com.laboratorio.financas.shared.AbstractIntegrationTest;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -92,5 +96,69 @@ class ErroRegistradoRepositoryImplTest extends AbstractIntegrationTest {
         // Then
         assertThat(recuperado).isPresent();
         assertThat(recuperado.get().getMensagem()).isEqualTo("(sem mensagem)");
+    }
+
+    @Test
+    void listarComFiltrosSemFiltrosRetornaTodos() {
+        // Given
+        repository.salvar(new ErroRegistrado("POST /api/transacoes", "NullPointerException", "m", "s"));
+        repository.salvar(new ErroRegistrado("GET /api/contas", "RuntimeException", "m", "s"));
+
+        // When
+        List<ErroRegistrado> resultado = repository.listarComFiltros(
+                new FiltrosIncidente(null, null, null, null));
+
+        // Then
+        assertThat(resultado).hasSize(2);
+    }
+
+    @Test
+    void listarComFiltrosFiltraPorClasseErroContainsCaseInsensitive() {
+        // Given
+        repository.salvar(new ErroRegistrado("op", "NullPointerException", "m", "s"));
+        repository.salvar(new ErroRegistrado("op", "RuntimeException", "m", "s"));
+
+        // When — fragmento parcial em caixa diferente
+        List<ErroRegistrado> resultado = repository.listarComFiltros(
+                new FiltrosIncidente(null, null, "nullpointer", null));
+
+        // Then
+        assertThat(resultado).hasSize(1);
+        assertThat(resultado.get(0).getClasseErro()).isEqualTo("NullPointerException");
+    }
+
+    @Test
+    void listarComFiltrosFiltraPorOperacaoContains() {
+        // Given
+        repository.salvar(new ErroRegistrado("POST /api/transacoes", "Classe", "m", "s"));
+        repository.salvar(new ErroRegistrado("GET /api/contas", "Classe", "m", "s"));
+
+        // When
+        List<ErroRegistrado> resultado = repository.listarComFiltros(
+                new FiltrosIncidente(null, null, null, "transacoes"));
+
+        // Then
+        assertThat(resultado).hasSize(1);
+        assertThat(resultado.get(0).getOperacao()).isEqualTo("POST /api/transacoes");
+    }
+
+    @Test
+    void listarComFiltrosFiltraPorPeriodo() {
+        // Given
+        repository.salvar(new ErroRegistrado("op", "Classe", "m", "s"));
+        Instant futuro = Instant.now().plus(1, ChronoUnit.DAYS);
+        Instant passado = Instant.now().minus(1, ChronoUnit.DAYS);
+
+        // When / Then — criadoApartirDe no passado inclui o registro
+        assertThat(repository.listarComFiltros(
+                new FiltrosIncidente(passado, null, null, null))).hasSize(1);
+
+        // criadoApartirDe no futuro exclui o registro
+        assertThat(repository.listarComFiltros(
+                new FiltrosIncidente(futuro, null, null, null))).isEmpty();
+
+        // criadoAte no passado exclui o registro
+        assertThat(repository.listarComFiltros(
+                new FiltrosIncidente(null, passado, null, null))).isEmpty();
     }
 }
