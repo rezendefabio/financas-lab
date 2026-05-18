@@ -1,5 +1,6 @@
 'use client'
 import { useState } from 'react'
+import dynamic from 'next/dynamic'
 import { useQuery } from '@tanstack/react-query'
 import { contasService } from '@/features/contas/services/contas.service'
 import { getFluxoCaixa } from '@/features/dashboard'
@@ -25,6 +26,14 @@ import {
   SelectValue,
 } from '@/shared/components/ui/select'
 import { Skeleton } from '@/shared/components/ui/skeleton'
+
+const RelatorioGastosPorCategoriaDownload = dynamic(
+  () =>
+    import('@/features/relatorios/components/RelatorioGastosPorCategoria').then(
+      (m) => m.RelatorioGastosPorCategoria,
+    ),
+  { ssr: false, loading: () => <span>Carregando PDF...</span> },
+)
 
 const TODAS_CONTAS = '__todas__'
 
@@ -132,6 +141,14 @@ export default function RelatoriosPage() {
           <p className="text-sm text-destructive">Erro ao carregar gastos por categoria.</p>
         )}
         {gastos.data && <GastosPorCategoriaChart data={gastos.data} />}
+        {gastos.data && (
+          <div className="flex justify-end mt-2">
+            <RelatorioGastosPorCategoriaDownload
+              data={gastos.data}
+              periodo={`${dataInicio} a ${dataFim}`}
+            />
+          </div>
+        )}
       </section>
 
       <section className="space-y-2">
