@@ -13,7 +13,7 @@ import {
   SidebarFooter,
   SidebarInset,
 } from '@/shared/components/ui/sidebar'
-import { Home, CreditCard, ArrowLeftRight, Tag, Tags, BarChart3, LogOut, Wallet, Target, Repeat, Users, StickyNote, Upload } from 'lucide-react'
+import { Home, CreditCard, ArrowLeftRight, Tag, Tags, BarChart3, LogOut, Wallet, Target, Repeat, Users, StickyNote, Upload, AlertTriangle } from 'lucide-react'
 import Link from 'next/link'
 import { Button } from '@/shared/components/ui/button'
 
@@ -29,6 +29,7 @@ const navItems = [
   { href: '/lancamentos-recorrentes', label: 'Recorrentes', icon: Repeat },
   { href: '/payees', label: 'Beneficiarios', icon: Users },
   { href: '/anotacoes', label: 'Anotacoes', icon: StickyNote },
+  { href: '/incidentes/buscar', label: 'Incidentes', icon: AlertTriangle },
   { href: '/relatorios', label: 'Relatorios', icon: BarChart3 },
 ]
 
