@@ -38,13 +38,18 @@ describe('auth utils', () => {
   })
 })
 
+/** Monta um JWT de teste (header e assinatura fake) a partir de um payload. */
+function createMockJWT(payload: Record<string, unknown>): string {
+  const encoded = btoa(JSON.stringify(payload))
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=+$/, '')
+  return `header.${encoded}.sig`
+}
+
 describe('parseJwtPayload', () => {
   it('extrai sub do payload JWT', () => {
-    const payload = btoa(JSON.stringify({ sub: 'fabio@test.com' }))
-      .replace(/\+/g, '-')
-      .replace(/\//g, '_')
-      .replace(/=+$/, '')
-    const token = `header.${payload}.sig`
+    const token = createMockJWT({ sub: 'fabio@test.com' })
     expect(parseJwtPayload(token)).toEqual({ sub: 'fabio@test.com' })
   })
 
@@ -59,11 +64,7 @@ describe('getCurrentUserEmail', () => {
   })
 
   it('retorna email do token no localStorage', () => {
-    const payload = btoa(JSON.stringify({ sub: 'fabio@test.com' }))
-      .replace(/\+/g, '-')
-      .replace(/\//g, '_')
-      .replace(/=+$/, '')
-    setToken(`h.${payload}.s`)
+    setToken(createMockJWT({ sub: 'fabio@test.com' }))
     expect(getCurrentUserEmail()).toBe('fabio@test.com')
     clearToken()
   })
