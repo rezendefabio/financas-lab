@@ -61,8 +61,8 @@ describe('apiFetch', () => {
     vi.unstubAllGlobals()
   })
 
-  it('on 401: clears token and redirects to /login', async () => {
-    vi.spyOn(authModule, 'clearToken')
+  it('on 401: clears session and redirects to /login', async () => {
+    vi.spyOn(authModule, 'clearSession').mockResolvedValue()
     vi.mocked(authModule.getToken).mockReturnValue('expired-token')
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
       ok: false,
@@ -75,7 +75,7 @@ describe('apiFetch', () => {
     Object.defineProperty(window, 'location', { value: location, writable: true })
 
     await expect(apiFetch('/protected')).rejects.toBeInstanceOf(ApiError)
-    expect(authModule.clearToken).toHaveBeenCalledOnce()
+    expect(authModule.clearSession).toHaveBeenCalledOnce()
     expect(location.href).toBe('/login')
 
     vi.unstubAllGlobals()
@@ -154,8 +154,8 @@ describe('apiFetchBlob', () => {
     vi.unstubAllGlobals()
   })
 
-  it('on 401: clears token and redirects to /login', async () => {
-    vi.spyOn(authModule, 'clearToken')
+  it('on 401: clears session and redirects to /login', async () => {
+    vi.spyOn(authModule, 'clearSession').mockResolvedValue()
     vi.mocked(authModule.getToken).mockReturnValue('expired-token')
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
       ok: false,
@@ -167,7 +167,7 @@ describe('apiFetchBlob', () => {
     Object.defineProperty(window, 'location', { value: location, writable: true })
 
     await expect(apiFetchBlob('/api/modelo')).rejects.toBeInstanceOf(ApiError)
-    expect(authModule.clearToken).toHaveBeenCalledOnce()
+    expect(authModule.clearSession).toHaveBeenCalledOnce()
     expect(location.href).toBe('/login')
 
     vi.unstubAllGlobals()
