@@ -1,30 +1,29 @@
 'use client'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
 import { History } from 'lucide-react'
 import { contasService } from '@/features/contas/services/contas.service'
-import { AuditLogDrawer } from '@/features/auditlog'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card'
 import { Badge } from '@/shared/components/ui/badge'
 import { cn } from '@/shared/lib/utils'
 import { Button } from '@/shared/components/ui/button'
 import { Skeleton } from '@/shared/components/ui/skeleton'
-import { formatBRL, formatTipoConta } from '@/shared/lib/formatters'
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/shared/components/ui/select'
+  FilterBar,
+  type ActiveFilter,
+  type FilterFieldDef,
+} from '@/shared/components/FilterBar'
+import { ActionsPanel } from '@/shared/components/ActionsPanel'
+import { exportToCsv } from '@/shared/lib/export-csv'
+import { formatBRL, formatTipoConta } from '@/shared/lib/formatters'
 import type { Conta } from '@/features/contas/types/conta'
 
-const FILTRO_ATIVA_OPTIONS = [
-  { value: 'todas', label: 'Todas' },
-  { value: 'true', label: 'Ativas' },
-  { value: 'false', label: 'Inativas' },
-] as const
+const SCREEN_CODE = 'FIN-CTA-001'
+
+const FILTER_FIELDS: FilterFieldDef[] = [
+  { name: 'ativa', label: 'Status', type: 'boolean' },
+]
 
 function ContaCard({
   conta,
@@ -78,10 +77,7 @@ function ContaCard({
 export default function ContasPage() {
   const router = useRouter()
   const [filtroAtiva, setFiltroAtiva] = useState<boolean | undefined>(undefined)
-  const [auditDrawer, setAuditDrawer] = useState<{ open: boolean; entityId: string | null }>({
-    open: false,
-    entityId: null,
-  })
+  const [selecionada, setSelecionada] = useState<Conta | null>(null)
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ['contas', filtroAtiva],
@@ -93,31 +89,67 @@ export default function ContasPage() {
     queryFn: contasService.saldoTotal,
   })
 
+  const contas = useMemo(() => data ?? [], [data])
+
+  const activeFilters: ActiveFilter[] =
+    filtroAtiva === undefined
+      ? []
+      : [
+          {
+            field: 'ativa',
+            label: 'Status',
+            value: String(filtroAtiva),
+            displayValue: filtroAtiva ? 'Sim' : 'Nao',
+          },
+        ]
+
+  const handleAddFilter = (filter: ActiveFilter) => {
+    if (filter.field === 'ativa') {
+      setFiltroAtiva(filter.value === 'true')
+    }
+  }
+
+  const handleExport = () => {
+    exportToCsv(
+      'contas',
+      contas.map((c) => ({
+        nome: c.nome,
+        tipo: formatTipoConta(c.tipo),
+        saldoAtual: c.saldoAtualValor ?? c.saldoInicialValor,
+        ativa: c.ativa ? 'Sim' : 'Nao',
+      })),
+      [
+        { key: 'nome', label: 'Nome' },
+        { key: 'tipo', label: 'Tipo' },
+        { key: 'saldoAtual', label: 'Saldo atual' },
+        { key: 'ativa', label: 'Ativa' },
+      ],
+    )
+  }
+
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-3">
         <h1 className="text-2xl font-semibold tracking-tight">Contas</h1>
-        <div className="flex items-center gap-3">
-          <Select
-            value={filtroAtiva === undefined ? 'todas' : String(filtroAtiva)}
-            onValueChange={(v) => setFiltroAtiva(v === 'todas' ? undefined : v === 'true')}
-          >
-            <SelectTrigger className="w-36">
-              <SelectValue>
-                {(v: string | null) =>
-                  FILTRO_ATIVA_OPTIONS.find(o => o.value === (v ?? 'todas'))?.label ?? 'Todas'
-                }
-              </SelectValue>
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="todas">Todas</SelectItem>
-              <SelectItem value="true">Ativas</SelectItem>
-              <SelectItem value="false">Inativas</SelectItem>
-            </SelectContent>
-          </Select>
+        <div className="flex items-center gap-2">
+          <ActionsPanel
+            entityType="conta"
+            entityId={selecionada?.id ?? null}
+            entityLabel={selecionada?.nome}
+            screenCode={SCREEN_CODE}
+            onExportCsv={contas.length > 0 ? handleExport : undefined}
+          />
           <Button onClick={() => router.push('/contas/novo')}>Nova Conta</Button>
         </div>
       </div>
+
+      <FilterBar
+        fields={FILTER_FIELDS}
+        activeFilters={activeFilters}
+        onAdd={handleAddFilter}
+        onRemove={() => setFiltroAtiva(undefined)}
+        onClear={() => setFiltroAtiva(undefined)}
+      />
 
       {saldoTotal && (
         <Card className="bg-primary/5 border-primary/20">
@@ -165,18 +197,11 @@ export default function ContasPage() {
               key={conta.id}
               conta={conta}
               onClick={() => router.push(`/contas/${conta.id}`)}
-              onHistory={() => setAuditDrawer({ open: true, entityId: conta.id })}
+              onHistory={() => setSelecionada(conta)}
             />
           ))}
         </div>
       )}
-
-      <AuditLogDrawer
-        open={auditDrawer.open}
-        onOpenChange={(open) => setAuditDrawer((prev) => ({ ...prev, open }))}
-        entityType="conta"
-        entityId={auditDrawer.entityId}
-      />
     </div>
   )
 }
