@@ -15,6 +15,7 @@ import com.laboratorio.financas.shared.AbstractIntegrationTest;
 import com.laboratorio.financas.shared.domain.Money;
 import com.laboratorio.financas.shared.infrastructure.persistence.MoneyEmbeddable;
 import com.laboratorio.financas.transacao.domain.FiltrosTransacao;
+import com.laboratorio.financas.transacao.domain.OrdenacaoTransacao;
 import com.laboratorio.financas.transacao.domain.StatusTransacao;
 import com.laboratorio.financas.transacao.domain.Transacao;
 import com.laboratorio.financas.transacao.domain.TipoTransacao;
@@ -29,6 +30,7 @@ import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -635,5 +637,89 @@ class TransacaoRepositoryImplTest extends AbstractIntegrationTest {
 
         // Then
         assertThat(resultado.getTotalElements()).isEqualTo(1);
+    }
+
+    // --- listarComFiltrosOrdenado ---
+
+    @Test
+    void listarComFiltrosOrdenadoPorValorAscTraduzPathDoEmbeddable() {
+        // Given -- VALOR e um @Embedded MoneyEmbeddable; a infra deve traduzir
+        // OrdenacaoTransacao.VALOR para o path JPA valor.valor.
+        UUID contaId = criarContaPersistida();
+        repository.salvar(new Transacao(TipoTransacao.RECEITA, new Money(new BigDecimal("900.00"), BRL),
+                HOJE, "Maior", contaId, null, null, StatusTransacao.CLEARED, null, List.of()));
+        repository.salvar(new Transacao(TipoTransacao.RECEITA, new Money(new BigDecimal("10.00"), BRL),
+                HOJE, "Menor", contaId, null, null, StatusTransacao.CLEARED, null, List.of()));
+
+        FiltrosTransacao filtros = new FiltrosTransacao(null, null, null, null, null);
+
+        // When
+        Page<Transacao> resultado = repository.listarComFiltrosOrdenado(
+                filtros, 0, 10, OrdenacaoTransacao.VALOR, Sort.Direction.ASC);
+
+        // Then
+        assertThat(resultado.getContent()).hasSize(2);
+        assertThat(resultado.getContent().get(0).getDescricao()).isEqualTo("Menor");
+        assertThat(resultado.getContent().get(1).getDescricao()).isEqualTo("Maior");
+    }
+
+    @Test
+    void listarComFiltrosOrdenadoPorValorDescTraduzPathDoEmbeddable() {
+        // Given
+        UUID contaId = criarContaPersistida();
+        repository.salvar(new Transacao(TipoTransacao.RECEITA, new Money(new BigDecimal("900.00"), BRL),
+                HOJE, "Maior", contaId, null, null, StatusTransacao.CLEARED, null, List.of()));
+        repository.salvar(new Transacao(TipoTransacao.RECEITA, new Money(new BigDecimal("10.00"), BRL),
+                HOJE, "Menor", contaId, null, null, StatusTransacao.CLEARED, null, List.of()));
+
+        FiltrosTransacao filtros = new FiltrosTransacao(null, null, null, null, null);
+
+        // When
+        Page<Transacao> resultado = repository.listarComFiltrosOrdenado(
+                filtros, 0, 10, OrdenacaoTransacao.VALOR, Sort.Direction.DESC);
+
+        // Then
+        assertThat(resultado.getContent().get(0).getDescricao()).isEqualTo("Maior");
+        assertThat(resultado.getContent().get(1).getDescricao()).isEqualTo("Menor");
+    }
+
+    @Test
+    void listarComFiltrosOrdenadoPorDescricaoAsc() {
+        // Given
+        UUID contaId = criarContaPersistida();
+        repository.salvar(new Transacao(TipoTransacao.RECEITA, VALOR_100,
+                HOJE, "Beta", contaId, null, null, StatusTransacao.CLEARED, null, List.of()));
+        repository.salvar(new Transacao(TipoTransacao.RECEITA, VALOR_100,
+                HOJE, "Alfa", contaId, null, null, StatusTransacao.CLEARED, null, List.of()));
+
+        FiltrosTransacao filtros = new FiltrosTransacao(null, null, null, null, null);
+
+        // When
+        Page<Transacao> resultado = repository.listarComFiltrosOrdenado(
+                filtros, 0, 10, OrdenacaoTransacao.DESCRICAO, Sort.Direction.ASC);
+
+        // Then
+        assertThat(resultado.getContent().get(0).getDescricao()).isEqualTo("Alfa");
+        assertThat(resultado.getContent().get(1).getDescricao()).isEqualTo("Beta");
+    }
+
+    @Test
+    void listarComFiltrosOrdenadoRespeitaPaginacao() {
+        // Given
+        UUID contaId = criarContaPersistida();
+        for (int i = 1; i <= 5; i++) {
+            repository.salvar(new Transacao(TipoTransacao.RECEITA, VALOR_100, HOJE, "T" + i, contaId,
+                    null, null, StatusTransacao.CLEARED, null, List.of()));
+        }
+        FiltrosTransacao filtros = new FiltrosTransacao(null, null, null, null, null);
+
+        // When
+        Page<Transacao> pagina0 = repository.listarComFiltrosOrdenado(
+                filtros, 0, 2, OrdenacaoTransacao.DATA, Sort.Direction.DESC);
+
+        // Then
+        assertThat(pagina0.getTotalElements()).isEqualTo(5);
+        assertThat(pagina0.getContent()).hasSize(2);
+        assertThat(pagina0.getTotalPages()).isEqualTo(3);
     }
 }

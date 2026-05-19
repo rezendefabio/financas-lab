@@ -11,6 +11,7 @@ import com.laboratorio.financas.transacao.application.DeletarTransacaoUseCase;
 import com.laboratorio.financas.transacao.application.EditarTransacaoUseCase;
 import com.laboratorio.financas.transacao.application.ListarTransacoesUseCase;
 import com.laboratorio.financas.transacao.domain.FiltrosTransacao;
+import com.laboratorio.financas.transacao.domain.OrdenacaoTransacao;
 import com.laboratorio.financas.transacao.domain.StatusTransacao;
 import com.laboratorio.financas.transacao.domain.TipoTransacao;
 import com.laboratorio.financas.transacao.domain.Transacao;
@@ -23,13 +24,10 @@ import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import java.time.LocalDate;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
@@ -58,20 +56,7 @@ public class TransacaoController {
     private static final Logger LOG = LoggerFactory.getLogger(TransacaoController.class);
     private static final String ENTITY_TYPE = "transacao";
 
-    /**
-     * Whitelist de campos ordenaveis. Chave = nome aceito na query string;
-     * valor = caminho da propriedade na entidade JPA. `valor` e um @Embedded
-     * MoneyEmbeddable, entao a ordenacao usa o caminho `valor.valor`.
-     */
-    private static final Map<String, String> CAMPOS_ORDENAVEIS = Map.of(
-            "data", "data",
-            "valor", "valor.valor",
-            "descricao", "descricao",
-            "tipo", "tipo",
-            "status", "status"
-    );
-
-    private static final Sort SORT_PADRAO = Sort.by(Sort.Direction.DESC, "data");
+    private static final Sort.Direction DIRECAO_PADRAO = Sort.Direction.DESC;
 
     private final CriarTransacaoUseCase criarTransacaoUseCase;
     private final ListarTransacoesUseCase listarTransacoesUseCase;
@@ -133,30 +118,32 @@ public class TransacaoController {
         UUID userId = resolverUserId();
         FiltrosTransacao filtros =
                 new FiltrosTransacao(contaId, dataInicio, dataFim, tipo, categoriaId, userId, status);
-        Pageable pageable = PageRequest.of(page, size, parseSort(sort));
-        Page<Transacao> resultado = listarTransacoesUseCase.executar(filtros, pageable);
+        CriterioOrdenacao criterio = parseSort(sort);
+        Page<Transacao> resultado = listarTransacoesUseCase.executar(
+                filtros, page, size, criterio.ordenacao(), criterio.direcao());
         return resultado.map(TransacaoResponse::fromDomain);
     }
 
     /**
-     * Converte o parametro {@code sort} no formato {@code campo:direcao} em um
-     * {@link Sort}. Campo ausente/vazio cai no default ({@code data:desc}).
-     * Campo fora da whitelist ou direcao invalida lancam
-     * {@link IllegalArgumentException} -> HTTP 400 (via GlobalExceptionHandler).
+     * Campo de dominio e direcao de ordenacao resolvidos a partir do parametro
+     * {@code sort}. Nao carrega nenhum detalhe de persistencia.
      */
-    private Sort parseSort(String sort) {
+    private record CriterioOrdenacao(OrdenacaoTransacao ordenacao, Sort.Direction direcao) {
+    }
+
+    /**
+     * Converte o parametro {@code sort} no formato {@code campo:direcao} em um
+     * {@link CriterioOrdenacao}. Campo ausente/vazio cai no default
+     * ({@code data:desc}). Campo fora dos valores de dominio ou direcao invalida
+     * lancam {@link IllegalArgumentException} -> HTTP 400 (via GlobalExceptionHandler).
+     */
+    private CriterioOrdenacao parseSort(String sort) {
         if (sort == null || sort.isBlank()) {
-            return SORT_PADRAO;
+            return new CriterioOrdenacao(OrdenacaoTransacao.PADRAO, DIRECAO_PADRAO);
         }
         String[] partes = sort.split(":", 2);
-        String campo = partes[0].trim();
-        String propriedade = CAMPOS_ORDENAVEIS.get(campo);
-        if (propriedade == null) {
-            throw new IllegalArgumentException(
-                    "Campo de ordenacao invalido: '" + campo
-                            + "'. Campos permitidos: " + CAMPOS_ORDENAVEIS.keySet());
-        }
-        Sort.Direction direcao = Sort.Direction.DESC;
+        OrdenacaoTransacao ordenacao = OrdenacaoTransacao.fromString(partes[0]);
+        Sort.Direction direcao = DIRECAO_PADRAO;
         if (partes.length == 2 && !partes[1].isBlank()) {
             String dir = partes[1].trim().toLowerCase();
             if (dir.equals("asc")) {
@@ -169,7 +156,7 @@ public class TransacaoController {
                                 + "'. Use 'asc' ou 'desc'.");
             }
         }
-        return Sort.by(direcao, propriedade);
+        return new CriterioOrdenacao(ordenacao, direcao);
     }
 
     @GetMapping("/{id}")
