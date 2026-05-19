@@ -19,7 +19,11 @@ import type { MenuNode } from './menu-tree'
 interface SidebarState {
   /** Chaves de grupo atualmente colapsadas (fechadas). */
   collapsed: string[]
-  /** Alterna o estado aberto/fechado de um grupo. */
+  /**
+   * Alterna o estado aberto/fechado de um grupo (comportamento accordion).
+   * Ao abrir um grupo, os IRMAOS do mesmo nivel (mesmo pai) sao fechados.
+   * Descendentes do grupo recem-aberto permanecem inalterados.
+   */
   toggleGroup: (groupKey: string) => void
   /** Indica se um grupo esta colapsado (fechado). */
   isCollapsed: (groupKey: string) => boolean
@@ -49,10 +53,30 @@ export const useSidebarStore = create<SidebarState>()(
       toggleGroup: (groupKey) =>
         set((state) => {
           const isClosed = state.collapsed.includes(groupKey)
+
+          if (!isClosed) {
+            // Fechando o grupo: apenas adiciona ao collapsed.
+            return { collapsed: [...state.collapsed, groupKey] }
+          }
+
+          // Abrindo o grupo: fecha os irmaos do mesmo nivel.
+          const parentKey = groupKey.includes('/')
+            ? groupKey.substring(0, groupKey.lastIndexOf('/'))
+            : ''
+
+          // Irmaos: mesmo pai, chave diferente.
+          const siblings = initialCollapsed.filter((key) => {
+            const keyParent = key.includes('/')
+              ? key.substring(0, key.lastIndexOf('/'))
+              : ''
+            return keyParent === parentKey && key !== groupKey
+          })
+
           return {
-            collapsed: isClosed
-              ? state.collapsed.filter((key) => key !== groupKey)
-              : [...state.collapsed, groupKey],
+            collapsed: [
+              ...state.collapsed.filter((key) => key !== groupKey), // remove o atual (abre)
+              ...siblings.filter((sib) => !state.collapsed.includes(sib)), // fecha irmaos abertos
+            ],
           }
         }),
       isCollapsed: (groupKey) => get().collapsed.includes(groupKey),
