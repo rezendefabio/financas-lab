@@ -19,6 +19,8 @@ import {
 import { Input } from '@/shared/components/ui/input'
 import { Button } from '@/shared/components/ui/button'
 import { MoneyInput } from '@/shared/components/MoneyInput'
+import { FormGrid } from '@/shared/components/FormGrid'
+import { FormCol } from '@/shared/components/FormCol'
 import {
   Select,
   SelectContent,
@@ -116,80 +118,64 @@ export default function NovaConta() {
           <CardContent className="pt-6 space-y-4">
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                <FormField
-                  control={form.control}
-                  name="nome"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Nome</FormLabel>
-                      <FormControl>
-                        <Input className="w-full" placeholder="Ex: Conta corrente" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormItem>
-                  <FormLabel>Tipo</FormLabel>
-                  <Controller
-                    control={form.control}
-                    name="tipo"
-                    render={({ field }) => (
-                      <Select value={field.value} onValueChange={field.onChange}>
-                        <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Selecione o tipo">
-                            {(v: string | null) => TIPOS.find(t => t.value === v)?.label ?? 'Selecione o tipo'}
-                          </SelectValue>
-                        </SelectTrigger>
-                        <SelectContent>
-                          {TIPOS.map((t) => (
-                            <SelectItem key={t.value} value={t.value}>
-                              {t.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    )}
-                  />
-                  {form.formState.errors.tipo && (
-                    <p className="text-sm text-destructive">
-                      {form.formState.errors.tipo.message}
-                    </p>
-                  )}
-                </FormItem>
-
-                <FormField
-                  control={form.control}
-                  name="saldoInicialValor"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Saldo inicial (R$)</FormLabel>
-                      <FormControl>
-                        <MoneyInput
-                          value={field.value}
-                          onChange={field.onChange}
-                          id={field.name}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <input type="hidden" {...form.register('saldoInicialMoeda')} />
-
-                {isCartaoCredito && (
-                  <>
+                <FormGrid>
+                  <FormCol span={8}>
                     <FormField
                       control={form.control}
-                      name="limiteCreditoValor"
+                      name="nome"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Limite de credito (R$)</FormLabel>
+                          <FormLabel>Nome</FormLabel>
+                          <FormControl>
+                            <Input className="w-full" placeholder="Ex: Conta corrente" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </FormCol>
+
+                  <FormCol span={4}>
+                    <FormItem>
+                      <FormLabel>Tipo</FormLabel>
+                      <Controller
+                        control={form.control}
+                        name="tipo"
+                        render={({ field }) => (
+                          <Select value={field.value} onValueChange={field.onChange}>
+                            <SelectTrigger className="w-full">
+                              <SelectValue placeholder="Selecione o tipo">
+                                {(v: string | null) => TIPOS.find(t => t.value === v)?.label ?? 'Selecione o tipo'}
+                              </SelectValue>
+                            </SelectTrigger>
+                            <SelectContent>
+                              {TIPOS.map((t) => (
+                                <SelectItem key={t.value} value={t.value}>
+                                  {t.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        )}
+                      />
+                      {form.formState.errors.tipo && (
+                        <p className="text-sm text-destructive">
+                          {form.formState.errors.tipo.message}
+                        </p>
+                      )}
+                    </FormItem>
+                  </FormCol>
+
+                  <FormCol span={8}>
+                    <FormField
+                      control={form.control}
+                      name="saldoInicialValor"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Saldo inicial (R$)</FormLabel>
                           <FormControl>
                             <MoneyInput
-                              value={field.value ?? 0}
+                              value={field.value}
                               onChange={field.onChange}
                               id={field.name}
                             />
@@ -198,52 +184,109 @@ export default function NovaConta() {
                         </FormItem>
                       )}
                     />
+                  </FormCol>
 
-                    <FormField
-                      control={form.control}
-                      name="diaFechamento"
-                      render={({ field }) => (
+                  <FormCol span={4}>
+                    <FormItem>
+                      <FormLabel>Moeda</FormLabel>
+                      <FormControl>
+                        <Input
+                          className="w-full"
+                          value={form.watch('saldoInicialMoeda') ?? 'BRL'}
+                          readOnly
+                          aria-readonly
+                        />
+                      </FormControl>
+                    </FormItem>
+                    <input type="hidden" {...form.register('saldoInicialMoeda')} />
+                  </FormCol>
+
+                  {isCartaoCredito && (
+                    <>
+                      <FormCol span={8}>
+                        <FormField
+                          control={form.control}
+                          name="limiteCreditoValor"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Limite de credito (R$)</FormLabel>
+                              <FormControl>
+                                <MoneyInput
+                                  value={field.value ?? 0}
+                                  onChange={field.onChange}
+                                  id={field.name}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </FormCol>
+
+                      <FormCol span={4}>
                         <FormItem>
-                          <FormLabel>Dia de fechamento</FormLabel>
+                          <FormLabel>Moeda</FormLabel>
                           <FormControl>
                             <Input
-                              type="number"
-                              min={1}
-                              max={31}
                               className="w-full"
-                              placeholder="Ex: 25"
-                              {...field}
-                              value={field.value ?? ''}
+                              value="BRL"
+                              readOnly
+                              aria-readonly
                             />
                           </FormControl>
-                          <FormMessage />
                         </FormItem>
-                      )}
-                    />
+                      </FormCol>
 
-                    <FormField
-                      control={form.control}
-                      name="diaVencimento"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Dia de vencimento</FormLabel>
-                          <FormControl>
-                            <Input
-                              type="number"
-                              min={1}
-                              max={31}
-                              className="w-full"
-                              placeholder="Ex: 5"
-                              {...field}
-                              value={field.value ?? ''}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </>
-                )}
+                      <FormCol span={6}>
+                        <FormField
+                          control={form.control}
+                          name="diaFechamento"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Dia de fechamento</FormLabel>
+                              <FormControl>
+                                <Input
+                                  type="number"
+                                  min={1}
+                                  max={31}
+                                  className="w-full"
+                                  placeholder="Ex: 25"
+                                  {...field}
+                                  value={field.value ?? ''}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </FormCol>
+
+                      <FormCol span={6}>
+                        <FormField
+                          control={form.control}
+                          name="diaVencimento"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Dia de vencimento</FormLabel>
+                              <FormControl>
+                                <Input
+                                  type="number"
+                                  min={1}
+                                  max={31}
+                                  className="w-full"
+                                  placeholder="Ex: 5"
+                                  {...field}
+                                  value={field.value ?? ''}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </FormCol>
+                    </>
+                  )}
+                </FormGrid>
 
                 {apiError && (
                   <p className="text-sm text-destructive">{apiError}</p>
