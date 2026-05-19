@@ -12,6 +12,7 @@ import { Badge } from '@/shared/components/ui/badge'
 import { Button } from '@/shared/components/ui/button'
 import { Skeleton } from '@/shared/components/ui/skeleton'
 import { cn } from '@/shared/lib/utils'
+import { formatDateTime } from '@/shared/lib/formatters'
 import { useAuditLog } from '../hooks/use-audit-log'
 import type { AuditAction, AuditLogEntry } from '../types/auditlog'
 
@@ -39,17 +40,6 @@ const ACTION_COLOR: Record<AuditAction, string> = {
   CREATE: 'bg-green-100 text-green-700',
   UPDATE: 'bg-blue-100 text-blue-700',
   DELETE: 'bg-red-100 text-red-700',
-}
-
-/** Formata um instante ISO-8601 como dd/MM/yyyy HH:mm. */
-function formatDateTime(iso: string): string {
-  const d = new Date(iso)
-  if (Number.isNaN(d.getTime())) return iso
-  const pad = (n: number) => String(n).padStart(2, '0')
-  return (
-    `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()} ` +
-    `${pad(d.getHours())}:${pad(d.getMinutes())}`
-  )
 }
 
 /** Tenta prettificar um JSON; devolve o texto cru se nao for JSON valido. */
