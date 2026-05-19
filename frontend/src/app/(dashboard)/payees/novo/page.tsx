@@ -8,6 +8,8 @@ import { useRouter } from 'next/navigation'
 import { ArrowLeft } from 'lucide-react'
 import { categoriasService } from '@/features/categorias/services/categorias.service'
 import { criarPayee } from '@/features/payee/services/payee-service'
+import { FormGrid } from '@/shared/components/FormGrid'
+import { FormCol } from '@/shared/components/FormCol'
 import { Card, CardContent } from '@/shared/components/ui/card'
 import {
   Form,
@@ -84,54 +86,60 @@ export default function NovoPayeePage() {
                 onSubmit={form.handleSubmit((v) => { setApiError(null); mutation.mutate(v) })}
                 className="space-y-4"
               >
-                <FormField
-                  control={form.control}
-                  name="nome"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Nome</FormLabel>
-                      <FormControl>
-                        <Input
-                          className="w-full"
-                          placeholder="Ex: Supermercado Pao de Acucar"
-                          maxLength={100}
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                <FormGrid>
+                  <FormCol span={7}>
+                    <FormField
+                      control={form.control}
+                      name="nome"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Nome</FormLabel>
+                          <FormControl>
+                            <Input
+                              className="w-full"
+                              placeholder="Ex: Supermercado Pao de Acucar"
+                              maxLength={100}
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </FormCol>
 
-                <FormItem>
-                  <FormLabel>Categoria Padrao (opcional)</FormLabel>
-                  <Controller
-                    control={form.control}
-                    name="categoriaPadraoId"
-                    render={({ field }) => (
-                      <Select
-                        value={field.value ?? ''}
-                        onValueChange={(v) => field.onChange(v || undefined)}
-                      >
-                        <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Sem categoria padrao">
-                            {(v: string | null) => {
-                              if (!v) return 'Sem categoria padrao'
-                              return categorias?.find(c => c.id === v)?.nome ?? 'Sem categoria padrao'
-                            }}
-                          </SelectValue>
-                        </SelectTrigger>
-                        <SelectContent>
-                          {categorias?.map((c) => (
-                            <SelectItem key={c.id} value={c.id}>
-                              {c.nome}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    )}
-                  />
-                </FormItem>
+                  <FormCol span={5}>
+                    <FormItem>
+                      <FormLabel>Categoria Padrao (opcional)</FormLabel>
+                      <Controller
+                        control={form.control}
+                        name="categoriaPadraoId"
+                        render={({ field }) => (
+                          <Select
+                            value={field.value ?? ''}
+                            onValueChange={(v) => field.onChange(v || undefined)}
+                          >
+                            <SelectTrigger className="w-full">
+                              <SelectValue placeholder="Sem categoria padrao">
+                                {(v: string | null) => {
+                                  if (!v) return 'Sem categoria padrao'
+                                  return categorias?.find(c => c.id === v)?.nome ?? 'Sem categoria padrao'
+                                }}
+                              </SelectValue>
+                            </SelectTrigger>
+                            <SelectContent>
+                              {categorias?.map((c) => (
+                                <SelectItem key={c.id} value={c.id}>
+                                  {c.nome}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        )}
+                      />
+                    </FormItem>
+                  </FormCol>
+                </FormGrid>
 
                 {apiError && (
                   <p className="text-sm text-destructive">{apiError}</p>
