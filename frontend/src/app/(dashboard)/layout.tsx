@@ -44,8 +44,11 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
         <Suspense fallback={null}>
           <TabBar />
         </Suspense>
+        {/* Paginas de listagem (useListPage) tambem leem useSearchParams:
+            isolar o conteudo numa fronteira Suspense evita o CSR bailout
+            no prerender (Next.js missing-suspense-with-csr-bailout). */}
         <main className="flex-1 p-6">
-          {children}
+          <Suspense fallback={null}>{children}</Suspense>
         </main>
       </SidebarInset>
       <CommandPalette />

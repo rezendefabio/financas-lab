@@ -10,13 +10,22 @@ vi.mock('@/features/transacoes/services/transacoes.service', () => ({
 }))
 
 const mockPush = vi.fn()
+const mockReplace = vi.fn()
+let currentParams = new URLSearchParams()
 vi.mock('next/navigation', () => ({
-  useRouter: () => ({ push: mockPush }),
+  useRouter: () => ({ push: mockPush, replace: mockReplace }),
+  usePathname: () => '/transacoes',
+  useSearchParams: () => currentParams,
+}))
+
+vi.mock('@/features/auditlog', () => ({
+  AuditLogDrawer: () => null,
 }))
 
 import TransacoesPage from './page'
 import { transacoesService } from '@/features/transacoes/services/transacoes.service'
 import type { Transacao } from '@/features/transacoes/types/transacao'
+import type { PageResponse } from '@/shared/hooks/useListPage'
 
 function makeWrapper() {
   const client = new QueryClient({
@@ -46,9 +55,22 @@ const transacaoFixture = (overrides?: Partial<Transacao>): Transacao => ({
   ...overrides,
 })
 
+const pageFixture = (
+  content: Transacao[],
+  overrides?: Partial<PageResponse<Transacao>>,
+): PageResponse<Transacao> => ({
+  content,
+  totalElements: content.length,
+  totalPages: content.length > 0 ? 1 : 0,
+  number: 0,
+  size: 20,
+  ...overrides,
+})
+
 describe('TransacoesPage', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    currentParams = new URLSearchParams()
   })
 
   it('exibe skeleton de loading enquanto dados carregam', () => {
@@ -57,18 +79,17 @@ describe('TransacoesPage', () => {
     render(<TransacoesPage />, { wrapper: makeWrapper() })
 
     expect(screen.getByRole('heading', { name: /transacoes/i })).toBeTruthy()
-    const skeletons = document.querySelectorAll('[class*="skeleton"], [data-slot="skeleton"]')
+    const skeletons = document.querySelectorAll('[data-slot="skeleton"]')
     expect(skeletons.length).toBeGreaterThan(0)
   })
 
   it('exibe lista de transacoes apos carregamento', async () => {
-    vi.mocked(transacoesService.listar).mockResolvedValue({
-      content: [
-        transacaoFixture({ tipo: 'DESPESA', descricao: 'Supermercado', valor: 150.0, moeda: 'BRL' }),
-        transacaoFixture({ id: 'tx-002', tipo: 'RECEITA', descricao: 'Salario', valor: 5000.0, moeda: 'BRL', status: 'CLEARED' }),
-      ],
-      totalElements: 2,
-    })
+    vi.mocked(transacoesService.listar).mockResolvedValue(
+      pageFixture([
+        transacaoFixture({ tipo: 'DESPESA', descricao: 'Supermercado', valor: 150.0 }),
+        transacaoFixture({ id: 'tx-002', tipo: 'RECEITA', descricao: 'Salario', valor: 5000.0 }),
+      ]),
+    )
 
     render(<TransacoesPage />, { wrapper: makeWrapper() })
 
@@ -82,10 +103,9 @@ describe('TransacoesPage', () => {
   })
 
   it('exibe coluna Status com badge correto para CLEARED', async () => {
-    vi.mocked(transacoesService.listar).mockResolvedValue({
-      content: [transacaoFixture({ status: 'CLEARED' })],
-      totalElements: 1,
-    })
+    vi.mocked(transacoesService.listar).mockResolvedValue(
+      pageFixture([transacaoFixture({ status: 'CLEARED' })]),
+    )
 
     render(<TransacoesPage />, { wrapper: makeWrapper() })
 
@@ -97,10 +117,9 @@ describe('TransacoesPage', () => {
   })
 
   it('exibe coluna Status com badge correto para PENDING', async () => {
-    vi.mocked(transacoesService.listar).mockResolvedValue({
-      content: [transacaoFixture({ status: 'PENDING' })],
-      totalElements: 1,
-    })
+    vi.mocked(transacoesService.listar).mockResolvedValue(
+      pageFixture([transacaoFixture({ status: 'PENDING' })]),
+    )
 
     render(<TransacoesPage />, { wrapper: makeWrapper() })
 
@@ -112,18 +131,13 @@ describe('TransacoesPage', () => {
   })
 
   it('exibe mensagem vazia quando lista retorna zero transacoes', async () => {
-    vi.mocked(transacoesService.listar).mockResolvedValue({
-      content: [],
-      totalElements: 0,
-    })
+    vi.mocked(transacoesService.listar).mockResolvedValue(pageFixture([]))
 
     render(<TransacoesPage />, { wrapper: makeWrapper() })
 
     await waitFor(() => {
       expect(screen.getByText(/nenhuma transacao cadastrada/i)).toBeTruthy()
     })
-
-    expect(screen.getByRole('button', { name: /registrar primeira transacao/i })).toBeTruthy()
   })
 
   it('exibe mensagem de erro quando query falha', async () => {
@@ -137,7 +151,7 @@ describe('TransacoesPage', () => {
   })
 
   it('navega para /transacoes/novo ao clicar em Nova Transacao', async () => {
-    vi.mocked(transacoesService.listar).mockResolvedValue({ content: [], totalElements: 0 })
+    vi.mocked(transacoesService.listar).mockResolvedValue(pageFixture([]))
 
     render(<TransacoesPage />, { wrapper: makeWrapper() })
 
@@ -146,24 +160,24 @@ describe('TransacoesPage', () => {
     expect(mockPush).toHaveBeenCalledWith('/transacoes/novo')
   })
 
-  it('exibe aviso quando ha mais de 20 registros', async () => {
-    vi.mocked(transacoesService.listar).mockResolvedValue({
-      content: [transacaoFixture()],
-      totalElements: 25,
-    })
+  it('exibe o indicador de paginacao quando ha registros', async () => {
+    vi.mocked(transacoesService.listar).mockResolvedValue(
+      pageFixture([transacaoFixture()], { totalElements: 25, totalPages: 2 }),
+    )
 
     render(<TransacoesPage />, { wrapper: makeWrapper() })
 
     await waitFor(() => {
-      expect(screen.getByText(/exibindo 20 de 25/i)).toBeTruthy()
+      expect(screen.getByText(/pagina 1 de 2/i)).toBeTruthy()
     })
+
+    expect(screen.getByText(/25 transacao/i)).toBeTruthy()
   })
 
   it('formata valor da transacao em BRL', async () => {
-    vi.mocked(transacoesService.listar).mockResolvedValue({
-      content: [transacaoFixture({ valor: 1500.5, moeda: 'BRL' })],
-      totalElements: 1,
-    })
+    vi.mocked(transacoesService.listar).mockResolvedValue(
+      pageFixture([transacaoFixture({ valor: 1500.5 })]),
+    )
 
     render(<TransacoesPage />, { wrapper: makeWrapper() })
 
@@ -172,5 +186,15 @@ describe('TransacoesPage', () => {
     })
 
     expect(screen.getByText(/1\.500,50/)).toBeTruthy()
+  })
+
+  it('exibe a barra de filtros', async () => {
+    vi.mocked(transacoesService.listar).mockResolvedValue(pageFixture([]))
+
+    render(<TransacoesPage />, { wrapper: makeWrapper() })
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /^filtro$/i })).toBeTruthy()
+    })
   })
 })

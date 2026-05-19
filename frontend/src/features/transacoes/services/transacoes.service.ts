@@ -1,13 +1,23 @@
 import { apiFetch } from '@/services/api-client'
-import type { Transacao, CriarTransacaoRequest } from '../types/transacao'
+import type { PageResponse } from '@/shared/hooks/useListPage'
+import type {
+  Transacao,
+  CriarTransacaoRequest,
+  StatusTransacao,
+} from '../types/transacao'
 
-interface ListarTransacoesParams {
+/** Parametros de filtro e paginacao aceitos por `GET /api/transacoes`. */
+export interface ListarTransacoesParams {
   contaId?: string
   dataInicio?: string
   dataFim?: string
   tipo?: string
+  status?: StatusTransacao | string
+  categoriaId?: string
   page?: number
   size?: number
+  /** Ordenacao no formato `campo,dir` (ex: `data,desc`). */
+  sort?: string
 }
 
 export const transacoesService = {
@@ -15,11 +25,11 @@ export const transacoesService = {
     const qs = new URLSearchParams()
     if (params) {
       Object.entries(params).forEach(([k, v]) => {
-        if (v !== undefined) qs.set(k, String(v))
+        if (v !== undefined && v !== '') qs.set(k, String(v))
       })
     }
     const query = qs.toString() ? `?${qs}` : ''
-    return apiFetch<{ content: Transacao[]; totalElements: number }>(`/api/transacoes${query}`)
+    return apiFetch<PageResponse<Transacao>>(`/api/transacoes${query}`)
   },
   criar: (data: CriarTransacaoRequest) =>
     apiFetch<Transacao>('/api/transacoes', { method: 'POST', body: JSON.stringify(data) }),
