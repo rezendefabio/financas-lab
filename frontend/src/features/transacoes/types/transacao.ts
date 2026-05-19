@@ -31,3 +31,9 @@ export interface CriarTransacaoRequest {
   payeeId?: string
   tagIds?: string[]
 }
+
+/**
+ * Payload de `PUT /api/transacoes/{id}`. O backend reusa `TransacaoRequest.java`
+ * para criar e editar, entao o contrato e identico ao de criacao.
+ */
+export type EditarTransacaoRequest = CriarTransacaoRequest
