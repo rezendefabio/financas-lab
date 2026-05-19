@@ -12,7 +12,7 @@
  */
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { usePathname } from 'next/navigation'
 import {
   ChevronRight,
@@ -35,6 +35,7 @@ import {
   SidebarMenuSub,
   SidebarMenuSubItem,
   SidebarMenuSubButton,
+  useSidebar,
 } from '@/shared/components/ui/sidebar'
 import { Input } from '@/shared/components/ui/input'
 import { cn } from '@/shared/lib/utils'
@@ -89,6 +90,7 @@ function MenuTreeNode({ node, depth, activePath, activeTrail, forceOpen }: NodeP
   const collapsed = useSidebarStore((state) => state.collapsed)
   const toggleGroup = useSidebarStore((state) => state.toggleGroup)
   const openTab = useTabsStore((state) => state.openTab)
+  const { state: sidebarState, setOpen: setSidebarOpen } = useSidebar()
 
   // Folha: tela navegavel. Clicar abre uma aba (Tab Manager, UI-2);
   // a navegacao acontece via efeito reativo no layout.
@@ -132,10 +134,19 @@ function MenuTreeNode({ node, depth, activePath, activeTrail, forceOpen }: NodeP
 
   const GroupIconComp = GROUP_ICONS[node.label] ?? Folder
 
+  // Em icon mode, clicar no grupo expande a sidebar em vez de colapsar filhos.
+  const handleGroupClick = () => {
+    if (sidebarState === 'collapsed') {
+      setSidebarOpen(true)
+    } else {
+      toggleGroup(node.key)
+    }
+  }
+
   return (
     <SidebarMenuItem>
       <SidebarMenuButton
-        onClick={() => toggleGroup(node.key)}
+        onClick={handleGroupClick}
         isActive={isOnActiveTrail}
         aria-expanded={isOpen}
         aria-controls={`menu-group-${node.key}`}
@@ -177,6 +188,8 @@ export function SidebarNav() {
   const activePath = activeScreen?.path
 
   const [query, setQuery] = useState('')
+  const inputRef = useRef<HTMLInputElement>(null)
+  const { setOpen: setSidebarOpen } = useSidebar()
 
   const tree = buildMenuTree(getAllScreens())
   const activeTrail = findActiveTrail(tree, activePath)
@@ -184,12 +197,30 @@ export function SidebarNav() {
   const hasQuery = query.trim().length > 0
   const displayTree = hasQuery ? filterTree(tree, query.trim()) : tree
 
+  const handleSearchIconClick = () => {
+    setSidebarOpen(true)
+    setTimeout(() => inputRef.current?.focus(), 200)
+  }
+
   return (
     <div>
+      {/* Icone de busca: visivel apenas em icon mode */}
+      <div className="hidden group-data-[collapsible=icon]:flex justify-center py-2">
+        <button
+          type="button"
+          onClick={handleSearchIconClick}
+          aria-label="Buscar tela"
+          className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+        >
+          <Search className="h-4 w-4" />
+        </button>
+      </div>
+      {/* Campo de busca: visivel apenas em modo expandido */}
       <div className="px-3 pt-2 pb-2 group-data-[collapsible=icon]:hidden">
         <div className="relative">
           <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
+            ref={inputRef}
             placeholder="Buscar tela..."
             value={query}
             onChange={(e) => setQuery(e.target.value)}
