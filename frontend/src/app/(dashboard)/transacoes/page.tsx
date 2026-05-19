@@ -1,8 +1,10 @@
 'use client'
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { History } from 'lucide-react'
+import { useQuery } from '@tanstack/react-query'
 import { transacoesService } from '@/features/transacoes/services/transacoes.service'
+import { contasService } from '@/features/contas/services/contas.service'
 import { Card, CardContent } from '@/shared/components/ui/card'
 import { Badge } from '@/shared/components/ui/badge'
 import { Button } from '@/shared/components/ui/button'
@@ -24,7 +26,7 @@ const STATUS_TRANSACAO_CONFIG: Record<StatusTransacao, StatusConfig> = {
   CANCELLED: { label: 'Cancelada', variant: 'destructive' },
 }
 
-const FILTER_FIELDS: FilterFieldDef[] = [
+const FILTER_FIELDS_BASE: FilterFieldDef[] = [
   {
     name: 'tipo',
     label: 'Tipo',
@@ -48,12 +50,11 @@ const FILTER_FIELDS: FilterFieldDef[] = [
   },
   { name: 'dataInicio', label: 'Data inicio', type: 'date' },
   { name: 'dataFim', label: 'Data fim', type: 'date' },
-  { name: 'contaId', label: 'ID da Conta', type: 'string' },
 ]
 
 /** Reconstroi o `displayValue` de cada chip a partir das definicoes de campo. */
-function resolveDisplay(field: string, value: string): string {
-  const def = FILTER_FIELDS.find((f) => f.name === field)
+function resolveDisplay(field: string, value: string, fields: FilterFieldDef[]): string {
+  const def = fields.find((f) => f.name === field)
   if (!def) return value
   if (def.type === 'enum') {
     return def.options?.find((o) => o.value === value)?.label ?? value
@@ -67,7 +68,7 @@ function badgeVariant(tipo: string) {
   return 'secondary' as const
 }
 
-const COLUMNS: ColumnDef<Transacao>[] = [
+const COLUMNS_BASE: ColumnDef<Transacao>[] = [
   { key: 'descricao', label: 'Descricao', sortable: true, className: 'font-medium' },
   {
     key: 'tipo',
@@ -102,12 +103,43 @@ const COLUMNS: ColumnDef<Transacao>[] = [
     className: 'text-right tabular-nums',
     render: (value) => formatBRL(Number(value)),
   },
-  { key: 'contaId', label: 'Conta' },
 ]
 
 export default function TransacoesPage() {
   const router = useRouter()
   const [selecionada, setSelecionada] = useState<Transacao | null>(null)
+
+  const { data: contas } = useQuery({
+    queryKey: ['contas'],
+    queryFn: () => contasService.listar(),
+  })
+  const contasMap = useMemo(
+    () => new Map((contas ?? []).map((c) => [c.id, c.nome])),
+    [contas],
+  )
+  const filterFields = useMemo<FilterFieldDef[]>(
+    () => [
+      ...FILTER_FIELDS_BASE,
+      {
+        name: 'contaId',
+        label: 'Conta',
+        type: 'enum',
+        options: (contas ?? []).map((c) => ({ value: c.id, label: c.nome })),
+      },
+    ],
+    [contas],
+  )
+  const columns = useMemo<ColumnDef<Transacao>[]>(
+    () => [
+      ...COLUMNS_BASE,
+      {
+        key: 'contaId',
+        label: 'Conta',
+        render: (value) => contasMap.get(String(value)) ?? String(value),
+      },
+    ],
+    [contasMap],
+  )
 
   const {
     data,
@@ -133,8 +165,8 @@ export default function TransacoesPage() {
   // Reconstroi o displayValue legivel dos chips (a URL guarda so o valor cru).
   const chips = activeFilters.map((f) => ({
     ...f,
-    label: FILTER_FIELDS.find((d) => d.name === f.field)?.label ?? f.label,
-    displayValue: resolveDisplay(f.field, f.value),
+    label: filterFields.find((d) => d.name === f.field)?.label ?? f.label,
+    displayValue: resolveDisplay(f.field, f.value, filterFields),
   }))
 
   const handleExport = () => {
@@ -146,7 +178,7 @@ export default function TransacoesPage() {
         status: STATUS_TRANSACAO_CONFIG[t.status]?.label ?? t.status,
         data: t.data,
         valor: t.valor,
-        contaId: t.contaId,
+        conta: contasMap.get(t.contaId) ?? t.contaId,
       })),
       [
         { key: 'descricao', label: 'Descricao' },
@@ -154,7 +186,7 @@ export default function TransacoesPage() {
         { key: 'status', label: 'Status' },
         { key: 'data', label: 'Data' },
         { key: 'valor', label: 'Valor' },
-        { key: 'contaId', label: 'ID da Conta' },
+        { key: 'conta', label: 'Conta' },
       ],
     )
   }
@@ -176,7 +208,7 @@ export default function TransacoesPage() {
       </div>
 
       <FilterBar
-        fields={FILTER_FIELDS}
+        fields={filterFields}
         activeFilters={chips}
         onAdd={addFilter}
         onRemove={removeFilter}
@@ -192,7 +224,7 @@ export default function TransacoesPage() {
           <CardContent className="p-0">
             <DataTable
               data={data}
-              columns={COLUMNS}
+              columns={columns}
               keyField="id"
               isLoading={isLoading}
               emptyMessage="Nenhuma transacao cadastrada."
