@@ -9,7 +9,12 @@ import { Card, CardContent } from '@/shared/components/ui/card'
 import { Badge } from '@/shared/components/ui/badge'
 import { Button } from '@/shared/components/ui/button'
 import { DataTable, type ColumnDef } from '@/shared/components/DataTable'
-import { FilterBar, type FilterFieldDef } from '@/shared/components/FilterBar'
+import {
+  FilterBar,
+  OPERATORS_BY_TYPE,
+  type ActiveFilter,
+  type FilterFieldDef,
+} from '@/shared/components/FilterBar'
 import { ActionsPanel } from '@/shared/components/ActionsPanel'
 import { useListPage } from '@/shared/hooks/useListPage'
 import { StatusBadge, type StatusConfig } from '@/shared/components/StatusBadge'
@@ -48,8 +53,9 @@ const FILTER_FIELDS_BASE: FilterFieldDef[] = [
       { value: 'CANCELLED', label: 'Cancelada' },
     ],
   },
-  { name: 'dataInicio', label: 'Data inicio', type: 'date' },
-  { name: 'dataFim', label: 'Data fim', type: 'date' },
+  { name: 'descricao', label: 'Descricao', type: 'string' },
+  { name: 'valor', label: 'Valor', type: 'number' },
+  { name: 'data', label: 'Data', type: 'date' },
 ]
 
 /** Reconstroi o `displayValue` de cada chip a partir das definicoes de campo. */
@@ -59,7 +65,68 @@ function resolveDisplay(field: string, value: string, fields: FilterFieldDef[]):
   if (def.type === 'enum') {
     return def.options?.find((o) => o.value === value)?.label ?? value
   }
+  if (def.type === 'number') {
+    const n = Number(value)
+    return Number.isFinite(n) ? formatBRL(n) : value
+  }
   return value
+}
+
+/** Rotulo humano de um operador, para reconstruir o chip a partir da URL. */
+function resolveOperatorLabel(
+  field: string,
+  operator: string,
+  fields: FilterFieldDef[],
+): string {
+  const def = fields.find((f) => f.name === field)
+  if (!def) return operator
+  return (
+    OPERATORS_BY_TYPE[def.type].find((o) => o.value === operator)?.label ??
+    operator
+  )
+}
+
+/** Campos que viajam como filtros adicionais (`filtros=campo:op:valor`). */
+const CAMPOS_FILTRO_ADICIONAL = new Set(['descricao', 'valor'])
+
+/**
+ * Traduz os filtros ativos da `FilterBar` nos parametros aceitos pelo backend.
+ *
+ * - `tipo`/`status`/`contaId`: parametros enum diretos (operador `eq` implicito).
+ * - `data`: vira `dataInicio`/`dataFim` conforme o operador (`gte`/`lte`/`eq`).
+ * - `descricao`/`valor`: serializados em `filtros=campo:operador:valor`.
+ */
+function buildBackendParams(activeFilters: ActiveFilter[]) {
+  const params: Record<string, string> = {}
+  const filtrosAdicionais: string[] = []
+
+  for (const f of activeFilters) {
+    if (f.field === 'data') {
+      if (f.operator === 'gte') params.dataInicio = f.value
+      else if (f.operator === 'lte') params.dataFim = f.value
+      else if (f.operator === 'eq') {
+        params.dataInicio = f.value
+        params.dataFim = f.value
+      } else if (f.operator === 'gt' || f.operator === 'lt' || f.operator === 'neq') {
+        // Operadores sem mapeamento direto em dataInicio/dataFim: usa filtro adicional.
+        filtrosAdicionais.push(
+          `data:${f.operator}:${encodeURIComponent(f.value)}`,
+        )
+      }
+    } else if (CAMPOS_FILTRO_ADICIONAL.has(f.field)) {
+      filtrosAdicionais.push(
+        `${f.field}:${f.operator}:${encodeURIComponent(f.value)}`,
+      )
+    } else {
+      // tipo, status, contaId -- enum direto.
+      params[f.field] = f.value
+    }
+  }
+
+  if (filtrosAdicionais.length > 0) {
+    params.filtros = filtrosAdicionais.join(',')
+  }
+  return params
 }
 
 function badgeVariant(tipo: string) {
@@ -157,16 +224,23 @@ export default function TransacoesPage() {
     setSort,
   } = useListPage<Transacao, Record<string, string>>({
     queryKey: 'transacoes',
-    fetcher: ({ filters, page, size, sort }) =>
-      transacoesService.listar({ ...filters, page, size, sort }),
+    fetcher: ({ activeFilters, page, size, sort }) =>
+      transacoesService.listar({
+        ...buildBackendParams(activeFilters),
+        page,
+        size,
+        sort,
+      }),
     defaultSort: { field: 'data', dir: 'desc' },
   })
 
-  // Reconstroi o displayValue legivel dos chips (a URL guarda so o valor cru).
+  // Reconstroi label/displayValue/operatorLabel dos chips (a URL guarda so o
+  // nome do campo, o operador e o valor cru).
   const chips = activeFilters.map((f) => ({
     ...f,
     label: filterFields.find((d) => d.name === f.field)?.label ?? f.label,
     displayValue: resolveDisplay(f.field, f.value, filterFields),
+    operatorLabel: resolveOperatorLabel(f.field, f.operator, filterFields),
   }))
 
   const handleExport = () => {

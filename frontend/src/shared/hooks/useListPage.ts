@@ -7,10 +7,13 @@
  * na URL via `useSearchParams`/`useRouter` e disparando o fetch via TanStack
  * Query. Formato da URL:
  *
- *   ?filtros=campo1:valor1,campo2:valor2&page=0&sort=campo:dir
+ *   ?filtros=campo:operador:valor,campo2:operador2:valor2&page=0&sort=campo:dir
  *
- * O `displayValue` de cada chip nao vai para a URL; e reconstruido pelo
- * consumidor a partir das definicoes de campo da `<FilterBar>`.
+ * Cada filtro carrega um operador (ver `OPERATORS_BY_TYPE` em `FilterBar`). O
+ * valor pode estar URI-encoded para suportar `:` e `,`. Filtros booleanos tem
+ * valor vazio (`campo:true:`). O `displayValue`/`operatorLabel` de cada chip nao
+ * vao para a URL; sao reconstruidos pelo consumidor a partir das definicoes de
+ * campo da `<FilterBar>`.
  */
 
 import { useCallback, useMemo } from 'react'
@@ -27,10 +30,22 @@ export interface PageResponse<T> {
   size: number
 }
 
+/** Filtro persistido: operador + valor cru. */
+export interface FilterEntry {
+  operator: string
+  value: string
+}
+
+/** Mapa de filtros indexado por nome de campo. */
+export type FilterMap = Record<string, FilterEntry>
+
 export interface UseListPageOptions<TFilters extends Record<string, string>> {
   queryKey: string
   fetcher: (params: {
+    /** Mapa campo -> valor cru (compat retroativa; ignora operadores). */
     filters: TFilters
+    /** Lista completa de filtros com operador. */
+    activeFilters: ActiveFilter[]
     page: number
     size: number
     sort?: string
@@ -57,25 +72,51 @@ export interface UseListPageResult<TData> {
   setSort: (field: string, dir: 'asc' | 'desc') => void
 }
 
-/** Le `?filtros=a:1,b:2` da URL como mapa campo -> valor. */
-function parseFiltros(raw: string | null): Record<string, string> {
+/**
+ * Le `?filtros=campo:operador:valor,...` da URL como mapa campo -> entrada.
+ *
+ * Aceita tambem o formato legado `campo:valor` (sem operador): nesse caso o
+ * operador assume `eq`. O valor e URI-decodificado.
+ */
+function parseFiltros(raw: string | null): FilterMap {
   if (!raw) return {}
-  const result: Record<string, string> = {}
+  const result: FilterMap = {}
   for (const pair of raw.split(',')) {
-    const idx = pair.indexOf(':')
-    if (idx <= 0) continue
-    const field = pair.slice(0, idx).trim()
-    const value = pair.slice(idx + 1).trim()
-    if (field) result[field] = value
+    if (!pair) continue
+    const parts = pair.split(':')
+    const field = (parts[0] ?? '').trim()
+    if (!field) continue
+    if (parts.length >= 3) {
+      const operator = (parts[1] ?? '').trim()
+      const value = decodeValue(parts.slice(2).join(':'))
+      result[field] = { operator, value }
+    } else if (parts.length === 2) {
+      // Formato legado campo:valor -- operador implicito `eq`.
+      result[field] = { operator: 'eq', value: decodeValue(parts[1]) }
+    }
   }
   return result
 }
 
-/** Serializa um mapa campo -> valor no formato `a:1,b:2`. */
-function serializeFiltros(filtros: Record<string, string>): string {
+/** Serializa um mapa de filtros no formato `campo:operador:valor,...`. */
+function serializeFiltros(filtros: FilterMap): string {
   return Object.entries(filtros)
-    .map(([field, value]) => `${field}:${value}`)
+    .map(([field, entry]) => `${field}:${entry.operator}:${encodeValue(entry.value)}`)
     .join(',')
+}
+
+/** Codifica o valor para a URL, escapando `:` e `,` que sao separadores. */
+function encodeValue(value: string): string {
+  return value.replace(/%/g, '%25').replace(/:/g, '%3A').replace(/,/g, '%2C')
+}
+
+/** Decodifica um valor de filtro vindo da URL. */
+function decodeValue(value: string): string {
+  try {
+    return decodeURIComponent(value)
+  } catch {
+    return value
+  }
 }
 
 /** Le `?sort=campo:dir` da URL. */
@@ -103,11 +144,16 @@ export function useListPage<
   const searchParams = useSearchParams()
 
   // Estado derivado da URL (fonte unica da verdade).
-  const filtros = useMemo(() => {
+  const filtros = useMemo<FilterMap>(() => {
     const fromUrl = parseFiltros(searchParams.get('filtros'))
-    return Object.keys(fromUrl).length > 0
-      ? fromUrl
-      : { ...(defaultFilters as Record<string, string> | undefined) }
+    if (Object.keys(fromUrl).length > 0) return fromUrl
+    // defaultFilters chega como mapa campo -> valor; operador implicito `eq`.
+    const defaults = (defaultFilters ?? {}) as Record<string, string>
+    const mapped: FilterMap = {}
+    for (const [field, value] of Object.entries(defaults)) {
+      mapped[field] = { operator: 'eq', value }
+    }
+    return mapped
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams])
 
@@ -123,7 +169,7 @@ export function useListPage<
 
   /** Reescreve a URL preservando os parametros nao gerenciados pelo hook. */
   const writeUrl = useCallback(
-    (next: { filtros?: Record<string, string>; page?: number; sort?: string | null }) => {
+    (next: { filtros?: FilterMap; page?: number; sort?: string | null }) => {
       const params = new URLSearchParams(searchParams.toString())
 
       if (next.filtros !== undefined) {
@@ -149,7 +195,10 @@ export function useListPage<
   const addFilter = useCallback(
     (filter: ActiveFilter) => {
       writeUrl({
-        filtros: { ...filtros, [filter.field]: filter.value },
+        filtros: {
+          ...filtros,
+          [filter.field]: { operator: filter.operator, value: filter.value },
+        },
         page: 0,
       })
     },
@@ -185,27 +234,40 @@ export function useListPage<
 
   const sortParam = sort ? `${sort.field}:${sort.dir}` : undefined
 
+  // Lista de filtros ativos (com operador) para o consumidor e o fetcher.
+  const activeFilters: ActiveFilter[] = useMemo(
+    () =>
+      Object.entries(filtros).map(([field, entry]) => ({
+        field,
+        operator: entry.operator,
+        label: field,
+        value: entry.value,
+        displayValue: entry.value,
+        operatorLabel: entry.operator,
+      })),
+    [filtros],
+  )
+
+  // Mapa campo -> valor cru para compatibilidade retroativa do fetcher.
+  const filtersValueMap = useMemo(() => {
+    const map: Record<string, string> = {}
+    for (const [field, entry] of Object.entries(filtros)) {
+      map[field] = entry.value
+    }
+    return map
+  }, [filtros])
+
   const query = useQuery({
     queryKey: [queryKey, filtros, page, pageSize, sortParam],
     queryFn: () =>
       fetcher({
-        filters: filtros as TFilters,
+        filters: filtersValueMap as TFilters,
+        activeFilters,
         page,
         size: pageSize,
         sort: sortParam,
       }),
   })
-
-  const activeFilters: ActiveFilter[] = useMemo(
-    () =>
-      Object.entries(filtros).map(([field, value]) => ({
-        field,
-        label: field,
-        value,
-        displayValue: value,
-      })),
-    [filtros],
-  )
 
   return {
     data: (query.data?.content ?? []) as TData[],

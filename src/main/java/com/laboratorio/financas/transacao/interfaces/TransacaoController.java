@@ -11,6 +11,8 @@ import com.laboratorio.financas.transacao.application.DeletarTransacaoUseCase;
 import com.laboratorio.financas.transacao.application.EditarTransacaoUseCase;
 import com.laboratorio.financas.transacao.application.ListarTransacoesUseCase;
 import com.laboratorio.financas.transacao.domain.DirecaoOrdenacao;
+import com.laboratorio.financas.transacao.domain.FiltroGenerico;
+import com.laboratorio.financas.transacao.domain.FiltroTransacaoCampo;
 import com.laboratorio.financas.transacao.domain.FiltrosTransacao;
 import com.laboratorio.financas.transacao.domain.OrdenacaoTransacao;
 import com.laboratorio.financas.transacao.domain.StatusTransacao;
@@ -23,7 +25,10 @@ import com.laboratorio.financas.usuario.domain.UsuarioRepository;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import org.slf4j.Logger;
@@ -111,13 +116,15 @@ public class TransacaoController {
             @RequestParam(name = "tipo", required = false) TipoTransacao tipo,
             @RequestParam(name = "categoriaId", required = false) UUID categoriaId,
             @RequestParam(name = "status", required = false) StatusTransacao status,
+            @RequestParam(name = "filtros", required = false) String filtrosAdicionaisRaw,
             @RequestParam(name = "sort", required = false) String sort,
             @RequestParam(name = "page", defaultValue = "0") @Min(0) int page,
             @RequestParam(name = "size", defaultValue = "20") @Min(1) @Max(SIZE_MAX) int size
     ) {
         UUID userId = resolverUserId();
-        FiltrosTransacao filtros =
-                new FiltrosTransacao(contaId, dataInicio, dataFim, tipo, categoriaId, userId, status);
+        List<FiltroGenerico> filtrosAdicionais = parseFiltrosAdicionais(filtrosAdicionaisRaw);
+        FiltrosTransacao filtros = new FiltrosTransacao(
+                contaId, dataInicio, dataFim, tipo, categoriaId, userId, status, filtrosAdicionais);
         CriterioOrdenacao criterio = parseSort(sort);
         Page<Transacao> resultado = listarTransacoesUseCase.executar(
                 filtros, page, size, criterio.ordenacao(), criterio.direcao());
@@ -157,6 +164,47 @@ public class TransacaoController {
             }
         }
         return new CriterioOrdenacao(ordenacao, direcao);
+    }
+
+    /**
+     * Converte o parametro {@code filtros} -- formato
+     * {@code campo:operador:valor,campo2:operador2:valor2} -- em uma lista de
+     * {@link FiltroGenerico}.
+     *
+     * <p>Cada entrada e separada por {@code ,} e quebrada por {@code :} em no
+     * maximo 3 partes (campo, operador, valor). O valor pode estar URI-encoded
+     * para suportar caracteres como {@code :} e {@code ,}. Cada filtro e
+     * validado ansiosamente por {@link FiltroTransacaoCampo#validar} -- campo
+     * fora da whitelist, operador incompativel ou valor nao parseavel lancam
+     * {@link IllegalArgumentException} -> HTTP 400.
+     */
+    private List<FiltroGenerico> parseFiltrosAdicionais(String raw) {
+        if (raw == null || raw.isBlank()) {
+            return List.of();
+        }
+        List<FiltroGenerico> resultado = new ArrayList<>();
+        for (String entrada : raw.split(",")) {
+            if (entrada.isBlank()) {
+                continue;
+            }
+            String[] partes = entrada.split(":", 3);
+            if (partes.length < 2) {
+                throw new IllegalArgumentException(
+                        "Filtro invalido: '" + entrada + "'. Use campo:operador:valor.");
+            }
+            String campo = partes[0].trim();
+            String operador = partes[1].trim();
+            String valor = (partes.length == 3) ? decodeValor(partes[2]) : "";
+            FiltroGenerico filtro = new FiltroGenerico(campo, operador, valor);
+            FiltroTransacaoCampo.validar(filtro);
+            resultado.add(filtro);
+        }
+        return resultado;
+    }
+
+    /** Decodifica o valor do filtro (URI-encoded para suportar {@code :} e {@code ,}). */
+    private String decodeValor(String valor) {
+        return URLDecoder.decode(valor, StandardCharsets.UTF_8);
     }
 
     @GetMapping("/{id}")

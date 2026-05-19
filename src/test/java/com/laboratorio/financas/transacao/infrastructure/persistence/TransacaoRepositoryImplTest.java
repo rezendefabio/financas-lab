@@ -15,6 +15,7 @@ import com.laboratorio.financas.shared.AbstractIntegrationTest;
 import com.laboratorio.financas.shared.domain.Money;
 import com.laboratorio.financas.shared.infrastructure.persistence.MoneyEmbeddable;
 import com.laboratorio.financas.transacao.domain.DirecaoOrdenacao;
+import com.laboratorio.financas.transacao.domain.FiltroGenerico;
 import com.laboratorio.financas.transacao.domain.FiltrosTransacao;
 import com.laboratorio.financas.transacao.domain.OrdenacaoTransacao;
 import com.laboratorio.financas.transacao.domain.StatusTransacao;
@@ -721,5 +722,166 @@ class TransacaoRepositoryImplTest extends AbstractIntegrationTest {
         assertThat(pagina0.getTotalElements()).isEqualTo(5);
         assertThat(pagina0.getContent()).hasSize(2);
         assertThat(pagina0.getTotalPages()).isEqualTo(3);
+    }
+
+    // --- Filtros adicionais (FiltroGenerico) ---
+
+    private FiltrosTransacao filtrosAdicionais(FiltroGenerico... adicionais) {
+        return new FiltrosTransacao(null, null, null, null, null, null, null, List.of(adicionais));
+    }
+
+    @Test
+    void listarComFiltroAdicionalContainsEmDescricaoFiltraPorTexto() {
+        // Given
+        UUID contaId = criarContaPersistida();
+        repository.salvar(new Transacao(TipoTransacao.RECEITA, VALOR_100, HOJE, "Compra no Mercado", contaId,
+                null, null, StatusTransacao.CLEARED, null, List.of()));
+        repository.salvar(new Transacao(TipoTransacao.RECEITA, VALOR_100, HOJE, "Pagamento Aluguel", contaId,
+                null, null, StatusTransacao.CLEARED, null, List.of()));
+
+        // When -- contains e case-insensitive.
+        FiltrosTransacao filtros = filtrosAdicionais(
+                new FiltroGenerico("descricao", "contains", "mercado"));
+        Page<Transacao> resultado = repository.listarComFiltros(filtros, PageRequest.of(0, 10));
+
+        // Then
+        assertThat(resultado.getTotalElements()).isEqualTo(1);
+        assertThat(resultado.getContent().get(0).getDescricao()).isEqualTo("Compra no Mercado");
+    }
+
+    @Test
+    void listarComFiltroAdicionalNotContainsEmDescricaoExcluiPorTexto() {
+        // Given
+        UUID contaId = criarContaPersistida();
+        repository.salvar(new Transacao(TipoTransacao.RECEITA, VALOR_100, HOJE, "Compra no Mercado", contaId,
+                null, null, StatusTransacao.CLEARED, null, List.of()));
+        repository.salvar(new Transacao(TipoTransacao.RECEITA, VALOR_100, HOJE, "Pagamento Aluguel", contaId,
+                null, null, StatusTransacao.CLEARED, null, List.of()));
+
+        // When
+        FiltrosTransacao filtros = filtrosAdicionais(
+                new FiltroGenerico("descricao", "not_contains", "mercado"));
+        Page<Transacao> resultado = repository.listarComFiltros(filtros, PageRequest.of(0, 10));
+
+        // Then
+        assertThat(resultado.getTotalElements()).isEqualTo(1);
+        assertThat(resultado.getContent().get(0).getDescricao()).isEqualTo("Pagamento Aluguel");
+    }
+
+    @Test
+    void listarComFiltroAdicionalGteEmValorFiltraPorValor() {
+        // Given
+        UUID contaId = criarContaPersistida();
+        repository.salvar(new Transacao(TipoTransacao.RECEITA, new Money(new BigDecimal("50.00"), BRL),
+                HOJE, "Baixo", contaId, null, null, StatusTransacao.CLEARED, null, List.of()));
+        repository.salvar(new Transacao(TipoTransacao.RECEITA, new Money(new BigDecimal("500.00"), BRL),
+                HOJE, "Alto", contaId, null, null, StatusTransacao.CLEARED, null, List.of()));
+
+        // When
+        FiltrosTransacao filtros = filtrosAdicionais(
+                new FiltroGenerico("valor", "gte", "100"));
+        Page<Transacao> resultado = repository.listarComFiltros(filtros, PageRequest.of(0, 10));
+
+        // Then
+        assertThat(resultado.getTotalElements()).isEqualTo(1);
+        assertThat(resultado.getContent().get(0).getDescricao()).isEqualTo("Alto");
+    }
+
+    @Test
+    void listarComFiltroAdicionalIntervaloDeValorGteELte() {
+        // Given
+        UUID contaId = criarContaPersistida();
+        for (String v : new String[] {"50.00", "250.00", "700.00"}) {
+            repository.salvar(new Transacao(TipoTransacao.RECEITA, new Money(new BigDecimal(v), BRL),
+                    HOJE, "Valor " + v, contaId, null, null, StatusTransacao.CLEARED, null, List.of()));
+        }
+
+        // When
+        FiltrosTransacao filtros = filtrosAdicionais(
+                new FiltroGenerico("valor", "gte", "100"),
+                new FiltroGenerico("valor", "lte", "500"));
+        Page<Transacao> resultado = repository.listarComFiltros(filtros, PageRequest.of(0, 10));
+
+        // Then
+        assertThat(resultado.getTotalElements()).isEqualTo(1);
+        assertThat(resultado.getContent().get(0).getDescricao()).isEqualTo("Valor 250.00");
+    }
+
+    @Test
+    void listarComFiltroAdicionalGteELteEmDataFiltraPorPeriodo() {
+        // Given
+        UUID contaId = criarContaPersistida();
+        repository.salvar(new Transacao(TipoTransacao.RECEITA, VALOR_100, LocalDate.of(2026, 1, 10),
+                "Janeiro", contaId, null, null, StatusTransacao.CLEARED, null, List.of()));
+        repository.salvar(new Transacao(TipoTransacao.RECEITA, VALOR_100, LocalDate.of(2026, 6, 10),
+                "Junho", contaId, null, null, StatusTransacao.CLEARED, null, List.of()));
+
+        // When
+        FiltrosTransacao filtros = filtrosAdicionais(
+                new FiltroGenerico("data", "gte", "2026-01-01"),
+                new FiltroGenerico("data", "lte", "2026-03-31"));
+        Page<Transacao> resultado = repository.listarComFiltros(filtros, PageRequest.of(0, 10));
+
+        // Then
+        assertThat(resultado.getTotalElements()).isEqualTo(1);
+        assertThat(resultado.getContent().get(0).getDescricao()).isEqualTo("Janeiro");
+    }
+
+    @Test
+    void listarComFiltroAdicionalEqEmDescricaoComparaTextoExato() {
+        // Given
+        UUID contaId = criarContaPersistida();
+        repository.salvar(new Transacao(TipoTransacao.RECEITA, VALOR_100, HOJE, "Salario", contaId,
+                null, null, StatusTransacao.CLEARED, null, List.of()));
+        repository.salvar(new Transacao(TipoTransacao.RECEITA, VALOR_100, HOJE, "Salario extra", contaId,
+                null, null, StatusTransacao.CLEARED, null, List.of()));
+
+        // When
+        FiltrosTransacao filtros = filtrosAdicionais(
+                new FiltroGenerico("descricao", "eq", "salario"));
+        Page<Transacao> resultado = repository.listarComFiltros(filtros, PageRequest.of(0, 10));
+
+        // Then -- eq compara o texto inteiro (case-insensitive), nao substring.
+        assertThat(resultado.getTotalElements()).isEqualTo(1);
+        assertThat(resultado.getContent().get(0).getDescricao()).isEqualTo("Salario");
+    }
+
+    @Test
+    void listarComFiltroAdicionalCombinaComFiltroFixoDeTipo() {
+        // Given
+        UUID contaId = criarContaPersistida();
+        repository.salvar(new Transacao(TipoTransacao.RECEITA, VALOR_100, HOJE, "Mercado receita", contaId,
+                null, null, StatusTransacao.CLEARED, null, List.of()));
+        repository.salvar(new Transacao(TipoTransacao.DESPESA, VALOR_100, HOJE, "Mercado despesa", contaId,
+                null, null, StatusTransacao.CLEARED, null, List.of()));
+
+        // When -- filtro fixo (tipo) + filtro adicional (descricao contains).
+        FiltrosTransacao filtros = new FiltrosTransacao(
+                null, null, null, TipoTransacao.RECEITA, null, null, null,
+                List.of(new FiltroGenerico("descricao", "contains", "mercado")));
+        Page<Transacao> resultado = repository.listarComFiltros(filtros, PageRequest.of(0, 10));
+
+        // Then
+        assertThat(resultado.getTotalElements()).isEqualTo(1);
+        assertThat(resultado.getContent().get(0).getDescricao()).isEqualTo("Mercado receita");
+    }
+
+    @Test
+    void listarComFiltroAdicionalContainsTrataCuringaLikeComoLiteral() {
+        // Given -- valor com '%' deve ser tratado como literal, nao curinga.
+        UUID contaId = criarContaPersistida();
+        repository.salvar(new Transacao(TipoTransacao.RECEITA, VALOR_100, HOJE, "Desconto 50%", contaId,
+                null, null, StatusTransacao.CLEARED, null, List.of()));
+        repository.salvar(new Transacao(TipoTransacao.RECEITA, VALOR_100, HOJE, "Sem desconto", contaId,
+                null, null, StatusTransacao.CLEARED, null, List.of()));
+
+        // When
+        FiltrosTransacao filtros = filtrosAdicionais(
+                new FiltroGenerico("descricao", "contains", "50%"));
+        Page<Transacao> resultado = repository.listarComFiltros(filtros, PageRequest.of(0, 10));
+
+        // Then -- so a transacao que literalmente contem "50%".
+        assertThat(resultado.getTotalElements()).isEqualTo(1);
+        assertThat(resultado.getContent().get(0).getDescricao()).isEqualTo("Desconto 50%");
     }
 }

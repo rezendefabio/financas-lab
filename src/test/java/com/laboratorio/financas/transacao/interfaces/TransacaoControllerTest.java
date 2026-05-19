@@ -609,6 +609,185 @@ class TransacaoControllerTest extends AbstractAuthenticatedIntegrationTest {
                 .andExpect(jsonPath("$.totalElements", equalTo(1)));
     }
 
+    // --- Filtros adicionais (filtros=campo:operador:valor) ---
+
+    @Test
+    void getTransacoesComFiltroDescricaoContainsFiltraPorTexto() throws Exception {
+        UUID contaId = criarContaPersistida();
+
+        Map<String, Object> mercado = requestReceita(contaId);
+        mercado.put("descricao", "Compra no Mercado");
+        mockMvc.perform(comAuth(post("/api/transacoes")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(mercado))));
+
+        Map<String, Object> aluguel = requestReceita(contaId);
+        aluguel.put("descricao", "Pagamento Aluguel");
+        mockMvc.perform(comAuth(post("/api/transacoes")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(aluguel))));
+
+        mockMvc.perform(comAuth(get("/api/transacoes").param("filtros", "descricao:contains:mercado")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalElements", equalTo(1)))
+                .andExpect(jsonPath("$.content[0].descricao", equalTo("Compra no Mercado")));
+    }
+
+    @Test
+    void getTransacoesComFiltroDescricaoNotContainsExcluiPorTexto() throws Exception {
+        UUID contaId = criarContaPersistida();
+
+        Map<String, Object> mercado = requestReceita(contaId);
+        mercado.put("descricao", "Compra no Mercado");
+        mockMvc.perform(comAuth(post("/api/transacoes")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(mercado))));
+
+        Map<String, Object> aluguel = requestReceita(contaId);
+        aluguel.put("descricao", "Pagamento Aluguel");
+        mockMvc.perform(comAuth(post("/api/transacoes")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(aluguel))));
+
+        mockMvc.perform(comAuth(get("/api/transacoes").param("filtros", "descricao:not_contains:mercado")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalElements", equalTo(1)))
+                .andExpect(jsonPath("$.content[0].descricao", equalTo("Pagamento Aluguel")));
+    }
+
+    @Test
+    void getTransacoesComFiltroValorGteFiltraPorValor() throws Exception {
+        UUID contaId = criarContaPersistida();
+
+        Map<String, Object> baixo = requestReceita(contaId);
+        baixo.put("valor", BigDecimal.valueOf(50));
+        baixo.put("descricao", "Baixo");
+        mockMvc.perform(comAuth(post("/api/transacoes")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(baixo))));
+
+        Map<String, Object> alto = requestReceita(contaId);
+        alto.put("valor", BigDecimal.valueOf(500));
+        alto.put("descricao", "Alto");
+        mockMvc.perform(comAuth(post("/api/transacoes")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(alto))));
+
+        mockMvc.perform(comAuth(get("/api/transacoes").param("filtros", "valor:gte:100")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalElements", equalTo(1)))
+                .andExpect(jsonPath("$.content[0].descricao", equalTo("Alto")));
+    }
+
+    @Test
+    void getTransacoesComFiltroValorIntervaloGteELte() throws Exception {
+        UUID contaId = criarContaPersistida();
+
+        for (int v : new int[] {50, 250, 700}) {
+            Map<String, Object> t = requestReceita(contaId);
+            t.put("valor", BigDecimal.valueOf(v));
+            t.put("descricao", "Valor " + v);
+            mockMvc.perform(comAuth(post("/api/transacoes")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(t))));
+        }
+
+        mockMvc.perform(comAuth(get("/api/transacoes").param("filtros", "valor:gte:100,valor:lte:500")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalElements", equalTo(1)))
+                .andExpect(jsonPath("$.content[0].descricao", equalTo("Valor 250")));
+    }
+
+    @Test
+    void getTransacoesComFiltroDataGteELteFiltraPorPeriodo() throws Exception {
+        UUID contaId = criarContaPersistida();
+
+        Map<String, Object> jan = requestReceita(contaId);
+        jan.put("data", "2026-01-10");
+        jan.put("descricao", "Janeiro");
+        mockMvc.perform(comAuth(post("/api/transacoes")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(jan))));
+
+        Map<String, Object> jun = requestReceita(contaId);
+        jun.put("data", "2026-06-10");
+        jun.put("descricao", "Junho");
+        mockMvc.perform(comAuth(post("/api/transacoes")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(jun))));
+
+        mockMvc.perform(comAuth(get("/api/transacoes")
+                        .param("filtros", "data:gte:2026-01-01,data:lte:2026-03-31")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalElements", equalTo(1)))
+                .andExpect(jsonPath("$.content[0].descricao", equalTo("Janeiro")));
+    }
+
+    @Test
+    void getTransacoesComFiltroCampoForaDaWhitelistRetorna400() throws Exception {
+        mockMvc.perform(comAuth(get("/api/transacoes").param("filtros", "contaId:eq:abc")))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void getTransacoesComFiltroOperadorInvalidoRetorna400() throws Exception {
+        UUID contaId = criarContaPersistida();
+        mockMvc.perform(comAuth(post("/api/transacoes")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(requestReceita(contaId)))));
+
+        mockMvc.perform(comAuth(get("/api/transacoes").param("filtros", "valor:contains:abc")))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void getTransacoesComFiltroSemValorRetorna400() throws Exception {
+        mockMvc.perform(comAuth(get("/api/transacoes").param("filtros", "descricao")))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void getTransacoesComFiltroValorUriEncodedDecodaCorretamente() throws Exception {
+        UUID contaId = criarContaPersistida();
+
+        Map<String, Object> t = requestReceita(contaId);
+        t.put("descricao", "Conta de luz: maio");
+        mockMvc.perform(comAuth(post("/api/transacoes")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(t))));
+
+        // Valor com ':' precisa estar URI-encoded para nao colidir com o separador.
+        mockMvc.perform(comAuth(get("/api/transacoes")
+                        .param("filtros", "descricao:contains:luz%3A%20maio")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalElements", equalTo(1)));
+    }
+
+    @Test
+    void getTransacoesComFiltroAdicionalCombinadoComFiltroFixo() throws Exception {
+        UUID contaId = criarContaPersistida();
+
+        Map<String, Object> receitaMercado = requestReceita(contaId);
+        receitaMercado.put("descricao", "Mercado receita");
+        mockMvc.perform(comAuth(post("/api/transacoes")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(receitaMercado))));
+
+        Map<String, Object> despesaMercado = requestReceita(contaId);
+        despesaMercado.put("tipo", "DESPESA");
+        despesaMercado.put("descricao", "Mercado despesa");
+        mockMvc.perform(comAuth(post("/api/transacoes")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(despesaMercado))));
+
+        mockMvc.perform(comAuth(get("/api/transacoes")
+                        .param("tipo", "RECEITA")
+                        .param("filtros", "descricao:contains:mercado")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalElements", equalTo(1)))
+                .andExpect(jsonPath("$.content[0].descricao", equalTo("Mercado receita")));
+    }
+
     @Test
     void cicloCompletoPostGetPutGetDeleteGet() throws Exception {
         UUID contaId = criarContaPersistida();

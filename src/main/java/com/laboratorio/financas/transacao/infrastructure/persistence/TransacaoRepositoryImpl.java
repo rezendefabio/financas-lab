@@ -13,6 +13,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -100,16 +101,8 @@ public class TransacaoRepositoryImpl implements TransacaoRepository {
     }
 
     private Page<Transacao> executarFiltros(FiltrosTransacao filtros, Pageable pageable) {
-        return jpaRepository.findComFiltros(
-                filtros.contaId(),
-                filtros.dataInicio(),
-                filtros.dataFim(),
-                filtros.tipo(),
-                filtros.categoriaId(),
-                filtros.userId(),
-                filtros.status(),
-                pageable
-        ).map(mapper::toDomain);
+        Specification<TransacaoEntity> spec = TransacaoSpecifications.comFiltros(filtros);
+        return jpaRepository.findAll(spec, pageable).map(mapper::toDomain);
     }
 
     /**
