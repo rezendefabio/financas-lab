@@ -3,6 +3,7 @@ import type { PageResponse } from '@/shared/hooks/useListPage'
 import type {
   Transacao,
   CriarTransacaoRequest,
+  EditarTransacaoRequest,
   StatusTransacao,
 } from '../types/transacao'
 
@@ -38,4 +39,10 @@ export const transacoesService = {
   },
   criar: (data: CriarTransacaoRequest) =>
     apiFetch<Transacao>('/api/transacoes', { method: 'POST', body: JSON.stringify(data) }),
+  buscarPorId: (id: string) => apiFetch<Transacao>(`/api/transacoes/${id}`),
+  editar: (id: string, data: EditarTransacaoRequest) =>
+    apiFetch<Transacao>(`/api/transacoes/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }),
 }

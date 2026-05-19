@@ -1,7 +1,7 @@
 'use client'
 import { useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
-import { History } from 'lucide-react'
+import { History, Pencil } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { transacoesService } from '@/features/transacoes/services/transacoes.service'
 import { contasService } from '@/features/contas/services/contas.service'
@@ -302,14 +302,24 @@ export default function TransacoesPage() {
               onSortChange={setSort}
               onRowClick={setSelecionada}
               rowActions={(row) => (
-                <Button
-                  variant="ghost"
-                  size="icon-sm"
-                  aria-label={`Historico de ${row.descricao}`}
-                  onClick={() => setSelecionada(row)}
-                >
-                  <History className="h-4 w-4" />
-                </Button>
+                <div className="flex items-center gap-1">
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    aria-label={`Editar ${row.descricao}`}
+                    onClick={() => router.push(`/transacoes/${row.id}/editar`)}
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    aria-label={`Historico de ${row.descricao}`}
+                    onClick={() => setSelecionada(row)}
+                  >
+                    <History className="h-4 w-4" />
+                  </Button>
+                </div>
               )}
             />
           </CardContent>
