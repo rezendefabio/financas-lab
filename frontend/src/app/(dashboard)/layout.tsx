@@ -7,6 +7,7 @@ import {
   Sidebar,
   SidebarContent,
   SidebarInset,
+  SidebarRail,
 } from '@/shared/components/ui/sidebar'
 import {
   SidebarNav,
@@ -30,10 +31,11 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
 
   return (
     <>
-      <Sidebar collapsible="offcanvas">
+      <Sidebar collapsible="icon">
         <SidebarContent>
           <SidebarNav />
         </SidebarContent>
+        <SidebarRail />
       </Sidebar>
       <SidebarInset>
         <ShellHeader />
