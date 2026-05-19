@@ -52,7 +52,7 @@ describe('useListPage', () => {
     await waitFor(() => expect(result.current.data).toHaveLength(2))
   })
 
-  it('le filtros e pagina existentes na URL', async () => {
+  it('le formato legado campo:valor da URL com operador eq implicito', async () => {
     currentParams = new URLSearchParams('filtros=tipo:RECEITA&page=2')
     const fetcher = vi.fn().mockResolvedValue(page)
     const { result } = renderHook(
@@ -66,11 +66,42 @@ describe('useListPage', () => {
 
     expect(result.current.page).toBe(2)
     expect(result.current.activeFilters).toEqual([
-      { field: 'tipo', label: 'tipo', value: 'RECEITA', displayValue: 'RECEITA' },
+      {
+        field: 'tipo',
+        operator: 'eq',
+        operatorLabel: 'eq',
+        label: 'tipo',
+        value: 'RECEITA',
+        displayValue: 'RECEITA',
+      },
     ])
   })
 
-  it('addFilter serializa o filtro na URL e volta para a pagina 0', async () => {
+  it('le formato campo:operador:valor da URL', async () => {
+    currentParams = new URLSearchParams('filtros=descricao:contains:mercado')
+    const fetcher = vi.fn().mockResolvedValue(page)
+    const { result } = renderHook(
+      () =>
+        useListPage<{ id: string }, Record<string, string>>({
+          queryKey: 'transacoes',
+          fetcher,
+        }),
+      { wrapper: makeWrapper() },
+    )
+
+    expect(result.current.activeFilters).toEqual([
+      {
+        field: 'descricao',
+        operator: 'contains',
+        operatorLabel: 'contains',
+        label: 'descricao',
+        value: 'mercado',
+        displayValue: 'mercado',
+      },
+    ])
+  })
+
+  it('addFilter serializa campo:operador:valor na URL e volta para a pagina 0', async () => {
     currentParams = new URLSearchParams('page=3')
     const fetcher = vi.fn().mockResolvedValue(page)
     const { result } = renderHook(
@@ -84,17 +115,72 @@ describe('useListPage', () => {
 
     act(() => {
       result.current.addFilter({
-        field: 'tipo',
-        label: 'Tipo',
-        value: 'DESPESA',
-        displayValue: 'Despesa',
+        field: 'descricao',
+        operator: 'contains',
+        operatorLabel: 'contem',
+        label: 'Descricao',
+        value: 'mercado',
+        displayValue: 'mercado',
       })
     })
 
     expect(replaceMock).toHaveBeenCalledTimes(1)
     const url = replaceMock.mock.calls[0][0] as string
-    expect(url).toContain('filtros=tipo%3ADESPESA')
+    expect(decodeURIComponent(url)).toContain('filtros=descricao:contains:mercado')
     expect(url).not.toContain('page=')
+  })
+
+  it('serializa filtro boolean com valor vazio (campo:operador:)', async () => {
+    const fetcher = vi.fn().mockResolvedValue(page)
+    const { result } = renderHook(
+      () =>
+        useListPage<{ id: string }, Record<string, string>>({
+          queryKey: 'transacoes',
+          fetcher,
+        }),
+      { wrapper: makeWrapper() },
+    )
+
+    act(() => {
+      result.current.addFilter({
+        field: 'ativa',
+        operator: 'true',
+        operatorLabel: 'verdadeiro',
+        label: 'Ativa',
+        value: '',
+        displayValue: 'verdadeiro',
+      })
+    })
+
+    const url = replaceMock.mock.calls[0][0] as string
+    expect(decodeURIComponent(url)).toContain('filtros=ativa:true:')
+  })
+
+  it('URI-encoda valor que contem o separador `:`', async () => {
+    const fetcher = vi.fn().mockResolvedValue(page)
+    const { result } = renderHook(
+      () =>
+        useListPage<{ id: string }, Record<string, string>>({
+          queryKey: 'transacoes',
+          fetcher,
+        }),
+      { wrapper: makeWrapper() },
+    )
+
+    act(() => {
+      result.current.addFilter({
+        field: 'descricao',
+        operator: 'contains',
+        operatorLabel: 'contem',
+        label: 'Descricao',
+        value: 'a:b',
+        displayValue: 'a:b',
+      })
+    })
+
+    const url = replaceMock.mock.calls[0][0] as string
+    // O `:` do valor fica encoded para nao colidir com o separador.
+    expect(url).toContain('descricao%3Acontains%3Aa%253Ab')
   })
 
   it('removeFilter remove o campo da URL', async () => {
@@ -114,7 +200,7 @@ describe('useListPage', () => {
     })
 
     const url = replaceMock.mock.calls[0][0] as string
-    expect(url).toContain('status%3ACLEARED')
+    expect(decodeURIComponent(url)).toContain('status:eq:CLEARED')
     expect(url).not.toContain('tipo')
   })
 
@@ -208,6 +294,16 @@ describe('useListPage', () => {
     await waitFor(() => expect(fetcher).toHaveBeenCalled())
     expect(fetcher).toHaveBeenCalledWith({
       filters: { tipo: 'RECEITA' },
+      activeFilters: [
+        {
+          field: 'tipo',
+          operator: 'eq',
+          operatorLabel: 'eq',
+          label: 'tipo',
+          value: 'RECEITA',
+          displayValue: 'RECEITA',
+        },
+      ],
       page: 1,
       size: 10,
       sort: 'data:desc',

@@ -14,6 +14,11 @@ export interface ListarTransacoesParams {
   tipo?: string
   status?: StatusTransacao | string
   categoriaId?: string
+  /**
+   * Filtros adicionais com operador, no formato serializado
+   * `campo:operador:valor,campo2:operador2:valor2` (ex: `descricao:contains:mercado`).
+   */
+  filtros?: string
   page?: number
   size?: number
   /** Ordenacao no formato `campo,dir` (ex: `data,desc`). */

@@ -97,15 +97,18 @@ export default function ContasPage() {
       : [
           {
             field: 'ativa',
+            // Campo boolean: o operador e o proprio valor (true/false).
+            operator: String(filtroAtiva),
+            operatorLabel: filtroAtiva ? 'verdadeiro' : 'falso',
             label: 'Status',
-            value: String(filtroAtiva),
+            value: '',
             displayValue: filtroAtiva ? 'Sim' : 'Nao',
           },
         ]
 
   const handleAddFilter = (filter: ActiveFilter) => {
     if (filter.field === 'ativa') {
-      setFiltroAtiva(filter.value === 'true')
+      setFiltroAtiva(filter.operator === 'true')
     }
   }
 
