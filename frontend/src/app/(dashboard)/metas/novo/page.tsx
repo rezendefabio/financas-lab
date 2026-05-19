@@ -19,6 +19,8 @@ import {
 import { Input } from '@/shared/components/ui/input'
 import { Button } from '@/shared/components/ui/button'
 import { MoneyInput } from '@/shared/components/MoneyInput'
+import { FormGrid } from '@/shared/components/FormGrid'
+import { FormCol } from '@/shared/components/FormCol'
 
 const hoje = new Date().toISOString().split('T')[0]
 
@@ -84,54 +86,62 @@ export default function NovaMetaPage() {
                 })}
                 className="space-y-4"
               >
-                {/* Nome */}
-                <FormField
-                  control={form.control}
-                  name="nome"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Nome</FormLabel>
-                      <FormControl>
-                        <Input type="text" className="w-full" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                <FormGrid>
+                  {/* Nome */}
+                  <FormCol span={12}>
+                    <FormField
+                      control={form.control}
+                      name="nome"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Nome</FormLabel>
+                          <FormControl>
+                            <Input type="text" className="w-full" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </FormCol>
 
-                {/* Valor Alvo */}
-                <FormField
-                  control={form.control}
-                  name="valorAlvoValor"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Valor Alvo (R$)</FormLabel>
-                      <FormControl>
-                        <MoneyInput
-                          value={field.value}
-                          onChange={field.onChange}
-                          id={field.name}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                  {/* Valor Alvo */}
+                  <FormCol span={7}>
+                    <FormField
+                      control={form.control}
+                      name="valorAlvoValor"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Valor Alvo (R$)</FormLabel>
+                          <FormControl>
+                            <MoneyInput
+                              value={field.value}
+                              onChange={field.onChange}
+                              id={field.name}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </FormCol>
 
-                {/* Prazo */}
-                <FormField
-                  control={form.control}
-                  name="prazo"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Prazo</FormLabel>
-                      <FormControl>
-                        <Input type="date" className="w-full max-w-xs" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                  {/* Prazo */}
+                  <FormCol span={5}>
+                    <FormField
+                      control={form.control}
+                      name="prazo"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Prazo</FormLabel>
+                          <FormControl>
+                            <Input type="date" className="w-full" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </FormCol>
+                </FormGrid>
 
                 {apiError && <p className="text-sm text-destructive">{apiError}</p>}
 
