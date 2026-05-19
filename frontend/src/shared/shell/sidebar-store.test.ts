@@ -49,12 +49,45 @@ describe('useSidebarStore', () => {
     expect(useSidebarStore.getState().isCollapsed('Planejamento')).toBe(true)
   })
 
-  it('toggle de grupos diferentes e independente', () => {
+  it('abrir um grupo de topo fecha os irmaos de topo (accordion)', () => {
     const { toggleGroup } = useSidebarStore.getState()
-    // Abrir Cadastros, manter Movimento fechado
+    // Abrir Cadastros (grupo de topo).
     toggleGroup('Cadastros')
     expect(useSidebarStore.getState().isCollapsed('Cadastros')).toBe(false)
+    // Abrir Movimento (irmao de topo): Cadastros deve fechar.
+    toggleGroup('Movimento')
+    expect(useSidebarStore.getState().isCollapsed('Movimento')).toBe(false)
+    expect(useSidebarStore.getState().isCollapsed('Cadastros')).toBe(true)
+  })
+
+  it('accordion em subgrupos: abrir um subgrupo fecha o irmao sob o mesmo pai', () => {
+    // Subgrupos irmaos sob 'Cadastros': 'Cadastros/Financeiro' e
+    // 'Cadastros/Classificacao'. 'Movimento' (topo) nao deve ser afetado.
+    const { toggleGroup } = useSidebarStore.getState()
+    // Abrir o grupo pai e um subgrupo.
+    toggleGroup('Cadastros')
+    toggleGroup('Cadastros/Financeiro')
+    expect(useSidebarStore.getState().isCollapsed('Cadastros/Financeiro')).toBe(false)
+    // Abrir o subgrupo irmao: o primeiro deve fechar.
+    toggleGroup('Cadastros/Classificacao')
+    expect(useSidebarStore.getState().isCollapsed('Cadastros/Classificacao')).toBe(false)
+    expect(useSidebarStore.getState().isCollapsed('Cadastros/Financeiro')).toBe(true)
+    // Grupo de topo diferente permanece inalterado (fechado por default).
     expect(useSidebarStore.getState().isCollapsed('Movimento')).toBe(true)
+  })
+
+  it('fechar um grupo aberto so o adiciona ao collapsed (nao afeta irmaos)', () => {
+    const { toggleGroup } = useSidebarStore.getState()
+    // Abrir Cadastros e Movimento (accordion fecha Cadastros ao abrir Movimento).
+    toggleGroup('Cadastros')
+    toggleGroup('Movimento')
+    expect(useSidebarStore.getState().isCollapsed('Movimento')).toBe(false)
+    expect(useSidebarStore.getState().isCollapsed('Cadastros')).toBe(true)
+    // Fechar Movimento: nao reabre Cadastros nem mexe em outros irmaos.
+    toggleGroup('Movimento')
+    expect(useSidebarStore.getState().isCollapsed('Movimento')).toBe(true)
+    expect(useSidebarStore.getState().isCollapsed('Cadastros')).toBe(true)
+    expect(useSidebarStore.getState().isCollapsed('Planejamento')).toBe(true)
   })
 
   it('chave localStorage e financas-lab:sidebar-v2', () => {
