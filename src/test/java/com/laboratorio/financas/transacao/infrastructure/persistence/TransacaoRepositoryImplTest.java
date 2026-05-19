@@ -558,6 +558,67 @@ class TransacaoRepositoryImplTest extends AbstractIntegrationTest {
     }
 
     @Test
+    void listarComFiltroPorStatusRetornaApenasComAqueleStatus() {
+        // Given
+        UUID contaId = criarContaPersistida();
+        repository.salvar(new Transacao(TipoTransacao.RECEITA, VALOR_100, HOJE, "Compensada", contaId,
+                null, null, StatusTransacao.CLEARED, null, List.of()));
+        repository.salvar(new Transacao(TipoTransacao.DESPESA, VALOR_100, HOJE, "Pendente", contaId,
+                null, null, StatusTransacao.PENDING, null, List.of()));
+        repository.salvar(new Transacao(TipoTransacao.DESPESA, VALOR_100, HOJE, "Agendada", contaId,
+                null, null, StatusTransacao.SCHEDULED, null, List.of()));
+
+        FiltrosTransacao filtros = new FiltrosTransacao(null, null, null, null, null, null,
+                StatusTransacao.PENDING);
+
+        // When
+        Page<Transacao> resultado = repository.listarComFiltros(filtros, PageRequest.of(0, 10));
+
+        // Then
+        assertThat(resultado.getTotalElements()).isEqualTo(1);
+        assertThat(resultado.getContent().get(0).getStatus()).isEqualTo(StatusTransacao.PENDING);
+        assertThat(resultado.getContent().get(0).getDescricao()).isEqualTo("Pendente");
+    }
+
+    @Test
+    void listarComStatusNuloNaoFiltraPorStatus() {
+        // Given
+        UUID contaId = criarContaPersistida();
+        repository.salvar(new Transacao(TipoTransacao.RECEITA, VALOR_100, HOJE, "Compensada", contaId,
+                null, null, StatusTransacao.CLEARED, null, List.of()));
+        repository.salvar(new Transacao(TipoTransacao.DESPESA, VALOR_100, HOJE, "Pendente", contaId,
+                null, null, StatusTransacao.PENDING, null, List.of()));
+
+        FiltrosTransacao filtros = new FiltrosTransacao(null, null, null, null, null, null, null);
+
+        // When
+        Page<Transacao> resultado = repository.listarComFiltros(filtros, PageRequest.of(0, 10));
+
+        // Then
+        assertThat(resultado.getTotalElements()).isEqualTo(2);
+    }
+
+    @Test
+    void listarComFiltroStatusCombinadoComTipo() {
+        // Given
+        UUID contaId = criarContaPersistida();
+        repository.salvar(new Transacao(TipoTransacao.RECEITA, VALOR_100, HOJE, "Receita pendente", contaId,
+                null, null, StatusTransacao.PENDING, null, List.of()));
+        repository.salvar(new Transacao(TipoTransacao.DESPESA, VALOR_100, HOJE, "Despesa pendente", contaId,
+                null, null, StatusTransacao.PENDING, null, List.of()));
+
+        FiltrosTransacao filtros = new FiltrosTransacao(null, null, null, TipoTransacao.RECEITA, null, null,
+                StatusTransacao.PENDING);
+
+        // When
+        Page<Transacao> resultado = repository.listarComFiltros(filtros, PageRequest.of(0, 10));
+
+        // Then
+        assertThat(resultado.getTotalElements()).isEqualTo(1);
+        assertThat(resultado.getContent().get(0).getDescricao()).isEqualTo("Receita pendente");
+    }
+
+    @Test
     void listarNaoRetornaTransacoesSoftDeleted() {
         // Given
         UUID contaId = criarContaPersistida();
