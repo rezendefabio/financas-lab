@@ -9,11 +9,18 @@ public record FiltrosTransacao(
         LocalDate dataFim,
         TipoTransacao tipo,
         UUID categoriaId,
-        UUID userId
+        UUID userId,
+        StatusTransacao status
 ) {
-    /** Construtor de compatibilidade retroativa sem userId -- userId fica null (sem filtro). */
+    /** Construtor de compatibilidade retroativa sem userId e sem status -- ambos ficam null (sem filtro). */
     public FiltrosTransacao(UUID contaId, LocalDate dataInicio, LocalDate dataFim,
                             TipoTransacao tipo, UUID categoriaId) {
-        this(contaId, dataInicio, dataFim, tipo, categoriaId, null);
+        this(contaId, dataInicio, dataFim, tipo, categoriaId, null, null);
+    }
+
+    /** Construtor de compatibilidade retroativa sem status -- status fica null (sem filtro). */
+    public FiltrosTransacao(UUID contaId, LocalDate dataInicio, LocalDate dataFim,
+                            TipoTransacao tipo, UUID categoriaId, UUID userId) {
+        this(contaId, dataInicio, dataFim, tipo, categoriaId, userId, null);
     }
 }

@@ -28,9 +28,34 @@ public interface TransacaoRepository {
     void deletar(UUID id);
 
     /**
-     * Lista transacoes com filtros. Filtra deleted_at IS NULL por padrao.
+     * Lista transacoes com filtros, sem ordenacao explicita por campo de dominio.
+     * Filtra deleted_at IS NULL por padrao.
+     *
+     * <p>Usada por consumidores que so precisam de filtragem/paginacao
+     * (ex: relatorios com {@code Pageable.unpaged()}).
      */
     Page<Transacao> listarComFiltros(FiltrosTransacao filtros, Pageable pageable);
+
+    /**
+     * Lista transacoes com filtros, paginadas e ordenadas por um campo de
+     * dominio. Filtra deleted_at IS NULL por padrao.
+     *
+     * <p>A ordenacao e expressa por um campo de dominio ({@link OrdenacaoTransacao})
+     * e uma direcao. A traducao do campo de dominio para o caminho de propriedade
+     * de persistencia e responsabilidade da camada de infraestrutura.
+     *
+     * @param filtros  criterios de filtragem
+     * @param page     indice da pagina (base zero)
+     * @param size     tamanho da pagina
+     * @param ordenacao campo de dominio pelo qual ordenar
+     * @param direcao  direcao da ordenacao
+     */
+    Page<Transacao> listarComFiltrosOrdenado(
+            FiltrosTransacao filtros,
+            int page,
+            int size,
+            OrdenacaoTransacao ordenacao,
+            DirecaoOrdenacao direcao);
 
     /**
      * Busca todas as transacoes de um grupo de transferencia (par DESPESA+RECEITA).

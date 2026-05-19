@@ -384,6 +384,100 @@ class TransacaoControllerTest extends AbstractAuthenticatedIntegrationTest {
     }
 
     @Test
+    void getTransacoesComFiltroStatusFiltraStatus() throws Exception {
+        UUID contaId = criarContaPersistida();
+
+        Map<String, Object> compensada = requestReceita(contaId);
+        compensada.put("status", "CLEARED");
+        mockMvc.perform(comAuth(post("/api/transacoes")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(compensada))));
+
+        Map<String, Object> pendente = requestReceita(contaId);
+        pendente.put("status", "PENDING");
+        pendente.put("descricao", "Pendente");
+        mockMvc.perform(comAuth(post("/api/transacoes")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(pendente))));
+
+        mockMvc.perform(comAuth(get("/api/transacoes").param("status", "PENDING")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalElements", equalTo(1)))
+                .andExpect(jsonPath("$.content[0].status", equalTo("PENDING")));
+    }
+
+    @Test
+    void getTransacoesComStatusInvalidoRetorna400() throws Exception {
+        mockMvc.perform(comAuth(get("/api/transacoes").param("status", "INVALIDO")))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void getTransacoesComSortValidoOrdenaPorCampo() throws Exception {
+        UUID contaId = criarContaPersistida();
+
+        Map<String, Object> menor = requestReceita(contaId);
+        menor.put("valor", BigDecimal.valueOf(10));
+        menor.put("descricao", "Menor");
+        mockMvc.perform(comAuth(post("/api/transacoes")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(menor))));
+
+        Map<String, Object> maior = requestReceita(contaId);
+        maior.put("valor", BigDecimal.valueOf(900));
+        maior.put("descricao", "Maior");
+        mockMvc.perform(comAuth(post("/api/transacoes")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(maior))));
+
+        mockMvc.perform(comAuth(get("/api/transacoes").param("sort", "valor:asc")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content[0].descricao", equalTo("Menor")))
+                .andExpect(jsonPath("$.content[1].descricao", equalTo("Maior")));
+
+        mockMvc.perform(comAuth(get("/api/transacoes").param("sort", "valor:desc")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content[0].descricao", equalTo("Maior")))
+                .andExpect(jsonPath("$.content[1].descricao", equalTo("Menor")));
+    }
+
+    @Test
+    void getTransacoesSemSortUsaOrdenacaoPadrao() throws Exception {
+        UUID contaId = criarContaPersistida();
+        mockMvc.perform(comAuth(post("/api/transacoes")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(requestReceita(contaId)))));
+
+        mockMvc.perform(comAuth(get("/api/transacoes")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalElements", equalTo(1)));
+    }
+
+    @Test
+    void getTransacoesComSortCampoForaDaWhitelistRetorna400() throws Exception {
+        mockMvc.perform(comAuth(get("/api/transacoes").param("sort", "contaId:asc")))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void getTransacoesComSortDirecaoInvalidaRetorna400() throws Exception {
+        mockMvc.perform(comAuth(get("/api/transacoes").param("sort", "data:cima")))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void getTransacoesComSortSemDirecaoUsaDescPadrao() throws Exception {
+        UUID contaId = criarContaPersistida();
+        mockMvc.perform(comAuth(post("/api/transacoes")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(requestReceita(contaId)))));
+
+        mockMvc.perform(comAuth(get("/api/transacoes").param("sort", "data")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalElements", equalTo(1)));
+    }
+
+    @Test
     void getTransacaoPorIdExistenteRetorna200() throws Exception {
         UUID contaId = criarContaPersistida();
         MvcResult resultado = mockMvc.perform(comAuth(post("/api/transacoes")

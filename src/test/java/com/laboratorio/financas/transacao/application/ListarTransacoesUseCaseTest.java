@@ -2,12 +2,15 @@ package com.laboratorio.financas.transacao.application;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.laboratorio.financas.transacao.domain.DirecaoOrdenacao;
 import com.laboratorio.financas.transacao.domain.FiltrosTransacao;
+import com.laboratorio.financas.transacao.domain.OrdenacaoTransacao;
 import com.laboratorio.financas.transacao.domain.Transacao;
 import com.laboratorio.financas.transacao.domain.TransacaoRepository;
 import com.laboratorio.financas.transacao.domain.TipoTransacao;
@@ -18,7 +21,6 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 
 class ListarTransacoesUseCaseTest {
 
@@ -32,31 +34,36 @@ class ListarTransacoesUseCaseTest {
     }
 
     @Test
-    void executarDelegaAoRepositorioComFiltrosEPageable() {
+    void executarDelegaAoRepositorioComFiltrosOrdenacaoEPaginacao() {
         // Given
         FiltrosTransacao filtros = new FiltrosTransacao(null, null, null, null, null);
-        Pageable pageable = PageRequest.of(0, 20);
-        Page<Transacao> paginaVazia = Page.empty(pageable);
-        when(repository.listarComFiltros(filtros, pageable)).thenReturn(paginaVazia);
+        Page<Transacao> paginaVazia = Page.empty(PageRequest.of(0, 20));
+        when(repository.listarComFiltrosOrdenado(
+                filtros, 0, 20, OrdenacaoTransacao.DATA, DirecaoOrdenacao.DESC))
+                .thenReturn(paginaVazia);
 
         // When
-        Page<Transacao> resultado = useCase.executar(filtros, pageable);
+        Page<Transacao> resultado = useCase.executar(
+                filtros, 0, 20, OrdenacaoTransacao.DATA, DirecaoOrdenacao.DESC);
 
         // Then
         assertThat(resultado).isNotNull();
-        verify(repository, times(1)).listarComFiltros(filtros, pageable);
+        verify(repository, times(1)).listarComFiltrosOrdenado(
+                filtros, 0, 20, OrdenacaoTransacao.DATA, DirecaoOrdenacao.DESC);
     }
 
     @Test
     void executarRetornaOQueRepositorioRetornou() {
         // Given
         FiltrosTransacao filtros = new FiltrosTransacao(null, null, null, null, null);
-        Pageable pageable = PageRequest.of(0, 20);
-        Page<Transacao> paginaEsperada = Page.empty(pageable);
-        when(repository.listarComFiltros(filtros, pageable)).thenReturn(paginaEsperada);
+        Page<Transacao> paginaEsperada = Page.empty(PageRequest.of(0, 20));
+        when(repository.listarComFiltrosOrdenado(
+                filtros, 0, 20, OrdenacaoTransacao.DATA, DirecaoOrdenacao.DESC))
+                .thenReturn(paginaEsperada);
 
         // When
-        Page<Transacao> resultado = useCase.executar(filtros, pageable);
+        Page<Transacao> resultado = useCase.executar(
+                filtros, 0, 20, OrdenacaoTransacao.DATA, DirecaoOrdenacao.DESC);
 
         // Then
         assertThat(resultado).isSameAs(paginaEsperada);
@@ -67,15 +74,18 @@ class ListarTransacoesUseCaseTest {
         // Given
         UUID contaId = UUID.randomUUID();
         FiltrosTransacao filtros = new FiltrosTransacao(contaId, null, null, null, null);
-        Pageable pageable = PageRequest.of(0, 20);
-        Page<Transacao> pagina = Page.empty(pageable);
-        when(repository.listarComFiltros(eq(filtros), any(Pageable.class))).thenReturn(pagina);
+        when(repository.listarComFiltrosOrdenado(
+                eq(filtros), anyInt(), anyInt(),
+                any(OrdenacaoTransacao.class), any(DirecaoOrdenacao.class)))
+                .thenReturn(Page.empty(PageRequest.of(0, 20)));
 
         // When
-        useCase.executar(filtros, pageable);
+        useCase.executar(filtros, 0, 20, OrdenacaoTransacao.VALOR, DirecaoOrdenacao.ASC);
 
         // Then
-        verify(repository, times(1)).listarComFiltros(eq(filtros), any(Pageable.class));
+        verify(repository, times(1)).listarComFiltrosOrdenado(
+                eq(filtros), anyInt(), anyInt(),
+                any(OrdenacaoTransacao.class), any(DirecaoOrdenacao.class));
     }
 
     @Test
@@ -88,29 +98,34 @@ class ListarTransacoesUseCaseTest {
                 TipoTransacao.RECEITA,
                 null
         );
-        Pageable pageable = PageRequest.of(0, 10);
-        Page<Transacao> pagina = Page.empty(pageable);
-        when(repository.listarComFiltros(eq(filtros), any(Pageable.class))).thenReturn(pagina);
+        when(repository.listarComFiltrosOrdenado(
+                eq(filtros), anyInt(), anyInt(),
+                any(OrdenacaoTransacao.class), any(DirecaoOrdenacao.class)))
+                .thenReturn(Page.empty(PageRequest.of(0, 10)));
 
         // When
-        useCase.executar(filtros, pageable);
+        useCase.executar(filtros, 0, 10, OrdenacaoTransacao.DATA, DirecaoOrdenacao.DESC);
 
         // Then
-        verify(repository, times(1)).listarComFiltros(eq(filtros), any(Pageable.class));
+        verify(repository, times(1)).listarComFiltrosOrdenado(
+                eq(filtros), anyInt(), anyInt(),
+                any(OrdenacaoTransacao.class), any(DirecaoOrdenacao.class));
     }
 
     @Test
-    void executarChamaRepositorioUmaVez() {
+    void executarPropagaOrdenacaoEDirecaoAoRepositorio() {
         // Given
         FiltrosTransacao filtros = new FiltrosTransacao(null, null, null, null, null);
-        Pageable pageable = PageRequest.of(1, 5);
-        when(repository.listarComFiltros(any(FiltrosTransacao.class), any(Pageable.class)))
-                .thenReturn(Page.empty(pageable));
+        when(repository.listarComFiltrosOrdenado(
+                any(FiltrosTransacao.class), anyInt(), anyInt(),
+                any(OrdenacaoTransacao.class), any(DirecaoOrdenacao.class)))
+                .thenReturn(Page.empty(PageRequest.of(1, 5)));
 
         // When
-        useCase.executar(filtros, pageable);
+        useCase.executar(filtros, 1, 5, OrdenacaoTransacao.STATUS, DirecaoOrdenacao.ASC);
 
         // Then
-        verify(repository, times(1)).listarComFiltros(any(FiltrosTransacao.class), any(Pageable.class));
+        verify(repository, times(1)).listarComFiltrosOrdenado(
+                filtros, 1, 5, OrdenacaoTransacao.STATUS, DirecaoOrdenacao.ASC);
     }
 }
