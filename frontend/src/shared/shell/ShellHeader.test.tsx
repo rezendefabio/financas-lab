@@ -11,7 +11,6 @@ const mockLogout = vi.fn()
 const mockPush = vi.fn()
 
 vi.mock('next/navigation', () => ({
-  usePathname: () => '/',
   useRouter: () => ({ push: mockPush }),
 }))
 
@@ -53,9 +52,9 @@ describe('ShellHeader', () => {
     expect(screen.getByRole('button', { name: 'toggle' })).toBeInTheDocument()
   })
 
-  it('mostra o titulo da tela ativa (pathname "/" -> Dashboard)', () => {
+  it('mostra o nome da aplicacao no header', () => {
     render(<ShellHeader />)
-    expect(screen.getByText('Dashboard')).toBeInTheDocument()
+    expect(screen.getByText('Financas Lab')).toBeInTheDocument()
   })
 
   it('em isMobile=true com 3 abas: mostra badge "3 abas"', () => {
