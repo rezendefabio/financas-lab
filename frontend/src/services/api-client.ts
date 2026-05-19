@@ -3,14 +3,23 @@ import { ApiError } from '@/shared/types/api'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8080'
 
-export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
+/**
+ * Opcoes do apiFetch. Estende RequestInit com `screenCode` opcional, que
+ * o backend usa para registrar a origem de uma mutacao na trilha de
+ * auditoria (header `X-Screen-Code`).
+ */
+export type ApiFetchOptions = RequestInit & { screenCode?: string }
+
+export async function apiFetch<T>(path: string, init?: ApiFetchOptions): Promise<T> {
   const token = getToken()
+  const { screenCode, ...rest } = init ?? {}
   const res = await fetch(`${API_BASE}${path}`, {
-    ...init,
+    ...rest,
     headers: {
       'Content-Type': 'application/json',
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...(init?.headers ?? {}),
+      ...(screenCode ? { 'X-Screen-Code': screenCode } : {}),
+      ...(rest.headers ?? {}),
     },
   })
   if (res.status === 204) return undefined as T
