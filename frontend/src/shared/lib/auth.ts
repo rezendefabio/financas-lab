@@ -29,3 +29,19 @@ export function getCurrentUserEmail(): string | null {
   const payload = parseJwtPayload(token)
   return typeof payload.sub === 'string' ? payload.sub : null
 }
+
+/**
+ * Encerra a sessao completamente: remove o token e reseta os stores de UI.
+ * Usar em logout explicito e em respostas 401 (token expirado).
+ * Importacao dinamica dos stores evita dependencia circular.
+ */
+export async function clearSession(): Promise<void> {
+  clearToken()
+  // Importacao dinamica para evitar dependencia circular (auth.ts <- stores <- auth.ts)
+  const [{ useTabsStore }, { useSidebarStore, initialCollapsed }] = await Promise.all([
+    import('@/shared/shell/tabs-store'),
+    import('@/shared/shell/sidebar-store'),
+  ])
+  useTabsStore.setState({ tabs: [], activeId: null })
+  useSidebarStore.setState({ collapsed: initialCollapsed })
+}
