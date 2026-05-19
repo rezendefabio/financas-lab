@@ -204,6 +204,9 @@ export function TabBar() {
     const query = params.toString()
     const url = query ? `${targetPath}?${query}` : targetPath
     router.replace(url)
+    // router excluido propositalmente: sua referencia muda apos router.push(),
+    // o que re-dispararia este efeito e reverteria a navegacao para /novo.
+    // Apenas tabs e activeId definem quando a URL deve ser sincronizada.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tabs, activeId])
 
