@@ -1,15 +1,31 @@
 import { render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 
 let mockIsMobile = false
+let mockCurrentUser: { email: string | null; initials: string } = {
+  email: 'fabio@test.com',
+  initials: 'F',
+}
+const mockLogout = vi.fn()
+const mockPush = vi.fn()
 
 vi.mock('next/navigation', () => ({
   usePathname: () => '/',
+  useRouter: () => ({ push: mockPush }),
 }))
 
 vi.mock('@/shared/components/ui/sidebar', () => ({
   useSidebar: () => ({ isMobile: mockIsMobile }),
   SidebarTrigger: () => <button>toggle</button>,
+}))
+
+vi.mock('@/features/auth/hooks/use-auth', () => ({
+  useAuth: () => ({ logout: mockLogout }),
+}))
+
+vi.mock('@/features/auth/hooks/use-current-user', () => ({
+  useCurrentUser: () => mockCurrentUser,
 }))
 
 import { ShellHeader } from './ShellHeader'
@@ -26,6 +42,9 @@ function makeTabs(count: number) {
 describe('ShellHeader', () => {
   beforeEach(() => {
     mockIsMobile = false
+    mockCurrentUser = { email: 'fabio@test.com', initials: 'F' }
+    mockLogout.mockClear()
+    mockPush.mockClear()
     useTabsStore.setState({ tabs: [], activeId: null })
   })
 
@@ -51,5 +70,47 @@ describe('ShellHeader', () => {
     useTabsStore.setState({ tabs: makeTabs(3), activeId: 'tab-0' })
     render(<ShellHeader />)
     expect(screen.queryByText('3 abas')).not.toBeInTheDocument()
+  })
+
+  it('renderiza as iniciais do usuario no avatar', () => {
+    render(<ShellHeader />)
+    const avatar = screen.getByRole('button', { name: 'Menu do usuario' })
+    expect(avatar).toBeInTheDocument()
+    expect(avatar).toHaveTextContent('F')
+  })
+
+  it('sem usuario logado: avatar mostra "?"', () => {
+    mockCurrentUser = { email: null, initials: '?' }
+    render(<ShellHeader />)
+    const avatar = screen.getByRole('button', { name: 'Menu do usuario' })
+    expect(avatar).toHaveTextContent('?')
+  })
+
+  it('nao renderiza o botao de logout diretamente (esta dentro do dropdown)', () => {
+    render(<ShellHeader />)
+    expect(screen.queryByRole('menuitem', { name: /sair/i })).not.toBeInTheDocument()
+  })
+
+  it('abrir o dropdown mostra o email do usuario no label', async () => {
+    render(<ShellHeader />)
+    await userEvent.click(screen.getByRole('button', { name: 'Menu do usuario' }))
+    expect(await screen.findByText('fabio@test.com')).toBeInTheDocument()
+  })
+
+  it('sem usuario logado: dropdown aberto nao mostra label de email', async () => {
+    mockCurrentUser = { email: null, initials: '?' }
+    render(<ShellHeader />)
+    await userEvent.click(screen.getByRole('button', { name: 'Menu do usuario' }))
+    // Espera o dropdown abrir (item "Sair" presente) antes de afirmar ausencia.
+    await screen.findByRole('menuitem', { name: /sair/i })
+    expect(screen.queryByText(/@/)).not.toBeInTheDocument()
+  })
+
+  it('clicar em "Sair" no dropdown faz logout e navega para /login', async () => {
+    render(<ShellHeader />)
+    await userEvent.click(screen.getByRole('button', { name: 'Menu do usuario' }))
+    await userEvent.click(await screen.findByRole('menuitem', { name: /sair/i }))
+    expect(mockLogout).toHaveBeenCalledTimes(1)
+    expect(mockPush).toHaveBeenCalledWith('/login')
   })
 })

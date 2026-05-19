@@ -1,5 +1,12 @@
 import { describe, it, expect, beforeEach } from 'vitest'
-import { getToken, setToken, clearToken, isAuthenticated } from './auth'
+import {
+  getToken,
+  setToken,
+  clearToken,
+  isAuthenticated,
+  parseJwtPayload,
+  getCurrentUserEmail,
+} from './auth'
 
 describe('auth utils', () => {
   beforeEach(() => {
@@ -28,5 +35,42 @@ describe('auth utils', () => {
   it('isAuthenticated returns true when token is set', () => {
     setToken('my-token')
     expect(isAuthenticated()).toBe(true)
+  })
+})
+
+/** Monta um JWT de teste (header e assinatura fake) a partir de um payload. */
+function createMockJWT(payload: Record<string, unknown>): string {
+  const encoded = btoa(JSON.stringify(payload))
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=+$/, '')
+  return `header.${encoded}.sig`
+}
+
+describe('parseJwtPayload', () => {
+  it('extrai sub do payload JWT', () => {
+    const token = createMockJWT({ sub: 'fabio@test.com' })
+    expect(parseJwtPayload(token)).toEqual({ sub: 'fabio@test.com' })
+  })
+
+  it('retorna {} para token invalido', () => {
+    expect(parseJwtPayload('invalido')).toEqual({})
+  })
+})
+
+describe('getCurrentUserEmail', () => {
+  beforeEach(() => {
+    localStorage.clear()
+  })
+
+  it('retorna email do token no localStorage', () => {
+    setToken(createMockJWT({ sub: 'fabio@test.com' }))
+    expect(getCurrentUserEmail()).toBe('fabio@test.com')
+    clearToken()
+  })
+
+  it('retorna null quando nao ha token', () => {
+    clearToken()
+    expect(getCurrentUserEmail()).toBeNull()
   })
 })
