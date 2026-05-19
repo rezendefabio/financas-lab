@@ -37,11 +37,16 @@ export function getCurrentUserEmail(): string | null {
  */
 export async function clearSession(): Promise<void> {
   clearToken()
-  // Importacao dinamica para evitar dependencia circular (auth.ts <- stores <- auth.ts)
-  const [{ useTabsStore }, { useSidebarStore, initialCollapsed }] = await Promise.all([
-    import('@/shared/shell/tabs-store'),
-    import('@/shared/shell/sidebar-store'),
-  ])
-  useTabsStore.setState({ tabs: [], activeId: null })
-  useSidebarStore.setState({ collapsed: initialCollapsed })
+  try {
+    // Importacao dinamica para evitar dependencia circular (auth.ts <- stores <- auth.ts)
+    const [{ useTabsStore }, { useSidebarStore, initialCollapsed }] = await Promise.all([
+      import('@/shared/shell/tabs-store'),
+      import('@/shared/shell/sidebar-store'),
+    ])
+    useTabsStore.setState({ tabs: [], activeId: null })
+    useSidebarStore.setState({ collapsed: initialCollapsed })
+  } catch (err) {
+    // O token ja foi removido; falha ao resetar os stores nao deve ser silenciosa.
+    console.error('Falha ao resetar os stores de UI em clearSession:', err)
+  }
 }
