@@ -7,6 +7,8 @@ import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { ArrowLeft } from 'lucide-react'
 import { anotacaoService } from '@/features/anotacoes/services/anotacao-service'
+import { FormGrid } from '@/shared/components/FormGrid'
+import { FormCol } from '@/shared/components/FormCol'
 import { Card, CardContent } from '@/shared/components/ui/card'
 import {
   Form,
@@ -107,120 +109,134 @@ export default function NovaAnotacao() {
           <CardContent className="pt-6 space-y-4">
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                <FormField
-                  control={form.control}
-                  name="titulo"
-                  render={({ field }) => (
+                <FormGrid>
+                  <FormCol span={12}>
+                    <FormField
+                      control={form.control}
+                      name="titulo"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Titulo</FormLabel>
+                          <FormControl>
+                            <Input maxLength={200} className="w-full" placeholder="Ex: Pagar fatura" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </FormCol>
+
+                  <FormCol span={12}>
+                    <FormField
+                      control={form.control}
+                      name="conteudo"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Conteudo (opcional)</FormLabel>
+                          <FormControl>
+                            <textarea
+                              maxLength={5000}
+                              className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                              placeholder="Detalhes..."
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </FormCol>
+
+                  <FormCol span={6}>
                     <FormItem>
-                      <FormLabel>Titulo</FormLabel>
-                      <FormControl>
-                        <Input maxLength={200} className="w-full" placeholder="Ex: Pagar fatura" {...field} />
-                      </FormControl>
-                      <FormMessage />
+                      <FormLabel>Tipo</FormLabel>
+                      <Controller
+                        control={form.control}
+                        name="tipo"
+                        render={({ field }) => (
+                          <Select value={field.value} onValueChange={field.onChange}>
+                            <SelectTrigger className="w-full">
+                              <SelectValue placeholder="Selecione o tipo">
+                                {(v: string | null) => TIPOS.find(t => t.value === v)?.label ?? 'Selecione o tipo'}
+                              </SelectValue>
+                            </SelectTrigger>
+                            <SelectContent>
+                              {TIPOS.map((t) => (
+                                <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        )}
+                      />
+                      {form.formState.errors.tipo && (
+                        <p className="text-sm text-destructive">{form.formState.errors.tipo.message}</p>
+                      )}
                     </FormItem>
-                  )}
-                />
+                  </FormCol>
 
-                <FormField
-                  control={form.control}
-                  name="conteudo"
-                  render={({ field }) => (
+                  <FormCol span={6}>
                     <FormItem>
-                      <FormLabel>Conteudo (opcional)</FormLabel>
-                      <FormControl>
-                        <textarea
-                          maxLength={5000}
-                          className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                          placeholder="Detalhes..."
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
+                      <FormLabel>Prioridade</FormLabel>
+                      <Controller
+                        control={form.control}
+                        name="prioridade"
+                        render={({ field }) => (
+                          <Select value={field.value} onValueChange={field.onChange}>
+                            <SelectTrigger className="w-full">
+                              <SelectValue placeholder="Selecione a prioridade">
+                                {(v: string | null) => PRIORIDADES.find(p => p.value === v)?.label ?? 'Selecione a prioridade'}
+                              </SelectValue>
+                            </SelectTrigger>
+                            <SelectContent>
+                              {PRIORIDADES.map((p) => (
+                                <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        )}
+                      />
+                      {form.formState.errors.prioridade && (
+                        <p className="text-sm text-destructive">{form.formState.errors.prioridade.message}</p>
+                      )}
                     </FormItem>
-                  )}
-                />
+                  </FormCol>
 
-                <FormItem>
-                  <FormLabel>Tipo</FormLabel>
-                  <Controller
-                    control={form.control}
-                    name="tipo"
-                    render={({ field }) => (
-                      <Select value={field.value} onValueChange={field.onChange}>
-                        <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Selecione o tipo">
-                            {(v: string | null) => TIPOS.find(t => t.value === v)?.label ?? 'Selecione o tipo'}
-                          </SelectValue>
-                        </SelectTrigger>
-                        <SelectContent>
-                          {TIPOS.map((t) => (
-                            <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    )}
-                  />
-                  {form.formState.errors.tipo && (
-                    <p className="text-sm text-destructive">{form.formState.errors.tipo.message}</p>
-                  )}
-                </FormItem>
+                  <FormCol span={6}>
+                    <FormField
+                      control={form.control}
+                      name="valorMontante"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Valor (opcional, R$)</FormLabel>
+                          <FormControl>
+                            <MoneyInput
+                              value={field.value ?? 0}
+                              onChange={field.onChange}
+                              id={field.name}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </FormCol>
 
-                <FormItem>
-                  <FormLabel>Prioridade</FormLabel>
-                  <Controller
-                    control={form.control}
-                    name="prioridade"
-                    render={({ field }) => (
-                      <Select value={field.value} onValueChange={field.onChange}>
-                        <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Selecione a prioridade">
-                            {(v: string | null) => PRIORIDADES.find(p => p.value === v)?.label ?? 'Selecione a prioridade'}
-                          </SelectValue>
-                        </SelectTrigger>
-                        <SelectContent>
-                          {PRIORIDADES.map((p) => (
-                            <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    )}
-                  />
-                  {form.formState.errors.prioridade && (
-                    <p className="text-sm text-destructive">{form.formState.errors.prioridade.message}</p>
-                  )}
-                </FormItem>
-
-                <FormField
-                  control={form.control}
-                  name="valorMontante"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Valor (opcional, R$)</FormLabel>
-                      <FormControl>
-                        <MoneyInput
-                          value={field.value ?? 0}
-                          onChange={field.onChange}
-                          id={field.name}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="dataReferencia"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Data de referencia (opcional)</FormLabel>
-                      <FormControl>
-                        <Input type="date" className="w-full" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                  <FormCol span={6}>
+                    <FormField
+                      control={form.control}
+                      name="dataReferencia"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Data de referencia (opcional)</FormLabel>
+                          <FormControl>
+                            <Input type="date" className="w-full" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </FormCol>
+                </FormGrid>
 
                 {apiError && (
                   <p className="text-sm text-destructive">{apiError}</p>

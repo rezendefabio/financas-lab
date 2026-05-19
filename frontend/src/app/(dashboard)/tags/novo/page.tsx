@@ -7,6 +7,8 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
 import { ArrowLeft } from 'lucide-react'
 import { criarTag } from '@/features/tag'
+import { FormGrid } from '@/shared/components/FormGrid'
+import { FormCol } from '@/shared/components/FormCol'
 import { Card, CardContent } from '@/shared/components/ui/card'
 import {
   Form,
@@ -71,53 +73,59 @@ export default function NovaTagPage() {
                 onSubmit={form.handleSubmit((v) => { setApiError(null); mutation.mutate(v) })}
                 className="space-y-4"
               >
-                <FormField
-                  control={form.control}
-                  name="nome"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Nome</FormLabel>
-                      <FormControl>
-                        <Input
-                          className="w-full"
-                          placeholder="Ex: Urgente"
-                          maxLength={50}
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                <FormGrid>
+                  <FormCol span={8}>
+                    <FormField
+                      control={form.control}
+                      name="nome"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Nome</FormLabel>
+                          <FormControl>
+                            <Input
+                              className="w-full"
+                              placeholder="Ex: Urgente"
+                              maxLength={50}
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </FormCol>
 
-                <FormField
-                  control={form.control}
-                  name="cor"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Cor (opcional)</FormLabel>
-                      <FormControl>
-                        <div className="flex items-center gap-3">
-                          <input
-                            type="color"
-                            aria-label="Selecionar cor"
-                            className="h-10 w-12 cursor-pointer rounded border border-input bg-background p-1"
-                            value={field.value || '#000000'}
-                            onChange={(e) => field.onChange(e.target.value)}
-                          />
-                          <Input
-                            className="flex-1"
-                            placeholder="#RRGGBB"
-                            maxLength={7}
-                            value={field.value || ''}
-                            onChange={(e) => field.onChange(e.target.value || undefined)}
-                          />
-                        </div>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                  <FormCol span={4}>
+                    <FormField
+                      control={form.control}
+                      name="cor"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Cor (opcional)</FormLabel>
+                          <FormControl>
+                            <div className="flex items-center gap-3">
+                              <input
+                                type="color"
+                                aria-label="Selecionar cor"
+                                className="h-10 w-12 cursor-pointer rounded border border-input bg-background p-1"
+                                value={field.value || '#000000'}
+                                onChange={(e) => field.onChange(e.target.value)}
+                              />
+                              <Input
+                                className="flex-1"
+                                placeholder="#RRGGBB"
+                                maxLength={7}
+                                value={field.value || ''}
+                                onChange={(e) => field.onChange(e.target.value || undefined)}
+                              />
+                            </div>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </FormCol>
+                </FormGrid>
 
                 {apiError && (
                   <p className="text-sm text-destructive">{apiError}</p>
