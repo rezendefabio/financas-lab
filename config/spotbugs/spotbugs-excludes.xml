@@ -29,6 +29,16 @@
     </Match>
 
     <!--
+        Controllers com injecao de dependencia Spring: beans injetados via
+        construtor (use cases, ObjectMapper, publishers) sao singletons
+        gerenciados pelo contexto, nao exposicao de mutabilidade.
+    -->
+    <Match>
+        <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2"/>
+        <Class name="~.*Controller"/>
+    </Match>
+
+    <!--
         Classes @Configuration: metodos @Bean retornando objeto novo
         sao padrao Spring, nao "returned object never used".
     -->

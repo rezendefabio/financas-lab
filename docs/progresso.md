@@ -160,6 +160,39 @@ Ativar a fábrica de fato: rodar features no Tier 2, configurar 3 routines Tier 
 
 ### Sub-etapas concluídas
 
+- **UI-4 -- Audit Log (backend + frontend drawer)** (2026-05-19):
+  Quarta fase da arquitetura de shell declarativo (ADR-014, `frontend-master-spec.md`
+  secao 5). Novo bounded context `auditlog` (Tier 2) implementa trilha imutavel de
+  eventos create/update/delete para todas as entidades. **Domain:** `AuditLog`
+  (imutavel, sem setters), enum `AuditAction`, `AuditEvent`, `FiltrosAuditLog`,
+  `AuditLogRepository`. **Application:** `RegistrarAuditLogUseCase`,
+  `ListarAuditLogPorEntidadeUseCase`, `ListarAuditLogUseCase`. **Captura via Spring
+  Application Events** (assincrona) para desacoplar do negocio: `AuditPublisher`
+  publica `AuditEvent`, `AuditEventListener` (`@Async` + `@EventListener` + try/catch)
+  consome e persiste -- falha na escrita do audit log nunca propaga para a operacao
+  origem. **Infrastructure:** `AuditLogEntity` (colunas `before_state`/`after_state`
+  evitam palavra reservada `before`; `action` como enum `@Enumerated(STRING)`),
+  `AuditLogJpaRepository` (query com filtros opcionais usando `CAST(:param AS
+  timestamp)` para os `Instant` -- licao 5.88), `AuditLogMapper` (MapStruct),
+  `AuditLogRepositoryImpl`. Migration `V25__cria_tabela_audit_log.sql` (3 indices).
+  **Interface:** `AuditLogController` (`GET /api/audit-log`, autenticado; 400 quando
+  `entityId` vem sem `entityType`). **9 controllers instrumentados** (Conta,
+  Categoria, Transacao, Orcamento, Meta, LancamentoRecorrente, Tag, Payee, Anotacao):
+  injetam `AuditPublisher` + `ObjectMapper`, publicam `AuditEvent` apos cada mutacao
+  bem-sucedida; `X-Screen-Code` lido via header opcional; logica de negocio dos use
+  cases intacta. **Frontend:** feature `auditlog` (types/service/hook/component/index),
+  `AuditLogDrawer` (Sheet lateral, timeline com icones por action, expansao de diff,
+  "Carregar mais" via `useInfiniteQuery`), integrada como piloto na tela de Contas
+  (botao `History` por card). `api-client.ts` ganha suporte opcional ao header
+  `X-Screen-Code`. **Notas de zona limitrofe:** alguns controllers nao tinham endpoint
+  PUT (Lancamento Recorrente) -- instrumentado apenas POST/DELETE; Meta usa
+  `/{id}/depositos` como operacao UPDATE; Conta `desativar` (soft) registrado como
+  UPDATE e `excluir` como DELETE. SpotBugs `EI_EXPOSE_REP2` ao armazenar
+  `ObjectMapper` injetado: exclude `~.*Controller` adicionado a
+  `config/spotbugs/spotbugs-excludes.xml` (mesmo padrao do exclude `~.*UseCase`,
+  falso positivo de DI Spring). 932 testes backend + suite frontend, BUILD SUCCESS.
+  PR aberto.
+
 - **UI-1 -- Screen Registry + SidebarMenu hierarquico + Command Palette** (2026-05-18):
   Primeira fase da arquitetura de shell declarativo (ADR-014, `frontend-master-spec.md`
   pontos 1 e 3). Quatro artefatos num PR unico. **Screen Registry** em

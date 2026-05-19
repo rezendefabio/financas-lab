@@ -13,8 +13,6 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.server.ResponseStatusException;
-import org.springframework.http.HttpStatus;
 
 /**
  * Endpoint de consulta da trilha de auditoria.
@@ -53,8 +51,7 @@ public class AuditLogController {
     ) {
         if (entityId != null) {
             if (entityType == null || entityType.isBlank()) {
-                throw new ResponseStatusException(
-                        HttpStatus.BAD_REQUEST,
+                throw new IllegalArgumentException(
                         "entityType e obrigatorio quando entityId e informado");
             }
             return listarPorEntidadeUseCase.executar(entityType, entityId, page, size)
