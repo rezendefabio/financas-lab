@@ -2,7 +2,7 @@
 import { useForm, Controller, type Resolver } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { ArrowLeft } from 'lucide-react'
@@ -21,6 +21,9 @@ import {
 import { Input } from '@/shared/components/ui/input'
 import { Button } from '@/shared/components/ui/button'
 import { MoneyInput } from '@/shared/components/MoneyInput'
+import { FormGrid } from '@/shared/components/FormGrid'
+import { FormCol } from '@/shared/components/FormCol'
+import { LookupField } from '@/shared/components/LookupField'
 import {
   Select,
   SelectContent,
@@ -69,16 +72,6 @@ export default function NovoLancamentoRecorrentePage() {
   const queryClient = useQueryClient()
   const [apiError, setApiError] = useState<string | null>(null)
 
-  const { data: contas } = useQuery({
-    queryKey: ['contas'],
-    queryFn: () => contasService.listar(),
-  })
-
-  const { data: categorias } = useQuery({
-    queryKey: ['categorias'],
-    queryFn: categoriasService.listar,
-  })
-
   const today = new Date().toISOString().slice(0, 10)
 
   const form = useForm<FormValues>({
@@ -94,9 +87,8 @@ export default function NovoLancamentoRecorrentePage() {
     },
   })
 
+  // eslint-disable-next-line react-hooks/incompatible-library
   const tipoAtual = form.watch('tipo')
-
-  const categoriasDoTipo = (categorias ?? []).filter((c) => c.tipo === tipoAtual)
 
   const mutation = useMutation({
     mutationFn: (values: FormValues) =>
@@ -128,7 +120,7 @@ export default function NovoLancamentoRecorrentePage() {
         <h1 className="text-2xl font-semibold tracking-tight">Novo Lancamento Recorrente</h1>
       </div>
 
-      <div className="max-w-xl">
+      <div className="max-w-2xl">
         <Card>
           <CardContent className="pt-6 space-y-4">
             <Form {...form}>
@@ -139,177 +131,181 @@ export default function NovoLancamentoRecorrentePage() {
                 })}
                 className="space-y-4"
               >
-                {/* Descricao */}
-                <FormField
-                  control={form.control}
-                  name="descricao"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Descricao</FormLabel>
-                      <FormControl>
-                        <Input
-                          className="w-full"
-                          placeholder="Ex: Aluguel"
-                          maxLength={200}
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                {/* Tipo */}
-                <FormItem>
-                  <FormLabel>Tipo</FormLabel>
-                  <Controller
-                    control={form.control}
-                    name="tipo"
-                    render={({ field }) => (
-                      <Select value={field.value} onValueChange={field.onChange}>
-                        <SelectTrigger className="w-full">
-                          <SelectValue>
-                            {(v: string | null) => TIPOS.find(t => t.value === v)?.label ?? 'Selecione o tipo'}
-                          </SelectValue>
-                        </SelectTrigger>
-                        <SelectContent>
-                          {TIPOS.map((t) => (
-                            <SelectItem key={t.value} value={t.value}>
-                              {t.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    )}
-                  />
-                </FormItem>
-
-                {/* Valor */}
-                <FormField
-                  control={form.control}
-                  name="valorValor"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Valor (R$)</FormLabel>
-                      <FormControl>
-                        <MoneyInput
-                          value={field.value}
-                          onChange={field.onChange}
-                          id={field.name}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                {/* Conta */}
-                <FormItem>
-                  <FormLabel>Conta</FormLabel>
-                  <Controller
-                    control={form.control}
-                    name="contaId"
-                    render={({ field }) => (
-                      <Select value={field.value} onValueChange={field.onChange}>
-                        <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Selecione a conta">
-                            {(v: string | null) => {
-                              if (!v) return 'Selecione a conta'
-                              return (contas ?? []).find(c => c.id === v)?.nome ?? 'Selecione a conta'
-                            }}
-                          </SelectValue>
-                        </SelectTrigger>
-                        <SelectContent>
-                          {(contas ?? [])
-                            .filter((c) => c.ativa)
-                            .map((c) => (
-                              <SelectItem key={c.id} value={c.id}>
-                                {c.nome}
-                              </SelectItem>
-                            ))}
-                        </SelectContent>
-                      </Select>
-                    )}
-                  />
-                  {form.formState.errors.contaId && (
-                    <p className="text-sm text-destructive">
-                      {form.formState.errors.contaId.message}
-                    </p>
-                  )}
-                </FormItem>
-
-                {/* Categoria (opcional) */}
-                {categoriasDoTipo.length > 0 && (
-                  <FormItem>
-                    <FormLabel>Categoria (opcional)</FormLabel>
-                    <Controller
+                <FormGrid>
+                  {/* Descricao */}
+                  <FormCol span={12}>
+                    <FormField
                       control={form.control}
-                      name="categoriaId"
+                      name="descricao"
                       render={({ field }) => (
-                        <Select
-                          value={field.value ?? ''}
-                          onValueChange={(v) => field.onChange(v || undefined)}
-                        >
-                          <SelectTrigger className="w-full">
-                            <SelectValue placeholder="Sem categoria">
-                              {(v: string | null) => {
-                                if (!v) return 'Sem categoria'
-                                return (categoriasDoTipo ?? []).find(c => c.id === v)?.nome ?? 'Sem categoria'
-                              }}
-                            </SelectValue>
-                          </SelectTrigger>
-                          <SelectContent>
-                            {categoriasDoTipo.map((c) => (
-                              <SelectItem key={c.id} value={c.id}>
-                                {c.nome}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <FormItem>
+                          <FormLabel>Descricao</FormLabel>
+                          <FormControl>
+                            <Input
+                              className="w-full"
+                              placeholder="Ex: Aluguel"
+                              maxLength={200}
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
                       )}
                     />
-                  </FormItem>
-                )}
+                  </FormCol>
 
-                {/* Periodicidade */}
-                <FormItem>
-                  <FormLabel>Periodicidade</FormLabel>
-                  <Controller
-                    control={form.control}
-                    name="periodicidade"
-                    render={({ field }) => (
-                      <Select value={field.value} onValueChange={field.onChange}>
-                        <SelectTrigger className="w-full">
-                          <SelectValue>
-                            {(v: string | null) => PERIODICIDADES.find(p => p.value === v)?.label ?? 'Selecione a periodicidade'}
-                          </SelectValue>
-                        </SelectTrigger>
-                        <SelectContent>
-                          {PERIODICIDADES.map((p) => (
-                            <SelectItem key={p.value} value={p.value}>
-                              {p.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    )}
-                  />
-                </FormItem>
+                  {/* Valor */}
+                  <FormCol span={7}>
+                    <FormField
+                      control={form.control}
+                      name="valorValor"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Valor (R$)</FormLabel>
+                          <FormControl>
+                            <MoneyInput
+                              value={field.value}
+                              onChange={field.onChange}
+                              id={field.name}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </FormCol>
 
-                {/* Proxima Ocorrencia */}
-                <FormField
-                  control={form.control}
-                  name="proximaOcorrencia"
-                  render={({ field }) => (
+                  {/* Tipo */}
+                  <FormCol span={5}>
                     <FormItem>
-                      <FormLabel>Proxima Ocorrencia</FormLabel>
-                      <FormControl>
-                        <Input type="date" className="w-full max-w-xs" {...field} />
-                      </FormControl>
-                      <FormMessage />
+                      <FormLabel>Tipo</FormLabel>
+                      <Controller
+                        control={form.control}
+                        name="tipo"
+                        render={({ field }) => (
+                          <Select value={field.value} onValueChange={field.onChange}>
+                            <SelectTrigger className="w-full">
+                              <SelectValue>
+                                {(v: string | null) => TIPOS.find(t => t.value === v)?.label ?? 'Selecione o tipo'}
+                              </SelectValue>
+                            </SelectTrigger>
+                            <SelectContent>
+                              {TIPOS.map((t) => (
+                                <SelectItem key={t.value} value={t.value}>
+                                  {t.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        )}
+                      />
                     </FormItem>
-                  )}
-                />
+                  </FormCol>
+
+                  {/* Periodicidade */}
+                  <FormCol span={6}>
+                    <FormItem>
+                      <FormLabel>Periodicidade</FormLabel>
+                      <Controller
+                        control={form.control}
+                        name="periodicidade"
+                        render={({ field }) => (
+                          <Select value={field.value} onValueChange={field.onChange}>
+                            <SelectTrigger className="w-full">
+                              <SelectValue>
+                                {(v: string | null) => PERIODICIDADES.find(p => p.value === v)?.label ?? 'Selecione a periodicidade'}
+                              </SelectValue>
+                            </SelectTrigger>
+                            <SelectContent>
+                              {PERIODICIDADES.map((p) => (
+                                <SelectItem key={p.value} value={p.value}>
+                                  {p.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        )}
+                      />
+                    </FormItem>
+                  </FormCol>
+
+                  {/* Proxima Ocorrencia */}
+                  <FormCol span={6}>
+                    <FormField
+                      control={form.control}
+                      name="proximaOcorrencia"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Proxima Ocorrencia</FormLabel>
+                          <FormControl>
+                            <Input type="date" className="w-full" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </FormCol>
+
+                  {/* Conta */}
+                  <FormCol span={6}>
+                    <FormItem>
+                      <FormLabel>Conta</FormLabel>
+                      <Controller
+                        control={form.control}
+                        name="contaId"
+                        render={({ field }) => (
+                          <LookupField
+                            value={field.value || null}
+                            onChange={(v) => field.onChange(v ?? '')}
+                            queryKey={['contas', 'ativas']}
+                            queryFn={() =>
+                              contasService
+                                .listar()
+                                .then((cs) =>
+                                  cs
+                                    .filter((c) => c.ativa)
+                                    .map((c) => ({ value: c.id, label: c.nome })),
+                                )
+                            }
+                            placeholder="Selecione a conta"
+                          />
+                        )}
+                      />
+                      {form.formState.errors.contaId && (
+                        <p className="text-sm text-destructive">
+                          {form.formState.errors.contaId.message}
+                        </p>
+                      )}
+                    </FormItem>
+                  </FormCol>
+
+                  {/* Categoria (opcional) */}
+                  <FormCol span={6}>
+                    <FormItem>
+                      <FormLabel>Categoria (opcional)</FormLabel>
+                      <Controller
+                        control={form.control}
+                        name="categoriaId"
+                        render={({ field }) => (
+                          <LookupField
+                            value={field.value ?? null}
+                            onChange={(v) => field.onChange(v ?? undefined)}
+                            queryKey={['categorias', tipoAtual]}
+                            queryFn={() =>
+                              categoriasService.listar().then((cats) =>
+                                cats
+                                  .filter((c) => c.tipo === tipoAtual)
+                                  .map((c) => ({ value: c.id, label: c.nome })),
+                              )
+                            }
+                            placeholder="Sem categoria"
+                            emptyMessage="Nenhuma categoria para este tipo."
+                          />
+                        )}
+                      />
+                    </FormItem>
+                  </FormCol>
+                </FormGrid>
 
                 {apiError && <p className="text-sm text-destructive">{apiError}</p>}
 
