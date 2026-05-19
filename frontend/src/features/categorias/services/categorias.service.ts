@@ -9,6 +9,8 @@ interface CriarCategoriaRequest {
 
 export const categoriasService = {
   listar: () => apiFetch<Categoria[]>('/api/categorias'),
+  listarPorTipo: (tipo: 'RECEITA' | 'DESPESA') =>
+    apiFetch<Categoria[]>(`/api/categorias?tipo=${tipo}`),
   buscar: (id: string) => apiFetch<Categoria>(`/api/categorias/${id}`),
   criar: (data: CriarCategoriaRequest) =>
     apiFetch<Categoria>('/api/categorias', { method: 'POST', body: JSON.stringify(data) }),

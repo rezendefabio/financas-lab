@@ -107,7 +107,7 @@ describe('OrcamentosPage', () => {
 
     expect(screen.getByText('05/2024')).toBeTruthy()
     expect(screen.getByText(/500/)).toBeTruthy()
-    expect(screen.getByText('Ativo')).toBeTruthy()
+    expect(screen.getByText('Sim')).toBeTruthy()
   })
 
   it('exibe categoriaId quando categoria nao encontrada', async () => {
@@ -122,7 +122,7 @@ describe('OrcamentosPage', () => {
     })
   })
 
-  it('exibe badge Inativo para orcamento inativo', async () => {
+  it('exibe badge Nao para orcamento inativo', async () => {
     vi.mocked(orcamentoService.listar).mockResolvedValue([
       orcamentoFixture({ ativo: false }),
     ])
@@ -130,7 +130,7 @@ describe('OrcamentosPage', () => {
     render(<OrcamentosPage />, { wrapper: makeWrapper() })
 
     await waitFor(() => {
-      expect(screen.getByText('Inativo')).toBeTruthy()
+      expect(screen.getByText('Nao')).toBeTruthy()
     })
   })
 
@@ -144,18 +144,21 @@ describe('OrcamentosPage', () => {
     expect(mockPush).toHaveBeenCalledWith('/orcamentos/novo')
   })
 
-  it('navega para detalhe ao clicar em Ver', async () => {
+  it('navega para detalhe ao clicar na linha da tabela', async () => {
+    vi.mocked(categoriasService.listar).mockResolvedValue([
+      categoriaFixture({ id: 'cat-001', nome: 'Alimentacao' }),
+    ])
     vi.mocked(orcamentoService.listar).mockResolvedValue([
-      orcamentoFixture({ id: 'orc-001' }),
+      orcamentoFixture({ id: 'orc-001', categoriaId: 'cat-001' }),
     ])
 
     render(<OrcamentosPage />, { wrapper: makeWrapper() })
 
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: /ver/i })).toBeTruthy()
+      expect(screen.getByText('Alimentacao')).toBeTruthy()
     })
 
-    await userEvent.click(screen.getByRole('button', { name: /ver/i }))
+    await userEvent.click(screen.getByText('Alimentacao'))
 
     expect(mockPush).toHaveBeenCalledWith('/orcamentos/orc-001')
   })

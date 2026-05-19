@@ -73,8 +73,8 @@ describe('LancamentosRecorrentesPage', () => {
     expect(screen.getByText('Despesa')).toBeTruthy()
     expect(screen.getByText('Receita')).toBeTruthy()
     expect(screen.getAllByText('Mensal').length).toBeGreaterThan(0)
-    expect(screen.getByText('Ativo')).toBeTruthy()
-    expect(screen.getByText('Inativo')).toBeTruthy()
+    expect(screen.getByText('Sim')).toBeTruthy()
+    expect(screen.getByText('Nao')).toBeTruthy()
   })
 
   it('exibe mensagem vazia quando lista retorna zero lancamentos', async () => {
