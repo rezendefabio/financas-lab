@@ -2,7 +2,7 @@
 import { useForm, Controller, type Resolver } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { ArrowLeft } from 'lucide-react'
@@ -18,6 +18,9 @@ import {
 } from '@/shared/components/ui/form'
 import { Input } from '@/shared/components/ui/input'
 import { Button } from '@/shared/components/ui/button'
+import { FormGrid } from '@/shared/components/FormGrid'
+import { FormCol } from '@/shared/components/FormCol'
+import { LookupField } from '@/shared/components/LookupField'
 import {
   Select,
   SelectContent,
@@ -43,11 +46,6 @@ export default function NovaCategoriaPage() {
   const router = useRouter()
   const queryClient = useQueryClient()
   const [apiError, setApiError] = useState<string | null>(null)
-
-  const { data: categorias } = useQuery({
-    queryKey: ['categorias'],
-    queryFn: categoriasService.listar,
-  })
 
   const form = useForm<FormValues>({
     resolver: zodResolver(schema) as Resolver<FormValues>,
@@ -88,77 +86,77 @@ export default function NovaCategoriaPage() {
           <CardContent className="pt-6 space-y-4">
             <Form {...form}>
               <form onSubmit={form.handleSubmit((v) => { setApiError(null); mutation.mutate(v) })} className="space-y-4">
-                <FormField
-                  control={form.control}
-                  name="nome"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Nome</FormLabel>
-                      <FormControl>
-                        <Input className="w-full" placeholder="Ex: Alimentacao" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormItem>
-                  <FormLabel>Tipo</FormLabel>
-                  <Controller
-                    control={form.control}
-                    name="tipo"
-                    render={({ field }) => (
-                      <Select value={field.value} onValueChange={field.onChange}>
-                        <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Selecione o tipo">
-                            {(v: string | null) => TIPOS.find(t => t.value === v)?.label ?? 'Selecione o tipo'}
-                          </SelectValue>
-                        </SelectTrigger>
-                        <SelectContent>
-                          {TIPOS.map((t) => (
-                            <SelectItem key={t.value} value={t.value}>
-                              {t.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    )}
-                  />
-                  {form.formState.errors.tipo && (
-                    <p className="text-sm text-destructive">
-                      {form.formState.errors.tipo.message}
-                    </p>
-                  )}
-                </FormItem>
-
-                {categorias && categorias.length > 0 && (
-                  <FormItem>
-                    <FormLabel>Categoria pai (opcional)</FormLabel>
-                    <Controller
+                <FormGrid>
+                  <FormCol span={8}>
+                    <FormField
                       control={form.control}
-                      name="categoriaPaiId"
+                      name="nome"
                       render={({ field }) => (
-                        <Select value={field.value ?? ''} onValueChange={(v) => field.onChange(v || undefined)}>
-                          <SelectTrigger className="w-full">
-                            <SelectValue placeholder="Nenhuma (categoria raiz)">
-                              {(v: string | null) => {
-                                if (!v) return 'Nenhuma (categoria raiz)'
-                                return categorias?.find(c => c.id === v)?.nome ?? 'Nenhuma (categoria raiz)'
-                              }}
-                            </SelectValue>
-                          </SelectTrigger>
-                          <SelectContent>
-                            {categorias.map((c) => (
-                              <SelectItem key={c.id} value={c.id}>
-                                {c.nome}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <FormItem>
+                          <FormLabel>Nome</FormLabel>
+                          <FormControl>
+                            <Input className="w-full" placeholder="Ex: Alimentacao" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
                       )}
                     />
-                  </FormItem>
-                )}
+                  </FormCol>
+
+                  <FormCol span={4}>
+                    <FormItem>
+                      <FormLabel>Tipo</FormLabel>
+                      <Controller
+                        control={form.control}
+                        name="tipo"
+                        render={({ field }) => (
+                          <Select value={field.value} onValueChange={field.onChange}>
+                            <SelectTrigger className="w-full">
+                              <SelectValue placeholder="Selecione o tipo">
+                                {(v: string | null) => TIPOS.find(t => t.value === v)?.label ?? 'Selecione o tipo'}
+                              </SelectValue>
+                            </SelectTrigger>
+                            <SelectContent>
+                              {TIPOS.map((t) => (
+                                <SelectItem key={t.value} value={t.value}>
+                                  {t.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        )}
+                      />
+                      {form.formState.errors.tipo && (
+                        <p className="text-sm text-destructive">
+                          {form.formState.errors.tipo.message}
+                        </p>
+                      )}
+                    </FormItem>
+                  </FormCol>
+
+                  <FormCol span={12}>
+                    <FormItem>
+                      <FormLabel>Categoria pai (opcional)</FormLabel>
+                      <Controller
+                        control={form.control}
+                        name="categoriaPaiId"
+                        render={({ field }) => (
+                          <LookupField
+                            value={field.value ?? null}
+                            onChange={(v) => field.onChange(v ?? undefined)}
+                            queryKey={['categorias']}
+                            queryFn={() =>
+                              categoriasService
+                                .listar()
+                                .then((cs) => cs.map((c) => ({ value: c.id, label: c.nome })))
+                            }
+                            placeholder="Nenhuma (categoria raiz)"
+                          />
+                        )}
+                      />
+                    </FormItem>
+                  </FormCol>
+                </FormGrid>
 
                 {apiError && (
                   <p className="text-sm text-destructive">{apiError}</p>
