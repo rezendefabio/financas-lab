@@ -69,7 +69,7 @@ describe('MetasPage', () => {
     })
 
     expect(screen.getByText('Fundo de Emergencia')).toBeTruthy()
-    expect(screen.getByText('Em Andamento')).toBeTruthy()
+    expect(screen.getByText('Em andamento')).toBeTruthy()
     expect(screen.getByText('Concluida')).toBeTruthy()
   })
 
@@ -103,7 +103,7 @@ describe('MetasPage', () => {
     expect(mockPush).toHaveBeenCalledWith('/metas/novo')
   })
 
-  it('navega para /metas/:id ao clicar em Ver', async () => {
+  it('navega para /metas/:id ao clicar na linha da tabela', async () => {
     vi.mocked(metaService.listar).mockResolvedValue([
       metaFixture({ id: 'meta-001', nome: 'Viagem Europa' }),
     ])
@@ -114,7 +114,7 @@ describe('MetasPage', () => {
       expect(screen.getByText('Viagem Europa')).toBeTruthy()
     })
 
-    await userEvent.click(screen.getByRole('button', { name: /ver/i }))
+    await userEvent.click(screen.getByText('Viagem Europa'))
 
     expect(mockPush).toHaveBeenCalledWith('/metas/meta-001')
   })
