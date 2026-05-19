@@ -210,7 +210,7 @@ describe('useListPage', () => {
       filters: { tipo: 'RECEITA' },
       page: 1,
       size: 10,
-      sort: 'data,desc',
+      sort: 'data:desc',
     })
   })
 })

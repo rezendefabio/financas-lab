@@ -183,7 +183,7 @@ export function useListPage<
     [writeUrl],
   )
 
-  const sortParam = sort ? `${sort.field},${sort.dir}` : undefined
+  const sortParam = sort ? `${sort.field}:${sort.dir}` : undefined
 
   const query = useQuery({
     queryKey: [queryKey, filtros, page, pageSize, sortParam],

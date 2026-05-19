@@ -204,7 +204,8 @@ export function TabBar() {
     const query = params.toString()
     const url = query ? `${targetPath}?${query}` : targetPath
     router.replace(url)
-  }, [tabs, activeId, router])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tabs, activeId])
 
   if (tabs.length === 0) {
     return null
