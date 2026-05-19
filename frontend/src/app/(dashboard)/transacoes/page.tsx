@@ -65,6 +65,10 @@ function resolveDisplay(field: string, value: string, fields: FilterFieldDef[]):
   if (def.type === 'enum') {
     return def.options?.find((o) => o.value === value)?.label ?? value
   }
+  if (def.type === 'number') {
+    const n = Number(value)
+    return Number.isFinite(n) ? formatBRL(n) : value
+  }
   return value
 }
 
