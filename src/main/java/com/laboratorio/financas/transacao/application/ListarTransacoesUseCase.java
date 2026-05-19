@@ -1,11 +1,11 @@
 package com.laboratorio.financas.transacao.application;
 
+import com.laboratorio.financas.transacao.domain.DirecaoOrdenacao;
 import com.laboratorio.financas.transacao.domain.FiltrosTransacao;
 import com.laboratorio.financas.transacao.domain.OrdenacaoTransacao;
 import com.laboratorio.financas.transacao.domain.Transacao;
 import com.laboratorio.financas.transacao.domain.TransacaoRepository;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,7 +24,7 @@ public class ListarTransacoesUseCase {
             int page,
             int size,
             OrdenacaoTransacao ordenacao,
-            Sort.Direction direcao) {
+            DirecaoOrdenacao direcao) {
         return repository.listarComFiltrosOrdenado(filtros, page, size, ordenacao, direcao);
     }
 }

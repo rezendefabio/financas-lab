@@ -10,6 +10,7 @@ import com.laboratorio.financas.transacao.application.CriarTransacaoUseCase;
 import com.laboratorio.financas.transacao.application.DeletarTransacaoUseCase;
 import com.laboratorio.financas.transacao.application.EditarTransacaoUseCase;
 import com.laboratorio.financas.transacao.application.ListarTransacoesUseCase;
+import com.laboratorio.financas.transacao.domain.DirecaoOrdenacao;
 import com.laboratorio.financas.transacao.domain.FiltrosTransacao;
 import com.laboratorio.financas.transacao.domain.OrdenacaoTransacao;
 import com.laboratorio.financas.transacao.domain.StatusTransacao;
@@ -28,7 +29,6 @@ import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Sort;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -56,7 +56,7 @@ public class TransacaoController {
     private static final Logger LOG = LoggerFactory.getLogger(TransacaoController.class);
     private static final String ENTITY_TYPE = "transacao";
 
-    private static final Sort.Direction DIRECAO_PADRAO = Sort.Direction.DESC;
+    private static final DirecaoOrdenacao DIRECAO_PADRAO = DirecaoOrdenacao.DESC;
 
     private final CriarTransacaoUseCase criarTransacaoUseCase;
     private final ListarTransacoesUseCase listarTransacoesUseCase;
@@ -128,7 +128,7 @@ public class TransacaoController {
      * Campo de dominio e direcao de ordenacao resolvidos a partir do parametro
      * {@code sort}. Nao carrega nenhum detalhe de persistencia.
      */
-    private record CriterioOrdenacao(OrdenacaoTransacao ordenacao, Sort.Direction direcao) {
+    private record CriterioOrdenacao(OrdenacaoTransacao ordenacao, DirecaoOrdenacao direcao) {
     }
 
     /**
@@ -143,13 +143,13 @@ public class TransacaoController {
         }
         String[] partes = sort.split(":", 2);
         OrdenacaoTransacao ordenacao = OrdenacaoTransacao.fromString(partes[0]);
-        Sort.Direction direcao = DIRECAO_PADRAO;
+        DirecaoOrdenacao direcao = DIRECAO_PADRAO;
         if (partes.length == 2 && !partes[1].isBlank()) {
             String dir = partes[1].trim().toLowerCase();
             if (dir.equals("asc")) {
-                direcao = Sort.Direction.ASC;
+                direcao = DirecaoOrdenacao.ASC;
             } else if (dir.equals("desc")) {
-                direcao = Sort.Direction.DESC;
+                direcao = DirecaoOrdenacao.DESC;
             } else {
                 throw new IllegalArgumentException(
                         "Direcao de ordenacao invalida: '" + partes[1].trim()

@@ -5,7 +5,6 @@ import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 
 public interface TransacaoRepository {
 
@@ -56,7 +55,7 @@ public interface TransacaoRepository {
             int page,
             int size,
             OrdenacaoTransacao ordenacao,
-            Sort.Direction direcao);
+            DirecaoOrdenacao direcao);
 
     /**
      * Busca todas as transacoes de um grupo de transferencia (par DESPESA+RECEITA).

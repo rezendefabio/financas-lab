@@ -14,6 +14,7 @@ import com.laboratorio.financas.conta.infrastructure.persistence.ContaRepository
 import com.laboratorio.financas.shared.AbstractIntegrationTest;
 import com.laboratorio.financas.shared.domain.Money;
 import com.laboratorio.financas.shared.infrastructure.persistence.MoneyEmbeddable;
+import com.laboratorio.financas.transacao.domain.DirecaoOrdenacao;
 import com.laboratorio.financas.transacao.domain.FiltrosTransacao;
 import com.laboratorio.financas.transacao.domain.OrdenacaoTransacao;
 import com.laboratorio.financas.transacao.domain.StatusTransacao;
@@ -30,7 +31,6 @@ import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Sort;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -655,7 +655,7 @@ class TransacaoRepositoryImplTest extends AbstractIntegrationTest {
 
         // When
         Page<Transacao> resultado = repository.listarComFiltrosOrdenado(
-                filtros, 0, 10, OrdenacaoTransacao.VALOR, Sort.Direction.ASC);
+                filtros, 0, 10, OrdenacaoTransacao.VALOR, DirecaoOrdenacao.ASC);
 
         // Then
         assertThat(resultado.getContent()).hasSize(2);
@@ -676,7 +676,7 @@ class TransacaoRepositoryImplTest extends AbstractIntegrationTest {
 
         // When
         Page<Transacao> resultado = repository.listarComFiltrosOrdenado(
-                filtros, 0, 10, OrdenacaoTransacao.VALOR, Sort.Direction.DESC);
+                filtros, 0, 10, OrdenacaoTransacao.VALOR, DirecaoOrdenacao.DESC);
 
         // Then
         assertThat(resultado.getContent().get(0).getDescricao()).isEqualTo("Maior");
@@ -696,7 +696,7 @@ class TransacaoRepositoryImplTest extends AbstractIntegrationTest {
 
         // When
         Page<Transacao> resultado = repository.listarComFiltrosOrdenado(
-                filtros, 0, 10, OrdenacaoTransacao.DESCRICAO, Sort.Direction.ASC);
+                filtros, 0, 10, OrdenacaoTransacao.DESCRICAO, DirecaoOrdenacao.ASC);
 
         // Then
         assertThat(resultado.getContent().get(0).getDescricao()).isEqualTo("Alfa");
@@ -715,7 +715,7 @@ class TransacaoRepositoryImplTest extends AbstractIntegrationTest {
 
         // When
         Page<Transacao> pagina0 = repository.listarComFiltrosOrdenado(
-                filtros, 0, 2, OrdenacaoTransacao.DATA, Sort.Direction.DESC);
+                filtros, 0, 2, OrdenacaoTransacao.DATA, DirecaoOrdenacao.DESC);
 
         // Then
         assertThat(pagina0.getTotalElements()).isEqualTo(5);

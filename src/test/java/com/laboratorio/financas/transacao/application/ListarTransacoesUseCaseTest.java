@@ -8,6 +8,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.laboratorio.financas.transacao.domain.DirecaoOrdenacao;
 import com.laboratorio.financas.transacao.domain.FiltrosTransacao;
 import com.laboratorio.financas.transacao.domain.OrdenacaoTransacao;
 import com.laboratorio.financas.transacao.domain.Transacao;
@@ -20,7 +21,6 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Sort;
 
 class ListarTransacoesUseCaseTest {
 
@@ -39,17 +39,17 @@ class ListarTransacoesUseCaseTest {
         FiltrosTransacao filtros = new FiltrosTransacao(null, null, null, null, null);
         Page<Transacao> paginaVazia = Page.empty(PageRequest.of(0, 20));
         when(repository.listarComFiltrosOrdenado(
-                filtros, 0, 20, OrdenacaoTransacao.DATA, Sort.Direction.DESC))
+                filtros, 0, 20, OrdenacaoTransacao.DATA, DirecaoOrdenacao.DESC))
                 .thenReturn(paginaVazia);
 
         // When
         Page<Transacao> resultado = useCase.executar(
-                filtros, 0, 20, OrdenacaoTransacao.DATA, Sort.Direction.DESC);
+                filtros, 0, 20, OrdenacaoTransacao.DATA, DirecaoOrdenacao.DESC);
 
         // Then
         assertThat(resultado).isNotNull();
         verify(repository, times(1)).listarComFiltrosOrdenado(
-                filtros, 0, 20, OrdenacaoTransacao.DATA, Sort.Direction.DESC);
+                filtros, 0, 20, OrdenacaoTransacao.DATA, DirecaoOrdenacao.DESC);
     }
 
     @Test
@@ -58,12 +58,12 @@ class ListarTransacoesUseCaseTest {
         FiltrosTransacao filtros = new FiltrosTransacao(null, null, null, null, null);
         Page<Transacao> paginaEsperada = Page.empty(PageRequest.of(0, 20));
         when(repository.listarComFiltrosOrdenado(
-                filtros, 0, 20, OrdenacaoTransacao.DATA, Sort.Direction.DESC))
+                filtros, 0, 20, OrdenacaoTransacao.DATA, DirecaoOrdenacao.DESC))
                 .thenReturn(paginaEsperada);
 
         // When
         Page<Transacao> resultado = useCase.executar(
-                filtros, 0, 20, OrdenacaoTransacao.DATA, Sort.Direction.DESC);
+                filtros, 0, 20, OrdenacaoTransacao.DATA, DirecaoOrdenacao.DESC);
 
         // Then
         assertThat(resultado).isSameAs(paginaEsperada);
@@ -76,16 +76,16 @@ class ListarTransacoesUseCaseTest {
         FiltrosTransacao filtros = new FiltrosTransacao(contaId, null, null, null, null);
         when(repository.listarComFiltrosOrdenado(
                 eq(filtros), anyInt(), anyInt(),
-                any(OrdenacaoTransacao.class), any(Sort.Direction.class)))
+                any(OrdenacaoTransacao.class), any(DirecaoOrdenacao.class)))
                 .thenReturn(Page.empty(PageRequest.of(0, 20)));
 
         // When
-        useCase.executar(filtros, 0, 20, OrdenacaoTransacao.VALOR, Sort.Direction.ASC);
+        useCase.executar(filtros, 0, 20, OrdenacaoTransacao.VALOR, DirecaoOrdenacao.ASC);
 
         // Then
         verify(repository, times(1)).listarComFiltrosOrdenado(
                 eq(filtros), anyInt(), anyInt(),
-                any(OrdenacaoTransacao.class), any(Sort.Direction.class));
+                any(OrdenacaoTransacao.class), any(DirecaoOrdenacao.class));
     }
 
     @Test
@@ -100,16 +100,16 @@ class ListarTransacoesUseCaseTest {
         );
         when(repository.listarComFiltrosOrdenado(
                 eq(filtros), anyInt(), anyInt(),
-                any(OrdenacaoTransacao.class), any(Sort.Direction.class)))
+                any(OrdenacaoTransacao.class), any(DirecaoOrdenacao.class)))
                 .thenReturn(Page.empty(PageRequest.of(0, 10)));
 
         // When
-        useCase.executar(filtros, 0, 10, OrdenacaoTransacao.DATA, Sort.Direction.DESC);
+        useCase.executar(filtros, 0, 10, OrdenacaoTransacao.DATA, DirecaoOrdenacao.DESC);
 
         // Then
         verify(repository, times(1)).listarComFiltrosOrdenado(
                 eq(filtros), anyInt(), anyInt(),
-                any(OrdenacaoTransacao.class), any(Sort.Direction.class));
+                any(OrdenacaoTransacao.class), any(DirecaoOrdenacao.class));
     }
 
     @Test
@@ -118,14 +118,14 @@ class ListarTransacoesUseCaseTest {
         FiltrosTransacao filtros = new FiltrosTransacao(null, null, null, null, null);
         when(repository.listarComFiltrosOrdenado(
                 any(FiltrosTransacao.class), anyInt(), anyInt(),
-                any(OrdenacaoTransacao.class), any(Sort.Direction.class)))
+                any(OrdenacaoTransacao.class), any(DirecaoOrdenacao.class)))
                 .thenReturn(Page.empty(PageRequest.of(1, 5)));
 
         // When
-        useCase.executar(filtros, 1, 5, OrdenacaoTransacao.STATUS, Sort.Direction.ASC);
+        useCase.executar(filtros, 1, 5, OrdenacaoTransacao.STATUS, DirecaoOrdenacao.ASC);
 
         // Then
         verify(repository, times(1)).listarComFiltrosOrdenado(
-                filtros, 1, 5, OrdenacaoTransacao.STATUS, Sort.Direction.ASC);
+                filtros, 1, 5, OrdenacaoTransacao.STATUS, DirecaoOrdenacao.ASC);
     }
 }

@@ -1,5 +1,6 @@
 package com.laboratorio.financas.transacao.infrastructure.persistence;
 
+import com.laboratorio.financas.transacao.domain.DirecaoOrdenacao;
 import com.laboratorio.financas.transacao.domain.FiltrosTransacao;
 import com.laboratorio.financas.transacao.domain.OrdenacaoTransacao;
 import com.laboratorio.financas.transacao.domain.Transacao;
@@ -78,12 +79,24 @@ public class TransacaoRepositoryImpl implements TransacaoRepository {
             int page,
             int size,
             OrdenacaoTransacao ordenacao,
-            Sort.Direction direcao) {
+            DirecaoOrdenacao direcao) {
         Pageable pageable = PageRequest.of(
                 page,
                 size,
-                Sort.by(direcao, OrdenacaoTransacaoJpaPath.resolver(ordenacao)));
+                Sort.by(toSortDirection(direcao), OrdenacaoTransacaoJpaPath.resolver(ordenacao)));
         return executarFiltros(filtros, pageable);
+    }
+
+    /**
+     * Traduz a direcao de ordenacao de dominio ({@link DirecaoOrdenacao}) no
+     * tipo de direcao do Spring Data. Esta traducao vive na infraestrutura
+     * porque somente ela conhece tipos de {@code org.springframework.data}.
+     */
+    static Sort.Direction toSortDirection(DirecaoOrdenacao direcao) {
+        return switch (direcao) {
+            case ASC -> Sort.Direction.ASC;
+            case DESC -> Sort.Direction.DESC;
+        };
     }
 
     private Page<Transacao> executarFiltros(FiltrosTransacao filtros, Pageable pageable) {
