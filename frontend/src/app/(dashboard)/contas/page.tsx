@@ -2,7 +2,9 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
+import { History } from 'lucide-react'
 import { contasService } from '@/features/contas/services/contas.service'
+import { AuditLogDrawer } from '@/features/auditlog'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card'
 import { Badge } from '@/shared/components/ui/badge'
 import { cn } from '@/shared/lib/utils'
@@ -24,7 +26,15 @@ const FILTRO_ATIVA_OPTIONS = [
   { value: 'false', label: 'Inativas' },
 ] as const
 
-function ContaCard({ conta, onClick }: { conta: Conta; onClick: () => void }) {
+function ContaCard({
+  conta,
+  onClick,
+  onHistory,
+}: {
+  conta: Conta
+  onClick: () => void
+  onHistory: () => void
+}) {
   return (
     <Card
       className={cn(
@@ -36,9 +46,22 @@ function ContaCard({ conta, onClick }: { conta: Conta; onClick: () => void }) {
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
           <CardTitle className="text-base">{conta.nome}</CardTitle>
-          <Badge variant={conta.ativa ? 'default' : 'secondary'}>
-            {conta.ativa ? 'Ativa' : 'Inativa'}
-          </Badge>
+          <div className="flex items-center gap-1">
+            <Badge variant={conta.ativa ? 'default' : 'secondary'}>
+              {conta.ativa ? 'Ativa' : 'Inativa'}
+            </Badge>
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              aria-label="Historico de alteracoes"
+              onClick={(e) => {
+                e.stopPropagation()
+                onHistory()
+              }}
+            >
+              <History className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
       </CardHeader>
       <CardContent>
@@ -55,6 +78,10 @@ function ContaCard({ conta, onClick }: { conta: Conta; onClick: () => void }) {
 export default function ContasPage() {
   const router = useRouter()
   const [filtroAtiva, setFiltroAtiva] = useState<boolean | undefined>(undefined)
+  const [auditDrawer, setAuditDrawer] = useState<{ open: boolean; entityId: string | null }>({
+    open: false,
+    entityId: null,
+  })
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ['contas', filtroAtiva],
@@ -138,10 +165,18 @@ export default function ContasPage() {
               key={conta.id}
               conta={conta}
               onClick={() => router.push(`/contas/${conta.id}`)}
+              onHistory={() => setAuditDrawer({ open: true, entityId: conta.id })}
             />
           ))}
         </div>
       )}
+
+      <AuditLogDrawer
+        open={auditDrawer.open}
+        onOpenChange={(open) => setAuditDrawer((prev) => ({ ...prev, open }))}
+        entityType="conta"
+        entityId={auditDrawer.entityId}
+      />
     </div>
   )
 }

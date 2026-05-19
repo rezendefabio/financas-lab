@@ -1,5 +1,10 @@
 package com.laboratorio.financas.transacao.interfaces;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.laboratorio.financas.auditlog.domain.AuditAction;
+import com.laboratorio.financas.auditlog.domain.AuditEvent;
+import com.laboratorio.financas.auditlog.infrastructure.AuditPublisher;
 import com.laboratorio.financas.transacao.application.BuscarTransacaoPorIdUseCase;
 import com.laboratorio.financas.transacao.application.CriarTransacaoUseCase;
 import com.laboratorio.financas.transacao.application.DeletarTransacaoUseCase;
@@ -18,6 +23,8 @@ import jakarta.validation.constraints.Min;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -34,6 +41,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -45,6 +53,8 @@ import org.springframework.web.bind.annotation.RestController;
 public class TransacaoController {
 
     private static final int SIZE_MAX = 100;
+    private static final Logger LOG = LoggerFactory.getLogger(TransacaoController.class);
+    private static final String ENTITY_TYPE = "transacao";
 
     private final CriarTransacaoUseCase criarTransacaoUseCase;
     private final ListarTransacoesUseCase listarTransacoesUseCase;
@@ -52,6 +62,8 @@ public class TransacaoController {
     private final EditarTransacaoUseCase editarTransacaoUseCase;
     private final DeletarTransacaoUseCase deletarTransacaoUseCase;
     private final UsuarioRepository usuarioRepository;
+    private final AuditPublisher auditPublisher;
+    private final ObjectMapper objectMapper;
 
     public TransacaoController(
             CriarTransacaoUseCase criarTransacaoUseCase,
@@ -59,7 +71,9 @@ public class TransacaoController {
             BuscarTransacaoPorIdUseCase buscarTransacaoPorIdUseCase,
             EditarTransacaoUseCase editarTransacaoUseCase,
             DeletarTransacaoUseCase deletarTransacaoUseCase,
-            UsuarioRepository usuarioRepository
+            UsuarioRepository usuarioRepository,
+            AuditPublisher auditPublisher,
+            ObjectMapper objectMapper
     ) {
         this.criarTransacaoUseCase = criarTransacaoUseCase;
         this.listarTransacoesUseCase = listarTransacoesUseCase;
@@ -67,14 +81,22 @@ public class TransacaoController {
         this.editarTransacaoUseCase = editarTransacaoUseCase;
         this.deletarTransacaoUseCase = deletarTransacaoUseCase;
         this.usuarioRepository = usuarioRepository;
+        this.auditPublisher = auditPublisher;
+        this.objectMapper = objectMapper;
     }
 
     @PostMapping
-    public ResponseEntity<TransacaoResponse> criar(@Valid @RequestBody TransacaoRequest request) {
+    public ResponseEntity<TransacaoResponse> criar(
+            @Valid @RequestBody TransacaoRequest request,
+            @RequestHeader(value = "X-Screen-Code", required = false) String screenCode) {
         UUID userId = resolverUserId();
         CriarTransacaoUseCase.Comando comando = toComando(request, userId);
         Transacao criada = criarTransacaoUseCase.executar(comando);
-        return ResponseEntity.status(HttpStatus.CREATED).body(TransacaoResponse.fromDomain(criada));
+        TransacaoResponse response = TransacaoResponse.fromDomain(criada);
+        auditPublisher.publish(new AuditEvent(
+                ENTITY_TYPE, criada.getId(), AuditAction.CREATE,
+                userEmail(), screenCode, null, toJson(response)));
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @GetMapping
@@ -105,12 +127,19 @@ public class TransacaoController {
     @PutMapping("/{id}")
     public TransacaoResponse editar(
             @PathVariable UUID id,
-            @Valid @RequestBody TransacaoRequest request
+            @Valid @RequestBody TransacaoRequest request,
+            @RequestHeader(value = "X-Screen-Code", required = false) String screenCode
     ) {
         UUID userId = resolverUserId();
+        Transacao antes = buscarTransacaoPorIdUseCase.executar(id);
+        String before = toJson(TransacaoResponse.fromDomain(antes));
         CriarTransacaoUseCase.Comando comando = toComando(request, userId);
         Transacao atualizada = editarTransacaoUseCase.executar(id, comando);
-        return TransacaoResponse.fromDomain(atualizada);
+        TransacaoResponse response = TransacaoResponse.fromDomain(atualizada);
+        auditPublisher.publish(new AuditEvent(
+                ENTITY_TYPE, id, AuditAction.UPDATE,
+                userEmail(), screenCode, before, toJson(response)));
+        return response;
     }
 
     /**
@@ -119,8 +148,15 @@ public class TransacaoController {
      */
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void deletar(@PathVariable UUID id) {
+    public void deletar(
+            @PathVariable UUID id,
+            @RequestHeader(value = "X-Screen-Code", required = false) String screenCode) {
+        Transacao antes = buscarTransacaoPorIdUseCase.executar(id);
+        String before = toJson(TransacaoResponse.fromDomain(antes));
         deletarTransacaoUseCase.executar(id);
+        auditPublisher.publish(new AuditEvent(
+                ENTITY_TYPE, id, AuditAction.DELETE,
+                userEmail(), screenCode, before, null));
     }
 
     private UUID resolverUserId() {
@@ -129,6 +165,23 @@ public class TransacaoController {
         Usuario usuario = usuarioRepository.buscarPorEmail(email)
                 .orElseThrow(() -> new IllegalStateException("Usuario autenticado nao encontrado: " + email));
         return usuario.getId();
+    }
+
+    private String userEmail() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        return (auth != null) ? auth.getName() : null;
+    }
+
+    private String toJson(Object obj) {
+        if (obj == null) {
+            return null;
+        }
+        try {
+            return objectMapper.writeValueAsString(obj);
+        } catch (JsonProcessingException ex) {
+            LOG.warn("Falha ao serializar payload de audit log para {}", ENTITY_TYPE, ex);
+            return null;
+        }
     }
 
     private CriarTransacaoUseCase.Comando toComando(TransacaoRequest request, UUID userId) {
