@@ -12,6 +12,7 @@ import com.laboratorio.financas.transacao.application.EditarTransacaoUseCase;
 import com.laboratorio.financas.transacao.application.ListarTransacoesUseCase;
 import com.laboratorio.financas.transacao.domain.DirecaoOrdenacao;
 import com.laboratorio.financas.transacao.domain.FiltroGenerico;
+import com.laboratorio.financas.transacao.domain.FiltroTransacaoCampo;
 import com.laboratorio.financas.transacao.domain.FiltrosTransacao;
 import com.laboratorio.financas.transacao.domain.OrdenacaoTransacao;
 import com.laboratorio.financas.transacao.domain.StatusTransacao;
@@ -29,7 +30,6 @@ import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -62,12 +62,6 @@ public class TransacaoController {
     private static final String ENTITY_TYPE = "transacao";
 
     private static final DirecaoOrdenacao DIRECAO_PADRAO = DirecaoOrdenacao.DESC;
-
-    /**
-     * Campos aceitos nos filtros adicionais ({@code filtros=campo:operador:valor}).
-     * Whitelist explicita evita filtragem por campo arbitrario.
-     */
-    private static final Set<String> CAMPOS_FILTRO_PERMITIDOS = Set.of("descricao", "valor", "data");
 
     private final CriarTransacaoUseCase criarTransacaoUseCase;
     private final ListarTransacoesUseCase listarTransacoesUseCase;
@@ -179,8 +173,9 @@ public class TransacaoController {
      *
      * <p>Cada entrada e separada por {@code ,} e quebrada por {@code :} em no
      * maximo 3 partes (campo, operador, valor). O valor pode estar URI-encoded
-     * para suportar caracteres como {@code :} e {@code ,}. Campos fora da
-     * whitelist {@link #CAMPOS_FILTRO_PERMITIDOS} lancam
+     * para suportar caracteres como {@code :} e {@code ,}. Cada filtro e
+     * validado ansiosamente por {@link FiltroTransacaoCampo#validar} -- campo
+     * fora da whitelist, operador incompativel ou valor nao parseavel lancam
      * {@link IllegalArgumentException} -> HTTP 400.
      */
     private List<FiltroGenerico> parseFiltrosAdicionais(String raw) {
@@ -200,12 +195,9 @@ public class TransacaoController {
             String campo = partes[0].trim();
             String operador = partes[1].trim();
             String valor = (partes.length == 3) ? decodeValor(partes[2]) : "";
-            if (!CAMPOS_FILTRO_PERMITIDOS.contains(campo)) {
-                throw new IllegalArgumentException(
-                        "Campo de filtro nao permitido: '" + campo + "'. Campos validos: "
-                                + CAMPOS_FILTRO_PERMITIDOS + ".");
-            }
-            resultado.add(new FiltroGenerico(campo, operador, valor));
+            FiltroGenerico filtro = new FiltroGenerico(campo, operador, valor);
+            FiltroTransacaoCampo.validar(filtro);
+            resultado.add(filtro);
         }
         return resultado;
     }

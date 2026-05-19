@@ -1,10 +1,13 @@
 package com.laboratorio.financas.transacao.infrastructure.persistence;
 
 import com.laboratorio.financas.transacao.domain.FiltroGenerico;
+import com.laboratorio.financas.transacao.domain.FiltroTransacaoCampo;
 import com.laboratorio.financas.transacao.domain.FiltrosTransacao;
+import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.Expression;
 import jakarta.persistence.criteria.Path;
 import jakarta.persistence.criteria.Predicate;
+import jakarta.persistence.criteria.Root;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -20,37 +23,14 @@ import org.springframework.data.jpa.domain.Specification;
  * (path {@code valor.valor}) e que {@code data} de dominio mapeia para a
  * propriedade {@code data} da entidade. Usa Criteria API com predicados tipados,
  * sem concatenacao de strings, evitando SQL injection.
+ *
+ * <p>Os campos validos, seus tipos e os operadores aceitos sao regra de dominio
+ * ({@link FiltroTransacaoCampo}); aqui apenas se traduz cada filtro num predicado.
  */
 final class TransacaoSpecifications {
 
     private TransacaoSpecifications() {
     }
-
-    /** Campos de dominio suportados pelos filtros adicionais. */
-    private enum CampoFiltro {
-        DESCRICAO("descricao", TipoCampo.STRING),
-        VALOR("valor", TipoCampo.NUMBER),
-        DATA("data", TipoCampo.DATE);
-
-        private final String nome;
-        private final TipoCampo tipo;
-
-        CampoFiltro(String nome, TipoCampo tipo) {
-            this.nome = nome;
-            this.tipo = tipo;
-        }
-
-        static CampoFiltro fromNome(String nome) {
-            for (CampoFiltro c : values()) {
-                if (c.nome.equals(nome)) {
-                    return c;
-                }
-            }
-            throw new IllegalArgumentException("Campo de filtro nao suportado: '" + nome + "'");
-        }
-    }
-
-    private enum TipoCampo { STRING, NUMBER, DATE }
 
     /** Constroi a especificacao completa a partir dos filtros. */
     static Specification<TransacaoEntity> comFiltros(FiltrosTransacao filtros) {
@@ -91,39 +71,21 @@ final class TransacaoSpecifications {
 
     /** Traduz um {@link FiltroGenerico} num predicado tipado de Criteria API. */
     private static Predicate predicadoAdicional(
-            jakarta.persistence.criteria.Root<TransacaoEntity> root,
-            jakarta.persistence.criteria.CriteriaBuilder cb,
-            FiltroGenerico fg) {
-        CampoFiltro campo = CampoFiltro.fromNome(fg.campo());
+            Root<TransacaoEntity> root, CriteriaBuilder cb, FiltroGenerico fg) {
+        FiltroTransacaoCampo campo = FiltroTransacaoCampo.fromNome(fg.campo());
         String operador = fg.operador();
         String valor = fg.valor();
 
-        return switch (campo.tipo) {
-            case STRING -> predicadoString(cb, caminhoString(root, campo), operador, valor);
-            case NUMBER -> predicadoNumero(cb, caminhoNumero(root, campo), operador, valor);
-            case DATE -> predicadoData(cb, caminhoData(root, campo), operador, valor);
+        return switch (campo.tipo()) {
+            case STRING -> predicadoString(cb, root.get(campo.nome()), operador, valor);
+            // valor e um @Embedded MoneyEmbeddable: o numero vive em valor.valor.
+            case NUMBER -> predicadoNumero(cb, root.get(campo.nome()).get("valor"), operador, valor);
+            case DATE -> predicadoData(cb, root.get(campo.nome()), operador, valor);
         };
     }
 
-    private static Path<String> caminhoString(
-            jakarta.persistence.criteria.Root<TransacaoEntity> root, CampoFiltro campo) {
-        return root.get(campo.nome);
-    }
-
-    private static Path<BigDecimal> caminhoNumero(
-            jakarta.persistence.criteria.Root<TransacaoEntity> root, CampoFiltro campo) {
-        // valor e um @Embedded MoneyEmbeddable: o numero vive em valor.valor.
-        return root.get(campo.nome).get("valor");
-    }
-
-    private static Path<LocalDate> caminhoData(
-            jakarta.persistence.criteria.Root<TransacaoEntity> root, CampoFiltro campo) {
-        return root.get(campo.nome);
-    }
-
     private static Predicate predicadoString(
-            jakarta.persistence.criteria.CriteriaBuilder cb,
-            Path<String> path, String operador, String valor) {
+            CriteriaBuilder cb, Path<String> path, String operador, String valor) {
         Expression<String> lowerCol = cb.lower(path);
         String lowerVal = valor.toLowerCase();
         return switch (operador) {
@@ -136,9 +98,8 @@ final class TransacaoSpecifications {
     }
 
     private static Predicate predicadoNumero(
-            jakarta.persistence.criteria.CriteriaBuilder cb,
-            Path<BigDecimal> path, String operador, String valor) {
-        BigDecimal num = parseBigDecimal(valor);
+            CriteriaBuilder cb, Path<BigDecimal> path, String operador, String valor) {
+        BigDecimal num = new BigDecimal(valor.trim());
         return switch (operador) {
             case "eq" -> cb.equal(path, num);
             case "neq" -> cb.notEqual(path, num);
@@ -151,9 +112,8 @@ final class TransacaoSpecifications {
     }
 
     private static Predicate predicadoData(
-            jakarta.persistence.criteria.CriteriaBuilder cb,
-            Path<LocalDate> path, String operador, String valor) {
-        LocalDate data = parseLocalDate(valor);
+            CriteriaBuilder cb, Path<LocalDate> path, String operador, String valor) {
+        LocalDate data = LocalDate.parse(valor.trim());
         return switch (operador) {
             case "eq" -> cb.equal(path, data);
             case "neq" -> cb.notEqual(path, data);
@@ -168,22 +128,6 @@ final class TransacaoSpecifications {
     /** Escapa os curingas LIKE ({@code %} e {@code _}) do valor informado pelo usuario. */
     private static String escaparLike(String valor) {
         return valor.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_");
-    }
-
-    private static BigDecimal parseBigDecimal(String valor) {
-        try {
-            return new BigDecimal(valor.trim());
-        } catch (NumberFormatException ex) {
-            throw new IllegalArgumentException("Valor numerico invalido para filtro: '" + valor + "'");
-        }
-    }
-
-    private static LocalDate parseLocalDate(String valor) {
-        try {
-            return LocalDate.parse(valor.trim());
-        } catch (java.time.format.DateTimeParseException ex) {
-            throw new IllegalArgumentException("Valor de data invalido para filtro: '" + valor + "'");
-        }
     }
 
     private static IllegalArgumentException operadorInvalido(String operador, String tipo) {
