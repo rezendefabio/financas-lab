@@ -11,6 +11,7 @@ import com.laboratorio.financas.transacao.application.DeletarTransacaoUseCase;
 import com.laboratorio.financas.transacao.application.EditarTransacaoUseCase;
 import com.laboratorio.financas.transacao.application.ListarTransacoesUseCase;
 import com.laboratorio.financas.transacao.domain.FiltrosTransacao;
+import com.laboratorio.financas.transacao.domain.StatusTransacao;
 import com.laboratorio.financas.transacao.domain.TipoTransacao;
 import com.laboratorio.financas.transacao.domain.Transacao;
 import com.laboratorio.financas.transacao.interfaces.dto.TransacaoRequest;
@@ -22,6 +23,7 @@ import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -55,6 +57,21 @@ public class TransacaoController {
     private static final int SIZE_MAX = 100;
     private static final Logger LOG = LoggerFactory.getLogger(TransacaoController.class);
     private static final String ENTITY_TYPE = "transacao";
+
+    /**
+     * Whitelist de campos ordenaveis. Chave = nome aceito na query string;
+     * valor = caminho da propriedade na entidade JPA. `valor` e um @Embedded
+     * MoneyEmbeddable, entao a ordenacao usa o caminho `valor.valor`.
+     */
+    private static final Map<String, String> CAMPOS_ORDENAVEIS = Map.of(
+            "data", "data",
+            "valor", "valor.valor",
+            "descricao", "descricao",
+            "tipo", "tipo",
+            "status", "status"
+    );
+
+    private static final Sort SORT_PADRAO = Sort.by(Sort.Direction.DESC, "data");
 
     private final CriarTransacaoUseCase criarTransacaoUseCase;
     private final ListarTransacoesUseCase listarTransacoesUseCase;
@@ -108,14 +125,51 @@ public class TransacaoController {
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dataFim,
             @RequestParam(name = "tipo", required = false) TipoTransacao tipo,
             @RequestParam(name = "categoriaId", required = false) UUID categoriaId,
+            @RequestParam(name = "status", required = false) StatusTransacao status,
+            @RequestParam(name = "sort", required = false) String sort,
             @RequestParam(name = "page", defaultValue = "0") @Min(0) int page,
             @RequestParam(name = "size", defaultValue = "20") @Min(1) @Max(SIZE_MAX) int size
     ) {
         UUID userId = resolverUserId();
-        FiltrosTransacao filtros = new FiltrosTransacao(contaId, dataInicio, dataFim, tipo, categoriaId, userId);
-        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "data"));
+        FiltrosTransacao filtros =
+                new FiltrosTransacao(contaId, dataInicio, dataFim, tipo, categoriaId, userId, status);
+        Pageable pageable = PageRequest.of(page, size, parseSort(sort));
         Page<Transacao> resultado = listarTransacoesUseCase.executar(filtros, pageable);
         return resultado.map(TransacaoResponse::fromDomain);
+    }
+
+    /**
+     * Converte o parametro {@code sort} no formato {@code campo:direcao} em um
+     * {@link Sort}. Campo ausente/vazio cai no default ({@code data:desc}).
+     * Campo fora da whitelist ou direcao invalida lancam
+     * {@link IllegalArgumentException} -> HTTP 400 (via GlobalExceptionHandler).
+     */
+    private Sort parseSort(String sort) {
+        if (sort == null || sort.isBlank()) {
+            return SORT_PADRAO;
+        }
+        String[] partes = sort.split(":", 2);
+        String campo = partes[0].trim();
+        String propriedade = CAMPOS_ORDENAVEIS.get(campo);
+        if (propriedade == null) {
+            throw new IllegalArgumentException(
+                    "Campo de ordenacao invalido: '" + campo
+                            + "'. Campos permitidos: " + CAMPOS_ORDENAVEIS.keySet());
+        }
+        Sort.Direction direcao = Sort.Direction.DESC;
+        if (partes.length == 2 && !partes[1].isBlank()) {
+            String dir = partes[1].trim().toLowerCase();
+            if (dir.equals("asc")) {
+                direcao = Sort.Direction.ASC;
+            } else if (dir.equals("desc")) {
+                direcao = Sort.Direction.DESC;
+            } else {
+                throw new IllegalArgumentException(
+                        "Direcao de ordenacao invalida: '" + partes[1].trim()
+                                + "'. Use 'asc' ou 'desc'.");
+            }
+        }
+        return Sort.by(direcao, propriedade);
     }
 
     @GetMapping("/{id}")

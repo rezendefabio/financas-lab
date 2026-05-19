@@ -1,5 +1,6 @@
 package com.laboratorio.financas.transacao.infrastructure.persistence;
 
+import com.laboratorio.financas.transacao.domain.StatusTransacao;
 import com.laboratorio.financas.transacao.domain.TipoTransacao;
 import com.laboratorio.financas.transacao.domain.TotaisTransacaoPorConta;
 import java.time.LocalDate;
@@ -35,6 +36,7 @@ public interface TransacaoJpaRepository extends JpaRepository<TransacaoEntity, U
               AND (:tipo IS NULL OR t.tipo = :tipo)
               AND (:categoriaId IS NULL OR t.categoriaId = :categoriaId)
               AND (:userId IS NULL OR t.userId = :userId)
+              AND (:status IS NULL OR t.status = :status)
               AND t.deletedAt IS NULL
             """)
     Page<TransacaoEntity> findComFiltros(
@@ -44,6 +46,7 @@ public interface TransacaoJpaRepository extends JpaRepository<TransacaoEntity, U
             @Param("tipo") TipoTransacao tipo,
             @Param("categoriaId") UUID categoriaId,
             @Param("userId") UUID userId,
+            @Param("status") StatusTransacao status,
             Pageable pageable
     );
 
