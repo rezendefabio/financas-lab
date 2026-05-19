@@ -10,7 +10,10 @@ import com.laboratorio.financas.transacao.application.CriarTransacaoUseCase;
 import com.laboratorio.financas.transacao.application.DeletarTransacaoUseCase;
 import com.laboratorio.financas.transacao.application.EditarTransacaoUseCase;
 import com.laboratorio.financas.transacao.application.ListarTransacoesUseCase;
+import com.laboratorio.financas.transacao.domain.DirecaoOrdenacao;
 import com.laboratorio.financas.transacao.domain.FiltrosTransacao;
+import com.laboratorio.financas.transacao.domain.OrdenacaoTransacao;
+import com.laboratorio.financas.transacao.domain.StatusTransacao;
 import com.laboratorio.financas.transacao.domain.TipoTransacao;
 import com.laboratorio.financas.transacao.domain.Transacao;
 import com.laboratorio.financas.transacao.interfaces.dto.TransacaoRequest;
@@ -26,9 +29,6 @@ import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -55,6 +55,8 @@ public class TransacaoController {
     private static final int SIZE_MAX = 100;
     private static final Logger LOG = LoggerFactory.getLogger(TransacaoController.class);
     private static final String ENTITY_TYPE = "transacao";
+
+    private static final DirecaoOrdenacao DIRECAO_PADRAO = DirecaoOrdenacao.DESC;
 
     private final CriarTransacaoUseCase criarTransacaoUseCase;
     private final ListarTransacoesUseCase listarTransacoesUseCase;
@@ -108,14 +110,53 @@ public class TransacaoController {
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dataFim,
             @RequestParam(name = "tipo", required = false) TipoTransacao tipo,
             @RequestParam(name = "categoriaId", required = false) UUID categoriaId,
+            @RequestParam(name = "status", required = false) StatusTransacao status,
+            @RequestParam(name = "sort", required = false) String sort,
             @RequestParam(name = "page", defaultValue = "0") @Min(0) int page,
             @RequestParam(name = "size", defaultValue = "20") @Min(1) @Max(SIZE_MAX) int size
     ) {
         UUID userId = resolverUserId();
-        FiltrosTransacao filtros = new FiltrosTransacao(contaId, dataInicio, dataFim, tipo, categoriaId, userId);
-        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "data"));
-        Page<Transacao> resultado = listarTransacoesUseCase.executar(filtros, pageable);
+        FiltrosTransacao filtros =
+                new FiltrosTransacao(contaId, dataInicio, dataFim, tipo, categoriaId, userId, status);
+        CriterioOrdenacao criterio = parseSort(sort);
+        Page<Transacao> resultado = listarTransacoesUseCase.executar(
+                filtros, page, size, criterio.ordenacao(), criterio.direcao());
         return resultado.map(TransacaoResponse::fromDomain);
+    }
+
+    /**
+     * Campo de dominio e direcao de ordenacao resolvidos a partir do parametro
+     * {@code sort}. Nao carrega nenhum detalhe de persistencia.
+     */
+    private record CriterioOrdenacao(OrdenacaoTransacao ordenacao, DirecaoOrdenacao direcao) {
+    }
+
+    /**
+     * Converte o parametro {@code sort} no formato {@code campo:direcao} em um
+     * {@link CriterioOrdenacao}. Campo ausente/vazio cai no default
+     * ({@code data:desc}). Campo fora dos valores de dominio ou direcao invalida
+     * lancam {@link IllegalArgumentException} -> HTTP 400 (via GlobalExceptionHandler).
+     */
+    private CriterioOrdenacao parseSort(String sort) {
+        if (sort == null || sort.isBlank()) {
+            return new CriterioOrdenacao(OrdenacaoTransacao.PADRAO, DIRECAO_PADRAO);
+        }
+        String[] partes = sort.split(":", 2);
+        OrdenacaoTransacao ordenacao = OrdenacaoTransacao.fromString(partes[0]);
+        DirecaoOrdenacao direcao = DIRECAO_PADRAO;
+        if (partes.length == 2 && !partes[1].isBlank()) {
+            String dir = partes[1].trim().toLowerCase();
+            if (dir.equals("asc")) {
+                direcao = DirecaoOrdenacao.ASC;
+            } else if (dir.equals("desc")) {
+                direcao = DirecaoOrdenacao.DESC;
+            } else {
+                throw new IllegalArgumentException(
+                        "Direcao de ordenacao invalida: '" + partes[1].trim()
+                                + "'. Use 'asc' ou 'desc'.");
+            }
+        }
+        return new CriterioOrdenacao(ordenacao, direcao);
     }
 
     @GetMapping("/{id}")
