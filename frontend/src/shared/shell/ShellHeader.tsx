@@ -16,6 +16,7 @@ import {
   DropdownMenu,
   DropdownMenuTrigger,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuItem,
@@ -75,9 +76,11 @@ export function ShellHeader() {
           <DropdownMenuContent side="bottom" align="end">
             {email && (
               <>
-                <DropdownMenuLabel className="max-w-48 truncate">
-                  {email}
-                </DropdownMenuLabel>
+                <DropdownMenuGroup>
+                  <DropdownMenuLabel className="max-w-48 truncate">
+                    {email}
+                  </DropdownMenuLabel>
+                </DropdownMenuGroup>
                 <DropdownMenuSeparator />
               </>
             )}
