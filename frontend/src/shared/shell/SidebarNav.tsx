@@ -14,7 +14,20 @@
 
 import { useState } from 'react'
 import { usePathname } from 'next/navigation'
-import { ChevronRight, Search } from 'lucide-react'
+import {
+  ChevronRight,
+  Search,
+  LayoutDashboard,
+  Layers,
+  CreditCard,
+  Tag,
+  ArrowLeftRight,
+  CalendarDays,
+  TrendingUp,
+  Settings,
+  Folder,
+  type LucideIcon,
+} from 'lucide-react'
 import {
   SidebarMenu,
   SidebarMenuItem,
@@ -30,6 +43,18 @@ import { buildMenuTree, findActiveTrail, type MenuNode } from './menu-tree'
 import { ScreenIcon } from './icon-map'
 import { useSidebarStore } from './sidebar-store'
 import { useTabsStore } from './tabs-store'
+
+/** Icones para grupos do menu em icon mode (mapeados pelo label do grupo). */
+const GROUP_ICONS: Record<string, LucideIcon> = {
+  'Visao Geral':    LayoutDashboard,
+  'Cadastros':      Layers,
+  'Financeiro':     CreditCard,
+  'Classificacao':  Tag,
+  'Movimento':      ArrowLeftRight,
+  'Planejamento':   CalendarDays,
+  'Analise':        TrendingUp,
+  'Administracao':  Settings,
+}
 
 /**
  * Filtra a arvore de menu por query (case-insensitive).
@@ -105,6 +130,8 @@ function MenuTreeNode({ node, depth, activePath, activeTrail, forceOpen }: NodeP
   const isOpen = forceOpen ? true : !collapsed.includes(node.key)
   const isOnActiveTrail = activeTrail.has(node.key)
 
+  const GroupIconComp = GROUP_ICONS[node.label] ?? Folder
+
   return (
     <SidebarMenuItem>
       <SidebarMenuButton
@@ -115,9 +142,12 @@ function MenuTreeNode({ node, depth, activePath, activeTrail, forceOpen }: NodeP
         tooltip={node.label}
         className="cursor-pointer"
       >
+        {/* Icone do grupo: visivel apenas em icon mode (sidebar colapsada) */}
+        <GroupIconComp className="hidden group-data-[collapsible=icon]:block h-4 w-4 shrink-0" />
+        {/* Seta expand/collapse: visivel apenas no modo expandido */}
         <ChevronRight
           className={cn(
-            'h-4 w-4 transition-transform',
+            'h-4 w-4 transition-transform group-data-[collapsible=icon]:hidden',
             isOpen && 'rotate-90',
           )}
         />
@@ -156,7 +186,7 @@ export function SidebarNav() {
 
   return (
     <div>
-      <div className="px-3 pb-2">
+      <div className="px-3 pt-2 pb-2 group-data-[collapsible=icon]:hidden">
         <div className="relative">
           <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
