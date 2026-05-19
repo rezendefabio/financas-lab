@@ -55,8 +55,9 @@ interface TabsState {
   openTab: (screenCode: string) => void
   /**
    * Fecha a aba informada (aceita qualquer id, inclusive fixadas).
-   * Se era a ativa, ativa a vizinha a esquerda; se nao houver, a da direita;
-   * se a lista esvaziar, `activeId` vira null.
+   * Se era a ativa, ativa a vizinha a esquerda; se nao houver, a da direita.
+   * A lista nunca esvazia: ao fechar a ultima aba, o Dashboard e reaberto
+   * automaticamente como aba ativa.
    */
   closeTab: (id: string) => void
   /** Define a aba ativa. */
@@ -109,15 +110,21 @@ export const useTabsStore = create<TabsState>()(
           }
           const tabs = state.tabs.filter((tab) => tab.id !== id)
 
+          if (tabs.length === 0) {
+            // Reabre o Dashboard automaticamente quando a lista esvazia.
+            const dashTab: Tab = {
+              id: genId(),
+              screenCode: DASHBOARD_CODE,
+              pinned: false,
+            }
+            return { tabs: [dashTab], activeId: dashTab.id }
+          }
+
           let activeId = state.activeId
           if (state.activeId === id) {
-            if (tabs.length === 0) {
-              activeId = null
-            } else {
-              // Vizinha a esquerda; se nao houver, a da direita.
-              const neighbor = tabs[index - 1] ?? tabs[index] ?? tabs[0]
-              activeId = neighbor.id
-            }
+            // Vizinha a esquerda; se nao houver, a da direita.
+            const neighbor = tabs[index - 1] ?? tabs[index] ?? tabs[0]
+            activeId = neighbor.id
           }
           return { tabs, activeId }
         }),
