@@ -1,4 +1,5 @@
 'use client'
+import { useSyncExternalStore } from 'react'
 import { getCurrentUserEmail } from '@/shared/lib/auth'
 
 export interface CurrentUser {
@@ -7,8 +8,14 @@ export interface CurrentUser {
   initials: string
 }
 
+// SSR retorna null; cliente le o localStorage apos hidratacao.
+// useSyncExternalStore suprime o aviso de mismatch quando os snapshots diferem.
+const subscribe = () => () => {}
+const getSnapshot = () => getCurrentUserEmail()
+const getServerSnapshot = (): null => null
+
 export function useCurrentUser(): CurrentUser {
-  const email = getCurrentUserEmail()
+  const email = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot)
   const initials = email ? email[0].toUpperCase() : '?'
   return { email, initials }
 }

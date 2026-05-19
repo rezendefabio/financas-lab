@@ -22,7 +22,11 @@ export function useBreakpointSidebarCollapse() {
       setOpen(e.matches) // >= 1280px: abrir; < 1280px: colapsar para icon
     }
 
-    handler(mq) // aplicar imediatamente
+    // Colapsa automaticamente em telas pequenas na montagem.
+    // Nao forca abertura em telas grandes -- respeita o estado persistido (cookie).
+    if (!mq.matches) {
+      setOpen(false)
+    }
     mq.addEventListener('change', handler)
     return () => mq.removeEventListener('change', handler)
   }, [setOpen, isMobile])

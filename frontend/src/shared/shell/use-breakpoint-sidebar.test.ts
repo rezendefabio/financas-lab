@@ -34,10 +34,10 @@ describe('useBreakpointSidebarCollapse', () => {
     vi.restoreAllMocks()
   })
 
-  it('viewport >= 1280px: chama setOpen(true)', () => {
+  it('viewport >= 1280px: nao chama setOpen na montagem (preserva estado do cookie)', () => {
     stubMatchMedia(true)
     renderHook(() => useBreakpointSidebarCollapse())
-    expect(mockSidebar.setOpen).toHaveBeenCalledWith(true)
+    expect(mockSidebar.setOpen).not.toHaveBeenCalled()
   })
 
   it('viewport < 1280px: chama setOpen(false)', () => {

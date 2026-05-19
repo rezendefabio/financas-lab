@@ -2,9 +2,11 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 
-const mockPush = vi.fn()
-vi.mock('next/navigation', () => ({
-  useRouter: () => ({ push: mockPush }),
+const mockOpenTab = vi.fn()
+vi.mock('./tabs-store', () => ({
+  useTabsStore: vi.fn((selector: (s: { openTab: typeof mockOpenTab }) => unknown) =>
+    selector({ openTab: mockOpenTab }),
+  ),
 }))
 
 import { CommandPalette } from './CommandPalette'
@@ -16,7 +18,7 @@ async function pressCtrlK() {
 
 describe('CommandPalette', () => {
   beforeEach(() => {
-    mockPush.mockClear()
+    mockOpenTab.mockClear()
     useCommandPaletteStore.setState({ open: false })
   })
 
@@ -58,11 +60,11 @@ describe('CommandPalette', () => {
     expect(screen.queryByText('Contas')).not.toBeInTheDocument()
   })
 
-  it('navega para a rota da tela selecionada e fecha o palette', async () => {
+  it('abre a aba da tela selecionada e fecha o palette', async () => {
     render(<CommandPalette />)
     await pressCtrlK()
     await userEvent.click(screen.getByText('Contas'))
-    expect(mockPush).toHaveBeenCalledWith('/contas')
+    expect(mockOpenTab).toHaveBeenCalledWith('FIN-CTA-001')
     expect(screen.queryByPlaceholderText(/buscar tela/i)).not.toBeInTheDocument()
   })
 

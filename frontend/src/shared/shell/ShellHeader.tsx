@@ -8,7 +8,7 @@
  * `globals.css` para esconder o shell na impressao.
  */
 'use client'
-import { usePathname, useRouter } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import { LogOut } from 'lucide-react'
 import { Separator } from '@/shared/components/ui/separator'
 import { SidebarTrigger, useSidebar } from '@/shared/components/ui/sidebar'
@@ -23,17 +23,14 @@ import {
 } from '@/shared/components/ui/dropdown-menu'
 import { useAuth } from '@/features/auth/hooks/use-auth'
 import { useCurrentUser } from '@/features/auth/hooks/use-current-user'
-import { findScreenByPath } from './screens.registry'
 import { useTabsStore } from './tabs-store'
 
 export function ShellHeader() {
-  const pathname = usePathname()
   const router = useRouter()
   const { isMobile } = useSidebar()
   const { logout } = useAuth()
   const { email, initials } = useCurrentUser()
   const tabCount = useTabsStore((state) => state.tabs.length)
-  const screen = findScreenByPath(pathname)
 
   const handleLogout = () => {
     logout()
@@ -47,14 +44,6 @@ export function ShellHeader() {
       <span className="text-xs font-semibold text-muted-foreground tracking-wide uppercase select-none">
         Financas Lab
       </span>
-      {screen && (
-        <>
-          <Separator orientation="vertical" className="h-4" />
-          <span className="text-sm font-medium truncate">
-            {screen.title}
-          </span>
-        </>
-      )}
       <div className="ml-auto flex items-center gap-2">
         {isMobile && tabCount > 1 && (
           <span className="rounded-full bg-primary px-2 py-0.5 text-xs text-primary-foreground">

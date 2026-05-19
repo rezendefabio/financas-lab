@@ -18,17 +18,17 @@
 'use client'
 
 import { useCallback, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
 import { Command } from 'cmdk'
 import { Dialog, DialogContent } from '@/shared/components/ui/dialog'
 import { ScreenIcon } from './icon-map'
 import { getAllScreens } from './screens.registry'
 import { useCommandPaletteStore } from './command-palette-store'
+import { useTabsStore } from './tabs-store'
 
 export function CommandPalette() {
-  const router = useRouter()
   const open = useCommandPaletteStore((state) => state.open)
   const setOpen = useCommandPaletteStore((state) => state.setOpen)
+  const openTab = useTabsStore((state) => state.openTab)
   const screens = getAllScreens()
 
   // Listener global de teclado: Ctrl+K / Cmd+K alterna o palette.
@@ -44,11 +44,11 @@ export function CommandPalette() {
   }, [setOpen])
 
   const handleSelect = useCallback(
-    (path: string) => {
+    (screenCode: string) => {
       setOpen(false)
-      router.push(path)
+      openTab(screenCode)
     },
-    [router],
+    [openTab, setOpen],
   )
 
   return (
@@ -78,7 +78,7 @@ export function CommandPalette() {
               <Command.Item
                 key={screen.code}
                 value={`${screen.code} ${screen.title} ${screen.menuPath.join(' ')}`}
-                onSelect={() => handleSelect(screen.path)}
+                onSelect={() => handleSelect(screen.code)}
                 className="flex cursor-pointer items-center gap-3 rounded-md px-3 py-2 text-sm data-[selected=true]:bg-accent data-[selected=true]:text-accent-foreground"
               >
                 <ScreenIcon name={screen.icon} className="h-4 w-4 shrink-0" />
