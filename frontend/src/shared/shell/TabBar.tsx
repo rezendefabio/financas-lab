@@ -25,7 +25,7 @@ import {
 } from '@/shared/components/ui/dropdown-menu'
 import { cn } from '@/shared/lib/utils'
 import { findScreenByCode } from './screens.registry'
-import { useTabsStore, type Tab } from './tabs-store'
+import { useTabsStore, DASHBOARD_CODE, type Tab } from './tabs-store'
 import { useCommandPaletteStore } from './command-palette-store'
 
 /** Le `?tabs=...&active=...` da URL. Retorna null quando nao ha o parametro. */
@@ -110,7 +110,7 @@ function TabItem({
           >
             <Pin className="h-3 w-3 fill-current" />
           </button>
-        ) : (
+        ) : tab.screenCode === DASHBOARD_CODE ? null : (
           <button
             type="button"
             aria-label={`Fechar aba ${screen.title}`}
@@ -130,7 +130,10 @@ function TabItem({
         />
       </div>
       <DropdownMenuContent>
-        <DropdownMenuItem onClick={() => closeTab(tab.id)}>
+        <DropdownMenuItem
+          onClick={() => closeTab(tab.id)}
+          disabled={tab.screenCode === DASHBOARD_CODE}
+        >
           Fechar
         </DropdownMenuItem>
         <DropdownMenuItem onClick={closeOthers}>
@@ -278,16 +281,18 @@ export function TabBar() {
                 >
                   {tab.pinned && <Pin className="h-3 w-3 fill-current" />}
                   <span className="flex-1 truncate">{screen.title}</span>
-                  <button
-                    type="button"
-                    aria-label={`Fechar aba ${screen.title}`}
-                    onClick={(event) => {
-                      event.stopPropagation()
-                      closeTab(tab.id)
-                    }}
-                  >
-                    <X className="h-3 w-3" />
-                  </button>
+                  {tab.screenCode !== DASHBOARD_CODE && (
+                    <button
+                      type="button"
+                      aria-label={`Fechar aba ${screen.title}`}
+                      onClick={(event) => {
+                        event.stopPropagation()
+                        closeTab(tab.id)
+                      }}
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  )}
                 </DropdownMenuItem>
               )
             })}

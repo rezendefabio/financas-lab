@@ -1,4 +1,4 @@
-import { getToken, clearToken } from '@/shared/lib/auth'
+import { getToken, clearSession } from '@/shared/lib/auth'
 import { ApiError } from '@/shared/types/api'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8080'
@@ -24,7 +24,7 @@ export async function apiFetch<T>(path: string, init?: ApiFetchOptions): Promise
   })
   if (res.status === 204) return undefined as T
   if (res.status === 401) {
-    clearToken()
+    void clearSession()
     if (typeof window !== 'undefined') {
       window.location.href = '/login'
     }
@@ -62,7 +62,7 @@ export async function apiFetchMultipart<T>(
   })
   if (res.status === 204) return undefined as T
   if (res.status === 401) {
-    clearToken()
+    void clearSession()
     if (typeof window !== 'undefined') {
       window.location.href = '/login'
     }
@@ -93,7 +93,7 @@ export async function apiFetchBlob(path: string): Promise<Blob> {
     headers: token ? { Authorization: `Bearer ${token}` } : {},
   })
   if (res.status === 401) {
-    clearToken()
+    void clearSession()
     if (typeof window !== 'undefined') {
       window.location.href = '/login'
     }

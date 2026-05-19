@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest'
-import { useTabsStore, MAX_TABS } from './tabs-store'
+import { useTabsStore, MAX_TABS, DASHBOARD_CODE } from './tabs-store'
 
 /** Codigos de tela validos usados nos cenarios. */
 const CODES = [
@@ -83,14 +83,28 @@ describe('useTabsStore', () => {
     expect(after.activeId).toBe(tabs[1].id)
   })
 
-  it('closeTab com lista esvaziando define activeId como null', () => {
+  it('closeTab da ultima aba reabre o Dashboard', () => {
     const { openTab } = useTabsStore.getState()
     openTab('FIN-CTA-001')
     const id = useTabsStore.getState().tabs[0].id
     useTabsStore.getState().closeTab(id)
     const { tabs, activeId } = useTabsStore.getState()
-    expect(tabs).toHaveLength(0)
-    expect(activeId).toBeNull()
+    expect(tabs).toHaveLength(1)
+    expect(tabs[0].screenCode).toBe(DASHBOARD_CODE)
+    expect(activeId).toBe(tabs[0].id)
+    expect(activeId).not.toBeNull()
+  })
+
+  it('closeTab da unica aba Dashboard reabre o Dashboard (novo id)', () => {
+    const { openTab } = useTabsStore.getState()
+    openTab(DASHBOARD_CODE)
+    const oldId = useTabsStore.getState().tabs[0].id
+    useTabsStore.getState().closeTab(oldId)
+    const { tabs, activeId } = useTabsStore.getState()
+    expect(tabs).toHaveLength(1)
+    expect(tabs[0].screenCode).toBe(DASHBOARD_CODE)
+    expect(tabs[0].id).not.toBe(oldId)
+    expect(activeId).toBe(tabs[0].id)
   })
 
   it('togglePin alterna o estado pinned', () => {
