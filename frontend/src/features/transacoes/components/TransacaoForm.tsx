@@ -358,7 +358,7 @@ export function TransacaoForm({
                   <LookupField
                     value={field.value ?? null}
                     onChange={(v) => field.onChange(v ?? undefined)}
-                    queryKey={['payees']}
+                    queryKey={['payees', 'lookup']}
                     queryFn={() =>
                       listarPayees().then((ps) =>
                         ps.map((p) => ({ value: p.id, label: p.nome })),
