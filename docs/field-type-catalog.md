@@ -18,7 +18,7 @@ Ler antes de gerar qualquer campo. Violacao de B7 bloqueia merge.
 |---|---|---|
 | `LocalDate` (data simples) | `<Input type="date">` | `formatDate(value)` |
 | `LocalDate` representando mes/ano (ex: orcamento.mesAno) | `<Input type="month">` -- retorna `YYYY-MM`; concatenar `-01` ao enviar | `formatDate(value)` ou `MM/YYYY` |
-| `Instant` / `LocalDateTime` (timestamp) | Nunca editavel -- apenas exibicao | `formatDate(value)` |
+| `Instant` / `LocalDateTime` (timestamp) | Nunca editavel -- apenas exibicao | `formatDateTime(value)` -- NAO `formatDate` (causaria Invalid Date) |
 
 ### Booleanos
 
@@ -28,11 +28,35 @@ Ler antes de gerar qualquer campo. Violacao de B7 bloqueia merge.
 
 ### Referencias (FKs)
 
-| Situacao | Input | Exibicao |
+| Situacao | Input preferido | Quando usar Select estatico |
 |---|---|---|
-| `UUID categoriaId` | `<Select>` carregado de `GET /api/categorias` | Nome da categoria |
-| `UUID contaId` | `<Select>` carregado de `GET /api/contas` | Nome da conta |
-| Qualquer outro UUID que seja FK | `<Select>` carregado do endpoint correspondente | Nome da entidade |
+| `UUID categoriaId`, `UUID payeeId`, `UUID contaId`, qualquer FK | `<LookupField>` (combobox filtravel, `useQuery` interno) | Apenas em telas com poucos itens (<10) e sem necessidade de busca |
+
+**Padrao LookupField (preferido):**
+```tsx
+<LookupField
+  value={field.value ?? null}
+  onChange={(v) => field.onChange(v ?? '')}
+  queryKey={['categorias', 'lookup']}  // sufixo 'lookup' obrigatorio -- ver B13
+  queryFn={() => categoriasService.listar()
+    .then(cs => cs.map(c => ({ value: c.id, label: c.nome })))}
+  placeholder="Selecione uma categoria"
+/>
+```
+
+**Convencao critica de queryKey:**
+O sufixo `'lookup'` (ou outro discriminador) e OBRIGATORIO quando a pagina de
+listagem da mesma entidade usa o queryKey base (ex: `['categorias']`). Sem o
+sufixo, o TanStack Query reutiliza o cache da listagem (que contem objetos raw
+sem campo `label`), causando `TypeError: Cannot read properties of undefined
+(reading 'toLowerCase')` em runtime.
+
+Excecoes (ja tem sufixo natural):
+- `['categorias', tipoAtual]` -- o tipo ja discrimina
+- `['contas', 'ativas']` -- ja tem segundo elemento distinto
+
+**Se ainda usar Select estatico:** obrigatorio usar `SelectValue` com render
+function (ver secao abaixo). Nunca `<SelectValue />` sem children.
 
 ### Enums
 
@@ -86,6 +110,27 @@ Violacao deste padrao e bloqueador B7 (campo implementado sem consultar o catalo
 | `criadoEm`, `atualizadoEm` (Instant) | Texto read-only, nunca editavel |
 | Saldo derivado, total calculado | Texto read-only com `formatBRL()` |
 
+### Layout de formulario (FormGrid / FormCol)
+
+- **`FormGrid`**: importar de `@/shared/components/FormGrid`. Wrapper `div` com
+  `grid grid-cols-12 gap-4`. Usar para agrupar campos que se beneficiam de layout
+  lado a lado.
+- **`FormCol`**: importar de `@/shared/components/FormCol`. Prop `span` (1-12,
+  default 12). Usar dentro de `FormGrid`.
+
+Sugestoes de span por tipo de campo:
+| Campo | Span sugerido |
+|---|---|
+| Descricao / Nome (texto longo) | 12 |
+| Valor monetario | 7 |
+| Data | 5 |
+| Tipo / Status (enum) | 4-6 |
+| Conta / Categoria (LookupField) | 6 |
+| Booleano (Switch) | 4 |
+
+Campos simples que nao ganham com grid (formularios de 1-2 campos) podem usar
+`space-y-4` diretamente, sem `FormGrid`.
+
 ### Objetos aninhados (ValorMonetario)
 
 Quando o backend retorna `{ valor: number, moeda: string }` aninhado (ex: `valorLimite.valor`,
@@ -96,6 +141,7 @@ Acesso correto: `formatBRL(orcamento.valorLimite.valor)`.
 
 - `formatBRL(value: number)` -- formata numero como moeda BRL
 - `formatDate(dataIso: string)` -- formata data ISO como DD/MM/YYYY
+- `formatDateTime(instant: string)` -- formata Instant ISO como DD/MM/YYYY HH:mm
 - `formatTipoConta(tipo: string)` -- label para TipoConta
 - `formatTipoCategoria(tipo: string)` -- label para TipoCategoria (RECEITA/DESPESA)
 - `formatTipoTransacao(tipo: string)` -- label para TipoTransacao
