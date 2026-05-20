@@ -160,6 +160,12 @@ Ativar a fábrica de fato: rodar features no Tier 2, configurar 3 routines Tier 
 
 ### Sub-etapas concluídas
 
+- **Seed de subcategorias (V26)** (2026-05-19): Migration V26 adiciona 49
+  subcategorias de sistema (prefixo `c1`) distribuidas entre os 11 grupos pai
+  do V10. Nenhum codigo Java ou frontend modificado -- subcategorias aparecem
+  automaticamente via GET /api/categorias. Objetivo: tornar o app utilizavel
+  do zero sem configuracao manual de categorias.
+
 - **UI-9 -- documentacao pos-UI-8 + melhoria dos agentes de frontend** (2026-05-19):
   Sub-etapa doc-only de manutencao. Tres artefatos atualizados. **(1)
   `frontend-master-spec.md`:** secao 1 reescrita para refletir estado real apos
