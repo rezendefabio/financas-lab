@@ -4,19 +4,41 @@
 
 ## 1. Contexto e estado atual
 
-**Aplicação:** Financas Lab — gestão financeira pessoal.
-**Stack (a confirmar e fixar):** front em React (Next.js ou Vite — definir), provavelmente Tailwind + shadcn pelo visual. Estado global a definir (sugestão: Zustand).
-**Estado atual observado (2026-05):**
-- Shell simples: header fixo + menu lateral plano com 13 itens, sem hierarquia, sem busca, sem códigos de tela.
-- Telas: Dashboard, Contas, Transações, Importar CSV, Categorias, Tags, Orçamentos, Metas, Recorrentes, Beneficiários, Anotações, Relatórios, Incidentes.
-- Não há tabs internas; cada navegação substitui o conteúdo.
-- Reload perde contexto não persistido em URL.
-- Listagens com filtros simples e pontuais, sem filtros avançados empilháveis.
-- Sem menu lateral de Ações por tela.
-- Sem grid 12 colunas formalizado.
-- Sem componente "código + descrição + lupa".
-- **Sem qualquer mecanismo de log/auditoria.**
-- Responsividade não evidente.
+**Aplicacao:** Financas Lab -- gestao financeira pessoal.
+**Stack (fixada):** Next.js 16 (App Router) + TypeScript + Tailwind CSS +
+shadcn/ui (design system base-nova, usa `@base-ui/react`). Estado global:
+Zustand. Server state: TanStack Query. Formularios: react-hook-form + Zod.
+
+**Estado atual (2026-05-19, apos UI-1..UI-8):**
+
+- **Shell declarativo ativo:** Screen Registry (`screens.registry.ts`) com 13
+  telas registradas (codigos `MOD-ENT-NNN`). SidebarNav hierarquica gerada do
+  registry, com grupos colapsiveis (estado em Zustand + localStorage). Tab Manager
+  com abertura de telas como abas, persistencia em URL + localStorage, tab
+  Dashboard permanente. Command Palette (Ctrl+K) com busca por codigo/titulo/path
+  via cmdk.
+
+- **Listagens padronizadas (UI-5/UI-6):** todas as 13 telas de listagem usam
+  `DataTable` + `FilterBar` + `ActionsPanel`. Filtragem server-side (via
+  `useListPage` com URL params) para Transacoes; client-side (via `useMemo`) para
+  as demais (backends retornam `List<>` nao `Page<>`). `ActionsPanel` oferece
+  Log (audit drawer) e Export CSV por entidade selecionada.
+
+- **Formularios padronizados (UI-7/UI-8):** form-kit com `FormGrid` (grid de 12
+  colunas) e `FormCol` (span 1-12). Campos de FK usam `LookupField` (combobox
+  filtravel com `useQuery` interno). Campos monetarios usam `MoneyInput`.
+
+- **Audit Log (UI-4):** bounded context `auditlog` registra create/update/delete
+  para 9 entidades. `AuditLogDrawer` (Sheet lateral, timeline com diff) integrado
+  via `ActionsPanel`.
+
+- **Telas implementadas:** Dashboard, Contas, Transacoes, Categorias, Tags,
+  Orcamentos, Metas, LancamentosRecorrentes, Payees, Anotacoes, Relatorios,
+  Importacao, Incidentes.
+
+- **Responsividade:** sidebar em modo icon/collapsed em viewports menores, icon
+  mode com tooltip. Tab bar com scroll. Implementacao basica -- sem bottom sheet
+  nem snapshot tests por breakpoint ainda.
 
 ## 2. Princípios
 
@@ -199,53 +221,82 @@ Clicar no ícone abre um overlay/drawer **único** que oferece **simultaneamente
 
 **Renderização responsiva:** painel lateral em desktop, drawer em tablet, bottom sheet em mobile.
 
-### 4.7 Ponto 7 — Grid de 12 colunas
+### 4.7 Ponto 7 -- Grid de 12 colunas (implementado em UI-7/UI-8)
 
-**Componente:** `<FormGrid>` e `<Row>` / `<Col span={...}>` baseados em CSS Grid.
+**Componentes:** `FormGrid` e `FormCol` em `src/shared/components/`.
 
-**Regra obrigatória:** todo campo declara `colSpan` por breakpoint:
+`FormGrid` e um wrapper `div` com `grid grid-cols-12 gap-4`. `FormCol` aceita
+`span` (1-12, default 12) e aplica `col-span-N`.
+
+**Uso:**
 ```tsx
-<TextField name="nome" label="Nome" colSpan={{ xs: 12, md: 6, lg: 4 }} />
+<FormGrid>
+  <FormCol span={7}>
+    <FormField name="valor" ... />
+  </FormCol>
+  <FormCol span={5}>
+    <FormField name="data" ... />
+  </FormCol>
+  <FormCol span={12}>
+    <FormField name="descricao" ... />
+  </FormCol>
+</FormGrid>
 ```
 
-**Lint no pipeline:** PR é reprovado se qualquer campo dentro de `<FormGrid>` não tiver `colSpan` declarado.
+**Quando usar:** campos semanticamente relacionados ou de tamanho semelhante que
+ganham com layout lado a lado. Nao forcar grid em formularios simples de 1-2 campos.
 
-### 4.8 Ponto 8 — Componente Código + Descrição + Lupa (`LookupField`)
+**Nota:** `colSpan` por breakpoint (`xs/md/lg`) nao foi implementado -- todas as
+colunas sao fixas independente do viewport. Melhoria futura.
 
-**Comportamento:**
-- Dois inputs lado a lado: à esquerda **código**, à direita **descrição**, com ícone de **lupa** entre eles.
-- Autocomplete em ambos os lados (debounce 300ms): digitar no código busca por code; digitar na descrição busca por description.
-- Enter completa automaticamente se houver match único.
-- Clicar na lupa (ou apertar **F3**) abre **modal de busca avançada** que reutiliza o `<ListPage>` internamente (filtros avançados completos).
-- Suporta limpar (`x`) e estado readonly.
+**Convencao Tailwind:** as strings de classe `col-span-N` no `SPAN_CLASS` record
+do `FormCol.tsx` sao literais completas para garantir que o JIT as inclua no build.
 
-**Contrato:**
+### 4.8 Ponto 8 -- LookupField (implementado em UI-7/UI-8)
+
+**Componente:** `LookupField` em `src/shared/components/LookupField.tsx`.
+
+Combobox filtravel para campos de FK. Carrega opcoes via `useQuery` e filtra
+client-side pelo texto digitado. Substitui o padrao de `Select` estatico com
+busca inline, sem dependencia de cmdk.
+
+**Props:**
 ```tsx
-<LookupField
-  source="contas"
-  value={{ id, code, description }}
-  onChange={(v) => ...}
-  columns={["code","name","tipo","saldo"]}  // override opcional do modal
-  filters={{ ativo: true }}                  // pré-filtros fixos
-  disabled={false}
-/>
-```
-
-**Registry de lookups (`lookups.registry.ts`):**
-```ts
-{
-  contas: {
-    endpoint: "/api/contas/lookup",
-    searchFields: { code: "id", description: "nome" },
-    defaultColumns: ["code","name","tipo"],
-    label: "Contas"
-  },
-  categorias: { ... },
-  beneficiarios: { ... },
-  tags: { ... }
+interface LookupFieldProps {
+  value: string | null
+  onChange: (value: string | null) => void
+  queryKey: string[]       // DEVE ter sufixo distinto da queryKey da listagem
+  queryFn: () => Promise<LookupOption[]>
+  placeholder?: string
+  emptyMessage?: string
+  disabled?: boolean
 }
 ```
-Adicionar nova fonte = uma entrada no registry.
+
+**Convencao critica de queryKey (B13):**
+O TanStack Query usa `queryKey` como chave de cache. Se a pagina de listagem
+ja populou `['categorias']` com `Categoria[]` raw, o LookupField receberia esses
+objetos sem o campo `label` e crasharia em `o.label.toLowerCase()`.
+
+**Regra:** todo uso de LookupField deve usar `queryKey` com sufixo discriminador:
+- `['categorias', 'lookup']` -- nao `['categorias']`
+- `['payees', 'lookup']` -- nao `['payees']`
+- `['contas', 'ativas']` ja e distinto (tem segundo elemento) -- ok
+
+**LookupOption:**
+```ts
+interface LookupOption { value: string; label: string }
+```
+
+O `queryFn` deve mapear os objetos da API para `LookupOption`:
+```tsx
+queryFn={() => categoriasService.listar()
+  .then(cs => cs.map(c => ({ value: c.id, label: c.nome })))}
+```
+
+**Nota:** a visao original (§4.8) descrevia dois campos codigo+descricao com modal
+F3. Nao foi implementado assim -- a implementacao atual e um combobox simples.
+A visao completa com modal avancado permanece como melhoria futura.
 
 ## 5. Subsistema de Audit Log (pré-requisito)
 

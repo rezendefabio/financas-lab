@@ -2,7 +2,8 @@
 name: front-reviewer
 description: >
   Revisa PRs com mudancas em frontend/: fetch fora de services/, asChild em base-nova,
-  valores hardcoded de ambiente, any em tipos de API, ausencia de teste para hook/componente novo.
+  valores hardcoded de ambiente, any em tipos de API, ausencia de teste para hook/componente novo,
+  LookupField sem sufixo de queryKey (cache collision).
 tools: Read, Grep, Glob, Bash
 model: haiku
 ---
@@ -45,6 +46,7 @@ Revisor senior de frontend. Pragmatico — nao implica em estilo, implica em vio
 | B10 | Valor monetario em TableCell sem text-right | Grep por `formatBRL` dentro de `<TableCell` sem `text-right` na mesma celula |
 | B11 | Invalid Date em campo de data/timestamp | Grep por `formatDate(` aplicado a campos `Instant` (`criadoEm`, `atualizadoEm`) -- Instant deve usar `formatDateTime`. Causa: string ISO com `Z` passada diretamente a `formatDate` sem conversao correta. |
 | B12 | Tela de importacao de arquivo sem link para baixar o modelo | Grep por `page.tsx` em paths `*/importacao/*` ou qualquer pagina que contenha `type="file" accept=".csv"` -- se nao houver um link ou botao de download do arquivo modelo (CSV, XLSX, etc.), e bloqueador. Regra: toda tela de importacao de dados deve expor o layout esperado como arquivo para download. |
+| B13 | LookupField com queryKey sem sufixo discriminador (cache collision) | Grep por `LookupField` em `.tsx` que nao seja `LookupField.tsx`; para cada uso, verificar se `queryKey` tem segundo elemento que diferencia do queryKey usado pela pagina de listagem da mesma entidade (ex: `['categorias']` sem sufixo e bloqueador; `['categorias', 'lookup']` ou `['categorias', tipoAtual]` esta ok). Causa: TanStack Query reusa cache da listagem (Entidade[] sem campo `label`), gerando TypeError em runtime. |
 
 ## Regras -- Sugestoes (nao impede merge)
 
@@ -54,6 +56,7 @@ Revisor senior de frontend. Pragmatico — nao implica em estilo, implica em vio
 | S2 | Hook ou componente novo sem teste correspondente na PR |
 | S3 | Acesso a token fora de `src/shared/lib/auth.ts` ou `src/providers/auth-provider.tsx` |
 | S4 | Props de componente sem tipo explicito (interface ou type alias) |
+| S5 | `form.watch()` dentro de `useMemo` ou sem `eslint-disable` explicito | `form.watch()` retorna funcao que nao pode ser memoizada (React Compiler avisa). Se usado dentro de `useMemo` ou `useCallback`, adicionar `// eslint-disable-next-line react-hooks/exhaustive-deps` com comentario explicando por que. Se usado fora de memo, sem problema. |
 
 ## Regras -- Elogios (reforcar bom padrao)
 
