@@ -1,6 +1,6 @@
 'use client'
 import { useState, useMemo } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
 import { categoriasService } from '@/features/categorias/services/categorias.service'
 import { Card, CardContent } from '@/shared/components/ui/card'
@@ -33,8 +33,18 @@ const FILTER_FIELDS: FilterFieldDef[] = [
 
 export default function CategoriasPage() {
   const router = useRouter()
+  const queryClient = useQueryClient()
   const [selecionada, setSelecionada] = useState<Categoria | null>(null)
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
   const [activeFilters, setActiveFilters] = useState<ActiveFilter[]>([])
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => categoriasService.deletar(id),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['categorias'] })
+      setConfirmDeleteId(null)
+    },
+  })
 
   // O filtro `tipo` e resolvido no servidor; demais filtros sao client-side.
   const tipoFiltro = activeFilters.find((f) => f.field === 'tipo')?.value as
@@ -180,16 +190,47 @@ export default function CategoriasPage() {
               isLoading={isLoading}
               emptyMessage="Nenhuma categoria encontrada."
               onRowClick={(row) => router.push(`/categorias/${row.id}`)}
-              rowActions={(row) => (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  aria-label={`Historico de ${row.nome}`}
-                  onClick={() => setSelecionada(row)}
-                >
-                  Log
-                </Button>
-              )}
+              rowActions={(row) =>
+                confirmDeleteId === row.id ? (
+                  <span className="inline-flex gap-2">
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      onClick={() => deleteMutation.mutate(row.id)}
+                      disabled={deleteMutation.isPending}
+                    >
+                      Confirmar
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setConfirmDeleteId(null)}
+                    >
+                      Cancelar
+                    </Button>
+                  </span>
+                ) : (
+                  <span className="inline-flex gap-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      aria-label={`Historico de ${row.nome}`}
+                      onClick={() => setSelecionada(row)}
+                    >
+                      Log
+                    </Button>
+                    {!row.system && (
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={() => setConfirmDeleteId(row.id)}
+                      >
+                        Excluir
+                      </Button>
+                    )}
+                  </span>
+                )
+              }
             />
           </CardContent>
         </Card>

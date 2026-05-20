@@ -1,8 +1,8 @@
 'use client'
 import { useMemo, useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
-import { History } from 'lucide-react'
+import { History, Trash2 } from 'lucide-react'
 import { contasService } from '@/features/contas/services/contas.service'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card'
 import { Badge } from '@/shared/components/ui/badge'
@@ -29,10 +29,20 @@ function ContaCard({
   conta,
   onClick,
   onHistory,
+  isConfirmingDelete,
+  onRequestDelete,
+  onConfirmDelete,
+  onCancelDelete,
+  isDeleting,
 }: {
   conta: Conta
   onClick: () => void
   onHistory: () => void
+  isConfirmingDelete: boolean
+  onRequestDelete: () => void
+  onConfirmDelete: () => void
+  onCancelDelete: () => void
+  isDeleting: boolean
 }) {
   return (
     <Card
@@ -60,6 +70,19 @@ function ContaCard({
             >
               <History className="h-4 w-4" />
             </Button>
+            {conta.ativa && !isConfirmingDelete && (
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                aria-label={`Desativar ${conta.nome}`}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onRequestDelete()
+                }}
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            )}
           </div>
         </div>
       </CardHeader>
@@ -69,6 +92,28 @@ function ContaCard({
           {formatBRL(conta.saldoAtualValor ?? conta.saldoInicialValor)}
         </p>
         <p className="text-xs text-muted-foreground">saldo atual</p>
+        {isConfirmingDelete && (
+          <div
+            className="mt-3 flex items-center gap-2"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <Button
+              size="sm"
+              variant="destructive"
+              onClick={onConfirmDelete}
+              disabled={isDeleting}
+            >
+              Confirmar
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={onCancelDelete}
+            >
+              Cancelar
+            </Button>
+          </div>
+        )}
       </CardContent>
     </Card>
   )
@@ -76,8 +121,19 @@ function ContaCard({
 
 export default function ContasPage() {
   const router = useRouter()
+  const queryClient = useQueryClient()
   const [filtroAtiva, setFiltroAtiva] = useState<boolean | undefined>(undefined)
   const [selecionada, setSelecionada] = useState<Conta | null>(null)
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
+
+  const desativarMutation = useMutation({
+    mutationFn: (id: string) => contasService.desativar(id),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['contas'] })
+      await queryClient.invalidateQueries({ queryKey: ['contas-saldo-total'] })
+      setConfirmDeleteId(null)
+    },
+  })
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ['contas', filtroAtiva],
@@ -201,6 +257,11 @@ export default function ContasPage() {
               conta={conta}
               onClick={() => router.push(`/contas/${conta.id}`)}
               onHistory={() => setSelecionada(conta)}
+              isConfirmingDelete={confirmDeleteId === conta.id}
+              onRequestDelete={() => setConfirmDeleteId(conta.id)}
+              onConfirmDelete={() => desativarMutation.mutate(conta.id)}
+              onCancelDelete={() => setConfirmDeleteId(null)}
+              isDeleting={desativarMutation.isPending}
             />
           ))}
         </div>

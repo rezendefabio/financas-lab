@@ -14,4 +14,6 @@ export const categoriasService = {
   buscar: (id: string) => apiFetch<Categoria>(`/api/categorias/${id}`),
   criar: (data: CriarCategoriaRequest) =>
     apiFetch<Categoria>('/api/categorias', { method: 'POST', body: JSON.stringify(data) }),
+  deletar: (id: string) =>
+    apiFetch<void>(`/api/categorias/${id}`, { method: 'DELETE' }),
 }

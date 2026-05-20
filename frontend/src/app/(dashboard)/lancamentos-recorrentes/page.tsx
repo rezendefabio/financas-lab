@@ -1,6 +1,6 @@
 'use client'
 import { useState, useMemo } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
 import { lancamentoRecorrenteService } from '@/features/lancamentorecorrente'
 import { Card, CardContent } from '@/shared/components/ui/card'
@@ -52,10 +52,22 @@ const BOOLEAN_FIELDS = new Set(['ativo'])
 
 export default function LancamentosRecorrentesPage() {
   const router = useRouter()
+  const queryClient = useQueryClient()
   const [selecionado, setSelecionado] = useState<LancamentoRecorrente | null>(
     null,
   )
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
   const [activeFilters, setActiveFilters] = useState<ActiveFilter[]>([])
+
+  const desativarMutation = useMutation({
+    mutationFn: (id: string) => lancamentoRecorrenteService.desativar(id),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: ['lancamentos-recorrentes'],
+      })
+      setConfirmDeleteId(null)
+    },
+  })
 
   const { data: rawData = [], isLoading, isError } = useQuery({
     queryKey: ['lancamentos-recorrentes'],
@@ -213,16 +225,47 @@ export default function LancamentosRecorrentesPage() {
               onRowClick={(row) =>
                 router.push(`/lancamentos-recorrentes/${row.id}`)
               }
-              rowActions={(row) => (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  aria-label={`Historico de ${row.descricao}`}
-                  onClick={() => setSelecionado(row)}
-                >
-                  Log
-                </Button>
-              )}
+              rowActions={(row) =>
+                confirmDeleteId === row.id ? (
+                  <span className="inline-flex gap-2">
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      onClick={() => desativarMutation.mutate(row.id)}
+                      disabled={desativarMutation.isPending}
+                    >
+                      Confirmar
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setConfirmDeleteId(null)}
+                    >
+                      Cancelar
+                    </Button>
+                  </span>
+                ) : (
+                  <span className="inline-flex gap-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      aria-label={`Historico de ${row.descricao}`}
+                      onClick={() => setSelecionado(row)}
+                    >
+                      Log
+                    </Button>
+                    {row.ativo && (
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={() => setConfirmDeleteId(row.id)}
+                      >
+                        Desativar
+                      </Button>
+                    )}
+                  </span>
+                )
+              }
             />
           </CardContent>
         </Card>
