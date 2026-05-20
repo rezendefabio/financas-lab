@@ -160,6 +160,24 @@ Ativar a fábrica de fato: rodar features no Tier 2, configurar 3 routines Tier 
 
 ### Sub-etapas concluídas
 
+- **UI-9 -- documentacao pos-UI-8 + melhoria dos agentes de frontend** (2026-05-19):
+  Sub-etapa doc-only de manutencao. Tres artefatos atualizados. **(1)
+  `frontend-master-spec.md`:** secao 1 reescrita para refletir estado real apos
+  UI-1..UI-8 (shell declarativo, DataTable/FilterBar em todas as listagens,
+  form-kit, audit log, 13 telas); secao 4.7 atualizada com implementacao real do
+  FormGrid/FormCol (sem colSpan por breakpoint); secao 4.8 atualizada com
+  implementacao real do LookupField (combobox simples vs visao original de modal F3).
+  **(2) `field-type-catalog.md`:** `formatDateTime` adicionado aos formatadores;
+  tabela de timestamps corrigida (`Instant` -> `formatDateTime`, nao `formatDate`);
+  secao de FKs reescrita com `LookupField` como padrao preferido e convencao critica
+  de queryKey (sufixo discriminador para evitar cache collision); secao de FormGrid/FormCol
+  adicionada com sugestoes de span por tipo de campo. **(3) `front-reviewer.md`:**
+  B13 adicionado (LookupField sem sufixo discriminador no queryKey -- causa TypeError
+  em runtime por cache collision); S5 adicionado (form.watch() dentro de memo sem
+  eslint-disable explicito); descricao do agente atualizada. Motivacao: erros
+  ERR-8588F601 e ERR-333AC0ED (crash em /categorias/novo e /orcamentos/novo) revelaram
+  lacuna nas regras do front-reviewer que teria prevenido o bug se existisse antes da UI-8.
+
 - **UI-4 -- Audit Log (backend + frontend drawer)** (2026-05-19):
   Quarta fase da arquitetura de shell declarativo (ADR-014, `frontend-master-spec.md`
   secao 5). Novo bounded context `auditlog` (Tier 2) implementa trilha imutavel de
