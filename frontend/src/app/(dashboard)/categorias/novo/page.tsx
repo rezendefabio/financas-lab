@@ -144,7 +144,7 @@ export default function NovaCategoriaPage() {
                           <LookupField
                             value={field.value ?? null}
                             onChange={(v) => field.onChange(v ?? undefined)}
-                            queryKey={['categorias']}
+                            queryKey={['categorias', 'lookup']}
                             queryFn={() =>
                               categoriasService
                                 .listar()

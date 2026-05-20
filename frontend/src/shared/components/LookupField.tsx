@@ -61,7 +61,7 @@ export function LookupField({
   })
 
   const filtered = options.filter((o) =>
-    o.label.toLowerCase().includes(search.toLowerCase()),
+    (o.label ?? '').toLowerCase().includes(search.toLowerCase()),
   )
 
   const selected = options.find((o) => o.value === value) ?? null

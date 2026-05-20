@@ -96,7 +96,7 @@ export default function NovoOrcamentoPage() {
                             <LookupField
                               value={field.value || null}
                               onChange={(v) => field.onChange(v ?? '')}
-                              queryKey={['categorias']}
+                              queryKey={['categorias', 'lookup']}
                               queryFn={() =>
                                 categoriasService
                                   .listar()
