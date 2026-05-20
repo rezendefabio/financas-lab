@@ -1,6 +1,6 @@
 'use client'
 import { useState, useMemo } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
 import { orcamentoService } from '@/features/orcamentos/services/orcamento-service'
 import { categoriasService } from '@/features/categorias/services/categorias.service'
@@ -34,8 +34,18 @@ function formatMesAno(mesAno: string): string {
 
 export default function OrcamentosPage() {
   const router = useRouter()
+  const queryClient = useQueryClient()
   const [selecionado, setSelecionado] = useState<Orcamento | null>(null)
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
   const [activeFilters, setActiveFilters] = useState<ActiveFilter[]>([])
+
+  const desativarMutation = useMutation({
+    mutationFn: (id: string) => orcamentoService.desativar(id),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['orcamentos'] })
+      setConfirmDeleteId(null)
+    },
+  })
 
   const { data: rawData = [], isLoading, isError } = useQuery({
     queryKey: ['orcamentos'],
@@ -178,16 +188,47 @@ export default function OrcamentosPage() {
               isLoading={isLoading}
               emptyMessage="Nenhum orcamento encontrado."
               onRowClick={(row) => router.push(`/orcamentos/${row.id}`)}
-              rowActions={(row) => (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  aria-label={`Historico de orcamento ${row.id}`}
-                  onClick={() => setSelecionado(row)}
-                >
-                  Log
-                </Button>
-              )}
+              rowActions={(row) =>
+                confirmDeleteId === row.id ? (
+                  <span className="inline-flex gap-2">
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      onClick={() => desativarMutation.mutate(row.id)}
+                      disabled={desativarMutation.isPending}
+                    >
+                      Confirmar
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setConfirmDeleteId(null)}
+                    >
+                      Cancelar
+                    </Button>
+                  </span>
+                ) : (
+                  <span className="inline-flex gap-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      aria-label={`Historico de orcamento ${row.id}`}
+                      onClick={() => setSelecionado(row)}
+                    >
+                      Log
+                    </Button>
+                    {row.ativo && (
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={() => setConfirmDeleteId(row.id)}
+                      >
+                        Desativar
+                      </Button>
+                    )}
+                  </span>
+                )
+              }
             />
           </CardContent>
         </Card>

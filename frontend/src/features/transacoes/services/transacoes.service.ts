@@ -45,4 +45,6 @@ export const transacoesService = {
       method: 'PUT',
       body: JSON.stringify(data),
     }),
+  deletar: (id: string) =>
+    apiFetch<void>(`/api/transacoes/${id}`, { method: 'DELETE' }),
 }

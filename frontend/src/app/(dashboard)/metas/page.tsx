@@ -1,6 +1,6 @@
 'use client'
 import { useState, useMemo } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
 import { metaService } from '@/features/metas/services/meta-service'
 import { Card, CardContent } from '@/shared/components/ui/card'
@@ -40,8 +40,18 @@ const ENUM_FIELDS = new Set(['status'])
 
 export default function MetasPage() {
   const router = useRouter()
+  const queryClient = useQueryClient()
   const [selecionada, setSelecionada] = useState<Meta | null>(null)
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
   const [activeFilters, setActiveFilters] = useState<ActiveFilter[]>([])
+
+  const cancelarMutation = useMutation({
+    mutationFn: (id: string) => metaService.cancelar(id),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['metas'] })
+      setConfirmDeleteId(null)
+    },
+  })
 
   const { data: rawData = [], isLoading, isError } = useQuery({
     queryKey: ['metas'],
@@ -182,16 +192,47 @@ export default function MetasPage() {
               isLoading={isLoading}
               emptyMessage="Nenhuma meta encontrada."
               onRowClick={(row) => router.push(`/metas/${row.id}`)}
-              rowActions={(row) => (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  aria-label={`Historico de ${row.nome}`}
-                  onClick={() => setSelecionada(row)}
-                >
-                  Log
-                </Button>
-              )}
+              rowActions={(row) =>
+                confirmDeleteId === row.id ? (
+                  <span className="inline-flex gap-2">
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      onClick={() => cancelarMutation.mutate(row.id)}
+                      disabled={cancelarMutation.isPending}
+                    >
+                      Confirmar
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setConfirmDeleteId(null)}
+                    >
+                      Cancelar
+                    </Button>
+                  </span>
+                ) : (
+                  <span className="inline-flex gap-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      aria-label={`Historico de ${row.nome}`}
+                      onClick={() => setSelecionada(row)}
+                    >
+                      Log
+                    </Button>
+                    {row.status === 'EM_ANDAMENTO' && (
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={() => setConfirmDeleteId(row.id)}
+                      >
+                        Cancelar
+                      </Button>
+                    )}
+                  </span>
+                )
+              }
             />
           </CardContent>
         </Card>

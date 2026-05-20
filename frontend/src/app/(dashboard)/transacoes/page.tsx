@@ -1,8 +1,8 @@
 'use client'
 import { useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
-import { History, Pencil } from 'lucide-react'
-import { useQuery } from '@tanstack/react-query'
+import { History, Pencil, Trash2 } from 'lucide-react'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { transacoesService } from '@/features/transacoes/services/transacoes.service'
 import { contasService } from '@/features/contas/services/contas.service'
 import { Card, CardContent } from '@/shared/components/ui/card'
@@ -174,7 +174,17 @@ const COLUMNS_BASE: ColumnDef<Transacao>[] = [
 
 export default function TransacoesPage() {
   const router = useRouter()
+  const queryClient = useQueryClient()
   const [selecionada, setSelecionada] = useState<Transacao | null>(null)
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => transacoesService.deletar(id),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['transacoes'] })
+      setConfirmDeleteId(null)
+    },
+  })
 
   const { data: contas } = useQuery({
     queryKey: ['contas'],
@@ -305,26 +315,56 @@ export default function TransacoesPage() {
               sort={sort}
               onSortChange={setSort}
               onRowClick={setSelecionada}
-              rowActions={(row) => (
-                <div className="flex items-center gap-1">
-                  <Button
-                    variant="ghost"
-                    size="icon-sm"
-                    aria-label={`Editar ${row.descricao}`}
-                    onClick={() => router.push(`/transacoes/${row.id}/editar`)}
-                  >
-                    <Pencil className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon-sm"
-                    aria-label={`Historico de ${row.descricao}`}
-                    onClick={() => setSelecionada(row)}
-                  >
-                    <History className="h-4 w-4" />
-                  </Button>
-                </div>
-              )}
+              rowActions={(row) =>
+                confirmDeleteId === row.id ? (
+                  <span className="inline-flex gap-2">
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      onClick={() => deleteMutation.mutate(row.id)}
+                      disabled={deleteMutation.isPending}
+                    >
+                      Confirmar
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setConfirmDeleteId(null)}
+                    >
+                      Cancelar
+                    </Button>
+                  </span>
+                ) : (
+                  <div className="flex items-center gap-1">
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      aria-label={`Editar ${row.descricao}`}
+                      onClick={() =>
+                        router.push(`/transacoes/${row.id}/editar`)
+                      }
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      aria-label={`Historico de ${row.descricao}`}
+                      onClick={() => setSelecionada(row)}
+                    >
+                      <History className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      aria-label={`Excluir ${row.descricao}`}
+                      onClick={() => setConfirmDeleteId(row.id)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                )
+              }
             />
           </CardContent>
         </Card>
