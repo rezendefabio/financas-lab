@@ -21,18 +21,27 @@ export function useDraftForm<T extends FieldValues>(
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // Auto-save com debounce 400ms
+  // Auto-save com debounce 400ms; flush imediato no unmount
+  // Nota: form.formState.isDirty nao e confiavel DENTRO do watch callback --
+  // react-hook-form notifica subscribers antes de atualizar o dirty state.
+  // A guarda de dirty fica no flush de unmount via timerRef.
   useEffect(() => {
     const subscription = form.watch((values) => {
-      if (!form.formState.isDirty) return
       if (timerRef.current) clearTimeout(timerRef.current)
       timerRef.current = setTimeout(() => {
         save(pathname, values)
+        timerRef.current = null
       }, 400)
     })
     return () => {
       subscription.unsubscribe()
-      if (timerRef.current) clearTimeout(timerRef.current)
+      // Se ha timer pendente (debounce nao disparou), flush imediato: evita
+      // perda de rascunho quando o usuario troca de aba antes dos 400ms.
+      if (timerRef.current) {
+        clearTimeout(timerRef.current)
+        timerRef.current = null
+        save(pathname, form.getValues())
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [form, pathname, save])

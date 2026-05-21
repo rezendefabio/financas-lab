@@ -100,6 +100,28 @@ describe('useDraftForm', () => {
     expect(result.current.form.getValues('tipo')).toBe('RECEITA')
   })
 
+  it('salva rascunho imediatamente ao desmontar se form estiver sujo', () => {
+    vi.useFakeTimers()
+
+    const { result, unmount } = renderHook(() => {
+      const form = useForm<Values>({ defaultValues: { nome: '', tipo: 'DESPESA' } })
+      useDraftForm(form)
+      return form
+    })
+
+    act(() => {
+      result.current.setValue('nome', 'Nao salvo ainda', { shouldDirty: true })
+    })
+
+    // Desmonta antes dos 400ms dispararem
+    unmount()
+    vi.useRealTimers()
+
+    expect(useDraftFormsStore.getState().getDraft('/categorias/novo')).toMatchObject({
+      nome: 'Nao salvo ainda',
+    })
+  })
+
   it('resetWithDraft mantem referencia estavel entre renders', () => {
     const { result, rerender } = renderHook(() => {
       const form = useForm<Values>({ defaultValues: { nome: '', tipo: 'DESPESA' } })
