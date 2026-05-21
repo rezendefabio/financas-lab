@@ -4,6 +4,7 @@ import com.laboratorio.financas.anexo.domain.AnexoNaoEncontradoException;
 import com.laboratorio.financas.anotacao.domain.AnotacaoNaoEncontradaException;
 import com.laboratorio.financas.categoria.domain.CategoriaJaExisteException;
 import com.laboratorio.financas.categoria.domain.CategoriaNaoEncontradaException;
+import com.laboratorio.financas.centrocusto.domain.CentroCustoNaoEncontradoException;
 import com.laboratorio.financas.conta.domain.ContaNaoEncontradaException;
 import com.laboratorio.financas.incidente.application.RegistrarErroUseCase;
 import com.laboratorio.financas.incidente.domain.IncidenteNaoEncontradoException;
@@ -157,6 +158,15 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(LancamentoRecorrenteNaoEncontradoException.class)
     public ProblemDetail handleLancamentoRecorrenteNaoEncontrado(
             LancamentoRecorrenteNaoEncontradoException ex) {
+        ProblemDetail problem = ProblemDetail.forStatus(HttpStatus.NOT_FOUND);
+        problem.setTitle("Not Found");
+        problem.setDetail(ex.getMessage());
+        problem.setProperty("id", ex.getId().toString());
+        return problem;
+    }
+
+    @ExceptionHandler(CentroCustoNaoEncontradoException.class)
+    public ProblemDetail handleCentroCustoNaoEncontrado(CentroCustoNaoEncontradoException ex) {
         ProblemDetail problem = ProblemDetail.forStatus(HttpStatus.NOT_FOUND);
         problem.setTitle("Not Found");
         problem.setDetail(ex.getMessage());
