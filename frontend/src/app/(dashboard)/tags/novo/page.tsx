@@ -7,6 +7,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
 import { ArrowLeft } from 'lucide-react'
 import { criarTag } from '@/features/tag'
+import { useDraftForm } from '@/shared/hooks/useDraftForm'
 import { FormGrid } from '@/shared/components/FormGrid'
 import { FormCol } from '@/shared/components/FormCol'
 import { Card, CardContent } from '@/shared/components/ui/card'
@@ -40,6 +41,7 @@ export default function NovaTagPage() {
       cor: undefined,
     },
   })
+  const { clearDraft } = useDraftForm(form)
 
   const mutation = useMutation({
     mutationFn: (values: FormValues) =>
@@ -49,6 +51,7 @@ export default function NovaTagPage() {
       }),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['tags'] })
+      clearDraft()
       router.push('/tags')
     },
     onError: () => {
@@ -135,7 +138,7 @@ export default function NovaTagPage() {
                   <Button type="submit" disabled={mutation.isPending}>
                     {mutation.isPending ? 'Salvando...' : 'Salvar'}
                   </Button>
-                  <Button type="button" variant="outline" onClick={() => router.push('/tags')}>
+                  <Button type="button" variant="outline" onClick={() => { clearDraft(); router.push('/tags') }}>
                     Cancelar
                   </Button>
                 </div>

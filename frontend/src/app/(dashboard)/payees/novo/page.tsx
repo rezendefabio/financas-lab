@@ -8,6 +8,7 @@ import { useRouter } from 'next/navigation'
 import { ArrowLeft } from 'lucide-react'
 import { categoriasService } from '@/features/categorias/services/categorias.service'
 import { criarPayee } from '@/features/payee/services/payee-service'
+import { useDraftForm } from '@/shared/hooks/useDraftForm'
 import { FormGrid } from '@/shared/components/FormGrid'
 import { FormCol } from '@/shared/components/FormCol'
 import { Card, CardContent } from '@/shared/components/ui/card'
@@ -53,6 +54,7 @@ export default function NovoPayeePage() {
       categoriaPadraoId: undefined,
     },
   })
+  const { clearDraft } = useDraftForm(form)
 
   const mutation = useMutation({
     mutationFn: (values: FormValues) =>
@@ -62,6 +64,7 @@ export default function NovoPayeePage() {
       }),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['payees'] })
+      clearDraft()
       router.push('/payees')
     },
     onError: () => {
@@ -149,7 +152,7 @@ export default function NovoPayeePage() {
                   <Button type="submit" disabled={mutation.isPending}>
                     {mutation.isPending ? 'Salvando...' : 'Salvar'}
                   </Button>
-                  <Button type="button" variant="outline" onClick={() => router.push('/payees')}>
+                  <Button type="button" variant="outline" onClick={() => { clearDraft(); router.push('/payees') }}>
                     Cancelar
                   </Button>
                 </div>

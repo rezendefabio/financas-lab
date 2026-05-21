@@ -1,7 +1,8 @@
 'use client'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { useRouter } from 'next/navigation'
+import { useRouter, usePathname } from 'next/navigation'
 import { useState } from 'react'
+import { useDraftFormsStore } from '@/shared/shell/draft-forms-store'
 import { ArrowLeft } from 'lucide-react'
 import { transacoesService } from '@/features/transacoes/services/transacoes.service'
 import {
@@ -14,6 +15,8 @@ import { Button } from '@/shared/components/ui/button'
 
 export default function NovaTransacaoPage() {
   const router = useRouter()
+  const pathname = usePathname()
+  const clearDraft = useDraftFormsStore((s) => s.clear)
   const queryClient = useQueryClient()
   const [apiError, setApiError] = useState<string | null>(null)
 
@@ -60,7 +63,7 @@ export default function NovaTransacaoPage() {
               apiError={apiError}
               onClearApiError={() => setApiError(null)}
               submitLabel="Salvar"
-              onCancel={() => router.push('/transacoes')}
+              onCancel={() => { clearDraft(pathname); router.push('/transacoes') }}
             />
           </CardContent>
         </Card>

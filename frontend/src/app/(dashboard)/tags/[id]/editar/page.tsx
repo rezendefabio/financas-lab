@@ -7,6 +7,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useRouter, useParams } from 'next/navigation'
 import { ArrowLeft } from 'lucide-react'
 import { listarTags, atualizarTag } from '@/features/tag'
+import { useDraftForm } from '@/shared/hooks/useDraftForm'
 import { FormGrid } from '@/shared/components/FormGrid'
 import { FormCol } from '@/shared/components/FormCol'
 import { Card, CardContent } from '@/shared/components/ui/card'
@@ -50,15 +51,17 @@ export default function EditarTagPage() {
       cor: undefined,
     },
   })
+  const { clearDraft, resetWithDraft } = useDraftForm(form)
 
   useEffect(() => {
     if (tag) {
-      form.reset({
+      resetWithDraft({
         nome: tag.nome,
         cor: tag.cor ?? undefined,
       })
     }
-  }, [tag, form])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tag])
 
   const mutation = useMutation({
     mutationFn: (values: FormValues) =>
@@ -68,6 +71,7 @@ export default function EditarTagPage() {
       }),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['tags'] })
+      clearDraft()
       router.push('/tags')
     },
     onError: () => {
@@ -187,7 +191,7 @@ export default function EditarTagPage() {
                   <Button type="submit" disabled={mutation.isPending}>
                     {mutation.isPending ? 'Salvando...' : 'Salvar'}
                   </Button>
-                  <Button type="button" variant="outline" onClick={() => router.push('/tags')}>
+                  <Button type="button" variant="outline" onClick={() => { clearDraft(); router.push('/tags') }}>
                     Cancelar
                   </Button>
                 </div>
