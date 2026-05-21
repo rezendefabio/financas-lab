@@ -17,8 +17,8 @@
  *      ADM = administracao (incidentes)
  *  - ENT = entidade (3 letras): CTA=Conta, TRX=Transacao, ORC=Orcamento,
  *      MET=Meta, REC=Recorrente, IMP=Importacao, CAT=Categoria, TAG=Tag,
- *      BEN=Beneficiario, DSH=Dashboard, ANL=Analise/Relatorios, ANO=Anotacao,
- *      INC=Incidente.
+ *      BEN=Beneficiario, CCU=CentroCusto, DSH=Dashboard, ANL=Analise/Relatorios,
+ *      ANO=Anotacao, INC=Incidente.
  *  - NNN = sequencial dentro da entidade: 001 = listagem (tela principal).
  *      Cadastro/visualizacao/edicao herdam a mesma rota base nesta fase e nao
  *      tem code proprio -- apenas a tela de listagem entra no registry/menu.
@@ -130,6 +130,14 @@ export const screens: ScreenDefinition[] = [
     path: '/payees',
     menuPath: ['Cadastros', 'Financeiro', 'Beneficiarios'],
     icon: 'users',
+    permissions: [],
+  },
+  {
+    code: 'CAD-CCU-001',
+    title: 'Centros de Custo',
+    path: '/centros-custo',
+    menuPath: ['Cadastros', 'Classificacao', 'Centros de Custo'],
+    icon: 'layers',
     permissions: [],
   },
   {
