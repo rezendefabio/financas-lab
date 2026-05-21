@@ -18,6 +18,7 @@ const mockPush = vi.fn()
 const mockBack = vi.fn()
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ push: mockPush, back: mockBack }),
+  usePathname: () => '/orcamentos/novo',
 }))
 
 const mockInvalidateQueries = vi.fn()

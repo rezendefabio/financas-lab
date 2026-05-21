@@ -7,6 +7,7 @@ import { useParams, useRouter } from 'next/navigation'
 import { useState, useEffect } from 'react'
 import { ArrowLeft } from 'lucide-react'
 import { anotacaoService } from '@/features/anotacoes/services/anotacao-service'
+import { useDraftForm } from '@/shared/hooks/useDraftForm'
 import { FormGrid } from '@/shared/components/FormGrid'
 import { FormCol } from '@/shared/components/FormCol'
 import { Card, CardContent } from '@/shared/components/ui/card'
@@ -77,10 +78,11 @@ export default function EditarAnotacao() {
       dataReferencia: '',
     },
   })
+  const { clearDraft, resetWithDraft } = useDraftForm(form)
 
   useEffect(() => {
     if (anotacao) {
-      form.reset({
+      resetWithDraft({
         titulo: anotacao.titulo,
         conteudo: anotacao.conteudo ?? '',
         tipo: anotacao.tipo,
@@ -89,7 +91,8 @@ export default function EditarAnotacao() {
         dataReferencia: anotacao.dataReferencia ?? '',
       })
     }
-  }, [anotacao, form])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [anotacao])
 
   const mutation = useMutation({
     mutationFn: (values: FormValues) =>
@@ -105,6 +108,7 @@ export default function EditarAnotacao() {
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['anotacao', id] })
       await queryClient.invalidateQueries({ queryKey: ['anotacoes'] })
+      clearDraft()
       router.push(`/anotacoes/${id}`)
     },
     onError: () => {
@@ -280,7 +284,7 @@ export default function EditarAnotacao() {
                   <Button
                     type="button"
                     variant="outline"
-                    onClick={() => router.push(`/anotacoes/${id}`)}
+                    onClick={() => { clearDraft(); router.push(`/anotacoes/${id}`) }}
                   >
                     Cancelar
                   </Button>

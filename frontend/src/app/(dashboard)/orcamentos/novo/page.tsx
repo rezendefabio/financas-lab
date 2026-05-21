@@ -8,6 +8,7 @@ import { useState } from 'react'
 import { ArrowLeft } from 'lucide-react'
 import { orcamentoService } from '@/features/orcamentos/services/orcamento-service'
 import { categoriasService } from '@/features/categorias/services/categorias.service'
+import { useDraftForm } from '@/shared/hooks/useDraftForm'
 import { Card, CardContent } from '@/shared/components/ui/card'
 import {
   Form,
@@ -45,6 +46,7 @@ export default function NovoOrcamentoPage() {
       mesAno: '',
     },
   })
+  const { clearDraft } = useDraftForm(form)
 
   const mutation = useMutation({
     mutationFn: (values: FormValues) =>
@@ -56,6 +58,7 @@ export default function NovoOrcamentoPage() {
       }),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['orcamentos'] })
+      clearDraft()
       router.push('/orcamentos')
     },
     onError: () => {
@@ -168,7 +171,7 @@ export default function NovoOrcamentoPage() {
                   <Button
                     type="button"
                     variant="outline"
-                    onClick={() => router.push('/orcamentos')}
+                    onClick={() => { clearDraft(); router.push('/orcamentos') }}
                   >
                     Cancelar
                   </Button>

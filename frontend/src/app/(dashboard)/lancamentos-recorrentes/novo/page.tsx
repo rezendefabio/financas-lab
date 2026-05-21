@@ -9,6 +9,7 @@ import { ArrowLeft } from 'lucide-react'
 import { lancamentoRecorrenteService } from '@/features/lancamentorecorrente'
 import { contasService } from '@/features/contas/services/contas.service'
 import { categoriasService } from '@/features/categorias/services/categorias.service'
+import { useDraftForm } from '@/shared/hooks/useDraftForm'
 import { Card, CardContent } from '@/shared/components/ui/card'
 import {
   Form,
@@ -86,6 +87,7 @@ export default function NovoLancamentoRecorrentePage() {
       proximaOcorrencia: today,
     },
   })
+  const { clearDraft } = useDraftForm(form)
 
   // eslint-disable-next-line react-hooks/incompatible-library
   const tipoAtual = form.watch('tipo')
@@ -104,6 +106,7 @@ export default function NovoLancamentoRecorrentePage() {
       }),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['lancamentos-recorrentes'] })
+      clearDraft()
       router.push('/lancamentos-recorrentes')
     },
     onError: () => {
@@ -316,7 +319,7 @@ export default function NovoLancamentoRecorrentePage() {
                   <Button
                     type="button"
                     variant="outline"
-                    onClick={() => router.push('/lancamentos-recorrentes')}
+                    onClick={() => { clearDraft(); router.push('/lancamentos-recorrentes') }}
                   >
                     Cancelar
                   </Button>

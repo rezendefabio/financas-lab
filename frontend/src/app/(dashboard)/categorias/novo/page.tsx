@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { ArrowLeft } from 'lucide-react'
 import { categoriasService } from '@/features/categorias/services/categorias.service'
+import { useDraftForm } from '@/shared/hooks/useDraftForm'
 import { Card, CardContent } from '@/shared/components/ui/card'
 import {
   Form,
@@ -55,6 +56,7 @@ export default function NovaCategoriaPage() {
       categoriaPaiId: undefined,
     },
   })
+  const { clearDraft } = useDraftForm(form)
 
   const mutation = useMutation({
     mutationFn: (values: FormValues) =>
@@ -65,6 +67,7 @@ export default function NovaCategoriaPage() {
       }),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['categorias'] })
+      clearDraft()
       router.push('/categorias')
     },
     onError: () => {
@@ -166,7 +169,7 @@ export default function NovaCategoriaPage() {
                   <Button type="submit" disabled={mutation.isPending}>
                     {mutation.isPending ? 'Salvando...' : 'Salvar'}
                   </Button>
-                  <Button type="button" variant="outline" onClick={() => router.push('/categorias')}>
+                  <Button type="button" variant="outline" onClick={() => { clearDraft(); router.push('/categorias') }}>
                     Cancelar
                   </Button>
                 </div>

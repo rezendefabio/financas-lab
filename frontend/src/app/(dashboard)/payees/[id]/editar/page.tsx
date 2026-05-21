@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useForm, Controller, type Resolver } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -8,6 +8,7 @@ import { useRouter, useParams } from 'next/navigation'
 import { ArrowLeft } from 'lucide-react'
 import { categoriasService } from '@/features/categorias/services/categorias.service'
 import { listarPayees, atualizarPayee } from '@/features/payee/services/payee-service'
+import { useDraftForm } from '@/shared/hooks/useDraftForm'
 import { FormGrid } from '@/shared/components/FormGrid'
 import { FormCol } from '@/shared/components/FormCol'
 import { Card, CardContent } from '@/shared/components/ui/card'
@@ -55,14 +56,21 @@ export default function EditarPayeePage() {
 
   const payee = payees?.find((p) => p.id === id)
 
-  // Use `values` prop so form re-syncs when payee data arrives
   const form = useForm<FormValues>({
     resolver: zodResolver(schema) as Resolver<FormValues>,
     defaultValues: { nome: '', categoriaPadraoId: undefined },
-    values: payee
-      ? { nome: payee.nome, categoriaPadraoId: payee.categoriaPadraoId ?? undefined }
-      : undefined,
   })
+  const { clearDraft, resetWithDraft } = useDraftForm(form)
+
+  useEffect(() => {
+    if (payee) {
+      resetWithDraft({
+        nome: payee.nome,
+        categoriaPadraoId: payee.categoriaPadraoId ?? undefined,
+      })
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [payee])
 
   const mutation = useMutation({
     mutationFn: (values: FormValues) =>
@@ -72,6 +80,7 @@ export default function EditarPayeePage() {
       }),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['payees'] })
+      clearDraft()
       router.push('/payees')
     },
     onError: () => {
@@ -187,7 +196,7 @@ export default function EditarPayeePage() {
                   <Button type="submit" disabled={mutation.isPending}>
                     {mutation.isPending ? 'Salvando...' : 'Salvar'}
                   </Button>
-                  <Button type="button" variant="outline" onClick={() => router.push('/payees')}>
+                  <Button type="button" variant="outline" onClick={() => { clearDraft(); router.push('/payees') }}>
                     Cancelar
                   </Button>
                 </div>

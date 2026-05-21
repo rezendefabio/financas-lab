@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { ArrowLeft } from 'lucide-react'
 import { anotacaoService } from '@/features/anotacoes/services/anotacao-service'
+import { useDraftForm } from '@/shared/hooks/useDraftForm'
 import { FormGrid } from '@/shared/components/FormGrid'
 import { FormCol } from '@/shared/components/FormCol'
 import { Card, CardContent } from '@/shared/components/ui/card'
@@ -70,11 +71,13 @@ export default function NovaAnotacao() {
       dataReferencia: '',
     },
   })
+  const { clearDraft } = useDraftForm(form)
 
   const mutation = useMutation({
     mutationFn: anotacaoService.criar,
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['anotacoes'] })
+      clearDraft()
       router.push('/anotacoes')
     },
     onError: () => {
@@ -249,7 +252,7 @@ export default function NovaAnotacao() {
                   <Button
                     type="button"
                     variant="outline"
-                    onClick={() => router.push('/anotacoes')}
+                    onClick={() => { clearDraft(); router.push('/anotacoes') }}
                   >
                     Cancelar
                   </Button>

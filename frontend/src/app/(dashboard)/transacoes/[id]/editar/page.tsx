@@ -1,7 +1,8 @@
 'use client'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useParams, useRouter } from 'next/navigation'
+import { useParams, useRouter, usePathname } from 'next/navigation'
 import { useState } from 'react'
+import { useDraftFormsStore } from '@/shared/shell/draft-forms-store'
 import { ArrowLeft } from 'lucide-react'
 import { transacoesService } from '@/features/transacoes/services/transacoes.service'
 import {
@@ -33,6 +34,8 @@ function toFormValues(t: Transacao): TransacaoFormValues {
 export default function EditarTransacaoPage() {
   const { id } = useParams<{ id: string }>()
   const router = useRouter()
+  const pathname = usePathname()
+  const clearDraft = useDraftFormsStore((s) => s.clear)
   const queryClient = useQueryClient()
   const [apiError, setApiError] = useState<string | null>(null)
 
@@ -104,7 +107,7 @@ export default function EditarTransacaoPage() {
                 apiError={apiError}
                 onClearApiError={() => setApiError(null)}
                 submitLabel="Salvar"
-                onCancel={() => router.push('/transacoes')}
+                onCancel={() => { clearDraft(pathname); router.push('/transacoes') }}
               />
             )}
           </CardContent>

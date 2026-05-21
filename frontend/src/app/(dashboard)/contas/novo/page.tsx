@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { ArrowLeft } from 'lucide-react'
 import { contasService } from '@/features/contas/services/contas.service'
+import { useDraftForm } from '@/shared/hooks/useDraftForm'
 import { Card, CardContent } from '@/shared/components/ui/card'
 import {
   Form,
@@ -65,6 +66,7 @@ export default function NovaConta() {
       saldoInicialMoeda: 'BRL',
     },
   })
+  const { clearDraft } = useDraftForm(form)
 
   // eslint-disable-next-line react-hooks/incompatible-library
   const tipoAtual = form.watch('tipo')
@@ -74,6 +76,7 @@ export default function NovaConta() {
     mutationFn: contasService.criar,
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['contas'] })
+      clearDraft()
       router.push('/contas')
     },
     onError: () => {
@@ -302,7 +305,7 @@ export default function NovaConta() {
                   <Button
                     type="button"
                     variant="outline"
-                    onClick={() => router.push('/contas')}
+                    onClick={() => { clearDraft(); router.push('/contas') }}
                   >
                     Cancelar
                   </Button>
