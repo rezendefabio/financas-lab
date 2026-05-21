@@ -126,6 +126,31 @@ Se exit code != 0: escreva "ERRO: gh pr create falhou." com o output e termine.
 
 Extraia o numero do PR da URL retornada pelo gh pr create (ultimo segmento da URL).
 
+**DETECCAO DE CONTEXTO (executar antes de qualquer review):**
+
+Verifique se voce esta num worktree isolado (sub-agente de /batch ou /plan):
+
+```bash
+if [ -f .git ]; then
+  echo "WORKTREE: Agent tool indisponivel -- pular reviews automaticos"
+else
+  echo "REPO_PRINCIPAL: Agent tool disponivel -- executar reviews"
+fi
+```
+
+Se `.git` for um ARQUIVO (worktree): **pule os Reviews 1, 2 e 3 inteiramente.**
+No relatorio final (Passo 6), substitua a secao Reviews por:
+
+```
+Reviews:
+  PENDENTE -- executor rodou em worktree (Agent tool indisponivel).
+  Rodar manualmente antes do merge:
+    /review-pr <numero>
+    /review-front <numero>   (se houver mudancas em frontend/)
+```
+
+Se `.git` for um DIRETORIO (repo principal): prosseguir normalmente com os reviews abaixo.
+
 Invoque os dois agentes de review em sequencia usando o Agent tool:
 
 **Review 1 -- pr-reviewer:**
