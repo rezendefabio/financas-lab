@@ -22,6 +22,7 @@ import {
   AlertTriangle,
   Upload,
   Folder,
+  Layers,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -41,6 +42,7 @@ export const iconMap: Record<string, LucideIcon> = {
   'alert-triangle': AlertTriangle,
   upload: Upload,
   folder: Folder,
+  layers: Layers,
 }
 
 /**
