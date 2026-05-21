@@ -18,6 +18,7 @@ import {
 } from '@/shared/components/ui/form'
 import { Input } from '@/shared/components/ui/input'
 import { Button } from '@/shared/components/ui/button'
+import { useDraftForm } from '@/shared/hooks/useDraftForm'
 
 const schema = z.object({
   nome: z.string().min(1, 'Nome obrigatorio').max(100, 'Maximo 100 caracteres'),
@@ -43,6 +44,8 @@ export default function NovoCentroCustoPage() {
     },
   })
 
+  const { clearDraft } = useDraftForm(form)
+
   const mutation = useMutation({
     mutationFn: (values: FormValues) =>
       criarCentroCusto({
@@ -53,6 +56,7 @@ export default function NovoCentroCustoPage() {
       }),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['centros-custo'] })
+      clearDraft()
       router.push('/centros-custo')
     },
     onError: () => {
@@ -137,7 +141,7 @@ export default function NovoCentroCustoPage() {
                   <Button
                     type="button"
                     variant="outline"
-                    onClick={() => router.push('/centros-custo')}
+                    onClick={() => { clearDraft(); router.push('/centros-custo') }}
                   >
                     Cancelar
                   </Button>
