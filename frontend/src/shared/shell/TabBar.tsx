@@ -194,9 +194,10 @@ export function TabBar() {
   useEffect(() => {
     if (!hydratedFromUrl.current) return
     const activeTab = tabs.find((tab) => tab.id === activeId)
-    const targetScreen = activeTab
-      ? findScreenByCode(activeTab.screenCode)
-      : undefined
+    // Sem aba ativa (ex: logout reseta o store): nao navegar -- evita
+    // sobrescrever o router.push('/login') disparado pelo DashboardLayout.
+    if (!activeTab) return
+    const targetScreen = findScreenByCode(activeTab.screenCode)
     const targetPath =
       activeTab?.currentPath ?? targetScreen?.path ?? window.location.pathname
 
