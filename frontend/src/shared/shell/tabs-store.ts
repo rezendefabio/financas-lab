@@ -23,6 +23,9 @@ export interface Tab {
   screenCode: string
   /** Aba fixada nao e fechada automaticamente pelo limite. */
   pinned: boolean
+  /** Ultimo path visitado nesta aba (ex: '/centros-custo/novo'). Quando
+   *  ausente, usa o path raiz da screen como destino de navegacao. */
+  currentPath?: string
 }
 
 /** Numero maximo de abas abertas simultaneamente. */
@@ -64,6 +67,8 @@ interface TabsState {
   setActive: (id: string) => void
   /** Alterna o estado `pinned` da aba. */
   togglePin: (id: string) => void
+  /** Atualiza o path atual da aba (chamado pelo layout ao navegar). */
+  updateTabPath: (id: string, path: string) => void
   /** Move a aba da posicao `fromIndex` para `toIndex`. */
   reorder: (fromIndex: number, toIndex: number) => void
   /**
@@ -130,6 +135,17 @@ export const useTabsStore = create<TabsState>()(
         }),
 
       setActive: (id) => set({ activeId: id }),
+
+      updateTabPath: (id, path) =>
+        set((state) => {
+          const tab = state.tabs.find((t) => t.id === id)
+          if (!tab || tab.currentPath === path) return state
+          return {
+            tabs: state.tabs.map((t) =>
+              t.id === id ? { ...t, currentPath: path } : t,
+            ),
+          }
+        }),
 
       togglePin: (id) =>
         set((state) => ({

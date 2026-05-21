@@ -1,5 +1,5 @@
 'use client'
-import { Suspense, useEffect } from 'react'
+import { Suspense, useEffect, useRef } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import { useAuth } from '@/features/auth/hooks/use-auth'
 import {
@@ -62,6 +62,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const auth = useAuth()
 
   const openTab = useTabsStore((state) => state.openTab)
+  const activeId = useTabsStore((state) => state.activeId)
+  const updateTabPath = useTabsStore((state) => state.updateTabPath)
+
+  // Ref para detectar troca de aba: so atualiza currentPath quando o usuario
+  // navega dentro da aba ativa, nao quando o TabBar troca de aba.
+  const prevActiveIdRef = useRef(activeId)
 
   useEffect(() => {
     if (!auth.loggedIn) {
@@ -78,6 +84,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  // Rastreia o path atual por aba: quando pathname muda SEM troca de aba
+  // (usuario navegou dentro da aba), salva o novo path na aba ativa.
+  useEffect(() => {
+    const sameTab = prevActiveIdRef.current === activeId
+    prevActiveIdRef.current = activeId
+    if (sameTab && activeId) {
+      updateTabPath(activeId, pathname)
+    }
+  }, [pathname, activeId, updateTabPath])
 
   return (
     <SidebarProvider>
