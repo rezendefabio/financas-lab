@@ -33,6 +33,33 @@ if [ "$worktree_root" = "/c/projetos/financas-lab" ] || [ "$worktree_root" = "C:
 fi
 ```
 
+## Regra absoluta de path — anti-pitfall worktree (feedback_executor_edit_main_by_mistake)
+
+Antes do PRIMEIRO Write ou Edit, capturar e exibir o worktree root:
+
+```bash
+WORKTREE=$(git rev-parse --show-toplevel)
+echo "WORKTREE=$WORKTREE"
+```
+
+TODO path absoluto passado para Write/Edit DEVE comecar com `$WORKTREE`.
+
+Prefixos PROIBIDOS (indicam que o arquivo vai cair no repo principal):
+- `C:\projetos\financas-lab\src\`
+- `C:\projetos\financas-lab\frontend\`
+- `C:\projetos\financas-lab\docs\`
+- `C:\projetos\financas-lab\.claude\`
+(qualquer `C:\projetos\financas-lab\` que NAO seja seguido de `.claude\worktrees\agent-`)
+
+Apos os PRIMEIROS 3 Write/Edit, validar imediatamente:
+
+```bash
+git -C /c/projetos/financas-lab status --short
+```
+
+Resultado esperado: vazio. Se nao for: BLOQUEADOR — mover arquivos com `mv` para
+o caminho correto dentro do worktree, remover copia suja com `rm`, so entao continuar.
+
 ## Limpeza obrigatoria antes de encerrar
 
 Antes de reportar conclusao, verificar se ha arquivos nao-trackeados fora
@@ -129,6 +156,26 @@ crie-os conforme descrito -- nao invoque /feature-front por conta propria.
 2. Execute cada passo do fluxo de execucao descrito em "Instrucoes da tarefa"
 3. Nao pule passos. Nao invente passos.
 4. Se um passo falhar: registre o erro e tente corrigir. Aborte se irrecuperavel.
+
+## Verificacao final obrigatoria no repo principal
+
+Antes de reportar conclusao, confirmar que o repo principal ficou limpo:
+
+```bash
+git -C /c/projetos/financas-lab status --short
+```
+
+Se nao estiver vazio: BLOQUEADOR — nao abrir PR enquanto houver sujeira em main.
+
+## Verificacao final obrigatoria no repo principal
+
+Antes de reportar conclusao, confirmar que o repo principal ficou limpo:
+
+```bash
+git -C /c/projetos/financas-lab status --short
+```
+
+Se nao estiver vazio: BLOQUEADOR — nao abrir PR enquanto houver sujeira em main.
 
 ## Relatorio final
 

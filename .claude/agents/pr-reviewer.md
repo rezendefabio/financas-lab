@@ -48,6 +48,11 @@ Se hook ja cobre, NAO repita. Se hook falhou, isso aparece no CI — nao e seu p
    - **Doc-only** (.md em `docs/`): revisao breve. Documento coerente? Decisoes registradas onde devem?
    - **Codigo de hook** (`.ps1` em `.claude/hooks/`): foco em logica, edge cases, validacao destrutiva no PR body, mensagens de erro.
    - **Codigo de dominio** (`.java` em `src/main/java/`): foco em design, ADRs, testes, coerencia com camada.
+   - **Migration SQL** (`.sql` em `src/main/resources/db/migration/`): verificar se ha UUID
+     literal em INSERT que referencia registro de migration anterior (FK fragil). Grep por
+     padrao `'[0-9a-f-]{36}'` dentro de VALUES/INSERT -- se o UUID nao foi gerado na propria
+     migration (gen_random_uuid() ou DECLARE), reportar como bloqueador: UUID hardcoded em FK
+     quebra quando migration de dedupe/refactor regenera o registro pai.
    - **Configuracao** (`.github/`, `.claude/settings*.json`, etc.): foco em impacto sistemico.
 
 3. **Cruze com docs do projeto quando necessario:**
