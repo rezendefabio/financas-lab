@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useForm, type Resolver } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -21,6 +21,7 @@ import {
 } from '@/shared/components/ui/form'
 import { Input } from '@/shared/components/ui/input'
 import { Button } from '@/shared/components/ui/button'
+import { useDraftForm } from '@/shared/hooks/useDraftForm'
 
 const schema = z.object({
   nome: z.string().min(1, 'Nome obrigatorio').max(100, 'Maximo 100 caracteres'),
@@ -52,10 +53,16 @@ export default function EditarCentroCustoPage() {
   const form = useForm<FormValues>({
     resolver: zodResolver(schema) as Resolver<FormValues>,
     defaultValues: { nome: '', descricao: '' },
-    values: centro
-      ? { nome: centro.nome, descricao: centro.descricao ?? '' }
-      : undefined,
   })
+
+  const { clearDraft, resetWithDraft } = useDraftForm(form)
+
+  useEffect(() => {
+    if (centro) {
+      resetWithDraft({ nome: centro.nome, descricao: centro.descricao ?? '' })
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [centro])
 
   const mutation = useMutation({
     mutationFn: (values: FormValues) =>
@@ -68,6 +75,7 @@ export default function EditarCentroCustoPage() {
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['centros-custo'] })
       await queryClient.invalidateQueries({ queryKey: ['centro-custo', id] })
+      clearDraft()
       router.push('/centros-custo')
     },
     onError: () => {
@@ -200,7 +208,7 @@ export default function EditarCentroCustoPage() {
                   <Button
                     type="button"
                     variant="outline"
-                    onClick={() => router.push('/centros-custo')}
+                    onClick={() => { clearDraft(); router.push('/centros-custo') }}
                   >
                     Cancelar
                   </Button>
