@@ -15,6 +15,7 @@ const mockBack = vi.fn()
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ push: mockPush, back: mockBack }),
   useParams: () => ({ id: 'tag-001' }),
+  usePathname: () => '/tags/tag-001/editar',
 }))
 
 import EditarTagPage from './page'

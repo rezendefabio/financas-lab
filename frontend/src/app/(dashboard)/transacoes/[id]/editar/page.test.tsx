@@ -33,6 +33,7 @@ const mockBack = vi.fn()
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ push: mockPush, back: mockBack }),
   useParams: () => ({ id: 'tx-1' }),
+  usePathname: () => '/transacoes/tx-1/editar',
 }))
 
 const transacao: Transacao = {

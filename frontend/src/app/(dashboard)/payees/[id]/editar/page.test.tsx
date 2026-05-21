@@ -16,6 +16,7 @@ const mockBack = vi.fn()
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ push: mockPush, back: mockBack }),
   useParams: () => ({ id: 'pay-001' }),
+  usePathname: () => '/payees/pay-001/editar',
 }))
 
 const mockInvalidateQueries = vi.fn()

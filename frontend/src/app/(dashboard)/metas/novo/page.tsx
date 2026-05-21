@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { ArrowLeft } from 'lucide-react'
 import { metaService } from '@/features/metas/services/meta-service'
+import { useDraftForm } from '@/shared/hooks/useDraftForm'
 import { Card, CardContent } from '@/shared/components/ui/card'
 import {
   Form,
@@ -48,6 +49,7 @@ export default function NovaMetaPage() {
       prazo: '',
     },
   })
+  const { clearDraft } = useDraftForm(form)
 
   const mutation = useMutation({
     mutationFn: (values: FormValues) =>
@@ -59,6 +61,7 @@ export default function NovaMetaPage() {
       }),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['metas'] })
+      clearDraft()
       router.push('/metas')
     },
     onError: () => {
@@ -152,7 +155,7 @@ export default function NovaMetaPage() {
                   <Button
                     type="button"
                     variant="outline"
-                    onClick={() => router.push('/metas')}
+                    onClick={() => { clearDraft(); router.push('/metas') }}
                   >
                     Cancelar
                   </Button>

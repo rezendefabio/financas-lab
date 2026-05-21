@@ -7,6 +7,7 @@ import { contasService } from '@/features/contas/services/contas.service'
 import { categoriasService } from '@/features/categorias/services/categorias.service'
 import { listarPayees } from '@/features/payee/services/payee-service'
 import { listarTags } from '@/features/tag/services/tag-service'
+import { useDraftForm } from '@/shared/hooks/useDraftForm'
 import {
   Form,
   FormControl,
@@ -133,6 +134,7 @@ export function TransacaoForm({
     resolver: zodResolver(schema) as Resolver<TransacaoFormValues>,
     defaultValues,
   })
+  const { clearDraft } = useDraftForm(form)
 
   // eslint-disable-next-line react-hooks/incompatible-library
   const tipoAtual = form.watch('tipo')
@@ -149,7 +151,7 @@ export function TransacaoForm({
   return (
     <Form {...form}>
       <form
-        onSubmit={form.handleSubmit((v) => { onClearApiError(); onSubmit(v) })}
+        onSubmit={form.handleSubmit((v) => { clearDraft(); onClearApiError(); onSubmit(v) })}
         className="space-y-4"
       >
         <FormGrid>
