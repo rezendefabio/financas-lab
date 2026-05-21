@@ -3,7 +3,7 @@
 > Documento de tracking. Mostra **onde estamos** na construção da fábrica e do produto.
 > Atualizado conforme camadas avançam. Diferente do `decisoes.md` (que registra escolhas) e dos `adrs.md` (que registram porquês), este documento responde a pergunta: "em que ponto eu estou?".
 
-**Última atualização:** 2026-05-18 (Sub-etapa 5.90 -- sync progresso + fabrica-referencia)
+**Última atualização:** 2026-05-21 (Sub-etapa 5.91 -- crud de centro de custo)
 
 ---
 
@@ -238,6 +238,24 @@ Ativar a fábrica de fato: rodar features no Tier 2, configurar 3 routines Tier 
   `ResizeObserver`, `scrollIntoView`) adicionados ao `test/setup.ts`. Escopo
   limitado a UI-1: Tab Manager (UI-2), responsividade completa (UI-3) e audit log
   fora do escopo. PR aberto.
+
+- **5.91 -- CRUD de Centro de Custo (vertical completa)** (2026-05-21):
+  Bounded context novo `centrocusto`, agrupador classificatorio ortogonal a
+  categoria. **Backend:** domain `CentroCusto` imutavel (id, userId, nome max
+  100, descricao max 255 opcional, ativo, criadoEm, atualizadoEm) com metodo
+  `desativar()` espelhando `Conta.desativar()`; 5 use cases (Criar, Listar,
+  Buscar, Atualizar, Desativar); `CentroCustoController` em
+  `/api/centros-custo` com GET lista, GET /{id}, POST, PUT /{id}, DELETE /{id}
+  (soft delete). Migration V27 com tabela `centro_custo` e indice unico
+  case-insensitive `(user_id, lower(nome))`. **Frontend:** feature
+  `centrocusto` (types, service, paginas) em `(dashboard)/centros-custo/`
+  com listagem (DataTable + Desativar), formulario de criacao e detalhe com
+  edicao. Zod espelha Java (B6): `nome: min(1).max(100)`, `descricao: max(255)
+  optional`. Screen `CAD-CCU-001` registrada com icon `layers`. **Testes:**
+  20 unit (domain), 5 application com Mockito, integration Testcontainers
+  com unicidade case-insensitive validada (DataIntegrityViolation), 12 E2E
+  MockMvc cobrindo 5 endpoints + auth + validacoes. Service test frontend
+  com 6 casos. PR aberto.
 
 - **5.90 -- sync progresso + fabrica-referencia** (2026-05-18):
   Sub-etapa doc-only de manutencao. Registra sub-etapas 5.86 a 5.89 ausentes do
