@@ -238,3 +238,11 @@ Campo `@Column(name = "conta_id", columnDefinition = "uuid", nullable = false) p
   reporte o conflito e termine sem escrever.
 - **NAO adivinhar campos.** So gera colunas para campos explicitamente anotados com @Column
   ou @AttributeOverride. Campos sem @Column sao ignorados (ex: campos transient).
+- **NAO hardcodear UUID de migration anterior em INSERT de seed.** Quando uma migration
+  inserir linhas que referenciam registros criados por migration anterior (ex: categoria_pai_id
+  apontando para seed da V10), NUNCA usar UUID literal como valor FK.
+  PROIBIDO: `VALUES ('...uuid-fixo...', 'nome', ..., 'c0000000-0000-0000-0000-000000000001', ...)`
+  OBRIGATORIO: resolver por chave de negocio via subquery:
+  `SELECT '...uuid-fixo...', 'nome', ..., (SELECT id FROM categoria WHERE nome = 'X' AND system = true AND categoria_pai_id IS NULL), ...`
+  Justificativa: migrations posteriores de dedupe/refactor (ex: V20) podem regenerar UUIDs,
+  tornando os UUIDs hardcoded invalidos e quebrando a FK constraint no startup.
