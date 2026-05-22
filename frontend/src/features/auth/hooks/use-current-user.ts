@@ -1,4 +1,5 @@
 'use client'
+import { useState, useEffect } from 'react'
 import { useAuth } from '@/providers/auth-provider'
 import { getCurrentUserEmail } from '@/shared/lib/auth'
 
@@ -9,10 +10,15 @@ export interface CurrentUser {
 }
 
 export function useCurrentUser(): CurrentUser {
-  // useAuth() subscreve ao contexto de autenticacao: quando loggedIn muda
-  // (login ou logout), este hook re-renderiza e re-le o email do localStorage.
-  useAuth()
-  const email = typeof window !== 'undefined' ? getCurrentUserEmail() : null
+  const { loggedIn } = useAuth()
+  // Comecar com null evita mismatch de hidratacao SSR: servidor e cliente
+  // renderizam '?' inicialmente; apos mount o useEffect atualiza com o email real.
+  const [email, setEmail] = useState<string | null>(null)
+
+  useEffect(() => {
+    setEmail(loggedIn ? getCurrentUserEmail() : null)
+  }, [loggedIn])
+
   const initials = email ? email[0].toUpperCase() : '?'
   return { email, initials }
 }
