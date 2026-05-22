@@ -67,10 +67,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const updateTabPath = useTabsStore((state) => state.updateTabPath)
   const clearDraft = useDraftFormsStore((state) => state.clear)
 
-  // Ref para detectar troca de aba: so atualiza currentPath quando o usuario
-  // navega dentro da aba ativa, nao quando o TabBar troca de aba.
+  // Refs para distinguir troca de aba de navegacao dentro da aba.
   const prevActiveIdRef = useRef(activeId)
   const prevPathnameRef = useRef(pathname)
+  // Sinaliza que o proximo pathname vem do TabBar (troca de aba), nao do usuario.
+  const tabSwitchPendingRef = useRef(false)
 
   useEffect(() => {
     if (!auth.loggedIn) {
@@ -88,21 +89,36 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // Rastreia o path atual por aba: quando pathname muda SEM troca de aba
-  // (usuario navegou dentro da aba), salva o novo path na aba ativa e
-  // descarta o rascunho da pagina anterior (usuario saiu voluntariamente).
-  // Quando ha troca de aba (sameTab=false), o rascunho e preservado.
+  // Rastreia o path atual por aba e descarta rascunho quando o usuario navega
+  // voluntariamente para fora do formulario dentro da mesma aba.
+  //
+  // O efeito pode disparar DUAS vezes numa troca de aba:
+  //   1a passagem: activeId muda (sameTab=false) -> atualiza refs, sinaliza pendente
+  //   2a passagem: pathname muda por router.replace do TabBar (sameTab=true agora) ->
+  //     sem tabSwitchPendingRef o codigo identificaria errado como navegacao na aba
+  //     e apagaria o rascunho. O flag evita isso.
   useEffect(() => {
     const sameTab = prevActiveIdRef.current === activeId
     const prevPathname = prevPathnameRef.current
     prevActiveIdRef.current = activeId
     prevPathnameRef.current = pathname
-    if (sameTab && activeId) {
-      updateTabPath(activeId, pathname)
-      if (prevPathname !== pathname) {
-        // Navegacao dentro da aba: descarta rascunho da pagina abandonada.
-        clearDraft(prevPathname)
-      }
+
+    if (!sameTab) {
+      // Troca de aba: proximo pathname sera do TabBar, nao do usuario.
+      tabSwitchPendingRef.current = true
+      return
+    }
+
+    if (!activeId || prevPathname === pathname) return
+
+    updateTabPath(activeId, pathname)
+
+    if (tabSwitchPendingRef.current) {
+      // Pathname mudou como efeito da troca de aba -- preserva rascunho.
+      tabSwitchPendingRef.current = false
+    } else {
+      // Navegacao explicita dentro da aba (botao voltar, cancelar) -- descarta.
+      clearDraft(prevPathname)
     }
   }, [pathname, activeId, updateTabPath, clearDraft])
 
