@@ -39,12 +39,15 @@ export async function clearSession(): Promise<void> {
   clearToken()
   try {
     // Importacao dinamica para evitar dependencia circular (auth.ts <- stores <- auth.ts)
-    const [{ useTabsStore }, { useSidebarStore, initialCollapsed }] = await Promise.all([
-      import('@/shared/shell/tabs-store'),
-      import('@/shared/shell/sidebar-store'),
-    ])
+    const [{ useTabsStore }, { useSidebarStore, initialCollapsed }, { useDraftFormsStore }] =
+      await Promise.all([
+        import('@/shared/shell/tabs-store'),
+        import('@/shared/shell/sidebar-store'),
+        import('@/shared/shell/draft-forms-store'),
+      ])
     useTabsStore.setState({ tabs: [], activeId: null })
     useSidebarStore.setState({ collapsed: initialCollapsed })
+    useDraftFormsStore.setState({ drafts: {} })
   } catch (err) {
     // O token ja foi removido; falha ao resetar os stores nao deve ser silenciosa.
     console.error('Falha ao resetar os stores de UI em clearSession:', err)
