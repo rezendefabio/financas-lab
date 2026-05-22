@@ -189,15 +189,17 @@ export function TabBar() {
   }, [])
 
   // Mudancas no store -> URL + navegacao (replace unico, sem poluir historico).
-  // Usar o path da screen ATIVA como destino evita a race condition com o
-  // efeito de navegacao reativa no layout (que foi removido — UI-2 fix).
+  // Usa currentPath (ultimo path visitado na aba) quando disponivel; cai para
+  // o path raiz da screen como fallback (primeira vez que a aba e aberta).
   useEffect(() => {
     if (!hydratedFromUrl.current) return
     const activeTab = tabs.find((tab) => tab.id === activeId)
-    const targetScreen = activeTab
-      ? findScreenByCode(activeTab.screenCode)
-      : undefined
-    const targetPath = targetScreen?.path ?? window.location.pathname
+    // Sem aba ativa (ex: logout reseta o store): nao navegar -- evita
+    // sobrescrever o router.push('/login') disparado pelo DashboardLayout.
+    if (!activeTab) return
+    const targetScreen = findScreenByCode(activeTab.screenCode)
+    const targetPath =
+      activeTab?.currentPath ?? targetScreen?.path ?? window.location.pathname
 
     const params = new URLSearchParams()
     if (tabs.length > 0) {

@@ -1,5 +1,5 @@
 'use client'
-import { useSyncExternalStore } from 'react'
+import { useAuth } from '@/providers/auth-provider'
 import { getCurrentUserEmail } from '@/shared/lib/auth'
 
 export interface CurrentUser {
@@ -8,14 +8,11 @@ export interface CurrentUser {
   initials: string
 }
 
-// SSR retorna null; cliente le o localStorage apos hidratacao.
-// useSyncExternalStore suprime o aviso de mismatch quando os snapshots diferem.
-const subscribe = () => () => {}
-const getSnapshot = () => getCurrentUserEmail()
-const getServerSnapshot = (): null => null
-
 export function useCurrentUser(): CurrentUser {
-  const email = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot)
+  // useAuth() subscreve ao contexto de autenticacao: quando loggedIn muda
+  // (login ou logout), este hook re-renderiza e re-le o email do localStorage.
+  useAuth()
+  const email = typeof window !== 'undefined' ? getCurrentUserEmail() : null
   const initials = email ? email[0].toUpperCase() : '?'
   return { email, initials }
 }
