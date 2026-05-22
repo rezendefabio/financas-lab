@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useSyncExternalStore } from 'react'
 import { useAuth } from '@/providers/auth-provider'
 import { getCurrentUserEmail } from '@/shared/lib/auth'
 
@@ -9,16 +9,25 @@ export interface CurrentUser {
   initials: string
 }
 
+// useSyncExternalStore: servidor retorna null (evita hydration mismatch);
+// cliente le o email do localStorage. useAuth() subscreve ao contexto para
+// re-renderizar em login/logout.
+function subscribe(cb: () => void) {
+  window.addEventListener('storage', cb)
+  return () => window.removeEventListener('storage', cb)
+}
+
+function getSnapshot(): string | null {
+  return getCurrentUserEmail()
+}
+
+function getServerSnapshot(): null {
+  return null
+}
+
 export function useCurrentUser(): CurrentUser {
-  const { loggedIn } = useAuth()
-  // Comecar com null evita mismatch de hidratacao SSR: servidor e cliente
-  // renderizam '?' inicialmente; apos mount o useEffect atualiza com o email real.
-  const [email, setEmail] = useState<string | null>(null)
-
-  useEffect(() => {
-    setEmail(loggedIn ? getCurrentUserEmail() : null)
-  }, [loggedIn])
-
+  useAuth()
+  const email = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot)
   const initials = email ? email[0].toUpperCase() : '?'
   return { email, initials }
 }
