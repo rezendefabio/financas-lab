@@ -22,6 +22,7 @@ import {
 } from '@/shared/components/ui/form'
 import { MoneyInput } from '@/shared/components/MoneyInput'
 import { formatBRL, formatDate, formatDateTime } from '@/shared/lib/formatters'
+import { useDraftForm } from '@/shared/hooks/useDraftForm'
 import type { StatusMeta } from '@/features/metas/types/meta'
 
 function statusVariant(status: StatusMeta): 'default' | 'secondary' | 'outline' | 'destructive' {
@@ -85,11 +86,14 @@ export default function MetaDetalhePage() {
     defaultValues: { valor: 0 },
   })
 
+  const { clearDraft } = useDraftForm(depositoForm)
+
   const depositoMutation = useMutation({
     mutationFn: (values: DepositoFormValues) =>
       metaService.registrarDeposito(id, { valor: values.valor, moeda: 'BRL' }),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['meta', id] })
+      clearDraft()
       depositoForm.reset()
     },
     onError: () => {
