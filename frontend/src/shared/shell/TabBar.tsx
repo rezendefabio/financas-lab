@@ -172,6 +172,11 @@ export function TabBar() {
     hydratedFromUrl.current = true
     const fromUrl = readTabsFromParams(searchParams)
     if (!fromUrl) return
+    // A aba ativa recebe currentPath = window.location.pathname para que o
+    // efeito de navegacao nao volte ao caminho raiz da tela em caso de reload.
+    // (Ex: reload em /beneficiarios/novo deve manter /beneficiarios/novo, nao /beneficiarios)
+    const activePathname =
+      typeof window !== 'undefined' ? window.location.pathname : undefined
     const urlTabs: Tab[] = fromUrl.codes.map((screenCode) => ({
       id:
         typeof crypto !== 'undefined' && crypto.randomUUID
@@ -179,6 +184,8 @@ export function TabBar() {
           : Math.random().toString(36).slice(2),
       screenCode,
       pinned: false,
+      currentPath:
+        screenCode === fromUrl.active ? activePathname : undefined,
     }))
     const active =
       urlTabs.find((tab) => tab.screenCode === fromUrl.active)?.id ??
