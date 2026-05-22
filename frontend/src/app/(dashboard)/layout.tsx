@@ -19,6 +19,7 @@ import {
   useBreakpointSidebarCollapse,
   useSwipeToOpen,
 } from '@/shared/shell'
+import { useDraftFormsStore } from '@/shared/shell/draft-forms-store'
 
 /**
  * Conteudo do shell. Componente separado para que os hooks de responsividade
@@ -64,10 +65,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const openTab = useTabsStore((state) => state.openTab)
   const activeId = useTabsStore((state) => state.activeId)
   const updateTabPath = useTabsStore((state) => state.updateTabPath)
+  const clearDraft = useDraftFormsStore((state) => state.clear)
 
   // Ref para detectar troca de aba: so atualiza currentPath quando o usuario
   // navega dentro da aba ativa, nao quando o TabBar troca de aba.
   const prevActiveIdRef = useRef(activeId)
+  const prevPathnameRef = useRef(pathname)
 
   useEffect(() => {
     if (!auth.loggedIn) {
@@ -86,14 +89,22 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }, [])
 
   // Rastreia o path atual por aba: quando pathname muda SEM troca de aba
-  // (usuario navegou dentro da aba), salva o novo path na aba ativa.
+  // (usuario navegou dentro da aba), salva o novo path na aba ativa e
+  // descarta o rascunho da pagina anterior (usuario saiu voluntariamente).
+  // Quando ha troca de aba (sameTab=false), o rascunho e preservado.
   useEffect(() => {
     const sameTab = prevActiveIdRef.current === activeId
+    const prevPathname = prevPathnameRef.current
     prevActiveIdRef.current = activeId
+    prevPathnameRef.current = pathname
     if (sameTab && activeId) {
       updateTabPath(activeId, pathname)
+      if (prevPathname !== pathname) {
+        // Navegacao dentro da aba: descarta rascunho da pagina abandonada.
+        clearDraft(prevPathname)
+      }
     }
-  }, [pathname, activeId, updateTabPath])
+  }, [pathname, activeId, updateTabPath, clearDraft])
 
   return (
     <SidebarProvider>
