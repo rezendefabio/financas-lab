@@ -1,4 +1,5 @@
 'use client'
+import { useSyncExternalStore } from 'react'
 import { useAuth } from '@/providers/auth-provider'
 import { getCurrentUserEmail } from '@/shared/lib/auth'
 
@@ -8,11 +9,25 @@ export interface CurrentUser {
   initials: string
 }
 
+// useSyncExternalStore: servidor retorna null (evita hydration mismatch);
+// cliente le o email do localStorage. useAuth() subscreve ao contexto para
+// re-renderizar em login/logout.
+function subscribe(cb: () => void) {
+  window.addEventListener('storage', cb)
+  return () => window.removeEventListener('storage', cb)
+}
+
+function getSnapshot(): string | null {
+  return getCurrentUserEmail()
+}
+
+function getServerSnapshot(): null {
+  return null
+}
+
 export function useCurrentUser(): CurrentUser {
-  // useAuth() subscreve ao contexto de autenticacao: quando loggedIn muda
-  // (login ou logout), este hook re-renderiza e re-le o email do localStorage.
   useAuth()
-  const email = typeof window !== 'undefined' ? getCurrentUserEmail() : null
+  const email = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot)
   const initials = email ? email[0].toUpperCase() : '?'
   return { email, initials }
 }
