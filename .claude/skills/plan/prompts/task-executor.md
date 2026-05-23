@@ -111,18 +111,6 @@ EXCECAO: se esta task adicionar novas dependencias ao package.json, registrar no
 relatorio final: "AVISO: package.json modificado -- operador deve rodar npm install
 em frontend/ apos o merge."
 
-## Gate frontend
-
-Nao rodar `check-front.ps1` aqui -- o `/ship` ja executa o gate frontend
-internamente como parte do passo 1.1 e bloqueia em caso de falha. Rodar duas
-vezes adiciona ~2-4 minutos de wall-clock por task sem ganho.
-
-Erros comuns a corrigir sem perguntar ao operador (quando o `/ship` reportar):
-- `no-unused-vars`: remover import ou variavel nao usada
-- `no-empty-object-type`: substituir `interface Foo extends Bar {}` por `type Foo = Bar`
-- `react-hooks/exhaustive-deps`: adicionar dependencia faltante ou usar
-  `// eslint-disable-next-line` apenas se a omissao for intencional e comentada
-
 Sua unica responsabilidade: executar TODOS os passos descritos abaixo de forma
 completamente autonoma, sem pedir aprovacao ao operador.
 

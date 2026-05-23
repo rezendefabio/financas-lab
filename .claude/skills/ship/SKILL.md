@@ -76,6 +76,8 @@ $frontendChanged = git diff --name-only main..HEAD | Where-Object { $_ -like "fr
 Se `$frontendChanged` for nao-nulo e nao-vazio: execute o gate frontend:
 
 ```powershell
+# Garantir que estamos na raiz do repositorio (executor pode ter feito cd em subdir)
+Set-Location (git rev-parse --show-toplevel)
 .\scripts\check-front.ps1
 ```
 
