@@ -1,5 +1,26 @@
 import { getToken, clearSession } from '@/shared/lib/auth'
 import { ApiError } from '@/shared/types/api'
+import { useErrorBannerStore } from '@/shared/shell/error-banner-store'
+
+/**
+ * Publica um banner global de erro 500 com o codigo retornado pelo
+ * backend. Mantemos a publicacao centralizada aqui (em vez de cada
+ * service) porque o tratamento de respostas HTTP >= 500 ja e unico
+ * neste arquivo (UI-14, Fase 2).
+ */
+function publishServerErrorBanner(body: {
+  codigoErro?: string
+  detail?: string
+  message?: string
+}): void {
+  if (typeof window === 'undefined') return
+  useErrorBannerStore.getState().addBanner({
+    codigo: body.codigoErro ?? null,
+    mensagem: body.detail ?? body.message ?? 'Erro interno do servidor',
+    tipo: 'ServerError',
+    criadoEm: new Date().toISOString(),
+  })
+}
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8080'
 
@@ -32,11 +53,14 @@ export async function apiFetch<T>(path: string, init?: ApiFetchOptions): Promise
   }
   if (!res.ok) {
     const body = await res.json().catch(() => ({}))
-    if (res.status === 500 && body.codigoErro) {
-      throw new ApiError(
-        500,
-        `Erro inesperado (${body.codigoErro}). Informe ao suporte.`,
-      )
+    if (res.status >= 500) {
+      publishServerErrorBanner(body)
+      if (body.codigoErro) {
+        throw new ApiError(
+          res.status,
+          `Erro inesperado (${body.codigoErro}). Informe ao suporte.`,
+        )
+      }
     }
     throw new ApiError(res.status, body.message ?? res.statusText)
   }
@@ -70,11 +94,14 @@ export async function apiFetchMultipart<T>(
   }
   if (!res.ok) {
     const body = await res.json().catch(() => ({}))
-    if (res.status === 500 && body.codigoErro) {
-      throw new ApiError(
-        500,
-        `Erro inesperado (${body.codigoErro}). Informe ao suporte.`,
-      )
+    if (res.status >= 500) {
+      publishServerErrorBanner(body)
+      if (body.codigoErro) {
+        throw new ApiError(
+          res.status,
+          `Erro inesperado (${body.codigoErro}). Informe ao suporte.`,
+        )
+      }
     }
     throw new ApiError(res.status, body.detail ?? body.message ?? res.statusText)
   }
