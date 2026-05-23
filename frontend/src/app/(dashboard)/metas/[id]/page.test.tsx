@@ -20,6 +20,7 @@ const mockPush = vi.fn()
 vi.mock('next/navigation', () => ({
   useParams: () => ({ id: 'meta-001' }),
   useRouter: () => ({ push: mockPush }),
+  usePathname: () => '/metas/meta-001',
 }))
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
