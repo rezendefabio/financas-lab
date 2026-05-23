@@ -3,7 +3,7 @@
 > Documento de tracking. Mostra **onde estamos** na construção da fábrica e do produto.
 > Atualizado conforme camadas avançam. Diferente do `decisoes.md` (que registra escolhas) e dos `adrs.md` (que registram porquês), este documento responde a pergunta: "em que ponto eu estou?".
 
-**Última atualização:** 2026-05-21 (Sub-etapa 5.91 -- crud de centro de custo)
+**Última atualização:** 2026-05-23 (UI-12 a UI-15 registradas)
 
 ---
 
@@ -159,6 +159,51 @@ Configurar `CLAUDE.md` rico, criar 3-5 subagents focados, criar 5-10 skills (sla
 Ativar a fábrica de fato: rodar features no Tier 2, configurar 3 routines Tier 1, validar paralelismo se necessário.
 
 ### Sub-etapas concluídas
+
+- **UI-15 -- Dashboard com graficos e progresso de orcamentos** (2026-05-23):
+  Novo layout do Dashboard com tres secoes. **Row 1 (3 KPI cards):** Saldo Total
+  (mantido), Receitas do Mes (verde, `TrendingUp`) e Despesas do Mes (vermelho,
+  `TrendingDown`) -- todas usando a mesma query `fluxo-caixa`. **Row 2 (grid
+  md:grid-cols-2):** `GastosPorCategoriaChart` com dados do mes atual
+  (`getGastosMesAtual()`, queryKey `gastos-mes-atual`) + novo componente
+  `OrcamentosProgressoCard`: busca orcamentos ativos do mes, progresso individual
+  via `orcamentoService.progresso(id)`, barra de progresso colorida por status
+  (ABAIXO=verde, ATENCAO=amarelo, ATINGIDO=laranja, EXCEDIDO=vermelho), nome da
+  categoria resolvido via `categoriasService`. **Row 3 (largura total):**
+  `EvolucaoSaldoChart` com ultimos 6 meses (`getEvolucaoUltimosSeisMeses()`).
+  Duas funcoes novas em `dashboard-service.ts` (`getGastosMesAtual`,
+  `getEvolucaoUltimosSeisMeses`). Reutiliza componentes existentes de
+  `features/relatorios` sem reimplementar. PR #260.
+
+- **UI-14 -- Error boundary + banner global de erros** (2026-05-22):
+  Duas camadas de captura de erros frontend. **ErrorBoundary** (`feat(shell): #253`):
+  captura excecoes nao tratadas durante render React, preserva o shell (sidebar/tabs
+  intactos), exibe card com codigo `ERR-XXXXXXXX` copiavel e botao "Tentar novamente".
+  **Banner global** (`feat(shell): #254`): hook `useGlobalErrorHandler` captura
+  `window.onerror` e `unhandledrejection`, registra incidente via
+  `incidenteService.registrar()` (fix B3 aplicado em PR #255: substituiu `fetch`
+  raw por `incidenteService`), exibe toast ou banner persistente. Fix adicional
+  (#257): isolamento de estado entre testes + estabilizacao de mocks `useQuery`.
+  PRs #253, #254, #255, #257.
+
+- **UI-13 -- Tab Manager Fase 1: preservacao de estado de abas e rascunhos**
+  (2026-05-21/22): Conjunto de fixes de alta qualidade nas abas e rascunhos
+  de formulario, entregue via /plan (multiplas tasks paralelas). **Rascunhos:**
+  flush ao desmontar antes do debounce (#244), useDraftForm em centrocusto/novo e
+  editar (#245), limpa rascunhos ao encerrar sessao (#247), preserva rascunho em
+  troca de aba usando `tabSwitchPendingRef` (#248), descarta rascunho ao navegar
+  dentro da aba (botao voltar) (#249). **Tabs:** restaura aba no ultimo path
+  visitado ao trocar (#246), preserva subpath da aba ativa ao recarregar (#250),
+  restaura `currentPath` de TODAS as abas ao recarregar (fix #258 + test #259 --
+  bug onde abas nao-ativas perdiam path e voltavam ao root apos refresh).
+  Fix auth: hydration mismatch no avatar (#251). PRs #244-#250, #258, #259.
+
+- **UI-12 -- useDraftForm na edicao de meta** (2026-05-21):
+  Aplica o hook `useDraftForm` na pagina de edicao de meta
+  (`(dashboard)/metas/[id]/page.tsx`), completando a cobertura de `useDraftForm`
+  em todas as paginas de edicao do projeto. Usa `resetWithDraft(dados)` no
+  `useEffect` de carregamento e `clearDraft()` no `onSuccess` e Cancelar --
+  conforme padrao formalizado na UI-11 e CLAUDE.md. PR #252.
 
 - **Seed de subcategorias (V26)** (2026-05-19): Migration V26 adiciona 49
   subcategorias de sistema (prefixo `c1`) distribuidas entre os 11 grupos pai
@@ -1774,6 +1819,9 @@ Definir como capturar quando chegarmos na Camada 4 — não criar burocracia ago
 
 ## Histórico de mudanças deste documento
 
+- **2026-05-23** -- Sub-etapas UI-12 a UI-15 registradas: useDraftForm em meta,
+  Tab Manager Fase 1 (tabs + rascunhos), ErrorBoundary + banner global de erros,
+  Dashboard com graficos e progresso de orcamentos. PRs #252-#260.
 - **2026-05-18** -- Sub-etapas 5.86 a 5.90 registradas: sync progresso, B12,
   tela incidentes unificada, CSV template download, fabrica-referencia atualizada
   (front-reviewer: 5 -> 6 bloqueadores). PRs #196, #197, #201, #203.
