@@ -50,7 +50,7 @@ describe('ErrorBoundary', () => {
       </ErrorBoundary>,
     )
 
-    expect(screen.getByText('Erro inesperado')).toBeInTheDocument()
+    expect(screen.getByText('Erro inesperado na pagina')).toBeInTheDocument()
     expect(await screen.findByText('ERR-ABCD1234')).toBeInTheDocument()
 
     const fetchCall = fetchMock.mock.calls[0]
@@ -83,7 +83,7 @@ describe('ErrorBoundary', () => {
       </ErrorBoundary>,
     )
 
-    expect(screen.getByText('Erro inesperado')).toBeInTheDocument()
+    expect(screen.getByText('Erro inesperado na pagina')).toBeInTheDocument()
     expect(screen.getByText('registrando...')).toBeInTheDocument()
   })
 
@@ -102,7 +102,7 @@ describe('ErrorBoundary', () => {
       </ErrorBoundary>,
     )
 
-    expect(screen.getByText('Erro inesperado')).toBeInTheDocument()
+    expect(screen.getByText('Erro inesperado na pagina')).toBeInTheDocument()
 
     deveExplodir = false
     await userEvent.click(screen.getByRole('button', { name: 'Tentar novamente' }))
