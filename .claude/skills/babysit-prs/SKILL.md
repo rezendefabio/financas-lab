@@ -164,6 +164,31 @@ Se todos passando ou pendentes: sem acao.
 > Where-Object` lanca "elemento pipe vazio nao e permitido". `@(...)` forca
 > contexto de array antes do pipe.
 
+**2c -- Verificar CI ausente quando ruleset exige status checks:**
+
+Se `mergeStateStatus == "BLOCKED"` E o numero de check-runs do head SHA e ZERO
+(nao "todos pendentes" -- ZERO mesmo), pode ter ocorrido perda de trigger do
+workflow. Sintoma do gap descoberto em 2026-05-23 no PR #253.
+
+Detectar via `powershell -NoProfile -Command`:
+
+```bash
+powershell -NoProfile -Command "
+  \$headSha = (gh pr view <NUMBER> --json headRefOid | ConvertFrom-Json).headRefOid
+  \$runs = gh api repos/{owner}/{repo}/commits/\$headSha/check-runs | ConvertFrom-Json
+  Write-Output \$runs.total_count
+"
+```
+
+Se `total_count == 0` E `mergeStateStatus == "BLOCKED"`: executar Passo 3e
+(re-trigger via commit vazio).
+
+Limite anti-loop: se `$state.prs["$number"].last_action == "ci-retrigger"` E o
+head_sha atual do PR e IGUAL ao head_sha guardado no state (ou seja, o commit
+vazio anterior nao gerou novos check-runs mesmo apos um ciclo), registrar
+"PR #N: CI ausente apos re-trigger -- intervencao manual necessaria" e parar
+sem novo re-trigger.
+
 ### Passo 3a -- Auto-rebase (apenas se CONFLICTING)
 
 Para o PR com conflito, usar comandos bash:
@@ -308,6 +333,40 @@ powershell -NoProfile -Command "
 "
 ```
 
+### Passo 3e -- Re-trigger de CI ausente (commit vazio)
+
+Para PR detectado no Passo 2c (BLOCKED + zero check-runs no head):
+
+```bash
+branch=$(powershell -NoProfile -Command "(gh pr view <NUMBER> --json headRefName | ConvertFrom-Json).headRefName")
+worktree_path="$repo_root/.claude/worktrees/babysit-pr-<NUMBER>"
+
+git fetch origin
+git worktree add "$worktree_path" "$branch"
+cd "$worktree_path" && git commit --allow-empty -m "ci: re-trigger workflow" && git push origin "$branch"
+cd "$repo_root"
+git worktree remove -f -f "$worktree_path" 2>/dev/null || true
+git worktree prune
+```
+
+Se sucesso: registrar "PR #N: CI ausente -- re-trigger via commit vazio".
+Se push falhou: registrar "PR #N: re-trigger falhou -- <mensagem>".
+
+Apos acao, atualizar state via `powershell -NoProfile -Command`:
+
+```bash
+powershell -NoProfile -Command "
+  \$headSha = (gh pr view <NUMBER> --json headRefOid | ConvertFrom-Json).headRefOid
+  \$freshStatus = (gh pr view <NUMBER> --json mergeStateStatus | ConvertFrom-Json).mergeStateStatus
+  \$state.prs['<NUMBER>'] = @{
+    last_action        = 'ci-retrigger'
+    last_checked       = (Get-Date).ToUniversalTime().ToString('o')
+    head_sha           = \$headSha
+    merge_state_status = \$freshStatus
+  }
+"
+```
+
 ### Passo 3d -- Atualizar state para PRs sem acao
 
 Se nenhuma acao foi executada para um PR (nao CONFLICTING, nao BEHIND, CI ok),
@@ -338,7 +397,7 @@ Exibir resumo:
 [babysit-prs HH:MM] N PRs verificados
 
 <para cada PR:>
-  PR #N <titulo>: <REBASE OK | REBASE RESOLVIDO (inteligente) | REBASE ABORTADO: <motivo> | UPDATE-BRANCH OK | UPDATE-BRANCH FALHOU: <motivo> | CI AUTO-FIX OK | CI FALHOU (manual): <motivo> | IGNORADO (sem mudanca desde ultimo tratamento) | OK>
+  PR #N <titulo>: <REBASE OK | REBASE RESOLVIDO (inteligente) | REBASE ABORTADO: <motivo> | UPDATE-BRANCH OK | UPDATE-BRANCH FALHOU: <motivo> | CI AUTO-FIX OK | CI FALHOU (manual): <motivo> | CI RE-TRIGGER (commit vazio) | CI AUSENTE APOS RE-TRIGGER (manual) | IGNORADO (sem mudanca desde ultimo tratamento) | OK>
   <se $reprocessadoPorStatus == $true para este PR:>
   PR #N: reprocessado (mergeStateStatus mudou: $statusAnterior -> $statusAtual)
 
