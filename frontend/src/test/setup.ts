@@ -1,5 +1,13 @@
 import '@testing-library/jest-dom'
-import { vi } from 'vitest'
+import { vi, beforeEach } from 'vitest'
+import { useDraftFormsStore } from '@/shared/shell/draft-forms-store'
+
+// Limpa localStorage e reseta stores Zustand entre testes para evitar
+// contaminacao entre testes que usam useDraftForm.
+beforeEach(() => {
+  localStorage.clear()
+  useDraftFormsStore.setState({ drafts: {} })
+})
 
 // Polyfills de ambiente jsdom -- APIs de browser que o jsdom nao implementa
 // e que componentes do shell (Sidebar, cmdk) consomem.
