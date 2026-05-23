@@ -58,14 +58,22 @@ const payeeFixture = (overrides?: Partial<Payee>): Payee => ({
 })
 
 describe('EditarPayeePage', () => {
+  // Refs estaveis: useQuery e chamado a cada render, retornar novo objeto/array
+  // a cada chamada criava loop infinito (payee = data.find(...) era nova ref a
+  // cada render, disparando useEffect [payee] -> resetWithDraft -> watch -> save
+  // -> store update -> re-render).
+  const payeesData = [payeeFixture()]
+  const categoriasData: unknown[] = []
+  const payeesResult = { data: payeesData, isLoading: false, isError: false } as ReturnType<typeof useQuery>
+  const categoriasResult = { data: categoriasData, isLoading: false, isError: false } as ReturnType<typeof useQuery>
+
   beforeEach(() => {
     vi.clearAllMocks()
-    // Default: payee found, categorias empty
     vi.mocked(useQuery).mockImplementation(({ queryKey }: { queryKey: unknown[] }) => {
       if (Array.isArray(queryKey) && queryKey[0] === 'payees') {
-        return { data: [payeeFixture()], isLoading: false, isError: false } as ReturnType<typeof useQuery>
+        return payeesResult
       }
-      return { data: [], isLoading: false, isError: false } as ReturnType<typeof useQuery>
+      return categoriasResult
     })
   })
 
@@ -79,12 +87,8 @@ describe('EditarPayeePage', () => {
   })
 
   it('exibe "Beneficiario nao encontrado" quando id nao existe', async () => {
-    vi.mocked(useQuery).mockImplementation(({ queryKey }: { queryKey: unknown[] }) => {
-      if (Array.isArray(queryKey) && queryKey[0] === 'payees') {
-        return { data: [], isLoading: false, isError: false } as ReturnType<typeof useQuery>
-      }
-      return { data: [], isLoading: false, isError: false } as ReturnType<typeof useQuery>
-    })
+    const emptyResult = { data: [], isLoading: false, isError: false } as ReturnType<typeof useQuery>
+    vi.mocked(useQuery).mockImplementation(() => emptyResult)
 
     render(<EditarPayeePage />)
 
@@ -94,11 +98,13 @@ describe('EditarPayeePage', () => {
   })
 
   it('exibe estado de loading', async () => {
+    const loadingResult = { data: undefined, isLoading: true, isError: false } as ReturnType<typeof useQuery>
+    const emptyResult = { data: [], isLoading: false, isError: false } as ReturnType<typeof useQuery>
     vi.mocked(useQuery).mockImplementation(({ queryKey }: { queryKey: unknown[] }) => {
       if (Array.isArray(queryKey) && queryKey[0] === 'payees') {
-        return { data: undefined, isLoading: true, isError: false } as ReturnType<typeof useQuery>
+        return loadingResult
       }
-      return { data: [], isLoading: false, isError: false } as ReturnType<typeof useQuery>
+      return emptyResult
     })
 
     render(<EditarPayeePage />)
