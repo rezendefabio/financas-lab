@@ -86,21 +86,30 @@ O Bash tool usa `/usr/bin/bash` (Git Bash), NAO PowerShell.
 - Voce esta num worktree git ISOLADO. A branch `main` e BLOQUEADA.
 - NUNCA criar, modificar ou deletar arquivos fora do diretorio do seu worktree.
 - NUNCA fazer `git checkout main` ou `git switch main`.
-- NUNCA instalar dependencias (npm install, mvn install) no diretorio raiz do
-  repositorio principal -- apenas no seu worktree.
-- Se precisar instalar dependencias: verificar que esta no worktree antes de rodar.
-- Verificacao obrigatoria antes de qualquer npm install ou npm ci:
-  ```bash
-  worktree_dir=$(git rev-parse --show-toplevel)
-  echo "Diretorio atual: $(pwd)"
-  echo "Raiz do worktree: $worktree_dir"
-  # Confirmar que nao e o repositorio principal verificando se o path contem 'agent-'
-  if echo "$worktree_dir" | grep -v 'agent-' > /dev/null; then
-    echo "AVISO: este worktree pode ser o repositorio principal. Verificar antes de instalar."
-  fi
-  ```
-- O npm install DEVE ser executado com `cd <dir-do-worktree> && npm install`, nunca com `npm install` na raiz.
-- Nunca executar `npm install` ou `npm ci` sem confirmar primeiro que o diretorio atual e o worktree isolado.
+- NUNCA rodar npm install, npm ci ou mvn install no repositorio principal.
+- NUNCA rodar npm install no worktree -- usar symlink (ver abaixo).
+
+## Setup de dependencias frontend em worktree
+
+Se a task inclui arquivos em `frontend/` e o diretorio `frontend/node_modules`
+NAO existe no worktree, criar um symlink apontando para o node_modules do
+repositorio principal. Isso leva < 1 segundo e evita npm install (2-5 minutos):
+
+```bash
+MAIN_REPO="/c/projetos/financas-lab"
+WORKTREE=$(git rev-parse --show-toplevel)
+if [ ! -d "$WORKTREE/frontend/node_modules" ] && [ ! -L "$WORKTREE/frontend/node_modules" ]; then
+  ln -s "$MAIN_REPO/frontend/node_modules" "$WORKTREE/frontend/node_modules"
+  echo "Symlink criado: frontend/node_modules -> $MAIN_REPO/frontend/node_modules"
+fi
+```
+
+NAO rodar npm install. O symlink reutiliza os modulos ja instalados no repositorio
+principal (mesmo package.json, totalmente compativel).
+
+EXCECAO: se esta task adicionar novas dependencias ao package.json, registrar no
+relatorio final: "AVISO: package.json modificado -- operador deve rodar npm install
+em frontend/ apos o merge."
 
 ## Gate frontend
 
