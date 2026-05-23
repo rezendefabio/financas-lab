@@ -177,6 +177,7 @@ export function TabBar() {
     // (Ex: reload em /beneficiarios/novo deve manter /beneficiarios/novo, nao /beneficiarios)
     const activePathname =
       typeof window !== 'undefined' ? window.location.pathname : undefined
+    const persistedTabs = useTabsStore.getState().tabs
     const urlTabs: Tab[] = fromUrl.codes.map((screenCode) => ({
       id:
         typeof crypto !== 'undefined' && crypto.randomUUID
@@ -185,7 +186,9 @@ export function TabBar() {
       screenCode,
       pinned: false,
       currentPath:
-        screenCode === fromUrl.active ? activePathname : undefined,
+        screenCode === fromUrl.active
+          ? activePathname
+          : persistedTabs.find((t) => t.screenCode === screenCode)?.currentPath,
     }))
     const active =
       urlTabs.find((tab) => tab.screenCode === fromUrl.active)?.id ??
