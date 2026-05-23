@@ -104,7 +104,11 @@ Para cada PR na lista:
 Obter SHA atual do HEAD do branch do PR via `powershell -NoProfile -Command`:
 
 ```bash
-powershell -NoProfile -Command "(gh pr view <NUMBER> --json headRefOid | ConvertFrom-Json).headRefOid"
+powershell -NoProfile -Command "
+  \$headSha = (gh pr view <NUMBER> --json headRefOid | ConvertFrom-Json).headRefOid
+  if ([string]::IsNullOrEmpty(\$headSha)) { \$headSha = 'unknown' }
+  Write-Output \$headSha
+"
 ```
 
 Se `$state.prs` contem entrada para este PR (chave `"$number"`):
@@ -239,6 +243,7 @@ Apos acao (sucesso ou falha), atualizar state via `powershell -NoProfile -Comman
 ```bash
 powershell -NoProfile -Command "
   \$headSha = (gh pr view <NUMBER> --json headRefOid | ConvertFrom-Json).headRefOid
+  if ([string]::IsNullOrEmpty(\$headSha)) { \$headSha = 'unknown' }
   \$freshStatus = (gh pr view <NUMBER> --json mergeStateStatus | ConvertFrom-Json).mergeStateStatus
   \$state.prs['<NUMBER>'] = @{
     last_action        = 'rebase'
@@ -293,6 +298,7 @@ Apos acao (corrigido ou nao), atualizar state via `powershell -NoProfile -Comman
 ```bash
 powershell -NoProfile -Command "
   \$headSha = (gh pr view <NUMBER> --json headRefOid | ConvertFrom-Json).headRefOid
+  if ([string]::IsNullOrEmpty(\$headSha)) { \$headSha = 'unknown' }
   \$freshStatus = (gh pr view <NUMBER> --json mergeStateStatus | ConvertFrom-Json).mergeStateStatus
   \$state.prs['<NUMBER>'] = @{
     last_action        = 'ci-fix'
@@ -323,6 +329,7 @@ Apos acao (sucesso ou falha), atualizar state via `powershell -NoProfile -Comman
 ```bash
 powershell -NoProfile -Command "
   \$headSha = (gh pr view <NUMBER> --json headRefOid | ConvertFrom-Json).headRefOid
+  if ([string]::IsNullOrEmpty(\$headSha)) { \$headSha = 'unknown' }
   \$freshStatus = (gh pr view <NUMBER> --json mergeStateStatus | ConvertFrom-Json).mergeStateStatus
   \$state.prs['<NUMBER>'] = @{
     last_action        = 'update-branch'
@@ -357,6 +364,7 @@ Apos acao, atualizar state via `powershell -NoProfile -Command`:
 ```bash
 powershell -NoProfile -Command "
   \$headSha = (gh pr view <NUMBER> --json headRefOid | ConvertFrom-Json).headRefOid
+  if ([string]::IsNullOrEmpty(\$headSha)) { \$headSha = 'unknown' }
   \$freshStatus = (gh pr view <NUMBER> --json mergeStateStatus | ConvertFrom-Json).mergeStateStatus
   \$state.prs['<NUMBER>'] = @{
     last_action        = 'ci-retrigger'
@@ -375,6 +383,7 @@ atualizar state com `last_action = "ok"` via `powershell -NoProfile -Command`:
 ```bash
 powershell -NoProfile -Command "
   \$headSha = (gh pr view <NUMBER> --json headRefOid | ConvertFrom-Json).headRefOid
+  if ([string]::IsNullOrEmpty(\$headSha)) { \$headSha = 'unknown' }
   \$freshStatus = (gh pr view <NUMBER> --json mergeStateStatus | ConvertFrom-Json).mergeStateStatus
   \$state.prs['<NUMBER>'] = @{
     last_action        = 'ok'
@@ -385,9 +394,20 @@ powershell -NoProfile -Command "
 "
 ```
 
-Depois de processar todos os PRs, salvar o state atualizado em disco usando o
-Write tool para gravar o JSON em `.claude/babysit-prs.state`.
-O JSON deve ser gerado via `$state | ConvertTo-Json -Depth 5`.
+Depois de processar todos os PRs, salvar o state atualizado em disco via Bash
+com PowerShell e path absoluto (o Write tool nao aceita path relativo):
+
+```bash
+powershell -NoProfile -Command "
+  \$json = \$state | ConvertTo-Json -Depth 5
+  [System.IO.File]::WriteAllText(
+    'C:\\projetos\\financas-lab\\.claude\\babysit-prs.state',
+    \$json,
+    [System.Text.Encoding]::UTF8
+  )
+  Write-Host 'State salvo.'
+"
+```
 
 ### Passo 4 -- Relatorio da iteracao
 
