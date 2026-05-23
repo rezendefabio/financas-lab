@@ -20,6 +20,7 @@ import {
   useSwipeToOpen,
 } from '@/shared/shell'
 import { useDraftFormsStore } from '@/shared/shell/draft-forms-store'
+import { ErrorBoundary } from '@/shared/components/ErrorBoundary'
 
 /**
  * Conteudo do shell. Componente separado para que os hooks de responsividade
@@ -48,9 +49,11 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
         {/* Paginas de listagem (useListPage) tambem leem useSearchParams:
             isolar o conteudo numa fronteira Suspense evita o CSR bailout
             no prerender (Next.js missing-suspense-with-csr-bailout). */}
-        <main className="flex-1 p-6">
-          <Suspense fallback={null}>{children}</Suspense>
-        </main>
+        <ErrorBoundary>
+          <main className="flex-1 p-6">
+            <Suspense fallback={null}>{children}</Suspense>
+          </main>
+        </ErrorBoundary>
       </SidebarInset>
       <CommandPalette />
     </>

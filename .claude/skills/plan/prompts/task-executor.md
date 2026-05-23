@@ -86,41 +86,42 @@ O Bash tool usa `/usr/bin/bash` (Git Bash), NAO PowerShell.
 - Voce esta num worktree git ISOLADO. A branch `main` e BLOQUEADA.
 - NUNCA criar, modificar ou deletar arquivos fora do diretorio do seu worktree.
 - NUNCA fazer `git checkout main` ou `git switch main`.
-- NUNCA instalar dependencias (npm install, mvn install) no diretorio raiz do
-  repositorio principal -- apenas no seu worktree.
-- Se precisar instalar dependencias: verificar que esta no worktree antes de rodar.
-- Verificacao obrigatoria antes de qualquer npm install ou npm ci:
-  ```bash
-  worktree_dir=$(git rev-parse --show-toplevel)
-  echo "Diretorio atual: $(pwd)"
-  echo "Raiz do worktree: $worktree_dir"
-  # Confirmar que nao e o repositorio principal verificando se o path contem 'agent-'
-  if echo "$worktree_dir" | grep -v 'agent-' > /dev/null; then
-    echo "AVISO: este worktree pode ser o repositorio principal. Verificar antes de instalar."
-  fi
-  ```
-- O npm install DEVE ser executado com `cd <dir-do-worktree> && npm install`, nunca com `npm install` na raiz.
-- Nunca executar `npm install` ou `npm ci` sem confirmar primeiro que o diretorio atual e o worktree isolado.
+- NUNCA rodar npm install, npm ci ou mvn install no repositorio principal.
+- NUNCA rodar npm install no worktree -- usar symlink (ver abaixo).
 
-## Gate frontend (obrigatorio quando ha arquivos frontend na task)
+## Setup de dependencias frontend em worktree
 
-Antes de executar /ship, verificar se a task inclui arquivos em `frontend/`:
+Se a task inclui arquivos em `frontend/` e o diretorio `frontend/node_modules`
+NAO existe no worktree, criar um symlink apontando para o node_modules do
+repositorio principal. Isso leva < 1 segundo e evita npm install (2-5 minutos):
 
 ```bash
-git diff --name-only HEAD~1..HEAD | grep "^frontend/" | head -1
+MAIN_REPO="/c/projetos/financas-lab"
+WORKTREE=$(git rev-parse --show-toplevel)
+if [ ! -d "$WORKTREE/frontend/node_modules" ] && [ ! -L "$WORKTREE/frontend/node_modules" ]; then
+  ln -s "$MAIN_REPO/frontend/node_modules" "$WORKTREE/frontend/node_modules"
+  echo "Symlink criado: frontend/node_modules -> $MAIN_REPO/frontend/node_modules"
+fi
 ```
 
-Se o comando retornar alguma linha (ha arquivos frontend commitados):
-- Executar via PowerShell: `powershell -NoProfile -Command '.\scripts\check-front.ps1'`
-- Se exit code != 0: NENHUM push ou PR. Corrigir todos os erros de lint/test/build
-  antes de prosseguir. Erros de lint sao bloqueadores -- nao ignorar warnings.
-- Erros comuns a corrigir sem perguntar ao operador:
-  - `no-unused-vars`: remover import ou variavel nao usada
-  - `no-empty-object-type`: substituir `interface Foo extends Bar {}` por `type Foo = Bar`
-  - `react-hooks/exhaustive-deps`: adicionar dependencia faltante ou usar `// eslint-disable-next-line`
-    apenas se a omissao for intencional e comentada
+NAO rodar npm install. O symlink reutiliza os modulos ja instalados no repositorio
+principal (mesmo package.json, totalmente compativel).
 
-Se nao houver arquivos frontend: pular este gate.
+EXCECAO: se esta task adicionar novas dependencias ao package.json, registrar no
+relatorio final: "AVISO: package.json modificado -- operador deve rodar npm install
+em frontend/ apos o merge."
+
+## Gate frontend
+
+Nao rodar `check-front.ps1` aqui -- o `/ship` ja executa o gate frontend
+internamente como parte do passo 1.1 e bloqueia em caso de falha. Rodar duas
+vezes adiciona ~2-4 minutos de wall-clock por task sem ganho.
+
+Erros comuns a corrigir sem perguntar ao operador (quando o `/ship` reportar):
+- `no-unused-vars`: remover import ou variavel nao usada
+- `no-empty-object-type`: substituir `interface Foo extends Bar {}` por `type Foo = Bar`
+- `react-hooks/exhaustive-deps`: adicionar dependencia faltante ou usar
+  `// eslint-disable-next-line` apenas se a omissao for intencional e comentada
 
 Sua unica responsabilidade: executar TODOS os passos descritos abaixo de forma
 completamente autonoma, sem pedir aprovacao ao operador.
@@ -167,16 +168,6 @@ git -C /c/projetos/financas-lab status --short
 
 Se nao estiver vazio: BLOQUEADOR — nao abrir PR enquanto houver sujeira em main.
 
-## Verificacao final obrigatoria no repo principal
-
-Antes de reportar conclusao, confirmar que o repo principal ficou limpo:
-
-```bash
-git -C /c/projetos/financas-lab status --short
-```
-
-Se nao estiver vazio: BLOQUEADOR — nao abrir PR enquanto houver sujeira em main.
-
 ## Relatorio final
 
 Task:     {LABEL}
@@ -184,3 +175,6 @@ Branch:   <branch criada>
 Commits:  <lista de commits>
 PR:       <URL do PR ou "nao aberto">
 Status:   OK | BLOQUEADOR: <motivo>
+Reviews:  pendentes -- rodar manualmente apos merge via /review-pr <PR#> e /review-front <PR#>
+          (os reviews automaticos do /plan rodam ANTES do merge, mas qualquer
+           ajuste pos-merge nao re-dispara reviews)

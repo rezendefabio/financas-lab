@@ -104,15 +104,25 @@ O Bash tool usa `/usr/bin/bash` (Git Bash), NAO PowerShell.
 - Voce esta num worktree git ISOLADO. A branch `main` e BLOQUEADA.
 - NUNCA criar, modificar ou deletar arquivos fora do diretorio do seu worktree.
 - NUNCA fazer `git checkout main` ou `git switch main`.
-- NUNCA executar npm install, npm ci, mvn install ou qualquer operacao de dependencia
-  no diretorio raiz do repositorio principal -- apenas no worktree isolado.
-- Verificacao obrigatoria antes de qualquer npm install ou npm ci:
-  ```bash
-  worktree_dir=$(git rev-parse --show-toplevel)
-  echo "Diretorio atual: $(pwd)"
-  echo "Raiz do worktree: $worktree_dir"
-  ```
-- O npm install DEVE ser executado com `cd <dir-do-worktree> && npm install`, nunca como comando solitario na raiz.
+- NUNCA rodar npm install, npm ci ou mvn install no repositorio principal.
+- NUNCA rodar npm install no worktree -- usar symlink para node_modules (ver abaixo).
+
+## Setup de dependencias frontend em worktree
+
+Se a task inclui arquivos em `frontend/`, criar symlink antes de rodar qualquer
+comando frontend (build, test, lint):
+
+```bash
+MAIN_REPO="/c/projetos/financas-lab"
+WORKTREE=$(git rev-parse --show-toplevel)
+if [ ! -d "$WORKTREE/frontend/node_modules" ] && [ ! -L "$WORKTREE/frontend/node_modules" ]; then
+  ln -s "$MAIN_REPO/frontend/node_modules" "$WORKTREE/frontend/node_modules"
+  echo "Symlink criado: frontend/node_modules -> $MAIN_REPO/frontend/node_modules"
+fi
+```
+
+NAO rodar npm install. Se esta task adicionar novas dependencias ao package.json:
+reportar "AVISO: operador deve rodar npm install em frontend/ apos o merge."
 
 Sua unica responsabilidade: executar TODOS os passos descritos abaixo de forma
 completamente autonoma, sem pedir aprovacao ao operador.
@@ -187,6 +197,53 @@ Bloqueadores: <lista ou "nenhum">
 
 Se qualquer task retornar BLOQUEADOR: sinalize ao operador mas nao cancele
 as outras tasks -- cada worktree e isolado e independente.
+
+### Passo 3.1 -- Reviews automaticos de PR
+
+O /batch roda no repo principal (nao em worktree), portanto o Agent tool esta
+disponivel para spawnar sub-agentes de review.
+
+Para cada task com `Status: OK` e PR nao-nulo, executar os reviews em SEQUENCIA
+(completar um antes de iniciar o proximo):
+
+Extrair o numero do PR de cada URL (ultimo segmento).
+
+**Review 1 -- pr-reviewer (sempre):**
+- subagent_type: "pr-reviewer"
+- prompt: "Revise o PR #<numero> do repositorio financas-lab antes do merge."
+
+Aguardar resultado. Se reportar bloqueador: registrar no relatorio final.
+
+**Review 2 -- architect-reviewer (sempre):**
+- subagent_type: "architect-reviewer"
+- prompt: "Revise as decisoes arquiteturais do PR #<numero> do repositorio financas-lab contra os ADRs do projeto."
+
+Aguardar resultado.
+
+**Review 3 -- front-reviewer (condicional):**
+
+Verificar se a task tem arquivos frontend:
+
+```bash
+gh pr diff <numero> --name-only 2>/dev/null | grep "^frontend/" | head -1
+```
+
+Se retornar linha nao-vazia:
+- subagent_type: "front-reviewer"
+- prompt: "Revise as mudancas de frontend do PR #<numero> do repositorio financas-lab."
+
+Aguardar resultado. Se reportar bloqueador: registrar no relatorio final.
+
+Adicionar secao `Reviews:` ao relatorio consolidado (um bloco por task com PR):
+
+```
+Reviews:
+  [task-001] pr-reviewer:        OK | BLOQUEADOR: <motivo>
+  [task-001] architect-reviewer: OK | BLOQUEADOR: <motivo>
+  [task-001] front-reviewer:     OK | BLOQUEADOR: <motivo> | N/A (sem frontend)
+```
+
+Se nenhuma task tiver PR aberto: pular este passo silenciosamente.
 
 ### Cleanup de worktrees e branches orfaos
 

@@ -12,6 +12,8 @@ interface ErrorBoundaryProps {
 interface ErrorBoundaryState {
   hasError: boolean
   codigoErro: string | null
+  mensagemErro: string | null
+  copiadoMsg: boolean
 }
 
 /**
@@ -23,11 +25,11 @@ interface ErrorBoundaryState {
 export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
   constructor(props: ErrorBoundaryProps) {
     super(props)
-    this.state = { hasError: false, codigoErro: null }
+    this.state = { hasError: false, codigoErro: null, mensagemErro: null, copiadoMsg: false }
   }
 
-  static getDerivedStateFromError(): Partial<ErrorBoundaryState> {
-    return { hasError: true }
+  static getDerivedStateFromError(error: Error): Partial<ErrorBoundaryState> {
+    return { hasError: true, mensagemErro: error.message }
   }
 
   componentDidCatch(error: Error, info: ErrorInfo): void {
@@ -58,7 +60,15 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
   }
 
   private handleRetry = (): void => {
-    this.setState({ hasError: false, codigoErro: null })
+    this.setState({ hasError: false, codigoErro: null, mensagemErro: null, copiadoMsg: false })
+  }
+
+  private handleCopy = (): void => {
+    if (!this.state.codigoErro) return
+    navigator.clipboard.writeText(this.state.codigoErro).then(() => {
+      this.setState({ copiadoMsg: true })
+      setTimeout(() => this.setState({ copiadoMsg: false }), 2000)
+    }).catch(() => undefined)
   }
 
   render(): ReactNode {
@@ -66,23 +76,63 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
       return this.props.children
     }
 
+    const { codigoErro, mensagemErro, copiadoMsg } = this.state
+
     return (
-      <div className="flex min-h-[50vh] items-center justify-center p-6">
-        <div className="w-full max-w-md rounded-xl bg-card p-6 text-card-foreground ring-1 ring-foreground/10">
-          <h2 className="text-lg font-semibold">Erro inesperado</h2>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Algo deu errado. Se o problema persistir, informe ao suporte o codigo abaixo.
-          </p>
-          <p className="mt-4 rounded-md bg-muted px-3 py-2 text-center font-mono text-sm font-medium">
-            {this.state.codigoErro ?? 'registrando...'}
-          </p>
-          <button
-            type="button"
-            onClick={this.handleRetry}
-            className="mt-4 w-full rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
-          >
-            Tentar novamente
-          </button>
+      <div className="p-6">
+        <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-6 space-y-4">
+          <div className="flex items-start gap-3">
+            <span className="text-destructive text-xl leading-none mt-0.5" aria-hidden>⚠</span>
+            <div className="flex-1 space-y-1">
+              <h2 className="font-semibold text-destructive">Erro inesperado na pagina</h2>
+              <p className="text-sm text-muted-foreground">
+                Algo deu errado ao carregar este conteudo. Informe ao suporte o codigo abaixo.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <code className="flex-1 rounded-md bg-muted px-3 py-2 font-mono text-sm font-medium tracking-wider">
+              {codigoErro ?? 'registrando...'}
+            </code>
+            {codigoErro && (
+              <button
+                type="button"
+                onClick={this.handleCopy}
+                className="rounded-md border border-border px-3 py-2 text-xs font-medium hover:bg-muted transition-colors"
+              >
+                {copiadoMsg ? 'Copiado!' : 'Copiar'}
+              </button>
+            )}
+          </div>
+
+          {mensagemErro && (
+            <details className="text-xs text-muted-foreground">
+              <summary className="cursor-pointer select-none hover:text-foreground">
+                Detalhe tecnico
+              </summary>
+              <p className="mt-1 rounded bg-muted px-2 py-1 font-mono break-all">
+                {mensagemErro}
+              </p>
+            </details>
+          )}
+
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={this.handleRetry}
+              className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+            >
+              Tentar novamente
+            </button>
+            <button
+              type="button"
+              onClick={() => window.history.back()}
+              className="rounded-md border border-border px-4 py-2 text-sm font-medium hover:bg-muted"
+            >
+              Voltar
+            </button>
+          </div>
         </div>
       </div>
     )
