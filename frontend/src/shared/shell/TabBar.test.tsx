@@ -3,9 +3,10 @@ import userEvent from '@testing-library/user-event'
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 
 const mockReplace = vi.fn()
+let mockSearchParams = new URLSearchParams()
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ push: vi.fn(), replace: mockReplace }),
-  useSearchParams: () => new URLSearchParams(),
+  useSearchParams: () => mockSearchParams,
   usePathname: () => '/',
 }))
 
@@ -17,6 +18,7 @@ describe('TabBar', () => {
   beforeEach(() => {
     localStorage.clear()
     mockReplace.mockClear()
+    mockSearchParams = new URLSearchParams()
     useTabsStore.setState({ tabs: [], activeId: null })
     useCommandPaletteStore.setState({ open: false })
   })
@@ -71,6 +73,38 @@ describe('TabBar', () => {
     render(<TabBar />)
     expect(screen.getByLabelText('Desfixar aba Contas')).toBeInTheDocument()
     expect(screen.queryByLabelText('Fechar aba Contas')).not.toBeInTheDocument()
+  })
+
+  it('hidratacao via URL preserva currentPath da aba inativa do localStorage', () => {
+    // Cenario: usuario tinha duas abas com currentPath em sub-rotas,
+    // recarrega a pagina. A URL traz os codigos e a aba ativa, mas a aba
+    // inativa deve manter o currentPath salvo no persist do Zustand.
+    useTabsStore.setState({
+      tabs: [
+        {
+          id: 'pre-1',
+          screenCode: 'FIN-CTA-001',
+          pinned: false,
+          currentPath: '/contas/novo',
+        },
+        {
+          id: 'pre-2',
+          screenCode: 'FIN-TRX-001',
+          pinned: false,
+          currentPath: '/transacoes/novo',
+        },
+      ],
+      activeId: 'pre-2',
+    })
+    mockSearchParams = new URLSearchParams(
+      'tabs=FIN-CTA-001,FIN-TRX-001&active=FIN-TRX-001',
+    )
+
+    render(<TabBar />)
+
+    const { tabs } = useTabsStore.getState()
+    const contas = tabs.find((t) => t.screenCode === 'FIN-CTA-001')
+    expect(contas?.currentPath).toBe('/contas/novo')
   })
 
   it('botao "+" abre o CommandPalette', async () => {
