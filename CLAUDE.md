@@ -37,6 +37,19 @@ Estado atual e camadas: `docs/progresso.md` (secao "Status geral por Camada").
   `@Min(N)` → `.min(N)`. Divergencia entre Zod e Java e bloqueador (B6).
 - Mapeamento de tipo-backend para componente: antes de implementar qualquer campo,
   consultar `docs/field-type-catalog.md`. Violacao e bloqueador B7.
+- Rascunho de formulario: ao criar ou editar qualquer pagina com formulario
+  (`useForm`), adicionar `useDraftForm` para persistir entre trocas de aba:
+  - Paginas de criacao (`novo`): `const { clearDraft } = useDraftForm(form)`.
+    Chamar `clearDraft()` no `onSuccess` e no botao Cancelar.
+  - Paginas de edicao (carregam dados via `useQuery`): `const { clearDraft,
+    resetWithDraft } = useDraftForm(form)`. Substituir `form.reset(dados)` por
+    `resetWithDraft(dados)` no `useEffect` de carregamento. Chamar `clearDraft()`
+    no `onSuccess` e no botao Cancelar.
+  - Componentes de formulario reutilizaveis (ex: `TransacaoForm`): adicionar
+    `useDraftForm(form)` internamente; a pagina pai nao precisa chamar novamente.
+  - Referencia: `frontend/src/app/(dashboard)/centros-custo/novo/page.tsx`
+    (criacao) e `frontend/src/app/(dashboard)/centros-custo/[id]/page.tsx`
+    (edicao).
 
 ## Ambiente
 
