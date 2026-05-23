@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { apiFetch, apiFetchBlob } from './api-client'
 import { ApiError } from '@/shared/types/api'
 import * as authModule from '@/shared/lib/auth'
+import { useErrorBannerStore } from '@/shared/shell/error-banner-store'
 
 describe('apiFetch', () => {
   beforeEach(() => {
@@ -77,6 +78,82 @@ describe('apiFetch', () => {
     await expect(apiFetch('/protected')).rejects.toBeInstanceOf(ApiError)
     expect(authModule.clearSession).toHaveBeenCalledOnce()
     expect(location.href).toBe('/login')
+
+    vi.unstubAllGlobals()
+  })
+
+  it('on 500 with codigoErro: publishes banner and throws ApiError com codigo', async () => {
+    useErrorBannerStore.setState({ banners: [] })
+    vi.mocked(authModule.getToken).mockReturnValue(null)
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: false,
+      status: 500,
+      statusText: 'Internal Server Error',
+      json: async () => ({ codigoErro: 'ERR-ABCDEF12', detail: 'Falha geral' }),
+    }))
+
+    await expect(apiFetch('/x')).rejects.toMatchObject({
+      status: 500,
+      message: expect.stringContaining('ERR-ABCDEF12'),
+    })
+    const banners = useErrorBannerStore.getState().banners
+    expect(banners).toHaveLength(1)
+    expect(banners[0].codigo).toBe('ERR-ABCDEF12')
+    expect(banners[0].tipo).toBe('ServerError')
+    expect(banners[0].mensagem).toBe('Falha geral')
+
+    vi.unstubAllGlobals()
+  })
+
+  it('on 502 sem codigoErro: publishes banner com codigo null e lanca ApiError', async () => {
+    useErrorBannerStore.setState({ banners: [] })
+    vi.mocked(authModule.getToken).mockReturnValue(null)
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: false,
+      status: 502,
+      statusText: 'Bad Gateway',
+      json: async () => ({}),
+    }))
+
+    await expect(apiFetch('/x')).rejects.toBeInstanceOf(ApiError)
+    const banners = useErrorBannerStore.getState().banners
+    expect(banners).toHaveLength(1)
+    expect(banners[0].codigo).toBeNull()
+    expect(banners[0].mensagem).toBe('Erro interno do servidor')
+
+    vi.unstubAllGlobals()
+  })
+
+  it('on 503: publishes banner (range >=500 cobre todo 5xx)', async () => {
+    useErrorBannerStore.setState({ banners: [] })
+    vi.mocked(authModule.getToken).mockReturnValue(null)
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: false,
+      status: 503,
+      statusText: 'Service Unavailable',
+      json: async () => ({ detail: 'Em manutencao' }),
+    }))
+
+    await expect(apiFetch('/x')).rejects.toBeInstanceOf(ApiError)
+    const banners = useErrorBannerStore.getState().banners
+    expect(banners).toHaveLength(1)
+    expect(banners[0].mensagem).toBe('Em manutencao')
+
+    vi.unstubAllGlobals()
+  })
+
+  it('on 400/422: nao publica banner (range >=500 nao se aplica)', async () => {
+    useErrorBannerStore.setState({ banners: [] })
+    vi.mocked(authModule.getToken).mockReturnValue(null)
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: false,
+      status: 422,
+      statusText: 'Unprocessable Entity',
+      json: async () => ({ message: 'Validacao falhou' }),
+    }))
+
+    await expect(apiFetch('/x')).rejects.toBeInstanceOf(ApiError)
+    expect(useErrorBannerStore.getState().banners).toHaveLength(0)
 
     vi.unstubAllGlobals()
   })

@@ -2,8 +2,9 @@
  * Hook que registra handlers globais de erros assincronos
  * (`window.error` e `window.unhandledrejection`) e propaga-os ao
  * `useErrorBannerStore` em forma de banner dismissivel. Cada erro
- * tambem e enviado ao backend (`POST /api/incidentes`) para obter um
- * codigo ERR-XXXXXXXX que e atualizado no banner correspondente.
+ * tambem e enviado ao backend (`POST /api/incidentes` via
+ * incidenteService) para obter um codigo ERR-XXXXXXXX que e
+ * atualizado no banner correspondente.
  *
  * Deve ser chamado UMA VEZ no `DashboardShell` -- multiplas chamadas
  * registrariam handlers duplicados.
@@ -11,34 +12,8 @@
 'use client'
 
 import { useEffect } from 'react'
+import { incidenteService } from '@/features/incidente/services/incidente-service'
 import { useErrorBannerStore } from '@/shared/shell/error-banner-store'
-
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8080'
-
-async function registrarIncidente(
-  tipo: string,
-  mensagem: string,
-  operacao: string,
-): Promise<string | null> {
-  try {
-    // eslint-disable-next-line no-restricted-globals
-    const res = await fetch(`${API_BASE}/api/incidentes`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        operacao,
-        classeErro: tipo,
-        mensagem: mensagem.slice(0, 500),
-        stackTrace: '',
-      }),
-    })
-    if (!res.ok) return null
-    const data = (await res.json()) as { codigo?: string }
-    return data.codigo ?? null
-  } catch {
-    return null
-  }
-}
 
 export function useGlobalErrorHandler(): void {
   useEffect(() => {
@@ -62,9 +37,11 @@ export function useGlobalErrorHandler(): void {
 
       if (bannerId) {
         const id = bannerId
-        registrarIncidente(tipo, mensagem, operacao).then((codigo) => {
-          if (codigo) updateCodigo(id, codigo)
-        })
+        incidenteService
+          .registrar({ operacao, classeErro: tipo, mensagem })
+          .then((codigo) => {
+            if (codigo) updateCodigo(id, codigo)
+          })
       }
     }
 
@@ -90,9 +67,11 @@ export function useGlobalErrorHandler(): void {
 
       if (bannerId) {
         const id = bannerId
-        registrarIncidente(tipo, mensagem, operacao).then((codigo) => {
-          if (codigo) updateCodigo(id, codigo)
-        })
+        incidenteService
+          .registrar({ operacao, classeErro: tipo, mensagem })
+          .then((codigo) => {
+            if (codigo) updateCodigo(id, codigo)
+          })
       }
     }
 
