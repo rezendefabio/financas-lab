@@ -21,6 +21,8 @@ import {
 } from '@/shared/shell'
 import { useDraftFormsStore } from '@/shared/shell/draft-forms-store'
 import { ErrorBoundary } from '@/shared/components/ErrorBoundary'
+import { ErrorBanner } from '@/shared/shell/ErrorBanner'
+import { useGlobalErrorHandler } from '@/shared/hooks/useGlobalErrorHandler'
 
 /**
  * Conteudo do shell. Componente separado para que os hooks de responsividade
@@ -30,6 +32,7 @@ import { ErrorBoundary } from '@/shared/components/ErrorBoundary'
 function DashboardShell({ children }: { children: React.ReactNode }) {
   useBreakpointSidebarCollapse()
   useSwipeToOpen()
+  useGlobalErrorHandler()
 
   return (
     <>
@@ -41,6 +44,7 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
       </Sidebar>
       <SidebarInset>
         <ShellHeader />
+        <ErrorBanner />
         {/* TabBar usa useSearchParams: precisa de fronteira Suspense para
             nao forcar CSR bailout no prerender das paginas filhas. */}
         <Suspense fallback={null}>
