@@ -109,4 +109,64 @@ describe('ErrorBoundary', () => {
 
     expect(screen.getByText('conteudo recuperado')).toBeInTheDocument()
   })
+
+  it('copia o codigo ERR para o clipboard e mostra feedback "Copiado!"', async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined)
+    Object.assign(navigator, { clipboard: { writeText } })
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({ codigo: 'ERR-ABCD1234' }),
+      }),
+    )
+
+    render(
+      <ErrorBoundary>
+        <Bomba />
+      </ErrorBoundary>,
+    )
+
+    await screen.findByText('ERR-ABCD1234')
+
+    await userEvent.click(screen.getByRole('button', { name: 'Copiar' }))
+
+    expect(writeText).toHaveBeenCalledWith('ERR-ABCD1234')
+    expect(await screen.findByRole('button', { name: 'Copiado!' })).toBeInTheDocument()
+  })
+
+  it('chama window.history.back ao clicar em "Voltar"', async () => {
+    const backSpy = vi.spyOn(window.history, 'back').mockImplementation(() => {})
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({ codigo: 'ERR-ABCD1234' }),
+      }),
+    )
+
+    render(
+      <ErrorBoundary>
+        <Bomba />
+      </ErrorBoundary>,
+    )
+
+    await screen.findByText('ERR-ABCD1234')
+    await userEvent.click(screen.getByRole('button', { name: 'Voltar' }))
+
+    expect(backSpy).toHaveBeenCalledTimes(1)
+  })
+
+  it('mostra a mensagem de erro tecnica dentro do bloco "Detalhe tecnico"', () => {
+    vi.stubGlobal('fetch', vi.fn().mockReturnValue(new Promise(() => {})))
+
+    render(
+      <ErrorBoundary>
+        <Bomba />
+      </ErrorBoundary>,
+    )
+
+    expect(screen.getByText('Detalhe tecnico')).toBeInTheDocument()
+    expect(screen.getByText('falha de renderizacao')).toBeInTheDocument()
+  })
 })
