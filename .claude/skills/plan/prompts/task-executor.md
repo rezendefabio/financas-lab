@@ -102,25 +102,17 @@ O Bash tool usa `/usr/bin/bash` (Git Bash), NAO PowerShell.
 - O npm install DEVE ser executado com `cd <dir-do-worktree> && npm install`, nunca com `npm install` na raiz.
 - Nunca executar `npm install` ou `npm ci` sem confirmar primeiro que o diretorio atual e o worktree isolado.
 
-## Gate frontend (obrigatorio quando ha arquivos frontend na task)
+## Gate frontend
 
-Antes de executar /ship, verificar se a task inclui arquivos em `frontend/`:
+Nao rodar `check-front.ps1` aqui -- o `/ship` ja executa o gate frontend
+internamente como parte do passo 1.1 e bloqueia em caso de falha. Rodar duas
+vezes adiciona ~2-4 minutos de wall-clock por task sem ganho.
 
-```bash
-git diff --name-only HEAD~1..HEAD | grep "^frontend/" | head -1
-```
-
-Se o comando retornar alguma linha (ha arquivos frontend commitados):
-- Executar via PowerShell: `powershell -NoProfile -Command '.\scripts\check-front.ps1'`
-- Se exit code != 0: NENHUM push ou PR. Corrigir todos os erros de lint/test/build
-  antes de prosseguir. Erros de lint sao bloqueadores -- nao ignorar warnings.
-- Erros comuns a corrigir sem perguntar ao operador:
-  - `no-unused-vars`: remover import ou variavel nao usada
-  - `no-empty-object-type`: substituir `interface Foo extends Bar {}` por `type Foo = Bar`
-  - `react-hooks/exhaustive-deps`: adicionar dependencia faltante ou usar `// eslint-disable-next-line`
-    apenas se a omissao for intencional e comentada
-
-Se nao houver arquivos frontend: pular este gate.
+Erros comuns a corrigir sem perguntar ao operador (quando o `/ship` reportar):
+- `no-unused-vars`: remover import ou variavel nao usada
+- `no-empty-object-type`: substituir `interface Foo extends Bar {}` por `type Foo = Bar`
+- `react-hooks/exhaustive-deps`: adicionar dependencia faltante ou usar
+  `// eslint-disable-next-line` apenas se a omissao for intencional e comentada
 
 Sua unica responsabilidade: executar TODOS os passos descritos abaixo de forma
 completamente autonoma, sem pedir aprovacao ao operador.
@@ -167,16 +159,6 @@ git -C /c/projetos/financas-lab status --short
 
 Se nao estiver vazio: BLOQUEADOR — nao abrir PR enquanto houver sujeira em main.
 
-## Verificacao final obrigatoria no repo principal
-
-Antes de reportar conclusao, confirmar que o repo principal ficou limpo:
-
-```bash
-git -C /c/projetos/financas-lab status --short
-```
-
-Se nao estiver vazio: BLOQUEADOR — nao abrir PR enquanto houver sujeira em main.
-
 ## Relatorio final
 
 Task:     {LABEL}
@@ -184,3 +166,6 @@ Branch:   <branch criada>
 Commits:  <lista de commits>
 PR:       <URL do PR ou "nao aberto">
 Status:   OK | BLOQUEADOR: <motivo>
+Reviews:  pendentes -- rodar manualmente apos merge via /review-pr <PR#> e /review-front <PR#>
+          (os reviews automaticos do /plan rodam ANTES do merge, mas qualquer
+           ajuste pos-merge nao re-dispara reviews)
