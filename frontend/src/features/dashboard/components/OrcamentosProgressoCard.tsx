@@ -37,7 +37,7 @@ function OrcamentosProgressoCard() {
   })
 
   const { data: categorias } = useQuery({
-    queryKey: ['categorias'],
+    queryKey: ['categorias', 'lookup'],
     queryFn: () => categoriasService.listar(),
   })
 
