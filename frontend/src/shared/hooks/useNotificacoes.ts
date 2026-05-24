@@ -149,7 +149,12 @@ export function useNotificacoes(): {
           descricao: `${meta.nome}: prazo encerrado`,
         })
       } else if (dias <= 7) {
-        const sufixo = dias === 1 ? 'vence em 1 dia' : `vence em ${dias} dias`
+        const sufixo =
+          dias === 0
+            ? 'vence hoje'
+            : dias === 1
+              ? 'vence em 1 dia'
+              : `vence em ${dias} dias`
         lista.push({
           id: `meta-vencendo:${meta.id}`,
           tipo: 'meta_vencendo',

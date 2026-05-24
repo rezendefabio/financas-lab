@@ -285,6 +285,25 @@ describe('useNotificacoes', () => {
     expect(result.current.notificacoes).toEqual([])
   })
 
+  it('exibe "vence hoje" quando prazo e hoje', async () => {
+    vi.mocked(metaService.listar).mockResolvedValue([
+      metaFixture({ prazo: dataRelativaISO(0) }),
+    ])
+
+    const { result } = renderHook(() => useNotificacoes(), {
+      wrapper: makeWrapper(),
+    })
+
+    await waitFor(() => {
+      expect(result.current.notificacoes).toHaveLength(1)
+    })
+
+    const n = result.current.notificacoes[0]
+    expect(n.tipo).toBe('meta_vencendo')
+    expect(n.descricao).toContain('vence hoje')
+    expect(n.descricao).not.toContain('0 dias')
+  })
+
   it('usa singular "1 dia" quando prazo e amanha', async () => {
     vi.mocked(metaService.listar).mockResolvedValue([
       metaFixture({ prazo: dataRelativaISO(1) }),
