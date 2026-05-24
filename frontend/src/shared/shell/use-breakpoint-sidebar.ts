@@ -15,7 +15,7 @@ import { useSidebar } from '@/shared/components/ui/sidebar'
  * algum dos dois limiares, nao em cada render.
  */
 export function useBreakpointSidebarCollapse() {
-  const { setOpen, setOpenMobile, isMobile } = useSidebar()
+  const { setOpen, isMobile } = useSidebar()
 
   useEffect(() => {
     if (isMobile) return // mobile usa Sheet, nao icon mode
@@ -24,11 +24,10 @@ export function useBreakpointSidebarCollapse() {
     const mqTablet = window.matchMedia('(min-width: 1024px)')
 
     const apply = () => {
-      if (mqWide.matches) {
-        // respeita estado persistido (cookie)
-      } else if (mqTablet.matches) {
-        setOpen(false)
-      } else {
+      // >= 1280px: respeita estado persistido (cookie); abaixo disso colapsa.
+      // 768-1023px se comporta como 1024-1279px (ambos icon mode) por
+      // limitacao do shadcn -- sem API para ocultar completamente em desktop.
+      if (!mqWide.matches) {
         setOpen(false)
       }
     }
@@ -40,5 +39,5 @@ export function useBreakpointSidebarCollapse() {
       mqWide.removeEventListener('change', apply)
       mqTablet.removeEventListener('change', apply)
     }
-  }, [setOpen, setOpenMobile, isMobile])
+  }, [setOpen, isMobile])
 }
