@@ -70,7 +70,9 @@ export function ShellHeader() {
               </span>
             </DropdownMenuTrigger>
             <DropdownMenuContent side="bottom" align="end" className="w-72">
-              <DropdownMenuLabel>Notificacoes</DropdownMenuLabel>
+              <DropdownMenuGroup>
+                <DropdownMenuLabel>Notificacoes</DropdownMenuLabel>
+              </DropdownMenuGroup>
               <DropdownMenuSeparator />
               {notificacoes.map((n) => (
                 <DropdownMenuItem key={n.id} className="flex flex-col items-start gap-0.5 py-2">
