@@ -54,16 +54,32 @@ export function ShellHeader() {
           </span>
         )}
         {notificacoesCount > 0 && (
-          <div
-            className="relative"
-            role="status"
-            aria-label={`${notificacoesCount} notificacoes ativas`}
-          >
-            <Bell className="h-5 w-5 text-muted-foreground" />
-            <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-white">
-              {notificacoesCount > 9 ? '9+' : notificacoesCount}
-            </span>
-          </div>
+          <DropdownMenu>
+            <DropdownMenuTrigger
+              render={
+                <button
+                  type="button"
+                  aria-label={`${notificacoesCount} notificacoes ativas`}
+                  className="relative flex items-center justify-center rounded p-1 hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                />
+              }
+            >
+              <Bell className="h-5 w-5 text-muted-foreground" />
+              <span className="absolute top-0 right-0 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-white">
+                {notificacoesCount > 9 ? '9+' : notificacoesCount}
+              </span>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent side="bottom" align="end" className="w-72">
+              <DropdownMenuLabel>Notificacoes</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              {notificacoes.map((n) => (
+                <DropdownMenuItem key={n.id} className="flex flex-col items-start gap-0.5 py-2">
+                  <span className="text-sm font-medium leading-none">{n.titulo}</span>
+                  <span className="text-xs text-muted-foreground">{n.descricao}</span>
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
         )}
         <DropdownMenu>
           <DropdownMenuTrigger
