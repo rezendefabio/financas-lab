@@ -65,6 +65,78 @@ describe('AnexoUpload', () => {
     resolveUpload(mockAnexo)
   })
 
+  it('exibe aviso quando arquivo e maior que 10 MB', async () => {
+    let resolveUpload: (value: Anexo) => void = () => {}
+    vi.mocked(anexoService.upload).mockReturnValue(
+      new Promise<Anexo>((res) => {
+        resolveUpload = res
+      }),
+    )
+    const user = userEvent.setup()
+
+    render(
+      <AnexoUpload entidadeTipo="anotacao" entidadeId="entidade-1" />,
+      { wrapper: makeWrapper() },
+    )
+
+    const conteudoGrande = new Uint8Array(11 * 1024 * 1024)
+    const file = new File([conteudoGrande], 'grande.pdf', { type: 'application/pdf' })
+    const input = screen.getByLabelText('Selecionar arquivo para upload') as HTMLInputElement
+    await user.upload(input, file)
+
+    await waitFor(() => {
+      expect(screen.getByText(/Arquivo maior que 10 MB/i)).toBeInTheDocument()
+    })
+    expect(anexoService.upload).toHaveBeenCalledWith('anotacao', 'entidade-1', file)
+
+    resolveUpload(mockAnexo)
+  })
+
+  it('exibe mensagem de erro quando upload falha', async () => {
+    vi.mocked(anexoService.upload).mockRejectedValue(new Error('servidor offline'))
+    const user = userEvent.setup()
+
+    render(
+      <AnexoUpload entidadeTipo="anotacao" entidadeId="entidade-1" />,
+      { wrapper: makeWrapper() },
+    )
+
+    const file = new File(['x'], 'a.pdf', { type: 'application/pdf' })
+    const input = screen.getByLabelText('Selecionar arquivo para upload') as HTMLInputElement
+    await user.upload(input, file)
+
+    await waitFor(() => {
+      expect(screen.getByText(/Falha no upload/i)).toBeInTheDocument()
+      expect(screen.getByText(/servidor offline/i)).toBeInTheDocument()
+    })
+  })
+
+  it('drag-and-drop de arquivo dispara upload', async () => {
+    vi.mocked(anexoService.upload).mockResolvedValue(mockAnexo)
+
+    render(
+      <AnexoUpload entidadeTipo="anotacao" entidadeId="entidade-1" />,
+      { wrapper: makeWrapper() },
+    )
+
+    const file = new File(['x'], 'drop.pdf', { type: 'application/pdf' })
+    const dropzone = screen.getByText(/Arraste um arquivo aqui/i)
+      .parentElement as HTMLElement
+    expect(dropzone).toBeTruthy()
+
+    const { fireEvent, createEvent } = await import('@testing-library/react')
+
+    const dropEvent = createEvent.drop(dropzone)
+    Object.defineProperty(dropEvent, 'dataTransfer', {
+      value: { files: [file], items: [], types: ['Files'] },
+    })
+    fireEvent(dropzone, dropEvent)
+
+    await waitFor(() => {
+      expect(anexoService.upload).toHaveBeenCalledWith('anotacao', 'entidade-1', file)
+    })
+  })
+
   it('apos sucesso invalida a query e chama onUploadSuccess', async () => {
     vi.mocked(anexoService.upload).mockResolvedValue(mockAnexo)
     const queryClient = new QueryClient({
