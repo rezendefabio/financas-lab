@@ -1,7 +1,7 @@
-import { renderHook } from '@testing-library/react'
+import { renderHook, act } from '@testing-library/react'
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 
-let mockSidebar = { setOpen: vi.fn(), isMobile: false }
+let mockSidebar = { setOpen: vi.fn(), setOpenMobile: vi.fn(), isMobile: false }
 
 vi.mock('@/shared/components/ui/sidebar', () => ({
   useSidebar: () => mockSidebar,
@@ -9,25 +9,49 @@ vi.mock('@/shared/components/ui/sidebar', () => ({
 
 import { useBreakpointSidebarCollapse } from './use-breakpoint-sidebar'
 
-/** Instala um stub de window.matchMedia que reporta `matches`. */
-function stubMatchMedia(matches: boolean) {
-  const mql = {
+type MQL = {
+  matches: boolean
+  media: string
+  addEventListener: ReturnType<typeof vi.fn>
+  removeEventListener: ReturnType<typeof vi.fn>
+  _listeners: Array<(e: { matches: boolean }) => void>
+}
+
+function makeMql(media: string, matches: boolean): MQL {
+  const mql: MQL = {
     matches,
-    media: '(min-width: 1280px)',
+    media,
     addEventListener: vi.fn(),
     removeEventListener: vi.fn(),
-    onchange: null,
-    addListener: vi.fn(),
-    removeListener: vi.fn(),
-    dispatchEvent: vi.fn(),
+    _listeners: [],
   }
-  window.matchMedia = vi.fn().mockReturnValue(mql) as unknown as typeof window.matchMedia
+  mql.addEventListener.mockImplementation((_evt: string, cb: (e: { matches: boolean }) => void) => {
+    mql._listeners.push(cb)
+  })
+  mql.removeEventListener.mockImplementation((_evt: string, cb: (e: { matches: boolean }) => void) => {
+    mql._listeners = mql._listeners.filter((l) => l !== cb)
+  })
   return mql
+}
+
+/**
+ * Stub que retorna diferentes MQLs por media query.
+ * `width` simula a largura do viewport.
+ */
+function stubMatchMedia(width: number) {
+  const mqWide = makeMql('(min-width: 1280px)', width >= 1280)
+  const mqTablet = makeMql('(min-width: 1024px)', width >= 1024)
+  window.matchMedia = vi.fn((q: string) => {
+    if (q.includes('1280')) return mqWide
+    if (q.includes('1024')) return mqTablet
+    throw new Error('unexpected media query: ' + q)
+  }) as unknown as typeof window.matchMedia
+  return { mqWide, mqTablet }
 }
 
 describe('useBreakpointSidebarCollapse', () => {
   beforeEach(() => {
-    mockSidebar = { setOpen: vi.fn(), isMobile: false }
+    mockSidebar = { setOpen: vi.fn(), setOpenMobile: vi.fn(), isMobile: false }
   })
 
   afterEach(() => {
@@ -35,29 +59,55 @@ describe('useBreakpointSidebarCollapse', () => {
   })
 
   it('viewport >= 1280px: nao chama setOpen na montagem (preserva estado do cookie)', () => {
-    stubMatchMedia(true)
+    stubMatchMedia(1440)
     renderHook(() => useBreakpointSidebarCollapse())
     expect(mockSidebar.setOpen).not.toHaveBeenCalled()
   })
 
-  it('viewport < 1280px: chama setOpen(false)', () => {
-    stubMatchMedia(false)
+  it('viewport 1024-1279px (tablet landscape): chama setOpen(false)', () => {
+    stubMatchMedia(1100)
+    renderHook(() => useBreakpointSidebarCollapse())
+    expect(mockSidebar.setOpen).toHaveBeenCalledWith(false)
+  })
+
+  it('viewport < 1024px (tablet portrait): chama setOpen(false)', () => {
+    stubMatchMedia(900)
     renderHook(() => useBreakpointSidebarCollapse())
     expect(mockSidebar.setOpen).toHaveBeenCalledWith(false)
   })
 
   it('isMobile=true: nao chama setOpen', () => {
-    mockSidebar = { setOpen: vi.fn(), isMobile: true }
-    stubMatchMedia(true)
+    mockSidebar = { setOpen: vi.fn(), setOpenMobile: vi.fn(), isMobile: true }
+    stubMatchMedia(1440)
     renderHook(() => useBreakpointSidebarCollapse())
     expect(mockSidebar.setOpen).not.toHaveBeenCalled()
   })
 
-  it('registra e remove o listener de mudanca de breakpoint', () => {
-    const mql = stubMatchMedia(true)
+  it('registra e remove os listeners de mudanca nos dois breakpoints', () => {
+    const { mqWide, mqTablet } = stubMatchMedia(1440)
     const { unmount } = renderHook(() => useBreakpointSidebarCollapse())
-    expect(mql.addEventListener).toHaveBeenCalledWith('change', expect.any(Function))
+    expect(mqWide.addEventListener).toHaveBeenCalledWith('change', expect.any(Function))
+    expect(mqTablet.addEventListener).toHaveBeenCalledWith('change', expect.any(Function))
     unmount()
-    expect(mql.removeEventListener).toHaveBeenCalledWith('change', expect.any(Function))
+    expect(mqWide.removeEventListener).toHaveBeenCalledWith('change', expect.any(Function))
+    expect(mqTablet.removeEventListener).toHaveBeenCalledWith('change', expect.any(Function))
+  })
+
+  it('mudanca de < 1024px para >= 1280px: re-aplica e nao colapsa', () => {
+    const { mqWide, mqTablet } = stubMatchMedia(900)
+    renderHook(() => useBreakpointSidebarCollapse())
+    // Montagem: < 1024px chamou setOpen(false)
+    expect(mockSidebar.setOpen).toHaveBeenCalledWith(false)
+    mockSidebar.setOpen.mockClear()
+
+    // Simula expansao do viewport para >= 1280px
+    act(() => {
+      mqWide.matches = true
+      mqTablet.matches = true
+      mqWide._listeners.forEach((cb) => cb({ matches: true }))
+    })
+
+    // Faixa >= 1280px: nao deve chamar setOpen (respeita cookie)
+    expect(mockSidebar.setOpen).not.toHaveBeenCalled()
   })
 })
