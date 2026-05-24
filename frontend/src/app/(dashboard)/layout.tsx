@@ -23,6 +23,7 @@ import { useDraftFormsStore } from '@/shared/shell/draft-forms-store'
 import { ErrorBoundary } from '@/shared/components/ErrorBoundary'
 import { ErrorBanner } from '@/shared/shell/ErrorBanner'
 import { useGlobalErrorHandler } from '@/shared/hooks/useGlobalErrorHandler'
+import { useNotificacoesToast } from '@/shared/hooks/useNotificacoesToast'
 
 /**
  * Conteudo do shell. Componente separado para que os hooks de responsividade
@@ -33,6 +34,7 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
   useBreakpointSidebarCollapse()
   useSwipeToOpen()
   useGlobalErrorHandler()
+  useNotificacoesToast()
 
   return (
     <>
