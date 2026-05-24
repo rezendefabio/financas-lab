@@ -3,7 +3,7 @@
 > Documento de tracking. Mostra **onde estamos** na construção da fábrica e do produto.
 > Atualizado conforme camadas avançam. Diferente do `decisoes.md` (que registra escolhas) e dos `adrs.md` (que registram porquês), este documento responde a pergunta: "em que ponto eu estou?".
 
-**Última atualização:** 2026-05-23 (UI-12 a UI-15 registradas)
+**Última atualização:** 2026-05-24 (UI-16, UI-17, 5.92 a 5.94 registradas)
 
 ---
 
@@ -159,6 +159,57 @@ Configurar `CLAUDE.md` rico, criar 3-5 subagents focados, criar 5-10 skills (sla
 Ativar a fábrica de fato: rodar features no Tier 2, configurar 3 routines Tier 1, validar paralelismo se necessário.
 
 ### Sub-etapas concluídas
+
+- **5.94 -- Notificacoes de orcamento e meta** (2026-05-24):
+  Sistema de alertas 100% frontend, sem backend novo. Hook `useNotificacoes`
+  calcula notificacoes a partir de dados existentes: orcamentos ativos do mes
+  com `StatusProgresso` ATENCAO ou EXCEDIDO, e metas EM_ANDAMENTO com prazo
+  vencido ou vencendo em <= 7 dias. Hook `useNotificacoesToast` exibe toasts
+  (warning / error via `sonner`) com deduplicacao por sessao usando `useRef<Set>`.
+  Badge de sino no `ShellHeader` com contagem de notificacoes ativas. Integrado
+  no `DashboardShell` via `useNotificacoesToast()`. Hooks auxiliares
+  `useOrcamentosAtivosComProgresso` e `useMetasEmAndamento` encapsulam a busca.
+  4 testes por arquivo (vazio, EXCEDIDO, meta vencendo, meta vencida,
+  deduplicacao). PR #267.
+
+- **5.93 -- Relatorios PDF: EvolucaoSaldo e FluxoCaixa** (2026-05-24):
+  Dois novos componentes PDF via `@react-pdf/renderer`. `RelatorioEvolucaoSaldo`:
+  tabela mensal com colunas Mes/Receitas/Despesas/Saldo, saldo negativo em
+  vermelho, linha de totais no rodape. `RelatorioFluxoCaixa`: 3 cards verticais
+  (Total Receitas, Total Despesas, Saldo do Mes) com cor semantica. Botoes
+  `PDFDownloadLink` adicionados na tela `/relatorios` ao lado dos graficos
+  ja existentes. Padrao de geracao segue `RelatorioGastosPorCategoria` (agente
+  `report-writer`): `StyleSheet.create()`, `formatBRL`, sem Tailwind nem shadcn
+  dentro do PDF. PR #266.
+
+- **5.92 -- Frontend do bounded context `anexo`** (2026-05-24):
+  Feature `frontend/src/features/anexo/` completa. **Types:** `Anexo`
+  (id, nome, tipoConteudo, tamanho, entidadeTipo, entidadeId, criadoEm).
+  **Service:** `listarPorEntidade`, `upload` (FormData multipart -- excecao B3
+  documentada), `remover`, `downloadUrl`. **Componentes:** `AnexoList`
+  (listagem com download e exclusao, skeleton, estado vazio) e `AnexoUpload`
+  (drag-and-drop visual, progress, limite 10 MB). Integrado na pagina de
+  detalhe de Anotacoes (`anotacoes/[id]/page.tsx`). 3 arquivos de teste
+  (87 + 169 + 72 casos). PR #268.
+
+- **UI-17 -- Skill `/add-entity-to-audit`** (2026-05-24):
+  Skill em `.claude/skills/add-entity-to-audit/SKILL.md` que instrumenta
+  qualquer controller com audit log. Fluxo de 6 passos: valida argumento,
+  analisa endpoints de mutacao (POST/PUT/DELETE/PATCH), verifica se ja
+  instrumentado, adiciona imports + constante `ENTITY_TYPE` + campos +
+  parametros de construtor + `@RequestHeader X-Screen-Code` + publicacao
+  de `AuditEvent` (CREATE/UPDATE/DELETE) + helpers `userEmail()`/`toJson()`.
+  Deriva `ENTITY_TYPE` do nome da classe (CamelCase -> kebab-case).
+  Verifica e adiciona exclude SpotBugs `EI_EXPOSE_REP2` se necessario.
+  Smoke aplicado em `AnexoController`. PR #264.
+
+- **UI-16 -- Responsividade do shell em 3 faixas** (2026-05-24):
+  `useBreakpointSidebarCollapse` atualizado com dois limiares: >= 1280px
+  (expandida, respeita estado persistido), 1024-1279px (icon mode),
+  < 1024px (oculta -- abre apenas via overlay). Padding do `<main>` ajustado:
+  `p-4` em mobile, `p-6` em desktop. `max-w-screen-2xl mx-auto w-full`
+  adicionado ao `<main>` para suporte a ultrawide. Testes do hook atualizados
+  para cobrir os dois limiares. PR #263.
 
 - **UI-15 -- Dashboard com graficos e progresso de orcamentos** (2026-05-23):
   Novo layout do Dashboard com tres secoes. **Row 1 (3 KPI cards):** Saldo Total
@@ -1819,6 +1870,9 @@ Definir como capturar quando chegarmos na Camada 4 — não criar burocracia ago
 
 ## Histórico de mudanças deste documento
 
+- **2026-05-24** -- Sub-etapas UI-16, UI-17 e 5.92 a 5.94 registradas:
+  responsividade shell, skill add-entity-to-audit, anexo frontend, PDFs
+  evolucao+fluxo, notificacoes toast+badge. PRs #263-#268.
 - **2026-05-23** -- Sub-etapas UI-12 a UI-15 registradas: useDraftForm em meta,
   Tab Manager Fase 1 (tabs + rascunhos), ErrorBoundary + banner global de erros,
   Dashboard com graficos e progresso de orcamentos. PRs #252-#260.
