@@ -120,6 +120,25 @@ describe('IncidentesPage', () => {
     })
   })
 
+  it('C5.1: URL com filtros sincroniza inputs no mount (preserva estado ao trocar de aba)', async () => {
+    currentParams = new URLSearchParams(
+      'dataInicio=2026-05-01T00:00&classeErro=NullPointerException&operacao=POST+%2Fapi%2Ftransacoes&submitted=1',
+    )
+    vi.mocked(incidenteService.listar).mockResolvedValue([incidente1])
+
+    render(<IncidentesPage />, { wrapper: makeWrapper() })
+
+    expect(screen.getByLabelText('Data/hora inicio')).toHaveValue(
+      '2026-05-01T00:00',
+    )
+    expect(screen.getByLabelText('Classe do erro')).toHaveValue(
+      'NullPointerException',
+    )
+    expect(screen.getByLabelText('Operacao')).toHaveValue(
+      'POST /api/transacoes',
+    )
+  })
+
   it('C6: clicar numa linha da tabela expande o stack trace', async () => {
     currentParams = new URLSearchParams('submitted=1')
     vi.mocked(incidenteService.listar).mockResolvedValue([incidente1])
