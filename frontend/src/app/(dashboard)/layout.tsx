@@ -54,7 +54,7 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
             isolar o conteudo numa fronteira Suspense evita o CSR bailout
             no prerender (Next.js missing-suspense-with-csr-bailout). */}
         <ErrorBoundary>
-          <main className="flex-1 p-6">
+          <main className="flex-1 p-4 md:p-6 max-w-screen-2xl mx-auto w-full">
             <Suspense fallback={null}>{children}</Suspense>
           </main>
         </ErrorBoundary>
