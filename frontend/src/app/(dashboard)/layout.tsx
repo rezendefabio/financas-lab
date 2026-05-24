@@ -76,9 +76,18 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
 export function TabPathTracker() {
   const pathname = usePathname()
   const searchParams = useSearchParams()
-  const fullPath = searchParams.toString()
-    ? `${pathname}?${searchParams.toString()}`
-    : pathname
+  // Filtrar params de controle do TabBar (tabs, active) -- eles sao gerenciados
+  // pelo TabBar separadamente e nao devem fazer parte do "path da pagina".
+  // Salvar esses params em currentPath causaria loop: TabBar leria o currentPath
+  // com ?tabs=...&active=..., concatenaria novo ?tabs=...&active=... e a URL
+  // cresceria infinitamente a cada render.
+  const fullPath = (() => {
+    const filtered = new URLSearchParams(searchParams.toString())
+    filtered.delete('tabs')
+    filtered.delete('active')
+    const qs = filtered.toString()
+    return qs ? `${pathname}?${qs}` : pathname
+  })()
 
   const activeId = useTabsStore((s) => s.activeId)
   const updateTabPath = useTabsStore((s) => s.updateTabPath)
