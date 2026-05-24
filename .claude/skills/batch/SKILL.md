@@ -258,7 +258,7 @@ Escrever o script abaixo em `.claude/tmp-batch-cleanup.ps1` com o Write tool e
 executar via `-File`. Remover o script apos a execucao:
 
 ```bash
-powershell -NoProfile -File .claude/tmp-batch-cleanup.ps1
+[ -f .claude/tmp-batch-cleanup.ps1 ] && powershell -NoProfile -File .claude/tmp-batch-cleanup.ps1
 rm -f .claude/tmp-batch-cleanup.ps1
 ```
 
