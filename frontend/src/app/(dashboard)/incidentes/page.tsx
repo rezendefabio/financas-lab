@@ -1,7 +1,9 @@
 'use client'
-import { Fragment, useState } from 'react'
+import { Fragment, useEffect, useState } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { useQuery } from '@tanstack/react-query'
 import { incidenteService } from '@/features/incidente'
-import type { IncidenteResponse, FiltrosIncidente } from '@/features/incidente'
+import type { FiltrosIncidente } from '@/features/incidente'
 import { ApiError } from '@/shared/types/api'
 import { formatDateTime } from '@/shared/lib/formatters'
 import {
@@ -23,74 +25,116 @@ import {
 } from '@/shared/components/ui/table'
 
 export default function IncidentesPage() {
-  const [dataInicio, setDataInicio] = useState('')
-  const [dataFim, setDataFim] = useState('')
-  const [classeErro, setClasseErro] = useState('')
-  const [operacao, setOperacao] = useState('')
-  const [codigo, setCodigo] = useState('')
+  const searchParams = useSearchParams()
+  const router = useRouter()
 
-  const [resultados, setResultados] = useState<IncidenteResponse[] | null>(null)
+  // Ler filtros da URL (estado inicial vem da URL ao montar)
+  const dataInicio = searchParams.get('dataInicio') ?? ''
+  const dataFim = searchParams.get('dataFim') ?? ''
+  const classeErro = searchParams.get('classeErro') ?? ''
+  const operacao = searchParams.get('operacao') ?? ''
+  const codigo = searchParams.get('codigo') ?? ''
+  const submitted = searchParams.get('submitted') === '1'
+
+  // Estado local APENAS para os inputs controlados (sincroniza com URL ao submeter)
+  const [inputDataInicio, setInputDataInicio] = useState(dataInicio)
+  const [inputDataFim, setInputDataFim] = useState(dataFim)
+  const [inputClasseErro, setInputClasseErro] = useState(classeErro)
+  const [inputOperacao, setInputOperacao] = useState(operacao)
+  const [inputCodigo, setInputCodigo] = useState(codigo)
   const [expandidoId, setExpandidoId] = useState<string | null>(null)
-  const [carregando, setCarregando] = useState(false)
-  const [erro, setErro] = useState<string | null>(null)
 
-  async function buscarComFiltros() {
-    const filtros: FiltrosIncidente = {}
-    if (dataInicio) filtros.criadoApartirDe = new Date(dataInicio).toISOString()
-    if (dataFim) filtros.criadoAte = new Date(dataFim).toISOString()
-    if (classeErro.trim()) filtros.classeErro = classeErro.trim()
-    if (operacao.trim()) filtros.operacao = operacao.trim()
+  // Sincronizar inputs quando URL muda (ex: ao voltar para a aba). A URL e a
+  // fonte da verdade -- ao restaurar a aba, os inputs locais precisam refletir
+  // os params atuais. setState aqui e proposital (sync URL -> inputs).
+  useEffect(() => {
+    /* eslint-disable react-hooks/set-state-in-effect */
+    setInputDataInicio(dataInicio)
+    setInputDataFim(dataFim)
+    setInputClasseErro(classeErro)
+    setInputOperacao(operacao)
+    setInputCodigo(codigo)
+    /* eslint-enable react-hooks/set-state-in-effect */
+  }, [dataInicio, dataFim, classeErro, operacao, codigo])
 
-    setCarregando(true)
-    setErro(null)
+  const {
+    data: resultadosFiltros,
+    isLoading: loadingFiltros,
+    error: erroFiltros,
+  } = useQuery({
+    queryKey: ['incidentes-filtros', dataInicio, dataFim, classeErro, operacao],
+    queryFn: () => {
+      const filtros: FiltrosIncidente = {}
+      if (dataInicio) filtros.criadoApartirDe = new Date(dataInicio).toISOString()
+      if (dataFim) filtros.criadoAte = new Date(dataFim).toISOString()
+      if (classeErro) filtros.classeErro = classeErro
+      if (operacao) filtros.operacao = operacao
+      return incidenteService.listar(filtros)
+    },
+    enabled: submitted && !codigo,
+  })
+
+  const {
+    data: resultadoCodigo,
+    isLoading: loadingCodigo,
+    error: erroCodigo,
+  } = useQuery({
+    queryKey: ['incidente-codigo', codigo],
+    queryFn: () => incidenteService.buscarPorCodigo(codigo),
+    enabled: submitted && !!codigo,
+    retry: false,
+  })
+
+  function handleBuscarFiltros(e: React.FormEvent) {
+    e.preventDefault()
+    const params = new URLSearchParams()
+    if (inputDataInicio) params.set('dataInicio', inputDataInicio)
+    if (inputDataFim) params.set('dataFim', inputDataFim)
+    if (inputClasseErro.trim()) params.set('classeErro', inputClasseErro.trim())
+    if (inputOperacao.trim()) params.set('operacao', inputOperacao.trim())
+    params.set('submitted', '1')
     setExpandidoId(null)
-    try {
-      const lista = await incidenteService.listar(filtros)
-      setResultados(lista)
-    } catch (e) {
-      setErro(e instanceof Error ? e.message : 'Erro ao listar incidentes.')
-      setResultados(null)
-    } finally {
-      setCarregando(false)
-    }
+    router.push(`/incidentes?${params.toString()}`)
   }
 
-  function limparFiltros() {
-    setDataInicio('')
-    setDataFim('')
-    setClasseErro('')
-    setOperacao('')
-    setResultados(null)
+  function handleBuscarCodigo(e: React.FormEvent) {
+    e.preventDefault()
+    if (!inputCodigo.trim()) return
+    const params = new URLSearchParams()
+    params.set('codigo', inputCodigo.trim())
+    params.set('submitted', '1')
     setExpandidoId(null)
-    setErro(null)
+    router.push(`/incidentes?${params.toString()}`)
   }
 
-  async function buscarPorCodigo() {
-    const termo = codigo.trim()
-    if (!termo) return
-
-    setCarregando(true)
-    setErro(null)
+  function handleLimpar() {
+    setInputDataInicio('')
+    setInputDataFim('')
+    setInputClasseErro('')
+    setInputOperacao('')
+    setInputCodigo('')
     setExpandidoId(null)
-    try {
-      const incidente = await incidenteService.buscarPorCodigo(termo)
-      setResultados([incidente])
-      setExpandidoId(incidente.id)
-    } catch (e) {
-      if (e instanceof ApiError && e.status === 404) {
-        setErro('Codigo nao encontrado.')
-      } else {
-        setErro(e instanceof Error ? e.message : 'Erro ao buscar o incidente.')
-      }
-      setResultados(null)
-    } finally {
-      setCarregando(false)
-    }
+    router.push('/incidentes')
   }
 
   function alternarDetalhe(id: string) {
     setExpandidoId((atual) => (atual === id ? null : id))
   }
+
+  const carregando = loadingFiltros || loadingCodigo
+  const resultados = codigo
+    ? resultadoCodigo
+      ? [resultadoCodigo]
+      : null
+    : (resultadosFiltros ?? null)
+  const erroQuery = erroFiltros || erroCodigo
+  const erroMsg = erroQuery
+    ? erroQuery instanceof ApiError && erroQuery.status === 404
+      ? 'Codigo nao encontrado.'
+      : erroQuery instanceof Error
+        ? erroQuery.message
+        : 'Erro ao buscar.'
+    : null
 
   return (
     <div className="space-y-6">
@@ -107,21 +151,15 @@ export default function IncidentesPage() {
           <CardTitle className="text-base font-semibold">Filtros</CardTitle>
         </CardHeader>
         <CardContent>
-          <form
-            onSubmit={(event) => {
-              event.preventDefault()
-              buscarComFiltros()
-            }}
-            className="space-y-4"
-          >
+          <form onSubmit={handleBuscarFiltros} className="space-y-4">
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-1.5">
                 <Label htmlFor="filtro-inicio">Data/hora inicio</Label>
                 <Input
                   id="filtro-inicio"
                   type="datetime-local"
-                  value={dataInicio}
-                  onChange={(e) => setDataInicio(e.target.value)}
+                  value={inputDataInicio}
+                  onChange={(e) => setInputDataInicio(e.target.value)}
                 />
               </div>
               <div className="space-y-1.5">
@@ -129,8 +167,8 @@ export default function IncidentesPage() {
                 <Input
                   id="filtro-fim"
                   type="datetime-local"
-                  value={dataFim}
-                  onChange={(e) => setDataFim(e.target.value)}
+                  value={inputDataFim}
+                  onChange={(e) => setInputDataFim(e.target.value)}
                 />
               </div>
               <div className="space-y-1.5">
@@ -138,8 +176,8 @@ export default function IncidentesPage() {
                 <Input
                   id="filtro-classe"
                   placeholder="ex: NullPointerException"
-                  value={classeErro}
-                  onChange={(e) => setClasseErro(e.target.value)}
+                  value={inputClasseErro}
+                  onChange={(e) => setInputClasseErro(e.target.value)}
                 />
               </div>
               <div className="space-y-1.5">
@@ -147,8 +185,8 @@ export default function IncidentesPage() {
                 <Input
                   id="filtro-operacao"
                   placeholder="ex: POST /api/transacoes"
-                  value={operacao}
-                  onChange={(e) => setOperacao(e.target.value)}
+                  value={inputOperacao}
+                  onChange={(e) => setInputOperacao(e.target.value)}
                 />
               </div>
             </div>
@@ -159,7 +197,7 @@ export default function IncidentesPage() {
               <Button
                 type="button"
                 variant="outline"
-                onClick={limparFiltros}
+                onClick={handleLimpar}
                 disabled={carregando}
               >
                 Limpar filtros
@@ -177,10 +215,7 @@ export default function IncidentesPage() {
         </CardHeader>
         <CardContent>
           <form
-            onSubmit={(event) => {
-              event.preventDefault()
-              buscarPorCodigo()
-            }}
+            onSubmit={handleBuscarCodigo}
             className="flex flex-col gap-3 sm:flex-row sm:items-end"
           >
             <div className="flex-1 space-y-1.5">
@@ -188,26 +223,26 @@ export default function IncidentesPage() {
               <Input
                 id="busca-codigo"
                 placeholder="ERR-XXXXXXXX"
-                value={codigo}
-                onChange={(e) => setCodigo(e.target.value)}
+                value={inputCodigo}
+                onChange={(e) => setInputCodigo(e.target.value)}
               />
             </div>
-            <Button type="submit" disabled={!codigo.trim() || carregando}>
+            <Button type="submit" disabled={!inputCodigo.trim() || carregando}>
               Ir para incidente
             </Button>
           </form>
         </CardContent>
       </Card>
 
-      {erro && <p className="text-sm text-destructive">{erro}</p>}
+      {erroMsg && <p className="text-sm text-destructive">{erroMsg}</p>}
 
-      {resultados !== null && resultados.length === 0 && (
+      {!erroMsg && resultados !== null && resultados.length === 0 && (
         <p className="text-sm text-muted-foreground">
           Nenhum incidente encontrado para os filtros informados.
         </p>
       )}
 
-      {resultados !== null && resultados.length > 0 && (
+      {!erroMsg && resultados !== null && resultados.length > 0 && (
         <Card>
           <CardContent className="p-0">
             <Table>

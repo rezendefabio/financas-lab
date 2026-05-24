@@ -1,6 +1,7 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 
 vi.mock('@/features/incidente', () => ({
   incidenteService: {
@@ -9,9 +10,25 @@ vi.mock('@/features/incidente', () => ({
   },
 }))
 
+const mockPush = vi.fn()
+let currentParams = new URLSearchParams()
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({ push: mockPush }),
+  usePathname: () => '/incidentes',
+  useSearchParams: () => currentParams,
+}))
+
 import IncidentesPage from './page'
 import { incidenteService } from '@/features/incidente'
-import { ApiError } from '@/shared/types/api'
+
+function makeWrapper() {
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  })
+  return function Wrapper({ children }: { children: React.ReactNode }) {
+    return <QueryClientProvider client={client}>{children}</QueryClientProvider>
+  }
+}
 
 const incidente1 = {
   id: '11111111-1111-1111-1111-111111111111',
@@ -38,24 +55,48 @@ const incidente2 = {
 describe('IncidentesPage', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    currentParams = new URLSearchParams()
   })
 
-  it('C1: nao dispara busca automaticamente no mount', () => {
-    render(<IncidentesPage />)
+  it('C1: nao dispara busca automaticamente no mount (URL sem submitted)', () => {
+    render(<IncidentesPage />, { wrapper: makeWrapper() })
     expect(incidenteService.listar).not.toHaveBeenCalled()
     expect(incidenteService.buscarPorCodigo).not.toHaveBeenCalled()
     expect(screen.queryByRole('table')).not.toBeInTheDocument()
   })
 
-  it('C2: clicar Buscar sem filtros chama listar({}) e exibe resultados', async () => {
+  it('C2: clicar Buscar sem filtros faz push da URL com submitted=1', async () => {
+    const user = userEvent.setup()
+    render(<IncidentesPage />, { wrapper: makeWrapper() })
+
+    await user.click(screen.getByRole('button', { name: 'Buscar' }))
+
+    expect(mockPush).toHaveBeenCalledWith('/incidentes?submitted=1')
+  })
+
+  it('C3: filtrar por classeErro inclui param na URL', async () => {
+    const user = userEvent.setup()
+    render(<IncidentesPage />, { wrapper: makeWrapper() })
+
+    await user.type(
+      screen.getByLabelText('Classe do erro'),
+      'NullPointerException',
+    )
+    await user.click(screen.getByRole('button', { name: 'Buscar' }))
+
+    expect(mockPush).toHaveBeenCalledWith(
+      '/incidentes?classeErro=NullPointerException&submitted=1',
+    )
+  })
+
+  it('C4: URL com submitted=1 dispara listar e exibe resultados', async () => {
+    currentParams = new URLSearchParams('submitted=1')
     vi.mocked(incidenteService.listar).mockResolvedValue([
       incidente1,
       incidente2,
     ])
-    const user = userEvent.setup()
-    render(<IncidentesPage />)
 
-    await user.click(screen.getByRole('button', { name: 'Buscar' }))
+    render(<IncidentesPage />, { wrapper: makeWrapper() })
 
     await waitFor(() => {
       expect(screen.getByText('ERR-ABCD1234')).toBeInTheDocument()
@@ -64,16 +105,13 @@ describe('IncidentesPage', () => {
     expect(incidenteService.listar).toHaveBeenCalledWith({})
   })
 
-  it('C3: filtrar por classeErro envia o filtro ao service', async () => {
-    vi.mocked(incidenteService.listar).mockResolvedValue([incidente1])
-    const user = userEvent.setup()
-    render(<IncidentesPage />)
-
-    await user.type(
-      screen.getByLabelText('Classe do erro'),
-      'NullPointerException',
+  it('C5: URL com classeErro dispara listar com o filtro', async () => {
+    currentParams = new URLSearchParams(
+      'classeErro=NullPointerException&submitted=1',
     )
-    await user.click(screen.getByRole('button', { name: 'Buscar' }))
+    vi.mocked(incidenteService.listar).mockResolvedValue([incidente1])
+
+    render(<IncidentesPage />, { wrapper: makeWrapper() })
 
     await waitFor(() => {
       expect(incidenteService.listar).toHaveBeenCalledWith({
@@ -82,14 +120,14 @@ describe('IncidentesPage', () => {
     })
   })
 
-  it('C4: clicar numa linha da tabela expande o stack trace', async () => {
+  it('C6: clicar numa linha da tabela expande o stack trace', async () => {
+    currentParams = new URLSearchParams('submitted=1')
     vi.mocked(incidenteService.listar).mockResolvedValue([incidente1])
     const user = userEvent.setup()
-    render(<IncidentesPage />)
 
-    await user.click(screen.getByRole('button', { name: 'Buscar' }))
+    render(<IncidentesPage />, { wrapper: makeWrapper() })
+
     const linha = await screen.findByText('ERR-ABCD1234')
-
     expect(
       screen.queryByText(/at com\.financas\.App\.run/),
     ).not.toBeInTheDocument()
@@ -101,30 +139,37 @@ describe('IncidentesPage', () => {
     ).toBeInTheDocument()
   })
 
-  it('C5: busca rapida por codigo chama buscarPorCodigo e exibe o detalhe', async () => {
+  it('C7: URL com codigo dispara buscarPorCodigo e exibe o detalhe', async () => {
+    currentParams = new URLSearchParams('codigo=ERR-ABCD1234&submitted=1')
     vi.mocked(incidenteService.buscarPorCodigo).mockResolvedValue(incidente1)
-    const user = userEvent.setup()
-    render(<IncidentesPage />)
 
-    await user.type(screen.getByLabelText('Codigo'), 'ERR-ABCD1234')
-    await user.click(screen.getByRole('button', { name: 'Ir para incidente' }))
+    render(<IncidentesPage />, { wrapper: makeWrapper() })
 
     await waitFor(() => {
-      expect(
-        screen.getByText(/at com\.financas\.App\.run/),
-      ).toBeInTheDocument()
+      expect(screen.getByText('ERR-ABCD1234')).toBeInTheDocument()
     })
     expect(incidenteService.buscarPorCodigo).toHaveBeenCalledWith(
       'ERR-ABCD1234',
     )
   })
 
-  it('C6: resultado vazio exibe mensagem de nenhum incidente encontrado', async () => {
-    vi.mocked(incidenteService.listar).mockResolvedValue([])
+  it('C8: busca rapida faz push da URL com codigo e submitted=1', async () => {
     const user = userEvent.setup()
-    render(<IncidentesPage />)
+    render(<IncidentesPage />, { wrapper: makeWrapper() })
 
-    await user.click(screen.getByRole('button', { name: 'Buscar' }))
+    await user.type(screen.getByLabelText('Codigo'), 'ERR-ABCD1234')
+    await user.click(screen.getByRole('button', { name: 'Ir para incidente' }))
+
+    expect(mockPush).toHaveBeenCalledWith(
+      '/incidentes?codigo=ERR-ABCD1234&submitted=1',
+    )
+  })
+
+  it('C9: resultado vazio exibe mensagem de nenhum incidente encontrado', async () => {
+    currentParams = new URLSearchParams('submitted=1')
+    vi.mocked(incidenteService.listar).mockResolvedValue([])
+
+    render(<IncidentesPage />, { wrapper: makeWrapper() })
 
     await waitFor(() => {
       expect(
@@ -133,5 +178,17 @@ describe('IncidentesPage', () => {
         ),
       ).toBeInTheDocument()
     })
+  })
+
+  it('C10: limpar filtros faz push para /incidentes sem params', async () => {
+    currentParams = new URLSearchParams('classeErro=Foo&submitted=1')
+    vi.mocked(incidenteService.listar).mockResolvedValue([])
+    const user = userEvent.setup()
+
+    render(<IncidentesPage />, { wrapper: makeWrapper() })
+
+    await user.click(screen.getByRole('button', { name: 'Limpar filtros' }))
+
+    expect(mockPush).toHaveBeenCalledWith('/incidentes')
   })
 })
