@@ -3,12 +3,16 @@ import { useEffect } from 'react'
 import { useSidebar } from '@/shared/components/ui/sidebar'
 
 /**
- * Auto-colapsa/expande a sidebar conforme o breakpoint:
- * - < 1280px: colapsa para icon mode
- * - >= 1280px: expande
+ * Auto-colapsa/expande a sidebar conforme tres faixas de viewport (ADR-014):
+ * - >= 1280px (desktop wide): respeita estado persistido (cookie); nao age
+ * - 1024-1279px (tablet landscape / desktop estreito): colapsa para icon mode
+ * - 768-1023px (tablet portrait): colapsa (oculta no desktop layout; shadcn
+ *   nao oferece API para ocultar completamente em desktop, entao usa
+ *   setOpen(false) -- icon mode permanece visivel como limitacao do componente)
+ * - < 768px: nao age -- mobile usa Sheet via isMobile
  *
- * Respeita mudancas manuais do usuario: o hook so age quando a janela
- * cruza o limiar de 1280px, nao em cada render.
+ * Respeita mudancas manuais do usuario: o hook so age quando a janela cruza
+ * algum dos dois limiares, nao em cada render.
  */
 export function useBreakpointSidebarCollapse() {
   const { setOpen, isMobile } = useSidebar()
@@ -16,18 +20,24 @@ export function useBreakpointSidebarCollapse() {
   useEffect(() => {
     if (isMobile) return // mobile usa Sheet, nao icon mode
 
-    const mq = window.matchMedia('(min-width: 1280px)')
+    const mqWide = window.matchMedia('(min-width: 1280px)')
+    const mqTablet = window.matchMedia('(min-width: 1024px)')
 
-    const handler = (e: MediaQueryListEvent | MediaQueryList) => {
-      setOpen(e.matches) // >= 1280px: abrir; < 1280px: colapsar para icon
+    const apply = () => {
+      // >= 1280px: respeita estado persistido (cookie); abaixo disso colapsa.
+      // 768-1023px se comporta como 1024-1279px (ambos icon mode) por
+      // limitacao do shadcn -- sem API para ocultar completamente em desktop.
+      if (!mqWide.matches) {
+        setOpen(false)
+      }
     }
 
-    // Colapsa automaticamente em telas pequenas na montagem.
-    // Nao forca abertura em telas grandes -- respeita o estado persistido (cookie).
-    if (!mq.matches) {
-      setOpen(false)
+    apply()
+    mqWide.addEventListener('change', apply)
+    mqTablet.addEventListener('change', apply)
+    return () => {
+      mqWide.removeEventListener('change', apply)
+      mqTablet.removeEventListener('change', apply)
     }
-    mq.addEventListener('change', handler)
-    return () => mq.removeEventListener('change', handler)
   }, [setOpen, isMobile])
 }
