@@ -5,6 +5,7 @@ import { useState } from 'react'
 import { ArrowLeft } from 'lucide-react'
 import { anotacaoService } from '@/features/anotacoes/services/anotacao-service'
 import type { PrioridadeAnotacao, TipoAnotacao } from '@/features/anotacoes/types/anotacao'
+import { AnexoList, AnexoUpload } from '@/features/anexo'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card'
 import { Badge } from '@/shared/components/ui/badge'
 import { Button } from '@/shared/components/ui/button'
@@ -167,6 +168,16 @@ export default function AnotacaoDetalhePage() {
                 </div>
               )}
             </div>
+          </CardContent>
+        </Card>
+
+        <Card className="mt-6">
+          <CardHeader>
+            <CardTitle>Anexos</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <AnexoUpload entidadeTipo="anotacao" entidadeId={id} />
+            <AnexoList entidadeTipo="anotacao" entidadeId={id} className="mt-3" />
           </CardContent>
         </Card>
       </div>
