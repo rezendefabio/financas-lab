@@ -1,6 +1,6 @@
 'use client'
 import { Suspense, useEffect, useRef } from 'react'
-import { useRouter, usePathname } from 'next/navigation'
+import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 import { useAuth } from '@/features/auth/hooks/use-auth'
 import {
   SidebarProvider,
@@ -66,21 +66,60 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
   )
 }
 
+/**
+ * Rastreia o path completo (pathname + search params) da aba ativa e
+ * persiste em useTabsStore via updateTabPath.
+ *
+ * Componente separado porque useSearchParams() exige fronteira Suspense
+ * no Next.js App Router quando usado em layouts.
+ */
+function TabPathTracker() {
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
+  const fullPath = searchParams.toString()
+    ? `${pathname}?${searchParams.toString()}`
+    : pathname
+
+  const activeId = useTabsStore((s) => s.activeId)
+  const updateTabPath = useTabsStore((s) => s.updateTabPath)
+  const clearDraft = useDraftFormsStore((s) => s.clear)
+
+  const prevActiveIdRef = useRef(activeId)
+  const prevFullPathRef = useRef(fullPath)
+  const tabSwitchPendingRef = useRef(false)
+
+  useEffect(() => {
+    const sameTab = prevActiveIdRef.current === activeId
+    const prevPath = prevFullPathRef.current
+    prevActiveIdRef.current = activeId
+    prevFullPathRef.current = fullPath
+
+    if (!sameTab) {
+      tabSwitchPendingRef.current = true
+      return
+    }
+
+    if (!activeId || prevPath === fullPath) return
+
+    updateTabPath(activeId, fullPath)
+
+    if (tabSwitchPendingRef.current) {
+      tabSwitchPendingRef.current = false
+    } else {
+      // Navegacao explicita na aba (nao troca de aba) -- descarta rascunho do path anterior
+      clearDraft(prevPath)
+    }
+  }, [fullPath, activeId, updateTabPath, clearDraft])
+
+  return null
+}
+
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter()
   const pathname = usePathname()
   const auth = useAuth()
 
   const openTab = useTabsStore((state) => state.openTab)
-  const activeId = useTabsStore((state) => state.activeId)
-  const updateTabPath = useTabsStore((state) => state.updateTabPath)
-  const clearDraft = useDraftFormsStore((state) => state.clear)
-
-  // Refs para distinguir troca de aba de navegacao dentro da aba.
-  const prevActiveIdRef = useRef(activeId)
-  const prevPathnameRef = useRef(pathname)
-  // Sinaliza que o proximo pathname vem do TabBar (troca de aba), nao do usuario.
-  const tabSwitchPendingRef = useRef(false)
 
   useEffect(() => {
     if (!auth.loggedIn) {
@@ -98,41 +137,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // Rastreia o path atual por aba e descarta rascunho quando o usuario navega
-  // voluntariamente para fora do formulario dentro da mesma aba.
-  //
-  // O efeito pode disparar DUAS vezes numa troca de aba:
-  //   1a passagem: activeId muda (sameTab=false) -> atualiza refs, sinaliza pendente
-  //   2a passagem: pathname muda por router.replace do TabBar (sameTab=true agora) ->
-  //     sem tabSwitchPendingRef o codigo identificaria errado como navegacao na aba
-  //     e apagaria o rascunho. O flag evita isso.
-  useEffect(() => {
-    const sameTab = prevActiveIdRef.current === activeId
-    const prevPathname = prevPathnameRef.current
-    prevActiveIdRef.current = activeId
-    prevPathnameRef.current = pathname
-
-    if (!sameTab) {
-      // Troca de aba: proximo pathname sera do TabBar, nao do usuario.
-      tabSwitchPendingRef.current = true
-      return
-    }
-
-    if (!activeId || prevPathname === pathname) return
-
-    updateTabPath(activeId, pathname)
-
-    if (tabSwitchPendingRef.current) {
-      // Pathname mudou como efeito da troca de aba -- preserva rascunho.
-      tabSwitchPendingRef.current = false
-    } else {
-      // Navegacao explicita dentro da aba (botao voltar, cancelar) -- descarta.
-      clearDraft(prevPathname)
-    }
-  }, [pathname, activeId, updateTabPath, clearDraft])
-
   return (
     <SidebarProvider>
+      <Suspense fallback={null}>
+        <TabPathTracker />
+      </Suspense>
       <DashboardShell>{children}</DashboardShell>
     </SidebarProvider>
   )
