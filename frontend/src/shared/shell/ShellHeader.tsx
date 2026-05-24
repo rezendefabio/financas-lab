@@ -9,7 +9,7 @@
  */
 'use client'
 import { useRouter } from 'next/navigation'
-import { LogOut } from 'lucide-react'
+import { Bell, LogOut } from 'lucide-react'
 import { Separator } from '@/shared/components/ui/separator'
 import { SidebarTrigger, useSidebar } from '@/shared/components/ui/sidebar'
 import {
@@ -23,6 +23,7 @@ import {
 } from '@/shared/components/ui/dropdown-menu'
 import { useAuth } from '@/features/auth/hooks/use-auth'
 import { useCurrentUser } from '@/features/auth/hooks/use-current-user'
+import { useNotificacoes } from '@/shared/hooks/useNotificacoes'
 import { useTabsStore } from './tabs-store'
 
 export function ShellHeader() {
@@ -31,6 +32,8 @@ export function ShellHeader() {
   const { logout } = useAuth()
   const { email, initials } = useCurrentUser()
   const tabCount = useTabsStore((state) => state.tabs.length)
+  const { notificacoes } = useNotificacoes()
+  const notificacoesCount = notificacoes.length
 
   const handleLogout = () => {
     logout()
@@ -49,6 +52,18 @@ export function ShellHeader() {
           <span className="rounded-full bg-primary px-2 py-0.5 text-xs text-primary-foreground">
             {tabCount} abas
           </span>
+        )}
+        {notificacoesCount > 0 && (
+          <div
+            className="relative"
+            role="status"
+            aria-label={`${notificacoesCount} notificacoes ativas`}
+          >
+            <Bell className="h-5 w-5 text-muted-foreground" />
+            <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-white">
+              {notificacoesCount > 9 ? '9+' : notificacoesCount}
+            </span>
+          </div>
         )}
         <DropdownMenu>
           <DropdownMenuTrigger
