@@ -211,13 +211,23 @@ export function TabBar() {
     const targetPath =
       activeTab?.currentPath ?? targetScreen?.path ?? window.location.pathname
 
-    const params = new URLSearchParams()
+    // Separar pathname e query string existente do targetPath.
+    // targetPath pode conter params de pagina (ex: /incidentes?submitted=1);
+    // concatenar ?tabs=... diretamente produziria URL invalida com dois '?'.
+    const qIdx = targetPath.indexOf('?')
+    const targetPathname = qIdx >= 0 ? targetPath.slice(0, qIdx) : targetPath
+    const existingSearch = qIdx >= 0 ? targetPath.slice(qIdx + 1) : ''
+    const merged = new URLSearchParams(existingSearch)
+    // Remover eventuais tabs/active residuais do currentPath (saneamento)
+    merged.delete('tabs')
+    merged.delete('active')
+    // Adicionar params do sistema de abas
     if (tabs.length > 0) {
-      params.set('tabs', tabs.map((tab) => tab.screenCode).join(','))
-      if (activeTab) params.set('active', activeTab.screenCode)
+      merged.set('tabs', tabs.map((tab) => tab.screenCode).join(','))
+      if (activeTab) merged.set('active', activeTab.screenCode)
     }
-    const query = params.toString()
-    const url = query ? `${targetPath}?${query}` : targetPath
+    const finalQuery = merged.toString()
+    const url = finalQuery ? `${targetPathname}?${finalQuery}` : targetPathname
     router.replace(url)
     // router excluido propositalmente: sua referencia muda apos router.push(),
     // o que re-dispararia este efeito e reverteria a navegacao para /novo.
