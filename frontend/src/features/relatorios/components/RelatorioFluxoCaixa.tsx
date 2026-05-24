@@ -1,6 +1,6 @@
 import { Document, Page, Text, View, StyleSheet, PDFDownloadLink } from '@react-pdf/renderer'
 import { formatBRL, formatDate } from '@/shared/lib/formatters'
-import type { FluxoCaixa } from '@/features/dashboard'
+import type { FluxoCaixa } from '@/shared/types/fluxo-caixa'
 
 // Estilos -- nunca usar CSS classes, apenas StyleSheet.create()
 const styles = StyleSheet.create({
