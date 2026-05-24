@@ -1,8 +1,1 @@
-export interface FluxoCaixa {
-  ano: number
-  mes: number
-  totalReceitas: number
-  totalDespesas: number
-  saldo: number
-  moeda: string
-}
+export type { FluxoCaixa } from '@/shared/types/fluxo-caixa'

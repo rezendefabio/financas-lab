@@ -48,6 +48,18 @@ vi.mock('@/features/relatorios/components/RelatorioGastosPorCategoria', () => ({
   ),
 }))
 
+vi.mock('@/features/relatorios/components/RelatorioEvolucaoSaldo', () => ({
+  PDFDownloadLinkEvolucaoSaldo: () => (
+    <button type="button">Baixar PDF Evolucao</button>
+  ),
+}))
+
+vi.mock('@/features/relatorios/components/RelatorioFluxoCaixa', () => ({
+  PDFDownloadLinkFluxoCaixa: () => (
+    <button type="button">Baixar PDF Fluxo</button>
+  ),
+}))
+
 import RelatoriosPage from './page'
 import { relatorioService } from '@/features/relatorios'
 import { getFluxoCaixa } from '@/features/dashboard'
@@ -193,7 +205,27 @@ describe('RelatoriosPage', () => {
 
     await waitFor(() => {
       expect(
-        screen.getByRole('button', { name: /baixar pdf/i }),
+        screen.getByRole('button', { name: /baixar pdf 2026-/i }),
+      ).toBeInTheDocument()
+    })
+  })
+
+  it('renderiza o botao de download do PDF de evolucao de saldo', async () => {
+    render(<RelatoriosPage />, { wrapper: makeWrapper() })
+
+    await waitFor(() => {
+      expect(
+        screen.getByRole('button', { name: /baixar pdf evolucao/i }),
+      ).toBeInTheDocument()
+    })
+  })
+
+  it('renderiza o botao de download do PDF de fluxo de caixa', async () => {
+    render(<RelatoriosPage />, { wrapper: makeWrapper() })
+
+    await waitFor(() => {
+      expect(
+        screen.getByRole('button', { name: /baixar pdf fluxo/i }),
       ).toBeInTheDocument()
     })
   })

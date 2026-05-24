@@ -10,3 +10,11 @@ export { GastosPorCategoriaChart } from './components/GastosPorCategoriaChart'
 export { EvolucaoSaldoChart } from './components/EvolucaoSaldoChart'
 export { FluxoCaixaResumo } from './components/FluxoCaixaResumo'
 export { RelatorioGastosPorCategoria } from './components/RelatorioGastosPorCategoria'
+export {
+  RelatorioEvolucaoSaldo,
+  PDFDownloadLinkEvolucaoSaldo,
+} from './components/RelatorioEvolucaoSaldo'
+export {
+  RelatorioFluxoCaixa,
+  PDFDownloadLinkFluxoCaixa,
+} from './components/RelatorioFluxoCaixa'

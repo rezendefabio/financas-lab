@@ -27,6 +27,12 @@ vi.mock('@/features/auth/hooks/use-current-user', () => ({
   useCurrentUser: () => mockCurrentUser,
 }))
 
+let mockNotificacoes: Array<{ id: string; tipo: string; titulo: string; descricao: string }> = []
+
+vi.mock('@/shared/hooks/useNotificacoes', () => ({
+  useNotificacoes: () => ({ notificacoes: mockNotificacoes, isLoading: false }),
+}))
+
 import { ShellHeader } from './ShellHeader'
 import { useTabsStore } from './tabs-store'
 
@@ -42,6 +48,7 @@ describe('ShellHeader', () => {
   beforeEach(() => {
     mockIsMobile = false
     mockCurrentUser = { email: 'fabio@test.com', initials: 'F' }
+    mockNotificacoes = []
     mockLogout.mockClear()
     mockPush.mockClear()
     useTabsStore.setState({ tabs: [], activeId: null })
@@ -103,6 +110,34 @@ describe('ShellHeader', () => {
     // Espera o dropdown abrir (item "Sair" presente) antes de afirmar ausencia.
     await screen.findByRole('menuitem', { name: /sair/i })
     expect(screen.queryByText(/@/)).not.toBeInTheDocument()
+  })
+
+  it('nao mostra badge de notificacoes quando lista esta vazia', () => {
+    mockNotificacoes = []
+    render(<ShellHeader />)
+    expect(screen.queryByRole('status', { name: /notificacoes ativas/i })).not.toBeInTheDocument()
+  })
+
+  it('mostra badge com contagem quando ha notificacoes', () => {
+    mockNotificacoes = [
+      { id: 'n1', tipo: 'orcamento_excedido', titulo: 't', descricao: 'd' },
+      { id: 'n2', tipo: 'meta_vencendo', titulo: 't', descricao: 'd' },
+    ]
+    render(<ShellHeader />)
+    const badge = screen.getByRole('status', { name: /2 notificacoes ativas/i })
+    expect(badge).toHaveTextContent('2')
+  })
+
+  it('mostra "9+" quando ha mais de 9 notificacoes', () => {
+    mockNotificacoes = Array.from({ length: 12 }, (_, i) => ({
+      id: `n${i}`,
+      tipo: 'orcamento_excedido',
+      titulo: 't',
+      descricao: 'd',
+    }))
+    render(<ShellHeader />)
+    const badge = screen.getByRole('status', { name: /12 notificacoes ativas/i })
+    expect(badge).toHaveTextContent('9+')
   })
 
   it('clicar em "Sair" no dropdown faz logout e navega para /login', async () => {
