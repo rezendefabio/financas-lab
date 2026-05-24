@@ -43,6 +43,22 @@ const RelatorioGastosPorCategoriaDownload = dynamic(
   { ssr: false, loading: () => <span>Carregando PDF...</span> },
 )
 
+const RelatorioEvolucaoSaldoDownload = dynamic(
+  () =>
+    import('@/features/relatorios/components/RelatorioEvolucaoSaldo').then(
+      (m) => m.PDFDownloadLinkEvolucaoSaldo,
+    ),
+  { ssr: false, loading: () => <span>Carregando PDF...</span> },
+)
+
+const RelatorioFluxoCaixaDownload = dynamic(
+  () =>
+    import('@/features/relatorios/components/RelatorioFluxoCaixa').then(
+      (m) => m.PDFDownloadLinkFluxoCaixa,
+    ),
+  { ssr: false, loading: () => <span>Carregando PDF...</span> },
+)
+
 const TODAS_CONTAS = '__todas__'
 
 function primeiroDiaDoMes(): string {
@@ -165,6 +181,11 @@ export default function RelatoriosPage() {
           <p className="text-sm text-destructive">Erro ao carregar evolucao do saldo.</p>
         )}
         {evolucao.data && <EvolucaoSaldoChart data={evolucao.data} />}
+        {evolucao.data && (
+          <div className="flex justify-end mt-2">
+            <RelatorioEvolucaoSaldoDownload data={evolucao.data} />
+          </div>
+        )}
       </section>
 
       <Card>
@@ -201,6 +222,11 @@ export default function RelatoriosPage() {
             <p className="text-sm text-destructive">Erro ao carregar fluxo de caixa.</p>
           )}
           {fluxo.data && <FluxoCaixaResumo data={fluxo.data} isLoading={fluxo.isLoading} />}
+          {fluxo.data && (
+            <div className="flex justify-end mt-2">
+              <RelatorioFluxoCaixaDownload data={fluxo.data} />
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
