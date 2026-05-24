@@ -73,7 +73,7 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
  * Componente separado porque useSearchParams() exige fronteira Suspense
  * no Next.js App Router quando usado em layouts.
  */
-function TabPathTracker() {
+export function TabPathTracker() {
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const fullPath = searchParams.toString()
