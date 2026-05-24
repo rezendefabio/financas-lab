@@ -8,8 +8,9 @@
  * `globals.css` para esconder o shell na impressao.
  */
 'use client'
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Bell, LogOut } from 'lucide-react'
+import { Bell, LogOut, X } from 'lucide-react'
 import { Separator } from '@/shared/components/ui/separator'
 import { SidebarTrigger, useSidebar } from '@/shared/components/ui/sidebar'
 import {
@@ -33,7 +34,19 @@ export function ShellHeader() {
   const { email, initials } = useCurrentUser()
   const tabCount = useTabsStore((state) => state.tabs.length)
   const { notificacoes } = useNotificacoes()
-  const notificacoesCount = notificacoes.length
+
+  // IDs dispensados na sessao atual (reseta ao recarregar a pagina)
+  const [dispensados, setDispensados] = useState<Set<string>>(new Set())
+  const visiveis = notificacoes.filter((n) => !dispensados.has(n.id))
+  const count = visiveis.length
+
+  function dispensar(id: string) {
+    setDispensados((prev) => new Set([...prev, id]))
+  }
+
+  function dispensarTodas() {
+    setDispensados(new Set(notificacoes.map((n) => n.id)))
+  }
 
   const handleLogout = () => {
     logout()
@@ -53,33 +66,50 @@ export function ShellHeader() {
             {tabCount} abas
           </span>
         )}
-        {notificacoesCount > 0 && (
+        {count > 0 && (
           <DropdownMenu>
             <DropdownMenuTrigger
               render={
                 <button
                   type="button"
-                  aria-label={`${notificacoesCount} notificacoes ativas`}
+                  aria-label={`${count} notificacoes ativas`}
                   className="relative flex items-center justify-center rounded p-1 hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 />
               }
             >
               <Bell className="h-5 w-5 text-muted-foreground" />
               <span className="absolute top-0 right-0 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-white">
-                {notificacoesCount > 9 ? '9+' : notificacoesCount}
+                {count > 9 ? '9+' : count}
               </span>
             </DropdownMenuTrigger>
-            <DropdownMenuContent side="bottom" align="end" className="w-72">
+            <DropdownMenuContent side="bottom" align="end" className="w-80">
               <DropdownMenuGroup>
                 <DropdownMenuLabel>Notificacoes</DropdownMenuLabel>
               </DropdownMenuGroup>
               <DropdownMenuSeparator />
-              {notificacoes.map((n) => (
-                <DropdownMenuItem key={n.id} className="flex flex-col items-start gap-0.5 py-2">
-                  <span className="text-sm font-medium leading-none">{n.titulo}</span>
-                  <span className="text-xs text-muted-foreground">{n.descricao}</span>
-                </DropdownMenuItem>
+              {visiveis.map((n) => (
+                <div key={n.id} className="flex items-start gap-1 px-1 py-0.5">
+                  <div className="flex flex-1 flex-col gap-0.5 px-1 py-1.5">
+                    <span className="text-sm font-medium leading-none">{n.titulo}</span>
+                    <span className="text-xs text-muted-foreground">{n.descricao}</span>
+                  </div>
+                  <button
+                    type="button"
+                    aria-label="Dispensar notificacao"
+                    onClick={() => dispensar(n.id)}
+                    className="mt-1 shrink-0 rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
               ))}
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onClick={dispensarTodas}
+                className="justify-center text-xs text-muted-foreground"
+              >
+                Dispensar todas
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         )}
