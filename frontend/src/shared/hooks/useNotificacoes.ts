@@ -9,13 +9,14 @@
  *   3. meta_vencendo      -- meta EM_ANDAMENTO com prazo em <= 7 dias
  *   4. meta_vencida       -- meta EM_ANDAMENTO com prazo < hoje
  *
- * Nao faz polling -- depende do staleTime do TanStack Query.
+ * Compoe hooks de leitura de cada feature (ADR-013: isolamento de bounded
+ * context) -- nao importa services de orcamentos/metas diretamente.
  */
 import { useMemo } from 'react'
-import { useQueries, useQuery } from '@tanstack/react-query'
-import { orcamentoService } from '@/features/orcamentos/services/orcamento-service'
+import { useQuery } from '@tanstack/react-query'
+import { useOrcamentosAtivosComProgresso } from '@/features/orcamentos/hooks/useOrcamentosAtivosComProgresso'
+import { useMetasEmAndamento } from '@/features/metas/hooks/useMetasEmAndamento'
 import { categoriasService } from '@/features/categorias/services/categorias.service'
-import { metaService } from '@/features/metas/services/meta-service'
 
 export type TipoNotificacao =
   | 'orcamento_atencao'
@@ -30,19 +31,6 @@ export interface Notificacao {
   descricao: string
 }
 
-function pad2(valor: number): string {
-  return valor.toString().padStart(2, '0')
-}
-
-function mesAtualYYYYMM(): string {
-  const hoje = new Date()
-  return `${hoje.getFullYear()}-${pad2(hoje.getMonth() + 1)}`
-}
-
-/**
- * Calcula dias entre `hoje` (00:00) e `data` (00:00).
- * Resultado positivo: `data` no futuro. Negativo: passada.
- */
 function diasAte(data: Date, hoje: Date): number {
   const MS_POR_DIA = 1000 * 60 * 60 * 24
   const a = new Date(data.getFullYear(), data.getMonth(), data.getDate())
@@ -54,40 +42,14 @@ export function useNotificacoes(): {
   notificacoes: Notificacao[]
   isLoading: boolean
 } {
-  const mesAtual = mesAtualYYYYMM()
-
-  const { data: orcamentos, isLoading: isLoadingOrcamentos } = useQuery({
-    queryKey: ['orcamentos'],
-    queryFn: () => orcamentoService.listar(),
-  })
+  const { itens: orcamentosComProgresso, isLoading: isLoadingOrcamentos } =
+    useOrcamentosAtivosComProgresso()
+  const { metas, isLoading: isLoadingMetas } = useMetasEmAndamento()
 
   const { data: categorias } = useQuery({
     queryKey: ['categorias'],
     queryFn: () => categoriasService.listar(),
   })
-
-  const { data: metas, isLoading: isLoadingMetas } = useQuery({
-    queryKey: ['metas'],
-    queryFn: () => metaService.listar(),
-  })
-
-  const orcamentosAtivos = useMemo(
-    () =>
-      (orcamentos ?? []).filter(
-        (o) => o.ativo && (o.mesAno ?? '').startsWith(mesAtual),
-      ),
-    [orcamentos, mesAtual],
-  )
-
-  const progressoQueries = useQueries({
-    queries: orcamentosAtivos.map((orcamento) => ({
-      queryKey: ['orcamento-progresso', orcamento.id],
-      queryFn: () => orcamentoService.progresso(orcamento.id),
-      enabled: !!orcamento.id,
-    })),
-  })
-
-  const isLoadingProgresso = progressoQueries.some((q) => q.isLoading)
 
   const notificacoes = useMemo<Notificacao[]>(() => {
     const lista: Notificacao[] = []
@@ -98,9 +60,7 @@ export function useNotificacoes(): {
     }
 
     // Orcamentos
-    for (let i = 0; i < orcamentosAtivos.length; i += 1) {
-      const orcamento = orcamentosAtivos[i]
-      const progresso = progressoQueries[i]?.data
+    for (const { orcamento, progresso } of orcamentosComProgresso) {
       if (!progresso) continue
 
       const nome =
@@ -126,11 +86,9 @@ export function useNotificacoes(): {
 
     // Metas
     const hoje = new Date()
-    for (const meta of metas ?? []) {
-      if (meta.status !== 'EM_ANDAMENTO') continue
+    for (const meta of metas) {
       if (!meta.prazo) continue
 
-      // `prazo` vem como string ISO "YYYY-MM-DD".
       const partes = meta.prazo.slice(0, 10).split('-')
       if (partes.length !== 3) continue
       const ano = Number(partes[0])
@@ -165,10 +123,10 @@ export function useNotificacoes(): {
     }
 
     return lista
-  }, [orcamentosAtivos, progressoQueries, metas, categorias])
+  }, [orcamentosComProgresso, metas, categorias])
 
   return {
     notificacoes,
-    isLoading: isLoadingOrcamentos || isLoadingMetas || isLoadingProgresso,
+    isLoading: isLoadingOrcamentos || isLoadingMetas,
   }
 }
