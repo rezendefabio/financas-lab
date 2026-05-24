@@ -131,6 +131,18 @@ completamente autonoma, sem pedir aprovacao ao operador.
 
 {CONTEUDO_DO_ARQUIVO}
 
+## Regra de CWD antes de check-front.ps1
+
+`check-front.ps1` EXIGE que o CWD seja a raiz do repositorio.
+SEMPRE executar o guard abaixo imediatamente antes de qualquer chamada a `check-front.ps1`:
+
+```powershell
+powershell -NoProfile -Command "Set-Location (git rev-parse --show-toplevel); .\scripts\check-front.ps1"
+```
+
+Nunca chamar `.\scripts\check-front.ps1` diretamente sem o `Set-Location` -- causa
+"cannot find path" quando o CWD e um subdiretorio (ex: frontend/).
+
 ## Contexto do ambiente
 
 - Voce esta num worktree git isolado do repositorio financas-lab.
