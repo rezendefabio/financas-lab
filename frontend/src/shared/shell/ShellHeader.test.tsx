@@ -140,6 +140,13 @@ describe('ShellHeader', () => {
     expect(badge).toHaveTextContent('9+')
   })
 
+  it('clicar em "Meu Perfil" no dropdown navega para /perfil', async () => {
+    render(<ShellHeader />)
+    await userEvent.click(screen.getByRole('button', { name: 'Menu do usuario' }))
+    await userEvent.click(await screen.findByRole('menuitem', { name: /meu perfil/i }))
+    expect(mockPush).toHaveBeenCalledWith('/perfil')
+  })
+
   it('clicar em "Sair" no dropdown faz logout e navega para /login', async () => {
     render(<ShellHeader />)
     await userEvent.click(screen.getByRole('button', { name: 'Menu do usuario' }))

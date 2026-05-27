@@ -164,6 +164,14 @@ export const screens: ScreenDefinition[] = [
     icon: 'alert-triangle',
     permissions: [],
   },
+  {
+    code: 'USR-PRF-001',
+    title: 'Meu Perfil',
+    path: '/perfil',
+    menuPath: ['Conta', 'Meu Perfil'],
+    icon: 'user-circle',
+    permissions: [],
+  },
 ]
 
 /** Retorna todas as telas registradas. */

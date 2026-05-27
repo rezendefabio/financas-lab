@@ -10,7 +10,7 @@
 'use client'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Bell, LogOut, X } from 'lucide-react'
+import { Bell, LogOut, UserCircle, X } from 'lucide-react'
 import { Separator } from '@/shared/components/ui/separator'
 import { SidebarTrigger, useSidebar } from '@/shared/components/ui/sidebar'
 import {
@@ -136,6 +136,14 @@ export function ShellHeader() {
                 <DropdownMenuSeparator />
               </>
             )}
+            <DropdownMenuItem
+              onClick={() => router.push('/perfil')}
+              className="cursor-pointer gap-2"
+            >
+              <UserCircle className="h-4 w-4" />
+              Meu Perfil
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
             <DropdownMenuItem
               onClick={handleLogout}
               className="cursor-pointer gap-2"
