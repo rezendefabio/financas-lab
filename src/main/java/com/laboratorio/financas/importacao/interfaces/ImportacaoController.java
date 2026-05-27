@@ -1,6 +1,8 @@
 package com.laboratorio.financas.importacao.interfaces;
 
+import com.laboratorio.financas.importacao.application.AnalisarCsvUseCase;
 import com.laboratorio.financas.importacao.application.ImportarTransacoesCsvUseCase;
+import com.laboratorio.financas.importacao.interfaces.dto.AnaliseImportacaoResponse;
 import com.laboratorio.financas.importacao.interfaces.dto.ImportacaoResponse;
 import java.io.IOException;
 import org.springframework.http.HttpStatus;
@@ -17,9 +19,13 @@ import org.springframework.web.multipart.MultipartFile;
 public class ImportacaoController {
 
     private final ImportarTransacoesCsvUseCase useCase;
+    private final AnalisarCsvUseCase analisarUseCase;
 
-    public ImportacaoController(ImportarTransacoesCsvUseCase useCase) {
+    public ImportacaoController(
+            ImportarTransacoesCsvUseCase useCase,
+            AnalisarCsvUseCase analisarUseCase) {
         this.useCase = useCase;
+        this.analisarUseCase = analisarUseCase;
     }
 
     @PostMapping(value = "/csv", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -29,5 +35,14 @@ public class ImportacaoController {
         byte[] conteudo = arquivo.getBytes();
         ImportarTransacoesCsvUseCase.Resultado resultado = useCase.importar(conteudo);
         return ImportacaoResponse.fromResultado(resultado);
+    }
+
+    @PostMapping(value = "/analisar", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @ResponseStatus(HttpStatus.OK)
+    public AnaliseImportacaoResponse analisar(
+            @RequestParam("arquivo") MultipartFile arquivo) throws IOException {
+        byte[] conteudo = arquivo.getBytes();
+        AnalisarCsvUseCase.Resultado resultado = analisarUseCase.analisar(conteudo);
+        return AnaliseImportacaoResponse.fromResultado(resultado);
     }
 }
