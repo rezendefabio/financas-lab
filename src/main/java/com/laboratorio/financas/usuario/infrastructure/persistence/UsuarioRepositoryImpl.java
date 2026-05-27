@@ -3,6 +3,7 @@ package com.laboratorio.financas.usuario.infrastructure.persistence;
 import com.laboratorio.financas.usuario.domain.Usuario;
 import com.laboratorio.financas.usuario.domain.UsuarioRepository;
 import java.util.Optional;
+import java.util.UUID;
 import org.springframework.stereotype.Repository;
 
 @Repository
@@ -26,6 +27,18 @@ public class UsuarioRepositoryImpl implements UsuarioRepository {
     @Override
     public Optional<Usuario> buscarPorEmail(String email) {
         return jpaRepository.findByEmail(email).map(mapper::toUsuario);
+    }
+
+    @Override
+    public Optional<Usuario> buscarPorId(UUID id) {
+        return jpaRepository.findById(id).map(mapper::toUsuario);
+    }
+
+    @Override
+    public Usuario atualizar(Usuario usuario) {
+        UsuarioEntity entity = mapper.toEntity(usuario);
+        UsuarioEntity saved = jpaRepository.save(entity);
+        return mapper.toUsuario(saved);
     }
 
     @Override
