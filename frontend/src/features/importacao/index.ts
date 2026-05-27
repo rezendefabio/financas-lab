@@ -1,2 +1,6 @@
-export type { ImportacaoJobResponse } from './types/importacao'
+export type {
+  AnaliseImportacaoResponse,
+  AnaliseItemResponse,
+  ImportacaoJobResponse,
+} from './types/importacao'
 export { importacaoService } from './services/importacao-service'
