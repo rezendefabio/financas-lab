@@ -98,7 +98,10 @@ repositorio principal. Isso leva < 1 segundo e evita npm install (2-5 minutos):
 ```bash
 MAIN_REPO="/c/projetos/financas-lab"
 WORKTREE=$(git rev-parse --show-toplevel)
-if [ ! -d "$WORKTREE/frontend/node_modules" ] && [ ! -L "$WORKTREE/frontend/node_modules" ]; then
+# Usar -L (testa symlink) + -e (testa existencia generica). NAO usar -d --
+# stat de diretorio em node_modules (centenas de milhares de arquivos no Windows)
+# leva 1-2 min. -L/-e respondem em milissegundos.
+if [ ! -L "$WORKTREE/frontend/node_modules" ] && [ ! -e "$WORKTREE/frontend/node_modules" ]; then
   ln -s "$MAIN_REPO/frontend/node_modules" "$WORKTREE/frontend/node_modules"
   echo "Symlink criado: frontend/node_modules -> $MAIN_REPO/frontend/node_modules"
 fi
@@ -157,6 +160,42 @@ crie-os conforme descrito -- nao invoque /feature-front por conta propria.
 2. Execute cada passo do fluxo de execucao descrito em "Instrucoes da tarefa"
 3. Nao pule passos. Nao invente passos.
 4. Se um passo falhar: registre o erro e tente corrigir. Aborte se irrecuperavel.
+
+## Regra de validacao: evitar re-runs caros
+
+Maven `verify` (compila + checkstyle + unit + integration) custa 3-6 min;
+`check-front.ps1` (lint + test:run + build) custa 4-7 min. Rodar essas validacoes
+em loop e o maior gargalo do executor.
+
+Regras obrigatorias:
+
+1. **`./mvnw verify` roda UMA vez por task**, no passo final do fluxo (antes do `/ship`).
+   - Para iterar correcao de um teste especifico que falhou, usar
+     `./mvnw test -Dtest=<NomeDoTeste> -q` (UMA vez por iteracao). NUNCA rodar
+     `verify` completo para validar um teste pontual.
+   - Apos `/write-test`, NAO rodar `mvnw verify` para conferir -- o teste sera
+     validado no `verify` final. Se quiser validacao imediata, rodar apenas
+     `mvn test -Dtest=<ClasseTeste> -q`.
+
+2. **`check-front.ps1` roda UMA vez por task**, no passo final (antes do `/ship`).
+   - Para validar mudanca pontual em arquivo TS/TSX, rodar `npm run test:run --
+     <path/do/arquivo.test.tsx>` (UMA vez). NUNCA rodar `check-front.ps1`
+     completo para validar um teste pontual.
+
+3. **Validacao em paralelo (quando a task altera backend E frontend):**
+   Disparar `./mvnw verify` e `check-front.ps1` em paralelo via `Bash` com
+   `run_in_background: true`. Aguardar ambos terminarem antes de commitar o passo
+   final. Economia tipica: 4-6 min (os dois rodam concorrentes em vez de em serie).
+
+   Exemplo:
+   ```
+   # Em uma unica mensagem, dois Bash tool calls com run_in_background=true:
+   #   ./mvnw verify
+   #   powershell -NoProfile -Command "Set-Location (git rev-parse --show-toplevel); .\scripts\check-front.ps1"
+   # Aguardar ambos completarem antes de seguir.
+   ```
+
+Violar essas regras = desperdicio de 5-10 min por task. Auditavel via transcript.
 
 ## Verificacao final obrigatoria no repo principal
 
