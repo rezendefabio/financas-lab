@@ -4,6 +4,7 @@ import "./globals.css";
 import { QueryProvider } from "@/providers/query-provider";
 import { AuthProvider } from "@/providers/auth-provider";
 import { ErrorBoundary } from "@/shared/components/ErrorBoundary";
+import { Toaster } from "@/shared/components/ui/sonner";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -46,6 +47,11 @@ export default function RootLayout({
             <ErrorBoundary>{children}</ErrorBoundary>
           </AuthProvider>
         </QueryProvider>
+        {/* Toaster montado uma unica vez no body do root layout: garante que
+            toast.success/error de QUALQUER rota (login, dashboard, perfil)
+            seja renderizado. Fora dos providers porque o Sonner nao depende
+            de QueryProvider/AuthProvider. */}
+        <Toaster />
       </body>
     </html>
   );
