@@ -160,6 +160,22 @@ Ativar a fábrica de fato: rodar features no Tier 2, configurar 3 routines Tier 
 
 ### Sub-etapas concluídas
 
+- **fix-metricas-automaticas -- Captura automatica de metricas de execucao** (2026-05-28):
+  Sub-etapa de infra de fabrica (scripts + hook, sem produto). Resolve a falha
+  recorrente de coletar as metricas E01-E13 (secao "Metricas a capturar"): a
+  instrucao em prosa no prompt competia com o objetivo principal do executor e
+  era ignorada -- a coleta passa a ser mecanica. Cinco mudancas em 1 PR:
+  (1) `scripts/check.ps1` e (2) `scripts/check-front.ps1` instrumentados para
+  gravar `step`/`branch`/`duracao_ms`/`exit_code` em `.claude/metrics.log` ao
+  fim do gate (logica do gate inalterada); (3) hook nativo `PostToolUse`
+  `.claude/hooks/post-tool-use/metrics-capture.ps1` que captura timing de
+  comandos caros (`mvn`, `npm run test:run/build/lint`, `gh pr create`,
+  `git push`) lendo o JSON do stdin, **non-blocking** (`exit 0` em todos os
+  caminhos de erro); (4) `scripts/setup.ps1` registra o hook como segundo
+  matcher (`Bash`) do array `PostToolUse` no `settings.json` gerado;
+  (5) `scripts/show-metrics.ps1` exibe o log com sumario avg/max/count por step.
+  `.claude/metrics.log` gitignored. Reviews automaticos sem bloqueador. PR #284.
+
 - **5.94 -- Notificacoes de orcamento e meta** (2026-05-24):
   Sistema de alertas 100% frontend, sem backend novo. Hook `useNotificacoes`
   calcula notificacoes a partir de dados existentes: orcamentos ativos do mes
