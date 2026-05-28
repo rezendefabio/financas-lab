@@ -8,12 +8,17 @@ $frontendPath = Join-Path $PSScriptRoot "..\frontend"
 
 Push-Location $frontendPath
 
-Write-Host "==> Gate frontend: npm install..." -ForegroundColor Cyan
-npm install
-if ($LASTEXITCODE -ne 0) {
-    Write-Host "npm install falhou (exit $LASTEXITCODE)." -ForegroundColor Red
-    Pop-Location
-    exit $LASTEXITCODE
+$nodeModulesPath = Join-Path $frontendPath "node_modules"
+if (-not (Test-Path $nodeModulesPath)) {
+    Write-Host "==> Gate frontend: npm install (node_modules ausente)..." -ForegroundColor Cyan
+    npm install
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "npm install falhou (exit $LASTEXITCODE)." -ForegroundColor Red
+        Pop-Location
+        exit $LASTEXITCODE
+    }
+} else {
+    Write-Host "==> Gate frontend: node_modules presente, pulando npm install." -ForegroundColor Gray
 }
 
 Write-Host "==> Gate frontend: lint..." -ForegroundColor Cyan

@@ -153,39 +153,21 @@ Reviews:
 
 Se `.git` for um DIRETORIO (repo principal): prosseguir normalmente com os reviews abaixo.
 
-Invoque os dois agentes de review em sequencia usando o Agent tool:
-
-**Review 1 -- pr-reviewer:**
-- subagent_type: `pr-reviewer`
-- prompt: `Revise o PR #<numero> do repositorio financas-lab antes do merge.`
-
-Aguarde o resultado. Se o pr-reviewer reportar bloqueador: inclua no relatorio final
-e sinalize ao operador. Nao cancele o /ship -- o PR ja foi aberto.
-
-**Review 2 -- architect-reviewer:**
-- subagent_type: `architect-reviewer`
-- prompt: `Revise as decisoes arquiteturais do PR #<numero> do repositorio financas-lab contra os ADRs do projeto.`
-
-Aguarde o resultado. Inclua o sumario de cada review no relatorio final.
-
-**Review 3 -- front-reviewer (condicional):**
-
 Verifique se ha arquivos em `frontend/` entre os commits da branch:
 
 ```powershell
 $frontendChanged = git diff --name-only main..HEAD | Where-Object { $_ -like "frontend/*" }
 ```
 
-Se `$frontendChanged` for nao-nulo e nao-vazio:
+Emita TODOS os reviews aplicaveis em UMA UNICA resposta (acao atomica -- nao sequencial):
 
-- subagent_type: `front-reviewer`
-- prompt: `Revise as mudancas de frontend do PR #<numero> do repositorio financas-lab.`
+- **Sempre:** Agent call para `pr-reviewer` com prompt `Revise o PR #<numero> do repositorio financas-lab antes do merge.`
+- **Sempre:** Agent call para `architect-reviewer` com prompt `Revise as decisoes arquiteturais do PR #<numero> do repositorio financas-lab contra os ADRs do projeto.`
+- **Se `$frontendChanged` nao-vazio:** Agent call para `front-reviewer` com prompt `Revise as mudancas de frontend do PR #<numero> do repositorio financas-lab.`
 
-Aguarde o resultado. Se o front-reviewer reportar bloqueador: inclua no relatorio
-final e sinalize ao operador.
-
-Se `$frontendChanged` for nulo ou vazio: pule este review (sem arquivos frontend
-na branch).
+Aguarde TODOS os reviews terminarem antes de processar os resultados.
+Se qualquer review reportar bloqueador: inclua no relatorio final e sinalize ao operador.
+Nao cancele o /ship -- o PR ja foi aberto.
 
 ## Passo 5.1 -- Correcao autonoma de apontamentos
 
