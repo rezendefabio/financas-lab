@@ -2,6 +2,7 @@ package com.laboratorio.financas.shared.infrastructure.web;
 
 import com.laboratorio.financas.anexo.domain.AnexoNaoEncontradoException;
 import com.laboratorio.financas.anotacao.domain.AnotacaoNaoEncontradaException;
+import com.laboratorio.financas.carteira.domain.CarteiraNaoEncontradaException;
 import com.laboratorio.financas.categoria.domain.CategoriaJaExisteException;
 import com.laboratorio.financas.categoria.domain.CategoriaNaoEncontradaException;
 import com.laboratorio.financas.centrocusto.domain.CentroCustoNaoEncontradoException;
@@ -213,6 +214,15 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(FaturaNaoEncontradaException.class)
     public ProblemDetail handleFaturaNaoEncontrada(FaturaNaoEncontradaException ex) {
+        ProblemDetail problem = ProblemDetail.forStatus(HttpStatus.NOT_FOUND);
+        problem.setTitle("Not Found");
+        problem.setDetail(ex.getMessage());
+        problem.setProperty("id", ex.getId().toString());
+        return problem;
+    }
+
+    @ExceptionHandler(CarteiraNaoEncontradaException.class)
+    public ProblemDetail handleCarteiraNaoEncontrada(CarteiraNaoEncontradaException ex) {
         ProblemDetail problem = ProblemDetail.forStatus(HttpStatus.NOT_FOUND);
         problem.setTitle("Not Found");
         problem.setDetail(ex.getMessage());
