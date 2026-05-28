@@ -4,8 +4,9 @@
 
 $ErrorActionPreference = "Stop"
 
-# Instrumentacao de metricas
-$MetricsLog = Join-Path $PSScriptRoot "..\.claude\metrics.log"
+# Instrumentacao de metricas — aponta sempre para o repo principal, mesmo em worktree
+$mainRoot = (git worktree list --porcelain 2>$null | Select-String "^worktree " | Select-Object -First 1).Line -replace "^worktree ", ""
+$MetricsLog = Join-Path $mainRoot ".claude\metrics.log"
 $StepStart = [DateTimeOffset]::UtcNow
 $StepLabel = "check-front.ps1 (lint+test+build)"
 $Branch = git branch --show-current 2>$null
