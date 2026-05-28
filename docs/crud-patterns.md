@@ -3,8 +3,9 @@
 Referencia canonica de padroes de implementacao do projeto. Usada pelo planejador
 para inlinar trechos no prompt do executor, e pelo executor como guia de consulta.
 
-Codigo real extraido dos bounded contexts `tag` (base), `carteira` (com enum) e
-`conta` (com Money/@Embedded). Adaptar nomes, campos e tipos para o novo dominio.
+Codigo real extraido dos bounded contexts `tag` (base), `carteira` (com enum),
+`conta` (com Money/@Embedded) e `transacao` (com FK para outros bounded contexts).
+Adaptar nomes, campos e tipos para o novo dominio.
 
 ---
 
@@ -176,6 +177,121 @@ public class <Entidade>NaoEncontradoException extends RuntimeException {
     public UUID getId() { return id; }
 }
 ```
+
+### 1.6 Relacionamento FK com outro bounded context
+
+Quando o novo dominio referencia outro bounded context (ex: `transacao` referencia `conta` e `categoria`),
+o projeto usa UUID simples — sem `@ManyToOne`/`@JoinColumn`. A integracao e feita por ID, nao por objeto.
+
+**Regra do projeto:** guarda UUID, valida existencia no use case, devolve UUID no response.
+
+**Domain — apenas UUID no campo:**
+```java
+// Correto: referencia por UUID
+private final UUID categoriaId;  // nao carrega o objeto Categoria
+
+// Errado: nunca fazer
+// private final Categoria categoria;
+```
+
+**Entity JPA — apenas @Column com o UUID:**
+```java
+// Correto: sem @ManyToOne, sem @JoinColumn
+@Column(name = "categoria_id", columnDefinition = "uuid")   // nullable se opcional
+private UUID categoriaId;
+
+@Column(name = "conta_id", columnDefinition = "uuid", nullable = false)  // nullable=false se obrigatorio
+private UUID contaId;
+
+// Errado: nunca fazer
+// @ManyToOne
+// @JoinColumn(name = "categoria_id")
+// private CategoriaEntity categoria;
+```
+
+**Use case — valida existencia antes de salvar (referencia: CriarTransacaoUseCase):**
+```java
+@Component
+public class Criar<Entidade>UseCase {
+
+    private final <Entidade>Repository <entidade>Repository;
+    private final ContaRepository contaRepository;       // repositorio referenciado
+    private final CategoriaRepository categoriaRepository; // repositorio referenciado
+
+    // Injetar todos os repositorios no construtor
+    public Criar<Entidade>UseCase(
+            <Entidade>Repository <entidade>Repository,
+            ContaRepository contaRepository,
+            CategoriaRepository categoriaRepository) {
+        this.<entidade>Repository = <entidade>Repository;
+        this.contaRepository = contaRepository;
+        this.categoriaRepository = categoriaRepository;
+    }
+
+    @Transactional
+    public <Entidade> executar(Comando comando) {
+        // Validar existencia das referencias ANTES de criar o objeto de dominio
+        contaRepository.buscarPorId(comando.contaId())
+                .orElseThrow(() -> new ContaNaoEncontradaException(comando.contaId()));
+
+        // categoriaId pode ser opcional (nullable)
+        if (comando.categoriaId() != null) {
+            categoriaRepository.buscarPorId(comando.categoriaId())
+                    .orElseThrow(() -> new CategoriaNaoEncontradaException(comando.categoriaId()));
+        }
+
+        <Entidade> nova = new <Entidade>(
+                comando.contaId(),
+                comando.categoriaId(),
+                // ... outros campos
+        );
+        return <entidade>Repository.salvar(nova);
+    }
+
+    public record Comando(UUID contaId, UUID categoriaId, /* ... */) {}
+}
+```
+
+**DTO Request — UUID anotado com @NotNull se obrigatorio:**
+```java
+public record Criar<Entidade>Request(
+    @NotNull UUID contaId,         // obrigatorio
+    UUID categoriaId,              // opcional (nullable sem @NotNull)
+    // ...
+) {}
+```
+
+**DTO Response — devolve UUID, nao o objeto aninhado:**
+```java
+public record <Entidade>Response(
+    UUID id,
+    UUID contaId,      // correto: so o UUID
+    UUID categoriaId,  // correto: so o UUID
+    // ...
+) {}
+// Errado: nunca embutir CategoriaResponse dentro de <Entidade>Response
+```
+
+**Migration SQL — FK explícita no banco:**
+```sql
+CREATE TABLE <tabela> (
+    id              UUID            PRIMARY KEY,
+    user_id         UUID            NOT NULL,
+    conta_id        UUID            NOT NULL,     -- FK obrigatoria
+    categoria_id    UUID,                         -- FK opcional (nullable)
+    -- ... outros campos
+    CONSTRAINT fk_<tabela>_conta      FOREIGN KEY (conta_id)     REFERENCES conta(id),
+    CONSTRAINT fk_<tabela>_categoria  FOREIGN KEY (categoria_id) REFERENCES categoria(id)
+);
+CREATE INDEX idx_<tabela>_conta     ON <tabela> (conta_id);
+CREATE INDEX idx_<tabela>_categoria ON <tabela> (categoria_id);
+```
+
+**Atencao: numero de migration reservado pelo planejador.** O executor usa o numero
+ja fixado no campo `migracoes_reservadas` da task — nao recalcula dinamicamente.
+
+**Cuidado com ordem de migrations:** a tabela referenciada (ex: `conta`) deve existir
+antes da tabela que tem a FK. O planejador verifica via Passo 1.5 qual V ja existe.
 
 ---
 
