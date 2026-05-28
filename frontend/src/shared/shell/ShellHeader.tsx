@@ -72,6 +72,7 @@ export function ShellHeader() {
               render={
                 <button
                   type="button"
+                  role="status"
                   aria-label={`${count} notificacoes ativas`}
                   className="relative flex items-center justify-center rounded p-1 hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 />
