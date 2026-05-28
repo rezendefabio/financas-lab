@@ -81,6 +81,14 @@ describe('PerfilPage', () => {
     expect(screen.getByLabelText(/nova senha/i)).toBeTruthy()
   })
 
+  it('exibe cabecalho de identidade com iniciais e email', () => {
+    render(<PerfilPage />)
+    // Iniciais derivadas do nome "Fabio" -> "F"
+    expect(screen.getByText('F')).toBeTruthy()
+    // Email aparece tanto no cabecalho de identidade quanto no input readonly
+    expect(screen.getAllByText('fabio@example.com').length).toBeGreaterThan(0)
+  })
+
   it('exibe email do perfil em modo readonly', () => {
     render(<PerfilPage />)
     const emailInput = screen.getByLabelText(/e-mail/i) as HTMLInputElement
