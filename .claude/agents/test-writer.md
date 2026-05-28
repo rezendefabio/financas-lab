@@ -115,7 +115,7 @@ Apos escrever o arquivo de teste, rodar:
 
 ```powershell
 Push-Location frontend
-npm run test:run
+npm run test:run -- <ARQUIVO_DE_TESTE>
 $exit = $LASTEXITCODE
 Pop-Location
 if ($exit -ne 0) { reportar output de erro literalmente e parar }
@@ -313,10 +313,10 @@ Justificativa: convencao do projeto e que testes integration de queries customiz
    **1a. Detecte o modo** a partir do path do argumento:
    - Se comecar com `frontend/` (prefixo canonico): operar em **modo frontend** (ver secao "## Modo frontend"). Determine a categoria (componente, hook, service/utility) pelo path pattern. Derive o path do arquivo de teste (mesmo diretorio, sufixo `.test.ts` ou `.test.tsx`). Verifique se o arquivo ja existe via `ls <path-do-teste>` -- se sim, reportar "arquivo ja existe: <path>" e parar. Se nao, gerar teste conforme padroes da categoria, rodar validacao abaixo e reportar resultado. **Nao executar os passos Java abaixo.**
 
-     Validacao frontend:
+     Validacao frontend (`<ARQUIVO_DE_TESTE>` relativo a `frontend/`):
      ```powershell
      Push-Location frontend
-     npm run test:run
+     npm run test:run -- <ARQUIVO_DE_TESTE>
      $exit = $LASTEXITCODE
      Pop-Location
      if ($exit -ne 0) { reportar output de erro literalmente e parar }
