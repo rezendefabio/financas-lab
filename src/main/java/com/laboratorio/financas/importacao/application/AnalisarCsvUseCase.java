@@ -115,7 +115,8 @@ public class AnalisarCsvUseCase {
         );
         Page<Transacao> page = transacaoRepository.listarComFiltros(filtros, PageRequest.of(0, 50));
         for (Transacao t : page.getContent()) {
-            if (t.getValor().valor().compareTo(lv.valor()) == 0) {
+            if (t.getValor().valor().compareTo(lv.valor()) == 0
+                    && t.getValor().moeda().equals(lv.moeda())) {
                 return t.getId();
             }
         }

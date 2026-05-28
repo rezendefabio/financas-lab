@@ -118,6 +118,42 @@ class AnalisarCsvUseCaseTest {
     }
 
     @Test
+    void csvComMesmoValorMasMoedaDiferenteNaoMarcaDuplicata() {
+        UUID contaId = UUID.fromString("11111111-0000-0000-0000-000000000001");
+        Transacao existenteUsd = new Transacao(
+                UUID.randomUUID(),
+                TipoTransacao.DESPESA,
+                new Money(new BigDecimal("150.00"), Currency.getInstance("USD")),
+                LocalDate.of(2026, 5, 1),
+                "Compra em dolar",
+                contaId,
+                null,
+                java.time.Instant.now(),
+                null,
+                null,
+                StatusTransacao.CLEARED,
+                null,
+                null,
+                null,
+                null,
+                List.of()
+        );
+        when(transacaoRepository.listarComFiltros(any(), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(existenteUsd)));
+
+        byte[] conteudo = csv(
+                "DESPESA,150.00,BRL,2026-05-01,Supermercado," + contaId + ",,"
+        );
+
+        AnalisarCsvUseCase.Resultado r = useCase.analisar(conteudo);
+
+        assertThat(r.linhasValidas()).isEqualTo(1);
+        assertThat(r.possivelDuplicatas()).isZero();
+        assertThat(r.itens().get(0).possivelDuplicata()).isFalse();
+        assertThat(r.itens().get(0).transacaoExistenteId()).isNull();
+    }
+
+    @Test
     void csvComCabecalhoInvalidoLancaIllegalArgumentException() {
         byte[] conteudo = "coluna1,coluna2\nvalor1,valor2\n".getBytes(StandardCharsets.UTF_8);
 

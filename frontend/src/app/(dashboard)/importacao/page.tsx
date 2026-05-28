@@ -15,6 +15,7 @@ import { Button } from '@/shared/components/ui/button'
 import { Input } from '@/shared/components/ui/input'
 import { Label } from '@/shared/components/ui/label'
 import { Badge } from '@/shared/components/ui/badge'
+import { formatBRL, formatDate } from '@/shared/lib/formatters'
 import {
   Table,
   TableBody,
@@ -315,7 +316,7 @@ export default function ImportacaoPage() {
                     </TableHead>
                     <TableHead>Linha</TableHead>
                     <TableHead>Tipo</TableHead>
-                    <TableHead>Valor</TableHead>
+                    <TableHead className="text-right">Valor</TableHead>
                     <TableHead>Data</TableHead>
                     <TableHead>Descricao</TableHead>
                     <TableHead>Conta</TableHead>
@@ -338,8 +339,10 @@ export default function ImportacaoPage() {
                       </TableCell>
                       <TableCell>{item.linha}</TableCell>
                       <TableCell>{item.tipo}</TableCell>
-                      <TableCell>{item.valor}</TableCell>
-                      <TableCell>{item.data}</TableCell>
+                      <TableCell className="text-right">
+                        {formatBRL(item.valor)}
+                      </TableCell>
+                      <TableCell>{formatDate(item.data)}</TableCell>
                       <TableCell>{item.descricao}</TableCell>
                       <TableCell className="font-mono text-xs">
                         {item.contaId}
