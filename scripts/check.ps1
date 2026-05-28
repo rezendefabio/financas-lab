@@ -5,6 +5,12 @@
 
 $ErrorActionPreference = "Stop"
 
+# Instrumentacao de metricas
+$MetricsLog = Join-Path (git rev-parse --show-toplevel 2>$null) ".claude\metrics.log"
+$StepStart = [DateTimeOffset]::UtcNow
+$StepLabel = "check.ps1 (mvn verify)"
+$Branch = git branch --show-current 2>$null
+
 # Verifica Docker rodando (Testcontainers precisa).
 # Suspende Stop localmente para evitar que stderr nativo do docker vaze (PowerShell + Stop intercepta stderr antes de redirecionamento).
 $prev = $ErrorActionPreference
@@ -26,4 +32,18 @@ if ($exit -eq 0) {
 } else {
     Write-Host "Gate completo falhou (exit $exit). Veja o output acima." -ForegroundColor Red
 }
+
+# Gravar metrica
+$StepEnd = [DateTimeOffset]::UtcNow
+$DuracaoMs = [long]($StepEnd - $StepStart).TotalMilliseconds
+$Entry = [PSCustomObject]@{
+    ts         = $StepEnd.ToString("yyyy-MM-ddTHH:mm:ssZ")
+    step       = $StepLabel
+    branch     = $Branch
+    duracao_ms = $DuracaoMs
+    exit_code  = $exit
+} | ConvertTo-Json -Compress
+Add-Content -Path $MetricsLog -Value $Entry -Encoding UTF8
+Write-Host "METRICA: $StepLabel concluido em $([math]::Round($DuracaoMs/1000, 1))s" -ForegroundColor DarkGray
+
 exit $exit

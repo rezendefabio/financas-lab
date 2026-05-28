@@ -4,6 +4,12 @@
 
 $ErrorActionPreference = "Stop"
 
+# Instrumentacao de metricas
+$MetricsLog = Join-Path $PSScriptRoot "..\.claude\metrics.log"
+$StepStart = [DateTimeOffset]::UtcNow
+$StepLabel = "check-front.ps1 (lint+test+build)"
+$Branch = git branch --show-current 2>$null
+
 $frontendPath = Join-Path $PSScriptRoot "..\frontend"
 
 Push-Location $frontendPath
@@ -49,4 +55,18 @@ if ($exit -eq 0) {
 } else {
     Write-Host "Build falhou (exit $exit). Veja o output acima." -ForegroundColor Red
 }
+
+# Gravar metrica
+$StepEnd = [DateTimeOffset]::UtcNow
+$DuracaoMs = [long]($StepEnd - $StepStart).TotalMilliseconds
+$Entry = [PSCustomObject]@{
+    ts         = $StepEnd.ToString("yyyy-MM-ddTHH:mm:ssZ")
+    step       = $StepLabel
+    branch     = $Branch
+    duracao_ms = $DuracaoMs
+    exit_code  = $exit
+} | ConvertTo-Json -Compress
+Add-Content -Path $MetricsLog -Value $Entry -Encoding UTF8
+Write-Host "METRICA: $StepLabel concluido em $([math]::Round($DuracaoMs/1000, 1))s" -ForegroundColor DarkGray
+
 exit $exit
