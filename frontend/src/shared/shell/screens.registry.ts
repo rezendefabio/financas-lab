@@ -46,7 +46,7 @@ export const MAX_MENU_DEPTH = 3
 export const SCREEN_CODE_REGEX = /^[A-Z]{3}-[A-Z]{3}-\d{3}$/
 
 /**
- * Manifesto das 13 telas existentes.
+ * Manifesto das telas existentes.
  *
  * Novas entradas sao injetadas pela skill /register-screen, que preserva
  * a ordem e a formatacao deste array.
@@ -138,6 +138,14 @@ export const screens: ScreenDefinition[] = [
     path: '/centros-custo',
     menuPath: ['Cadastros', 'Classificacao', 'Centros de Custo'],
     icon: 'layers',
+    permissions: [],
+  },
+  {
+    code: 'FIN-FAT-001',
+    title: 'Faturas',
+    path: '/faturas',
+    menuPath: ['Cadastros', 'Financeiro', 'Faturas'],
+    icon: 'receipt',
     permissions: [],
   },
   {
