@@ -60,6 +60,7 @@ export default function FaturasPage() {
     {
       key: 'valorTotal',
       label: 'Valor Total',
+      className: 'text-right tabular-nums',
       render: (_value, row) =>
         row.valorTotal ? formatBRL(row.valorTotal.valor) : '—',
     },
