@@ -114,138 +114,64 @@ Exemplos de classificacao:
 - "lancamento (descricao, valor Money, categoria)" → `tag` + `conta`
 - "relatorio-mes (filtros por data/categoria)" → `tag` + `transacao`
 
-**2. Ler os arquivos da referencia selecionada:**
+**2. Ler o guia de padroes canonico (UMA leitura -- nao ler arquivos individuais):**
 
-Base minima (sempre):
 ```
-src/main/java/com/laboratorio/financas/tag/domain/Tag.java
-src/main/java/com/laboratorio/financas/tag/infrastructure/persistence/TagEntity.java
-src/main/java/com/laboratorio/financas/tag/infrastructure/persistence/TagRepositoryImpl.java
-src/main/java/com/laboratorio/financas/tag/interfaces/TagController.java
-src/main/java/com/laboratorio/financas/shared/infrastructure/web/GlobalExceptionHandler.java
+docs/crud-patterns.md
 ```
 
-Adicionar se o dominio tiver enum:
-```
-src/main/java/com/laboratorio/financas/carteira/domain/TipoCarteira.java
-src/main/java/com/laboratorio/financas/carteira/infrastructure/persistence/CarteiraEntity.java
-```
+Este arquivo contem o codigo real de todos os padroes do projeto: domain, entity,
+mapper, repositoryImpl, controller, use cases, todos os niveis de teste Java e
+frontend. Substitui a leitura de 5-10 arquivos individuais.
 
-Adicionar se o dominio tiver Money:
-```
-src/main/java/com/laboratorio/financas/conta/infrastructure/persistence/ContaEntity.java
-src/main/java/com/laboratorio/financas/shared/domain/Money.java
-```
+**3. Extrair de `docs/crud-patterns.md` os trechos relevantes e inlinar no campo
+`prompt` da task:**
 
-Adicionar se o dominio tiver filtros paginados:
-```
-src/main/java/com/laboratorio/financas/transacao/infrastructure/persistence/TransacaoRepositoryImpl.java
-src/main/java/com/laboratorio/financas/transacao/domain/FiltrosTransacao.java
-```
+Baseando-se na classificacao feita no passo 1, extrair as secoes correspondentes:
 
-Adicionar se o dominio cruzar dados de outro bounded context:
-```
-src/main/java/com/laboratorio/financas/orcamento/application/CalcularProgressoDoOrcamentoUseCase.java
-```
-
-**3. Extrair e inlinar no campo `prompt` da task os seguintes trechos:**
-
-**a) Construtor de dominio (do Tag.java):**
-Copiar as assinaturas exatas dos construtores e o corpo do construtor
-de criacao (id=UUID.randomUUID(), criadoEm=Instant.now(), etc.).
-Adaptar os campos para o novo dominio.
-
-**b) Mapeamento JPA (do TagEntity.java):**
-Copiar as anotacoes @Entity, @Table, @Id, @Column, incluindo os tipos
-exatos (UUID, VARCHAR(N), BOOLEAN, TIMESTAMPTZ). Adaptar colunas.
-
-**c) Extrator de userId do token JWT (do TagController.java):**
-Localizar as linhas exatas de extracao do userId via Authentication.
-Copiar o trecho verbatim (geralmente 2-3 linhas). O executor deve
-copiar exatamente esse trecho, sem reinventar.
-
-**d) Registro no GlobalExceptionHandler:**
-Copiar um exemplo de @ExceptionHandler existente (ex: TagNaoEncontradaException)
-e instruir o executor a adicionar o mesmo padrao para a nova excecao,
-ANTES de qualquer commit -- nao descobrir isso via falha de gate.
-
-**e) Estrutura do RepositoryImpl (do TagRepositoryImpl.java):**
-Copiar o esqueleto da classe (imports, @Component, campos @Autowired,
-assinaturas dos metodos implementados). O executor adapta os nomes.
+| Caracteristica | Secoes a extrair do crud-patterns.md |
+|---------------|--------------------------------------|
+| Base (sempre) | secoes 1.1, 1.2 Repository, 1.3 Exception, 2.1 Entity base, 2.3 Mapper, 2.4 RepositoryImpl, 3 GlobalExceptionHandler, 4 (todos os use cases), 5 Controller, 6 (todos os testes Java), 7 Frontend, 8 Screen Registry |
+| Tem enum | adicionar secao 1.2 Enum da entidade (`@Enumerated`), secao 2.1 com exemplo de coluna enum |
+| Tem Money | adicionar secoes 1.3 Money, 2.2 Entity com @Embedded/@AttributeOverride |
+| Tem filtros paginados | adicionar padrao findComFiltros + Pageable do RepositoryImpl |
+| Cruza bounded context | adicionar padrao de injecao de segundo Repository no use case |
 
 **Formato de inlining no prompt do executor:**
+
+Inserir no prompt um bloco com cabecalho e os trechos extraidos:
 
 ```
 ## Padroes de referencia (nao ler arquivos -- usar estes trechos direto)
 
-### Construtor de dominio (adaptar campos):
-```java
-// Construtor de criacao
-public <Entidade>(UUID userId, String nome) {
-    this.id = UUID.randomUUID();
-    this.userId = userId;
-    this.nome = Objects.requireNonNull(nome, "nome obrigatorio");
-    this.ativo = true;
-    this.criadoEm = Instant.now();
-    this.atualizadoEm = this.criadoEm;
-}
-```
+Fonte: docs/crud-patterns.md — adaptar nomes, campos e tipos para o novo dominio.
 
-### Mapeamento JPA (adaptar @Table e colunas):
-```java
-@Entity
-@Table(name = "<tabela>")
-class <Entidade>Entity {
-    @Id
-    @Column(name = "id", columnDefinition = "uuid")
-    private UUID id;
+### Domain layer
+[colar secao 1.1 adaptada]
 
-    @Column(name = "user_id", nullable = false, columnDefinition = "uuid")
-    private UUID userId;
+### Entity JPA
+[colar secao 2.1 adaptada]
 
-    @Column(name = "nome", nullable = false, length = 100)
-    private String nome;
+### GlobalExceptionHandler wiring (fazer ANTES do primeiro commit de infra)
+[colar secao 3 adaptada]
 
-    @Column(name = "ativo", nullable = false)
-    private boolean ativo;
+### Use cases
+[colar secao 4 adaptada]
 
-    @Column(name = "criado_em", nullable = false,
-            columnDefinition = "TIMESTAMPTZ")
-    private Instant criadoEm;
+### Controller + DTOs
+[colar secao 5 adaptada]
 
-    @Column(name = "atualizado_em", nullable = false,
-            columnDefinition = "TIMESTAMPTZ")
-    private Instant atualizadoEm;
-}
-```
+### Testes Java (unit, Mockito, Testcontainers, MockMvc)
+[colar secoes 6.1-6.4 adaptadas]
 
-### Extrator de userId JWT (copiar verbatim no Controller):
-```java
-// [copiar as linhas exatas do TagController.java aqui]
-```
-
-### GlobalExceptionHandler — adicionar ANTES de implementar o Controller:
-```java
-// Adicionar em GlobalExceptionHandler.java antes de qualquer commit:
-@ExceptionHandler(<Nova>NaoEncontradaException.class)
-@ResponseStatus(HttpStatus.NOT_FOUND)
-public void handle<Nova>NaoEncontrada() {}
-```
-
-### RepositoryImpl — esqueleto (adaptar nomes):
-```java
-@Component
-class <Nova>RepositoryImpl implements <Nova>Repository {
-    private final <Nova>JpaRepository jpaRepository;
-    private final <Nova>Mapper mapper;
-    // [construtor e metodos copiados do TagRepositoryImpl]
-}
-```
+### Frontend (types, service, paginas, screen registry)
+[colar secoes 7 e 8 adaptadas]
 ```
 
 **Regra de ouro:** O executor que recebe um prompt com esses trechos inlinados
 NAO precisa ler nenhum arquivo de referencia. O custo de leitura fica no
-planejador (1 vez), nao no executor (que repetiria N vezes para N tasks).
+planejador (1 Read de docs/crud-patterns.md), nao no executor (que repetiria
+N leituras para N tasks).
 
 **Quando NAO inlinar:** tasks de refactor, fix de bug, ou qualquer objetivo
 que nao seja criacao de bounded context do zero. Nesses casos, o executor
