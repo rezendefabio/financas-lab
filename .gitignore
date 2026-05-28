@@ -66,6 +66,7 @@ docs/prompts/
 .claude/daily-summary.state
 .claude/babysit-prs.state
 .claude/factory-metrics.json
+.claude/metrics.log
 
 # ─── State persistente de tasks do /plan (efemero, nao versionado) ──────────
 .claude/tasks.json
