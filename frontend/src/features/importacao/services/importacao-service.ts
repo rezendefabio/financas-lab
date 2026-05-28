@@ -1,5 +1,8 @@
 import { apiFetchBlob, apiFetchMultipart } from '@/services/api-client'
-import type { ImportacaoJobResponse } from '../types/importacao'
+import type {
+  AnaliseImportacaoResponse,
+  ImportacaoJobResponse,
+} from '../types/importacao'
 
 /**
  * Servico de importacao de transacoes via CSV.
@@ -13,6 +16,15 @@ export const importacaoService = {
     formData.append('arquivo', arquivo)
     return apiFetchMultipart<ImportacaoJobResponse>(
       '/api/jobs/importacao-csv-transacoes',
+      formData,
+    )
+  },
+
+  analisarCsv: async (arquivo: File): Promise<AnaliseImportacaoResponse> => {
+    const formData = new FormData()
+    formData.append('arquivo', arquivo)
+    return apiFetchMultipart<AnaliseImportacaoResponse>(
+      '/api/importacoes/analisar',
       formData,
     )
   },

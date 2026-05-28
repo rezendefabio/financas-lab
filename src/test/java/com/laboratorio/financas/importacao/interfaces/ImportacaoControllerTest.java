@@ -11,10 +11,16 @@ import com.laboratorio.financas.conta.infrastructure.persistence.ContaJpaReposit
 import com.laboratorio.financas.conta.infrastructure.persistence.ContaRepositoryImpl;
 import com.laboratorio.financas.shared.AbstractAuthenticatedIntegrationTest;
 import com.laboratorio.financas.shared.domain.Money;
+import com.laboratorio.financas.transacao.domain.StatusTransacao;
+import com.laboratorio.financas.transacao.domain.TipoTransacao;
+import com.laboratorio.financas.transacao.domain.Transacao;
 import com.laboratorio.financas.transacao.infrastructure.persistence.TransacaoJpaRepository;
+import com.laboratorio.financas.transacao.infrastructure.persistence.TransacaoRepositoryImpl;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDate;
 import java.util.Currency;
+import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -36,6 +42,9 @@ class ImportacaoControllerTest extends AbstractAuthenticatedIntegrationTest {
 
     @Autowired
     private ContaRepositoryImpl contaRepositoryImpl;
+
+    @Autowired
+    private TransacaoRepositoryImpl transacaoRepositoryImpl;
 
     @AfterEach
     void limpar() {
@@ -108,5 +117,62 @@ class ImportacaoControllerTest extends AbstractAuthenticatedIntegrationTest {
                 .andExpect(jsonPath("$.totalLinhas", equalTo(0)))
                 .andExpect(jsonPath("$.importadas", equalTo(0)))
                 .andExpect(jsonPath("$.falhas", equalTo(0)));
+    }
+
+    @Test
+    void postAnalisarSemDuplicatasRetorna200ComItensValidos() throws Exception {
+        UUID contaId = criarContaPersistida();
+
+        String csv = CABECALHO + "\n"
+                + "RECEITA,1000.00,BRL,2026-05-01,Salario," + contaId + ",,\n"
+                + "DESPESA,150.00,BRL,2026-05-01,Supermercado," + contaId + ",,\n";
+
+        mockMvc.perform(comAuth(multipart("/api/importacoes/analisar").file(csvFile(csv))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalLinhas", equalTo(2)))
+                .andExpect(jsonPath("$.linhasValidas", equalTo(2)))
+                .andExpect(jsonPath("$.possivelDuplicatas", equalTo(0)))
+                .andExpect(jsonPath("$.errosParsing", equalTo(0)))
+                .andExpect(jsonPath("$.itens[0].possivelDuplicata", equalTo(false)))
+                .andExpect(jsonPath("$.itens[1].possivelDuplicata", equalTo(false)));
+    }
+
+    @Test
+    void postAnalisarComLinhaJaExistenteMarcaPossivelDuplicata() throws Exception {
+        UUID contaId = criarContaPersistida();
+        Transacao existente = transacaoRepositoryImpl.salvar(new Transacao(
+                TipoTransacao.DESPESA,
+                new Money(new BigDecimal("150.00"), BRL),
+                LocalDate.of(2026, 5, 1),
+                "Supermercado",
+                contaId,
+                null,
+                authenticatedUserId,
+                StatusTransacao.CLEARED,
+                null,
+                List.of()
+        ));
+
+        String csv = CABECALHO + "\n"
+                + "RECEITA,1000.00,BRL,2026-05-01,Salario," + contaId + ",,\n"
+                + "DESPESA,150.00,BRL,2026-05-01,Supermercado," + contaId + ",,\n";
+
+        mockMvc.perform(comAuth(multipart("/api/importacoes/analisar").file(csvFile(csv))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalLinhas", equalTo(2)))
+                .andExpect(jsonPath("$.linhasValidas", equalTo(2)))
+                .andExpect(jsonPath("$.possivelDuplicatas", equalTo(1)))
+                .andExpect(jsonPath("$.itens[0].possivelDuplicata", equalTo(false)))
+                .andExpect(jsonPath("$.itens[1].possivelDuplicata", equalTo(true)))
+                .andExpect(jsonPath("$.itens[1].transacaoExistenteId",
+                        equalTo(existente.getId().toString())));
+    }
+
+    @Test
+    void postAnalisarComCabecalhoInvalidoRetorna400() throws Exception {
+        String csv = "cabecalho,errado\nDESPESA,100.00\n";
+
+        mockMvc.perform(comAuth(multipart("/api/importacoes/analisar").file(csvFile(csv))))
+                .andExpect(status().isBadRequest());
     }
 }
