@@ -90,6 +90,167 @@ Registrar na chave `premissas_globais` do JSON de saida. Cada premissa deve
 ser uma frase afirmativa, curta e precisa. O operador vai ler e aprovar ou
 rejeitar no Passo 3 da skill.
 
+## Passo 1.8 -- Extrair e inlinar padroes de referencia (OBRIGATORIO para bounded contexts)
+
+Se o objetivo envolve criar um novo bounded context seguindo o padrao existente
+do projeto (domain + application + infra + interfaces + frontend):
+
+**1. Classificar o novo bounded context pela matriz de complexidade:**
+
+Ler a descricao do objetivo e identificar quais caracteristicas o novo dominio tem.
+Escolher a referencia adequada para cada caracteristica:
+
+| Caracteristica do novo dominio | Referencia obrigatoria |
+|-------------------------------|----------------------|
+| Campos simples (string, boolean, UUID) | `tag` (sempre -- base minima) |
+| Tem enum proprio | `carteira` (padrão @Enumerated + TipoCarteira) |
+| Tem campo monetario (Money/@Embedded) | `conta` (padrão @Embedded + @AttributeOverride) |
+| Tem filtros paginados ou queries complexas | `transacao` (findComFiltros + Pageable) |
+| Cruza dados de outro bounded context | `orcamento` (injeta segundo Repository no use case) |
+
+Exemplos de classificacao:
+- "grupo (nome, descricao, ativo)" → so `tag`
+- "ativo (nome, tipo enum, valor)" → `tag` + `carteira`
+- "lancamento (descricao, valor Money, categoria)" → `tag` + `conta`
+- "relatorio-mes (filtros por data/categoria)" → `tag` + `transacao`
+
+**2. Ler os arquivos da referencia selecionada:**
+
+Base minima (sempre):
+```
+src/main/java/com/laboratorio/financas/tag/domain/Tag.java
+src/main/java/com/laboratorio/financas/tag/infrastructure/persistence/TagEntity.java
+src/main/java/com/laboratorio/financas/tag/infrastructure/persistence/TagRepositoryImpl.java
+src/main/java/com/laboratorio/financas/tag/interfaces/TagController.java
+src/main/java/com/laboratorio/financas/shared/infrastructure/web/GlobalExceptionHandler.java
+```
+
+Adicionar se o dominio tiver enum:
+```
+src/main/java/com/laboratorio/financas/carteira/domain/TipoCarteira.java
+src/main/java/com/laboratorio/financas/carteira/infrastructure/persistence/CarteiraEntity.java
+```
+
+Adicionar se o dominio tiver Money:
+```
+src/main/java/com/laboratorio/financas/conta/infrastructure/persistence/ContaEntity.java
+src/main/java/com/laboratorio/financas/shared/domain/Money.java
+```
+
+Adicionar se o dominio tiver filtros paginados:
+```
+src/main/java/com/laboratorio/financas/transacao/infrastructure/persistence/TransacaoRepositoryImpl.java
+src/main/java/com/laboratorio/financas/transacao/domain/FiltrosTransacao.java
+```
+
+Adicionar se o dominio cruzar dados de outro bounded context:
+```
+src/main/java/com/laboratorio/financas/orcamento/application/CalcularProgressoDoOrcamentoUseCase.java
+```
+
+**3. Extrair e inlinar no campo `prompt` da task os seguintes trechos:**
+
+**a) Construtor de dominio (do Tag.java):**
+Copiar as assinaturas exatas dos construtores e o corpo do construtor
+de criacao (id=UUID.randomUUID(), criadoEm=Instant.now(), etc.).
+Adaptar os campos para o novo dominio.
+
+**b) Mapeamento JPA (do TagEntity.java):**
+Copiar as anotacoes @Entity, @Table, @Id, @Column, incluindo os tipos
+exatos (UUID, VARCHAR(N), BOOLEAN, TIMESTAMPTZ). Adaptar colunas.
+
+**c) Extrator de userId do token JWT (do TagController.java):**
+Localizar as linhas exatas de extracao do userId via Authentication.
+Copiar o trecho verbatim (geralmente 2-3 linhas). O executor deve
+copiar exatamente esse trecho, sem reinventar.
+
+**d) Registro no GlobalExceptionHandler:**
+Copiar um exemplo de @ExceptionHandler existente (ex: TagNaoEncontradaException)
+e instruir o executor a adicionar o mesmo padrao para a nova excecao,
+ANTES de qualquer commit -- nao descobrir isso via falha de gate.
+
+**e) Estrutura do RepositoryImpl (do TagRepositoryImpl.java):**
+Copiar o esqueleto da classe (imports, @Component, campos @Autowired,
+assinaturas dos metodos implementados). O executor adapta os nomes.
+
+**Formato de inlining no prompt do executor:**
+
+```
+## Padroes de referencia (nao ler arquivos -- usar estes trechos direto)
+
+### Construtor de dominio (adaptar campos):
+```java
+// Construtor de criacao
+public <Entidade>(UUID userId, String nome) {
+    this.id = UUID.randomUUID();
+    this.userId = userId;
+    this.nome = Objects.requireNonNull(nome, "nome obrigatorio");
+    this.ativo = true;
+    this.criadoEm = Instant.now();
+    this.atualizadoEm = this.criadoEm;
+}
+```
+
+### Mapeamento JPA (adaptar @Table e colunas):
+```java
+@Entity
+@Table(name = "<tabela>")
+class <Entidade>Entity {
+    @Id
+    @Column(name = "id", columnDefinition = "uuid")
+    private UUID id;
+
+    @Column(name = "user_id", nullable = false, columnDefinition = "uuid")
+    private UUID userId;
+
+    @Column(name = "nome", nullable = false, length = 100)
+    private String nome;
+
+    @Column(name = "ativo", nullable = false)
+    private boolean ativo;
+
+    @Column(name = "criado_em", nullable = false,
+            columnDefinition = "TIMESTAMPTZ")
+    private Instant criadoEm;
+
+    @Column(name = "atualizado_em", nullable = false,
+            columnDefinition = "TIMESTAMPTZ")
+    private Instant atualizadoEm;
+}
+```
+
+### Extrator de userId JWT (copiar verbatim no Controller):
+```java
+// [copiar as linhas exatas do TagController.java aqui]
+```
+
+### GlobalExceptionHandler — adicionar ANTES de implementar o Controller:
+```java
+// Adicionar em GlobalExceptionHandler.java antes de qualquer commit:
+@ExceptionHandler(<Nova>NaoEncontradaException.class)
+@ResponseStatus(HttpStatus.NOT_FOUND)
+public void handle<Nova>NaoEncontrada() {}
+```
+
+### RepositoryImpl — esqueleto (adaptar nomes):
+```java
+@Component
+class <Nova>RepositoryImpl implements <Nova>Repository {
+    private final <Nova>JpaRepository jpaRepository;
+    private final <Nova>Mapper mapper;
+    // [construtor e metodos copiados do TagRepositoryImpl]
+}
+```
+```
+
+**Regra de ouro:** O executor que recebe um prompt com esses trechos inlinados
+NAO precisa ler nenhum arquivo de referencia. O custo de leitura fica no
+planejador (1 vez), nao no executor (que repetiria N vezes para N tasks).
+
+**Quando NAO inlinar:** tasks de refactor, fix de bug, ou qualquer objetivo
+que nao seja criacao de bounded context do zero. Nesses casos, o executor
+precisa ler os arquivos que vai modificar -- o que e correto.
+
 ## Passo 2 -- Quebrar em tasks (fatia vertical obrigatoria)
 
 Analise o objetivo e decomponha em tasks independentes e paralelizaveis.
@@ -147,9 +308,14 @@ Cada task deve:
   mergeada antes de criar FKs
 
 Para cada task, escreva o prompt completo que o executor vai receber.
-O prompt deve conter: contexto, auditoria do que ja existe, o que fazer,
-arquivos a ler, fluxo de execucao (incluindo frontend quando aplicavel),
-estrutura de commits, restricoes. Seguir o padrao dos prompts em docs/prompts/.
+O prompt deve conter: contexto, auditoria do que ja existe, padroes de
+referencia inlinados (ver Passo 1.8), o que fazer, fluxo de execucao
+(incluindo frontend quando aplicavel), estrutura de commits, restricoes.
+
+NAO incluir secao "arquivos a ler" para arquivos de referencia de padrao --
+esses padroes ja foram inlinados no Passo 1.8. O executor so deve ler
+arquivos que ele proprio vai MODIFICAR (ex: GlobalExceptionHandler.java,
+sidebar, screens.registry.ts).
 
 ## Passo 3 -- Retornar lista de tasks
 
