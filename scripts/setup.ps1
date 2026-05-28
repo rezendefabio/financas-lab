@@ -53,6 +53,17 @@ if (-not (Test-Path $settingsPath)) {
             "timeout": 60
           }
         ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "powershell.exe",
+            "args": ["-NoProfile", "-File", ".claude/hooks/post-tool-use/metrics-capture.ps1"],
+            "timeout": 10
+          }
+        ]
       }
     ]
   }
@@ -67,7 +78,7 @@ if (-not (Test-Path $settingsPath)) {
         Write-Host "[ERRO] Falha ao criar .claude/settings.json." -ForegroundColor Red
         exit 1
     }
-    Write-Host "[OK] .claude/settings.json criado com hook post-edit." -ForegroundColor Green
+    Write-Host "[OK] .claude/settings.json criado com hooks post-edit e metrics-capture." -ForegroundColor Green
 } else {
     Write-Host "[OK] .claude/settings.json ja existe -- nao sobrescrito." -ForegroundColor Green
 }
