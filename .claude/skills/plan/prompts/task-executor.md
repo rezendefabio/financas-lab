@@ -156,10 +156,35 @@ crie-os conforme descrito -- nao invoque /feature-front por conta propria.
 
 ## Execucao
 
-1. Leia `CLAUDE.md`
+1. Leia `CLAUDE.md` -- apenas para convencoes de ambiente (hooks, commits,
+   encoding). Os padroes de implementacao ja chegam inlinados no prompt da task.
 2. Execute cada passo do fluxo de execucao descrito em "Instrucoes da tarefa"
 3. Nao pule passos. Nao invente passos.
 4. Se um passo falhar: registre o erro e tente corrigir. Aborte se irrecuperavel.
+
+**Regra de leitura de arquivos:**
+- Padroes de referencia (como implementar domain, entity, controller, etc.)
+  ja estao inlinados no prompt. NAO ler arquivos de referencia adicionais
+  (Tag.java, CarteirController.java, etc.) a menos que o prompt instrua explicitamente.
+- Arquivos que voce vai MODIFICAR: leia antes de editar (GlobalExceptionHandler,
+  sidebar, screens.registry.ts, etc.). Isso e obrigatorio -- nunca editar sem ler.
+- CLAUDE.md: leia uma vez no inicio, nao releia durante a execucao.
+
+## Wiring obrigatorio ao criar bounded context novo
+
+Ao criar um bounded context com excecao de dominio (*NaoEncontrado*Exception),
+registrar no GlobalExceptionHandler ANTES de qualquer commit de infrastructure:
+
+```java
+// Adicionar em:
+// src/main/java/com/laboratorio/financas/shared/infrastructure/web/GlobalExceptionHandler.java
+@ExceptionHandler(<Nova>NaoEncontradoException.class)
+@ResponseStatus(HttpStatus.NOT_FOUND)
+public void handle<Nova>NaoEncontrado() {}
+```
+
+Nao descobrir esse wiring via falha de gate -- o gate roda uma vez so (/ship).
+Se descoberto apenas no gate: requer segundo run completo de mvn verify.
 
 ## Regra de validacao: evitar re-runs caros
 
