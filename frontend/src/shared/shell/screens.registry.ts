@@ -149,6 +149,14 @@ export const screens: ScreenDefinition[] = [
     permissions: [],
   },
   {
+    code: 'FIN-CTR-001',
+    title: 'Carteiras',
+    path: '/carteiras',
+    menuPath: ['Cadastros', 'Financeiro', 'Carteiras'],
+    icon: 'wallet',
+    permissions: [],
+  },
+  {
     code: 'REL-ANO-001',
     title: 'Anotacoes',
     path: '/anotacoes',
