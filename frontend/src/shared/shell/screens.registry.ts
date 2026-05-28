@@ -141,6 +141,14 @@ export const screens: ScreenDefinition[] = [
     permissions: [],
   },
   {
+    code: 'CAD-GRP-001',
+    title: 'Grupos',
+    path: '/grupos',
+    menuPath: ['Cadastros', 'Classificacao', 'Grupos'],
+    icon: 'users',
+    permissions: [],
+  },
+  {
     code: 'FIN-FAT-001',
     title: 'Faturas',
     path: '/faturas',
