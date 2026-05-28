@@ -17,7 +17,7 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 Write-Host "==> Rodando gate completo (mvnw verify)..." -ForegroundColor Cyan
-.\mvnw clean verify
+.\mvnw verify
 $exit = $LASTEXITCODE
 
 Write-Host ""

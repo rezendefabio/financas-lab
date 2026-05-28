@@ -163,39 +163,26 @@ crie-os conforme descrito -- nao invoque /feature-front por conta propria.
 
 ## Regra de validacao: evitar re-runs caros
 
-Maven `verify` (compila + checkstyle + unit + integration) custa 3-6 min;
-`check-front.ps1` (lint + test:run + build) custa 4-7 min. Rodar essas validacoes
-em loop e o maior gargalo do executor.
+Maven `verify` custa 3-6 min; `check-front.ps1` custa 4-7 min.
+O `/ship` ja roda `check.ps1` e `check-front.ps1` como gate obrigatorio.
+**NAO rodar `./mvnw verify` nem `check-front.ps1` completos antes de `/ship`.**
+O gate final e o `/ship` -- uma unica execucao por task.
 
-Regras obrigatorias:
+Durante o desenvolvimento (antes do passo de commit final), usar apenas validacoes pontuais:
 
-1. **`./mvnw verify` roda UMA vez por task**, no passo final do fluxo (antes do `/ship`).
-   - Para iterar correcao de um teste especifico que falhou, usar
-     `./mvnw test -Dtest=<NomeDoTeste> -q` (UMA vez por iteracao). NUNCA rodar
-     `verify` completo para validar um teste pontual.
-   - Apos `/write-test`, NAO rodar `mvnw verify` para conferir -- o teste sera
-     validado no `verify` final. Se quiser validacao imediata, rodar apenas
-     `mvn test -Dtest=<ClasseTeste> -q`.
+1. **Validacao pontual de teste Java:** `./mvnw test -Dtest=<NomeDoTeste> -q`
+   - Usar apos correcao de falha em teste especifico.
+   - NUNCA rodar `./mvnw verify` completo para validar um teste pontual.
+   - NUNCA rodar `./mvnw verify` ou `./mvnw test` sem `-Dtest=` durante o desenvolvimento --
+     aguarda o gate do `/ship`.
 
-2. **`check-front.ps1` roda UMA vez por task**, no passo final (antes do `/ship`).
-   - Para validar mudanca pontual em arquivo TS/TSX, rodar `npm run test:run --
-     <path/do/arquivo.test.tsx>` (UMA vez). NUNCA rodar `check-front.ps1`
-     completo para validar um teste pontual.
+2. **Validacao pontual de teste frontend:** `npm run test:run -- <path/do/arquivo.test.tsx>`
+   - Usar apos escrever ou corrigir um teste frontend especifico.
+   - NUNCA rodar `check-front.ps1` nem `npm run test:run` sem filtro de arquivo
+     durante o desenvolvimento.
 
-3. **Validacao em paralelo (quando a task altera backend E frontend):**
-   Disparar `./mvnw verify` e `check-front.ps1` em paralelo via `Bash` com
-   `run_in_background: true`. Aguardar ambos terminarem antes de commitar o passo
-   final. Economia tipica: 4-6 min (os dois rodam concorrentes em vez de em serie).
-
-   Exemplo:
-   ```
-   # Em uma unica mensagem, dois Bash tool calls com run_in_background=true:
-   #   ./mvnw verify
-   #   powershell -NoProfile -Command "Set-Location (git rev-parse --show-toplevel); .\scripts\check-front.ps1"
-   # Aguardar ambos completarem antes de seguir.
-   ```
-
-Violar essas regras = desperdicio de 5-10 min por task. Auditavel via transcript.
+3. **Gate final = `/ship`:** o `/ship` roda `check.ps1` (backend) e `check-front.ps1`
+   (frontend, se houver mudancas) uma unica vez. Nao ha necessidade de gate pre-/ship.
 
 ## Verificacao final obrigatoria no repo principal
 
