@@ -171,24 +171,98 @@ Nao cancele o /ship -- o PR ja foi aberto.
 
 ## Passo 5.1 -- Correcao autonoma de apontamentos
 
-Apos receber os resultados dos dois reviews, avalie cada apontamento:
+### Regra 1 — O que corrigir (filtro obrigatorio)
 
-- **Apontamento objetivo** (falta de anotacao, variavel nao usada, import ausente,
-  violacao de convencao estabelecida nos ADRs): corrija diretamente no codigo sem
-  perguntar ao operador.
-- **Apontamento subjetivo ou arquitetural com tradeoffs** (redesign de interface,
-  mudanca de estrategia, decisao que afeta outros bounded contexts): reporte ao operador
-  e aguarde instrucao.
+Corrija APENAS apontamentos classificados como **Bloqueador** (`## Bloqueadores`)
+nos outputs dos reviews. Nunca corrija apontamentos de `## Sugestoes` nem de
+`## Elogios`.
 
-Para cada apontamento objetivo corrigido:
-1. Edite o arquivo com o fix minimo necessario.
-2. Rode `.\scripts\check.ps1` para confirmar BUILD SUCCESS apos a correcao.
-3. Commite com mensagem `fix(<scope>): <descricao curta do apontamento corrigido>`.
-4. Faca push da branch.
-5. Edite o body do PR (via `gh pr edit <numero> --body "..."`) adicionando secao
-   `## Cenarios destrutivos validados` com justificativa de cada correcao.
+Exemplos de IDs de bloqueadores: B1, B2, B3, ..., B13 (front-reviewer),
+violacao de ADR (architect-reviewer), logica incorreta (pr-reviewer).
 
-Se nenhum apontamento objetivo existir: pule este passo e va direto ao Passo 6.
+Se todos os apontamentos forem Sugestoes ou Elogios: pule este passo inteiramente
+e va direto ao Passo 6.
+
+### Regra 2 — Apontamento subjetivo vs. objetivo
+
+- **Objetivo** (corrija autonomamente): falta de anotacao, import ausente,
+  variavel nao usada, violacao clara de convencao ADR estabelecida,
+  `text-right` ausente em celula monetaria, `asChild` em base-nova, fetch direto
+  fora de services/.
+- **Subjetivo** (reporte e aguarde): redesign de interface, mudanca de estrategia,
+  decisao que afeta outros bounded contexts.
+
+### Regra 3 — Protocolo de edicao (obrigatorio, sem excecao)
+
+Para cada bloqueador objetivo a corrigir, executar nesta ordem exata:
+
+**Passo A — Ler o arquivo completo antes de qualquer edicao:**
+```
+Read(<path-do-arquivo-apontado>)
+```
+Nao editar sem antes ter lido o arquivo na integra. Sem excecao.
+
+**Passo B — Aplicar o fix minimo em UMA unica operacao Edit:**
+- Uma chamada de Edit por apontamento.
+- Se o fix exigir mais de uma edicao no mesmo arquivo: fazer tudo numa
+  unica chamada Edit com o bloco completo de mudanca.
+- Se apos a edicao perceber que ficou errado: reportar como BLOQUEADOR
+  para o operador. NAO tentar editar de novo em loop.
+
+**Passo C — Validacao pontual (nao o gate completo):**
+- Fix em arquivo `.tsx` ou `.ts` frontend:
+  ```powershell
+  cd <worktree>/frontend && npm run test:run -- <path/do/arquivo.test.tsx>
+  ```
+  Se nao houver arquivo de teste para o arquivo corrigido: pular validacao.
+- Fix em arquivo `.java`:
+  ```bash
+  ./mvnw test -Dtest=<ClasseTest> -q
+  ```
+  Se nao houver teste correspondente: pular validacao.
+- Fix em arquivo `.ps1`, `.sql`, `.yml` ou doc: sem validacao automatica.
+
+**Passo D — Proibicoes absolutas:**
+- NUNCA criar arquivos de teste temporarios ou probe (`__probe.*`, `*_temp.*`,
+  qualquer arquivo que sera deletado em seguida).
+- NUNCA rodar `check.ps1` ou `check-front.ps1` por fix individual.
+- NUNCA rodar `npm run test:run` sem filtro de arquivo especifico.
+- NUNCA editar o mesmo arquivo mais de uma vez por apontamento.
+
+### Regra 4 — Gate final unico
+
+Apos aplicar TODOS os fixes (nao apos cada um individualmente):
+
+```powershell
+.\scripts\check.ps1
+```
+
+Se houver mudancas em `frontend/`:
+```powershell
+powershell -NoProfile -Command "Set-Location (git rev-parse --show-toplevel); .\scripts\check-front.ps1"
+```
+
+Se qualquer gate falhar: reportar o erro ao operador. NAO tentar corrigir
+automaticamente apos falha de gate — esse ciclo e irrecuperavel autonomamente.
+
+### Regra 5 — Commit e push
+
+Apos gate final passar:
+
+```powershell
+git add -A
+git commit -m "fix(<scope>): <lista dos apontamentos corrigidos separados por virgula>"
+git push
+```
+
+Editar o body do PR adicionando secao `## Correcoes autonomas`:
+```powershell
+gh pr edit <numero> --body-file <arquivo-com-body-atualizado>
+```
+
+Listar cada apontamento corrigido com: ID, arquivo, descricao da correcao.
+
+Se nenhum bloqueador objetivo existir: pule este passo e va direto ao Passo 6.
 
 ## Passo 6 -- Relatorio final
 
