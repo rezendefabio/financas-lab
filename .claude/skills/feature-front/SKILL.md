@@ -190,52 +190,118 @@ Exportar tambem os enums e interfaces auxiliares (ex: `PASCALStatus`,
 
 ### Arquivo 4: frontend/src/app/(dashboard)/ARG/page.tsx
 
+Padrao client-side (cadastro). Para listagem server-side paginada (backend
+retorna `Page<>`), trocar `useQuery` por `useListPage` + `FilterBar` -- ver
+`docs/crud-patterns.md` secao 7.3.
+
 ```typescript
 'use client'
-import { useQuery } from '@tanstack/react-query'
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { Pencil, Trash2 } from 'lucide-react'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { CAMELService } from '@/features/ARG/services/ARG-service'
+import { Card, CardContent } from '@/shared/components/ui/card'
 import { Button } from '@/shared/components/ui/button'
-import { Skeleton } from '@/shared/components/ui/skeleton'
+import { DataTable, type ColumnDef } from '@/shared/components/DataTable'
+import { ActionsPanel } from '@/shared/components/ActionsPanel'
+import type { PASCAL } from '@/features/ARG/types/ARG'
+
+// SCREEN_CODE no formato MOD-ENT-001 -- o prompt da task informa o codigo correto.
+const SCREEN_CODE = 'MOD-ENT-001' // TODO: substituir pelo codigo real (screens.registry)
+
+// TODO: colunas reais do dominio. Formatadores em docs/field-type-catalog.md:
+// formatBRL p/ Money (render: (v) => formatBRL(v.valor)), formatDate p/ LocalDate,
+// <StatusBadge> p/ enum com cor.
+const columns: ColumnDef<PASCAL>[] = [
+  // { key: 'nome', label: 'Nome', sortable: true },
+]
 
 export default function PASCALsPage() {
   const router = useRouter()
+  const queryClient = useQueryClient()
+  const [selecionada, setSelecionada] = useState<PASCAL | null>(null)
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
 
   const { data: itens, isLoading, isError } = useQuery({
     queryKey: ['ARGs'],
     queryFn: CAMELService.listar,
   })
 
+  // Se o Controller nao expoe DELETE, remover este bloco e a coluna de Excluir.
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => CAMELService.remover(id),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['ARGs'] })
+      setConfirmDeleteId(null)
+    },
+  })
+
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-3">
         <h1 className="text-2xl font-semibold tracking-tight">PASCALs</h1>
-        <Button onClick={() => router.push('/ARGs/novo')}>+ Novo</Button>
+        <div className="flex items-center gap-2">
+          <ActionsPanel
+            entityType="ARG"
+            entityId={selecionada?.id ?? null}
+            screenCode={SCREEN_CODE}
+          />
+          <Button onClick={() => router.push('/ARGs/novo')}>+ Novo</Button>
+        </div>
       </div>
 
-      {isLoading && (
-        <div className="space-y-2">
-          {[1, 2, 3].map((i) => (
-            <Skeleton key={i} className="h-10 w-full" />
-          ))}
-        </div>
-      )}
+      {isError && <p className="text-sm text-destructive">Erro ao carregar ARGs.</p>}
 
-      {isError && (
-        <p className="text-sm text-destructive">Erro ao carregar ARGs.</p>
-      )}
-
-      {itens && itens.length === 0 && (
-        <p className="text-muted-foreground">Nenhum ARG cadastrado.</p>
-      )}
-
-      {/* TODO: implementar tabela/lista com campos do dominio */}
-      {itens && itens.length > 0 && (
-        <div className="rounded-md border">
-          <p className="p-4 text-sm text-muted-foreground">
-            {itens.length} registro(s) encontrado(s).
-          </p>
-        </div>
+      {!isError && (
+        <Card>
+          <CardContent className="p-0">
+            <DataTable
+              data={itens ?? []}
+              columns={columns}
+              keyField="id"
+              isLoading={isLoading}
+              emptyMessage="Nenhum ARG cadastrado."
+              onRowClick={setSelecionada}
+              rowActions={(row) =>
+                confirmDeleteId === row.id ? (
+                  <span className="inline-flex gap-2">
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      onClick={() => deleteMutation.mutate(row.id)}
+                      disabled={deleteMutation.isPending}
+                    >
+                      Confirmar
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={() => setConfirmDeleteId(null)}>
+                      Cancelar
+                    </Button>
+                  </span>
+                ) : (
+                  <div className="flex items-center gap-1">
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      aria-label="Editar"
+                      onClick={() => router.push(`/ARGs/${row.id}`)}
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      aria-label="Excluir"
+                      onClick={() => setConfirmDeleteId(row.id)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                )
+              }
+            />
+          </CardContent>
+        </Card>
       )}
     </div>
   )
@@ -243,6 +309,12 @@ export default function PASCALsPage() {
 ```
 
 ### Arquivo 5: frontend/src/app/(dashboard)/ARG/novo/page.tsx
+
+Quando criar e editar compartilham os mesmos campos (regra do projeto), extrair
+um componente `components/PASCALForm.tsx` e reusa-lo nas duas paginas -- ver
+`docs/crud-patterns.md` secao 7.4/7.5. O stub abaixo mantem o form na propria
+pagina `novo`; o executor extrai o componente compartilhado ao implementar a
+pagina de edicao.
 
 ```typescript
 'use client'
@@ -254,14 +326,17 @@ import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { ArrowLeft } from 'lucide-react'
 import { CAMELService } from '@/features/ARG/services/ARG-service'
+import { useDraftForm } from '@/shared/hooks/useDraftForm'
 import { Card, CardContent } from '@/shared/components/ui/card'
 import {
   Form, FormControl, FormField, FormItem, FormLabel, FormMessage,
 } from '@/shared/components/ui/form'
+import { FormGrid } from '@/shared/components/FormGrid'
+import { FormCol } from '@/shared/components/FormCol'
 import { Input } from '@/shared/components/ui/input'
 import { Button } from '@/shared/components/ui/button'
 
-// Schema Zod inferido de CriarPASCALRequest.java
+// Schema Zod inferido de CriarPASCALRequest.java (espelhamento Java <-> Zod, B6)
 const schema = z.object({
   // Campos com regras inferidas das anotacoes Java
   // Exemplo: nome: z.string().min(1, 'Obrigatorio'),
@@ -280,10 +355,13 @@ export default function NovoPASCALPage() {
       // valores padrao para cada campo do schema
     },
   })
+  // Rascunho persistente entre trocas de aba (CLAUDE.md): clearDraft no sucesso e no Cancelar.
+  const { clearDraft } = useDraftForm(form)
 
   const mutation = useMutation({
     mutationFn: (values: FormValues) => CAMELService.criar(values as any),
     onSuccess: async () => {
+      clearDraft()
       await queryClient.invalidateQueries({ queryKey: ['ARGs'] })
       router.push('/ARGs')
     },
@@ -309,8 +387,15 @@ export default function NovoPASCALPage() {
                 onSubmit={form.handleSubmit((v) => { setApiError(null); mutation.mutate(v) })}
                 className="space-y-4"
               >
-                {/* TODO: FormField para cada campo do schema, usando o
-                    componente correto conforme docs/field-type-catalog.md */}
+                <FormGrid>
+                  {/* TODO: um FormCol + campo por campo do schema. Componente por
+                      tipo conforme docs/field-type-catalog.md:
+                      - Money -> <MoneyInput> (FormCol span 7)
+                      - FK (UUID) -> <LookupField> (queryKey com sufixo, span 6)
+                      - enum -> Controller + <Select> com SelectValue render fn
+                      - LocalDate -> <Input type="date"> (span 5)
+                      - texto longo -> <Input> (span 12) */}
+                </FormGrid>
 
                 {apiError && <p className="text-sm text-destructive">{apiError}</p>}
 
@@ -318,7 +403,11 @@ export default function NovoPASCALPage() {
                   <Button type="submit" disabled={mutation.isPending}>
                     {mutation.isPending ? 'Salvando...' : 'Salvar'}
                   </Button>
-                  <Button type="button" variant="outline" onClick={() => router.push('/ARGs')}>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => { clearDraft(); router.push('/ARGs') }}
+                  >
                     Cancelar
                   </Button>
                 </div>
@@ -339,8 +428,9 @@ Regras:
   (`''` para string, `0` para number, `false` para boolean).
 - Manter `mutation.mutate(values as any)` no stub -- o `as any` deve ser removido
   pelo executor quando o payload correto for implementado.
-- Os `// TODO` das FormFields sao para o executor preencher os componentes
-  conforme `docs/field-type-catalog.md`.
+- Os `// TODO` dentro de `<FormGrid>` sao para o executor preencher cada `FormCol`
+  + campo conforme `docs/field-type-catalog.md` (componente por tipo) e o layout
+  de spans da secao 7.4 de `crud-patterns.md`.
 
 ### Arquivo 6: frontend/src/app/(dashboard)/ARG/[id]/page.tsx
 
@@ -465,8 +555,13 @@ Metodos service: <lista de metodos do service>
 Schema Zod:      <lista de campos com regras>
 
 Proximos passos:
-  1. Preencher FormFields em novo/page.tsx usando docs/field-type-catalog.md
-  2. Preencher tabela/grid em page.tsx e detalhe em [id]/page.tsx
-  3. /write-test para cada arquivo gerado
-  4. npm run build (verificar sem erros)
+  1. Preencher `columns` (ColumnDef) e SCREEN_CODE em page.tsx; formatters/StatusBadge
+     conforme docs/field-type-catalog.md
+  2. Preencher os campos dentro de <FormGrid> em novo/page.tsx (componente por tipo:
+     MoneyInput / LookupField / Select / Input) -- crud-patterns secao 7.4
+  3. Se houver edicao: extrair components/PASCALForm.tsx compartilhado e criar
+     [id]/editar/page.tsx (crud-patterns secao 7.5)
+  4. Preencher detalhe em [id]/page.tsx
+  5. /write-test para cada arquivo gerado
+  6. npm run build (verificar sem erros)
 ```
