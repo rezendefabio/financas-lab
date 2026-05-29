@@ -4,8 +4,81 @@ Referencia canonica de padroes de implementacao do projeto. Usada pelo planejado
 para inlinar trechos no prompt do executor, e pelo executor como guia de consulta.
 
 Codigo real extraido dos bounded contexts `tag` (base), `carteira` (com enum),
-`conta` (com Money/@Embedded) e `transacao` (com FK para outros bounded contexts).
+`conta` (com Money/@Embedded), `transacao` (FK + soft-delete + paginacao + filtros),
+`orcamento` (calculo cross-context), `meta` (maquina de estados),
+`categoria` (hierarquia + visibilidade) e `lancamentorecorrente` (value object com comportamento).
 Adaptar nomes, campos e tipos para o novo dominio.
+
+## Mapa de documentos (fronteira — nao duplicar)
+
+Este arquivo ensina o **esqueleto** de um CRUD e linka para os docs especializados.
+Ao gerar codigo, consultar tambem:
+
+- **`docs/field-type-catalog.md`** — mapeamento tipo-backend -> componente-frontend
+  (MoneyInput, LookupField, Select com render function, datas, FormGrid spans,
+  formatters). Fonte unica para *qual* componente usar em cada campo. **Nao
+  reproduzir essas decisoes aqui** — referenciar.
+- **`docs/frontend-master-spec.md`** — arquitetura e contratos de UX do shell
+  (Screen Registry, Tabs, Command Palette, `useListPage`, `FilterBar`,
+  `ActionsPanel`, Audit Log, responsividade). Fonte do *porque* e dos contratos.
+- **`docs/adrs.md`** — ADR-013 (feature-first), ADR-014 (shell declarativo + `useListPage`).
+
+## Como escolher o padrao (simples -> complexo)
+
+1. **Backbone (sempre)** — secoes 1 a 6: domain imutavel, Entity JPA, mapper,
+   repository, 4 use cases CRUD, controller, DTOs, 4 niveis de teste. Cobre o CRUD
+   estilo `tag`/`carteira`/`conta`.
+2. **Relacionamento entre contextos** — secao 1.6: FK por UUID, validacao de
+   existencia no use case. Nunca `@ManyToOne`.
+3. **Complexidade alem do CRUD** — secao 10: soft-delete, paginacao+filtros
+   (Specification), calculo cross-context, maquina de estados, agregacao JPQL,
+   hierarquia/visibilidade, value object com comportamento, operacao composta
+   (par vinculado). **Antes de assumir "CRUD simples", checar a secao 10** — se a
+   entidade tem volume alto, estado mutavel com regras, ou depende de outro
+   contexto para um calculo, ela cai em um desses padroes.
+4. **Frontend** — secao 7: decide entre listagem client-side (backend `List<>`) e
+   server-side paginada (backend `Page<>`), e usa o `*Form` compartilhado.
+
+## Infra compartilhada assumida (NAO recriar)
+
+Estes componentes ja existem no repositorio e sao consumidos pelos padroes
+abaixo. Importar/estender — nunca recriar nem duplicar:
+
+**Backend:**
+
+- `shared/domain/Money` — value object `record(BigDecimal valor, Currency moeda)`
+  com `ehPositivo()`, `valor()`, `moeda()`. Construir com
+  `new Money(bd, Currency.getInstance("BRL"))`.
+- `shared/infrastructure/persistence/MoneyEmbeddable` — usado nas Entities (secao 2.3).
+- `shared/infrastructure/web/GlobalExceptionHandler` — **ja trata globalmente**:
+  `MethodArgumentNotValidException` -> 400 com `{ erros: { campo: msg } }` (o teste
+  E2E depende disso); `ConstraintViolationException` -> 400; `IllegalStateException`
+  e `IllegalArgumentException` -> 400; `Exception` -> 500 (registra incidente).
+  **So adicionar o handler `<Entidade>NaoEncontradoException` da entidade nova**
+  (secao 3) — os demais ja cobrem o resto.
+- `usuario/domain/UsuarioRepository` — injetado no controller para resolver userId.
+- `auditlog/infrastructure/AuditPublisher` + `auditlog/domain/{AuditEvent,AuditAction}` —
+  wiring de auditoria do controller (secao 5.1).
+- `shared/AbstractIntegrationTest` e `AbstractAuthenticatedIntegrationTest` — bases
+  de teste (secao 6.0). Estender, nao reescrever.
+
+**Frontend:** `@/services/api-client` (`apiFetch`), `useListPage`, `FilterBar`,
+`ActionsPanel`, `DataTable`, `StatusBadge`, `FormGrid`/`FormCol`, `LookupField`,
+`MoneyInput`, `useDraftForm`, `formatters` — ver `field-type-catalog.md` e
+`frontend-master-spec.md`.
+
+## Convencoes canonicas (alinhadas ao contexto base `tag`)
+
+- **Use cases sao `@Component`** (nao `@Service`). Stereotype usado por todos os
+  contextos do projeto, incluindo a referencia base `tag`.
+- **Use cases que escrevem sao `@Transactional`** (Criar/Atualizar/Deletar e
+  transicoes de estado). Listar/Buscar podem ser `@Transactional(readOnly = true)`
+  ou sem anotacao.
+- **Controller resolve userId** injetando `UsuarioRepository` + parametro
+  `Authentication`, via `authentication.getName()` (secao 5.1, copiar verbatim).
+  NAO usar `SecurityContextHolder` direto (variante legada em `transacao`).
+- **Auditoria e padrao, nao opcional** — todo controller publica `AuditEvent`
+  (secao 5.1).
 
 ---
 
@@ -293,6 +366,46 @@ ja fixado no campo `migracoes_reservadas` da task — nao recalcula dinamicament
 **Cuidado com ordem de migrations:** a tabela referenciada (ex: `conta`) deve existir
 antes da tabela que tem a FK. O planejador verifica via Passo 1.5 qual V ja existe.
 
+### 1.7 Relacionamento de colecao (M:N por UUID)
+
+Quando a entidade referencia **varios** registros de outro contexto (ex: uma
+transacao tem N tags), o projeto NAO usa `@ManyToMany` com entidades. Guarda uma
+colecao de UUIDs, persistida via tabela de juncao com `@ElementCollection`.
+Referencia: `transacao` (`tagIds`).
+
+**Domain — colecao imutavel de UUID:**
+```java
+private final List<UUID> tagIds;   // nunca List<Tag>
+// no construtor, copia defensiva:
+this.tagIds = (tagIds != null) ? Collections.unmodifiableList(new ArrayList<>(tagIds))
+                               : Collections.emptyList();
+```
+
+**Entity JPA — `@ElementCollection` + `@CollectionTable` (Set, nao @ManyToMany):**
+```java
+@ElementCollection(fetch = FetchType.EAGER)
+@CollectionTable(name = "<tabela>_tag", joinColumns = @JoinColumn(name = "<tabela>_id"))
+@Column(name = "tag_id")
+private Set<UUID> tagIds = new HashSet<>();
+```
+
+**Mapper** — converter `List<UUID>` (domain) <-> `Set<UUID>` (entity):
+`new HashSet<>(domain.getTagIds())` na ida; `new ArrayList<>(entity.getTagIds())` na volta.
+
+**Migration — tabela de juncao dedicada:**
+```sql
+CREATE TABLE <tabela>_tag (
+    <tabela>_id  UUID NOT NULL REFERENCES <tabela>(id) ON DELETE CASCADE,
+    tag_id       UUID NOT NULL,
+    PRIMARY KEY (<tabela>_id, tag_id)
+);
+CREATE INDEX idx_<tabela>_tag_tag ON <tabela>_tag (tag_id);
+```
+
+**DTO** — Request recebe `List<UUID> tagIds` (opcional); Response devolve `List<UUID>`
+(so os UUIDs, nunca objetos Tag aninhados). No frontend e multi-select (checkboxes),
+nao `LookupField` (que e single-select) — ver `TransacaoForm`.
+
 ---
 
 ## 2. Infrastructure Layer
@@ -538,6 +651,11 @@ CREATE TABLE <tabela> (
 **IMPORTANTE:** Registrar a nova excecao no handler ANTES de implementar o Controller.
 Nao fazer isso causa 500 em vez de 404 e exige segundo run de mvn verify.
 
+**So a `<Entidade>NaoEncontradoException` precisa de handler novo.** Validacao (400
+com `erros`), `IllegalStateException`/`IllegalArgumentException` (400) e erro
+generico (500) ja sao tratados globalmente (ver "Infra compartilhada assumida") —
+nao recriar.
+
 Referencia: `shared/infrastructure/web/GlobalExceptionHandler.java`
 
 ```java
@@ -567,9 +685,10 @@ package com.laboratorio.financas.<contexto>.application;
 import com.laboratorio.financas.<contexto>.domain.<Entidade>;
 import com.laboratorio.financas.<contexto>.domain.<Entidade>Repository;
 import java.util.UUID;
-import org.springframework.stereotype.Service;
+import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
-@Service
+@Component
 public class Criar<Entidade>UseCase {
 
     private final <Entidade>Repository repository;
@@ -578,6 +697,7 @@ public class Criar<Entidade>UseCase {
         this.repository = repository;
     }
 
+    @Transactional
     public <Entidade> executar(Comando comando) {
         <Entidade> entidade = new <Entidade>(comando.userId(), comando.nome());
         return repository.salvar(entidade);
@@ -590,7 +710,7 @@ public class Criar<Entidade>UseCase {
 ### 4.2 Padrao Listar
 
 ```java
-@Service
+@Component
 public class Listar<Entidade>sUseCase {
 
     private final <Entidade>Repository repository;
@@ -608,7 +728,7 @@ public class Listar<Entidade>sUseCase {
 ### 4.3 Padrao Atualizar
 
 ```java
-@Service
+@Component
 public class Atualizar<Entidade>UseCase {
 
     private final <Entidade>Repository repository;
@@ -631,7 +751,7 @@ public class Atualizar<Entidade>UseCase {
 ### 4.4 Padrao Deletar
 
 ```java
-@Service
+@Component
 public class Deletar<Entidade>UseCase {
 
     private final <Entidade>Repository repository;
@@ -656,12 +776,20 @@ public class Deletar<Entidade>UseCase {
 
 Referencia: `tag/interfaces/TagController.java`
 
-**ATENCAO:** O Controller injeta `UsuarioRepository` para resolver userId a partir
-do email do token JWT. Este e o padrao do projeto — nao usar UUID direto do token.
+**ATENCAO (dois padroes obrigatorios do projeto, ambos presentes no `tag` base):**
+1. Injeta `UsuarioRepository` para resolver userId pelo email do token JWT — nao
+   usar UUID direto do token, nao usar `SecurityContextHolder`.
+2. Publica `AuditEvent` via `AuditPublisher` em CREATE/UPDATE/DELETE e le o header
+   opcional `X-Screen-Code`. **Auditoria e parte do CRUD, nao opcional.**
 
 ```java
 package com.laboratorio.financas.<contexto>.interfaces;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.laboratorio.financas.auditlog.domain.AuditAction;
+import com.laboratorio.financas.auditlog.domain.AuditEvent;
+import com.laboratorio.financas.auditlog.infrastructure.AuditPublisher;
 import com.laboratorio.financas.<contexto>.application.*;
 import com.laboratorio.financas.<contexto>.domain.<Entidade>;
 import com.laboratorio.financas.usuario.domain.UsuarioRepository;
@@ -679,14 +807,17 @@ import org.springframework.web.bind.annotation.*;
 public class <Entidade>Controller {
 
     private static final Logger LOG = LoggerFactory.getLogger(<Entidade>Controller.class);
+    private static final String ENTITY_TYPE = "<contexto>";   // ex: "tag"
 
     private final Criar<Entidade>UseCase criarUseCase;
     private final Listar<Entidade>sUseCase listarUseCase;
     private final Atualizar<Entidade>UseCase atualizarUseCase;
     private final Deletar<Entidade>UseCase deletarUseCase;
     private final UsuarioRepository usuarioRepository;
+    private final AuditPublisher auditPublisher;
+    private final ObjectMapper objectMapper;
 
-    // Construtor com todos os campos
+    // Construtor com todos os campos (incluindo auditPublisher e objectMapper)
 
     @GetMapping
     public List<<Entidade>Response> listar(Authentication authentication) {
@@ -700,27 +831,45 @@ public class <Entidade>Controller {
     @ResponseStatus(HttpStatus.CREATED)
     public <Entidade>Response criar(
             @Valid @RequestBody Criar<Entidade>Request request,
-            Authentication authentication) {
+            Authentication authentication,
+            @RequestHeader(value = "X-Screen-Code", required = false) String screenCode) {
         UUID userId = resolverUserId(authentication);
         Criar<Entidade>UseCase.Comando comando =
                 new Criar<Entidade>UseCase.Comando(userId, request.nome());
-        return <Entidade>Response.fromDomain(criarUseCase.executar(comando));
+        <Entidade>Response response = <Entidade>Response.fromDomain(criarUseCase.executar(comando));
+        auditPublisher.publish(new AuditEvent(
+                ENTITY_TYPE, response.id(), AuditAction.CREATE,
+                userEmail(authentication), screenCode, null, toJson(response)));
+        return response;
     }
 
     @PutMapping("/{id}")
     public <Entidade>Response atualizar(
             @PathVariable UUID id,
             @Valid @RequestBody Atualizar<Entidade>Request request,
-            Authentication authentication) {
+            Authentication authentication,
+            @RequestHeader(value = "X-Screen-Code", required = false) String screenCode) {
+        UUID userId = resolverUserId(authentication);
         Atualizar<Entidade>UseCase.Comando comando =
                 new Atualizar<Entidade>UseCase.Comando(id, request.nome());
-        return <Entidade>Response.fromDomain(atualizarUseCase.executar(comando));
+        <Entidade>Response response = <Entidade>Response.fromDomain(atualizarUseCase.executar(comando));
+        auditPublisher.publish(new AuditEvent(
+                ENTITY_TYPE, id, AuditAction.UPDATE,
+                userEmail(authentication), screenCode, null, toJson(response)));
+        return response;
     }
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void deletar(@PathVariable UUID id, Authentication authentication) {
+    public void deletar(
+            @PathVariable UUID id,
+            Authentication authentication,
+            @RequestHeader(value = "X-Screen-Code", required = false) String screenCode) {
+        resolverUserId(authentication);
         deletarUseCase.executar(id);
+        auditPublisher.publish(new AuditEvent(
+                ENTITY_TYPE, id, AuditAction.DELETE,
+                userEmail(authentication), screenCode, null, null));
     }
 
     // Extrator de userId — COPIAR VERBATIM, nao reinventar
@@ -731,8 +880,30 @@ public class <Entidade>Controller {
                         "Usuario autenticado nao encontrado: " + email))
                 .getId();
     }
+
+    private String userEmail(Authentication authentication) {
+        return (authentication != null) ? authentication.getName() : null;
+    }
+
+    private String toJson(Object obj) {
+        if (obj == null) {
+            return null;
+        }
+        try {
+            return objectMapper.writeValueAsString(obj);
+        } catch (JsonProcessingException ex) {
+            LOG.warn("Falha ao serializar payload de audit log para {}", ENTITY_TYPE, ex);
+            return null;
+        }
+    }
 }
 ```
+
+> **Diff before/after na auditoria:** o `tag` base nao captura o estado anterior no
+> UPDATE (passa `null` no `before`). Onde o diff importa, buscar a entidade antes
+> de atualizar e passar `toJson(estadoAntes)` no campo `before` (padrao `transacao`).
+> O `entityType` deve constar no middleware de auditoria — ver skill
+> `add-entity-to-audit` e `frontend-master-spec.md` §5.
 
 ### 5.2 DTOs
 
@@ -770,6 +941,47 @@ public record <Entidade>Response(
     }
 }
 ```
+
+### 5.2.1 Campo monetario (Money) em DTOs
+
+Referencia: `orcamento/interfaces/dto/OrcamentoResponse.java`.
+
+`Money` (domain) usa `Currency`, que serializa mal em JSON. **Convencao do projeto:**
+o Request recebe `valor` + `moeda` planos; o Response expoe um **record aninhado**
+`ValorMonetario(BigDecimal valor, String moeda)` (o frontend le `campo.valor` —
+field-type-catalog "Objetos aninhados").
+
+```java
+// Request — valor e moeda planos:
+public record Criar<Entidade>Request(
+        @NotNull BigDecimal valorLimite,                 // dominio exige positivo
+        @NotNull @Size(min = 3, max = 3) String moeda,   // ex: "BRL"
+        // ... outros campos
+) {}
+
+// Use case monta o Money: new Money(req.valorLimite(), Currency.getInstance(req.moeda()))
+
+// Response — record aninhado (nao achatar, nao expor Currency):
+public record <Entidade>Response(
+        UUID id,
+        ValorMonetario valorLimite,
+        // ... outros campos
+) {
+    public record ValorMonetario(BigDecimal valor, String moeda) { }
+
+    public static <Entidade>Response fromDomain(<Entidade> d) {
+        return new <Entidade>Response(
+                d.getId(),
+                new ValorMonetario(d.getValorLimite().valor(),
+                                   d.getValorLimite().moeda().getCurrencyCode()),
+                // ...
+        );
+    }
+}
+```
+
+> No frontend, o tipo TS espelha o aninhamento: `valorLimite: { valor: number; moeda: string }`.
+> Envio (Payload) e plano (`valor`/`moeda`); leitura e aninhada. Ver secao 7.1.
 
 ---
 
@@ -1230,6 +1442,20 @@ describe('deletar<Entidade>', () => {
 })
 ```
 
+### 7.0.1 Decisao inicial: listagem client-side ou server-side?
+
+Antes de gerar qualquer arquivo frontend, decidir o regime de listagem — isso
+define o contrato do service e da pagina:
+
+| Regime | Quando | Backend | Service retorna | Pagina usa |
+|---|---|---|---|---|
+| **Client-side** (default p/ cadastros) | Volume baixo, sem paginacao no backend | controller retorna `List<Response>` | `<Entidade>Response[]` | `useQuery` + filtro `useMemo` + `DataTable` |
+| **Server-side paginada** | Volume alto (transacoes, audit), filtros/sort no banco | controller retorna `Page<Response>` (secao 10.2) | `PageResponse<<Entidade>Response>` | `useListPage` + `FilterBar` + paginacao |
+
+Hoje so `transacao` e server-side; os demais cadastros sao client-side
+(`frontend-master-spec.md` §1). Se o backend for `Page<>`, o service **deve**
+retornar `PageResponse<T>` — caso contrario nao pluga no `useListPage`.
+
 ### 7.1 Types
 
 ```typescript
@@ -1242,6 +1468,8 @@ export interface <Entidade>Response {
   id: string
   nome: string
   descricao: string | null
+  // Money vem aninhado — NAO achatar (field-type-catalog "Objetos aninhados"):
+  // valorLimite: { valor: number; moeda: string }
   ativo: boolean
   criadoEm: string
   atualizadoEm: string
@@ -1250,7 +1478,8 @@ export interface <Entidade>Response {
 export interface Criar<Entidade>Payload {
   nome: string
   descricao?: string
-  // Se tiver enum: tipo: Tipo<Entidade>
+  // enum: tipo: Tipo<Entidade>
+  // Money: valor: number; moeda: string  (envia plano, recebe aninhado)
 }
 
 export interface Atualizar<Entidade>Payload {
@@ -1259,7 +1488,12 @@ export interface Atualizar<Entidade>Payload {
 }
 ```
 
+`PageResponse<T>` (regime server-side) ja existe — importar de
+`@/shared/hooks/useListPage`, nao redefinir.
+
 ### 7.2 Service
+
+**Variante client-side (cadastros):**
 
 ```typescript
 // frontend/src/features/<dominio>/services/<dominio>-service.ts
@@ -1269,91 +1503,196 @@ import type { <Entidade>Response, Criar<Entidade>Payload, Atualizar<Entidade>Pay
 export const <entidade>Service = {
   listar: (): Promise<<Entidade>Response[]> =>
     apiFetch<<Entidade>Response[]>('/api/<plural>'),
-
-  criar: (payload: Criar<Entidade>Payload): Promise<<Entidade>Response> =>
-    apiFetch<<Entidade>Response>('/api/<plural>', {
-      method: 'POST',
-      body: JSON.stringify(payload),
-    }),
-
-  atualizar: (id: string, payload: Atualizar<Entidade>Payload): Promise<<Entidade>Response> =>
-    apiFetch<<Entidade>Response>(`/api/<plural>/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(payload),
-    }),
-
-  deletar: (id: string): Promise<void> =>
+  criar: (payload: Criar<Entidade>Payload) =>
+    apiFetch<<Entidade>Response>('/api/<plural>', { method: 'POST', body: JSON.stringify(payload) }),
+  atualizar: (id: string, payload: Atualizar<Entidade>Payload) =>
+    apiFetch<<Entidade>Response>(`/api/<plural>/${id}`, { method: 'PUT', body: JSON.stringify(payload) }),
+  deletar: (id: string) =>
     apiFetch<void>(`/api/<plural>/${id}`, { method: 'DELETE' }),
 }
 ```
 
-### 7.3 Pagina de listagem
+**Variante server-side paginada** (referencia: `transacoes.service.ts`) — `listar`
+recebe params de filtro/paginacao e devolve `PageResponse<T>`:
 
-Referencia: `frontend/src/app/(dashboard)/tags/page.tsx`
+```typescript
+import type { PageResponse } from '@/shared/hooks/useListPage'
+
+export interface Listar<Entidade>sParams {
+  // filtros enum diretos + paginacao + sort
+  tipo?: string
+  /** Filtros adicionais: `campo:operador:valor,...` (ver secao 10.2). */
+  filtros?: string
+  page?: number
+  size?: number
+  /** `campo:dir` — ex: `data:desc`. */
+  sort?: string
+}
+
+listar: (params?: Listar<Entidade>sParams) => {
+  const qs = new URLSearchParams()
+  if (params) Object.entries(params).forEach(([k, v]) => {
+    if (v !== undefined && v !== '') qs.set(k, String(v))
+  })
+  const query = qs.toString() ? `?${qs}` : ''
+  return apiFetch<PageResponse<<Entidade>Response>>(`/api/<plural>${query}`)
+},
+```
+
+### 7.3 Pagina de listagem (server-side paginada)
+
+Referencia canonica: `frontend/src/app/(dashboard)/transacoes/page.tsx`.
+Contrato em `frontend-master-spec.md` §4.5 (filtros) e §4.6 (ActionsPanel).
 
 Elementos obrigatorios:
-- `SCREEN_CODE` no formato `MOD-ENT-001` (ver secao 8)
-- `useQuery({ queryKey: ['<plural>'], queryFn: <entidade>Service.listar })`
-- `DataTable` com colunas e `rowActions` (Editar + confirmar Excluir)
-- `ActionsPanel` com `entityType`, `entityId`, `screenCode`
-- Botao "Nova <Entidade>" navega para `/<plural>/nova`
-- Edicao navega para `/<plural>/${id}` (nao `/editar` — so tags usam esse padrao legado)
+- `const SCREEN_CODE = 'MOD-ENT-001'` (secao 8).
+- `useListPage<<Entidade>, ...>({ queryKey, fetcher, defaultSort })` — concentra
+  filtros/paginacao/sort na URL e dispara o fetch. O `fetcher` traduz os
+  `activeFilters` em params do backend (helper `buildBackendParams`, ver
+  `transacoes/page.tsx`).
+- `FilterBar` com `FilterFieldDef[]` (tipos `string|number|date|boolean|enum`) e
+  `OPERATORS_BY_TYPE`. Filtros de FK (enum dinamico) populam `options` via
+  `useQuery` da entidade referenciada.
+- `DataTable` com `ColumnDef[]`: `render` formata via `formatBRL`/`formatDate`
+  (field-type-catalog "Formatadores"); `StatusBadge` para enums com cor.
+- `rowActions`: Editar (navega `/<plural>/${id}/editar`) + Excluir com
+  **confirmacao inline** (state `confirmDeleteId`, troca botao por Confirmar/Cancelar).
+- `ActionsPanel` com `entityType`, `entityId={selecionada?.id ?? null}`,
+  `screenCode`, `onExportCsv` (via `exportToCsv`).
+- Controles de paginacao (Anterior/Proxima) a partir de `page`/`totalPages`.
 
-### 7.4 Pagina de criacao (nova)
+```tsx
+const { data, totalElements, totalPages, page, sort, isLoading, activeFilters,
+        addFilter, removeFilter, clearFilters, setPage, setSort } =
+  useListPage<<Entidade>, Record<string, string>>({
+    queryKey: '<plural>',
+    fetcher: ({ activeFilters, page, size, sort }) =>
+      <entidade>Service.listar({ ...buildBackendParams(activeFilters), page, size, sort }),
+    defaultSort: { field: 'criadoEm', dir: 'desc' },
+  })
+```
 
-```typescript
-// Elementos obrigatorios:
-// 1. Schema Zod espelhando CriarRequest.java (B6 — bloqueador se divergir)
-const schema = z.object({
-  nome: z.string().min(1, 'Obrigatorio').max(100),
-  descricao: z.string().max(300).optional(),
-  // enum: tipo: z.enum(['VALOR_A', 'VALOR_B', 'VALOR_C', 'OUTROS'])
-})
+### 7.3b Pagina de listagem (client-side, cadastros)
 
-// 2. useDraftForm (OBRIGATORIO — clearDraft no onSuccess e no Cancelar)
-const { clearDraft } = useDraftForm(form)
+Para backend `List<>`: `useQuery({ queryKey: ['<plural>'], queryFn:
+<entidade>Service.listar })`, filtro client-side com `useMemo`, mesmo `DataTable`
++ `rowActions` + `ActionsPanel`. Sem `useListPage`. Botao "Nova <Entidade>"
+navega para `/<plural>/nova`.
 
-// 3. useMutation com invalidateQueries e redirect apos sucesso
+### 7.4 Componente de formulario compartilhado (`<Entidade>Form`)
+
+**Padrao do projeto: criacao e edicao compartilham um unico `<Entidade>Form`**
+(referencia: `features/transacoes/components/TransacaoForm.tsx`). As paginas
+`nova` e `[id]` sao wrappers finos que so diferem na mutation. NAO duplicar
+schema/campos entre as duas paginas.
+
+O componente concentra:
+- `useForm` + `zodResolver(schema)`, com `schema` Zod **espelhando o `*Request.java`**
+  (B6 — divergencia e bloqueador). Money -> `z.coerce.number().positive()`;
+  `@Size(max=N)` -> `.max(N)`; FK obrigatoria -> `.uuid()`; opcional -> `.optional()`.
+- `useDraftForm(form)` **internamente** (a pagina pai nao chama de novo —
+  CLAUDE.md). `clearDraft()` no submit e no Cancelar.
+- Layout `FormGrid` + `FormCol span={1-12}` (spans sugeridos em field-type-catalog).
+- **Campo por tipo: seguir `field-type-catalog.md`** — `MoneyInput` para valor,
+  `LookupField` para FK (com `queryKey` sufixada — B13), `Controller`+`Select`
+  com `SelectValue` render-function para enum, `<Input type="date">` para LocalDate,
+  `<input type="hidden">` para `moeda` (valor fixo `'BRL'`).
+
+```tsx
+interface <Entidade>FormProps {
+  defaultValues: <Entidade>FormValues
+  onSubmit: (values: <Entidade>FormValues) => void
+  isSubmitting: boolean
+  apiError: string | null
+  onClearApiError: () => void
+  submitLabel: string
+  onCancel: () => void
+}
+
+export function <Entidade>Form({ defaultValues, onSubmit, isSubmitting, apiError,
+                                 onClearApiError, submitLabel, onCancel }: <Entidade>FormProps) {
+  const form = useForm<<Entidade>FormValues>({ resolver: zodResolver(schema), defaultValues })
+  const { clearDraft } = useDraftForm(form)
+
+  return (
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit((v) => { clearDraft(); onClearApiError(); onSubmit(v) })}
+            className="space-y-4">
+        <FormGrid>
+          {/* enum: Controller + Select + SelectValue render fn (field-type-catalog) */}
+          <FormCol span={6}>
+            <Controller control={form.control} name="tipo" render={({ field }) => (
+              <Select value={field.value} onValueChange={field.onChange}>
+                <SelectTrigger className="w-full">
+                  <SelectValue>{(v) => TIPOS.find(t => t.value === v)?.label ?? 'Selecione'}</SelectValue>
+                </SelectTrigger>
+                <SelectContent>{TIPOS.map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}</SelectContent>
+              </Select>
+            )} />
+          </FormCol>
+          {/* Money */}
+          <FormCol span={6}>
+            <FormField control={form.control} name="valor" render={({ field }) => (
+              <FormItem><FormLabel>Valor (R$)</FormLabel>
+                <FormControl><MoneyInput value={field.value} onChange={field.onChange} id={field.name} /></FormControl>
+                <FormMessage /></FormItem>
+            )} />
+          </FormCol>
+          {/* FK -> LookupField (queryKey com sufixo distinto — B13) */}
+          <FormCol span={12}>
+            <Controller control={form.control} name="categoriaId" render={({ field }) => (
+              <LookupField value={field.value ?? null} onChange={(v) => field.onChange(v ?? undefined)}
+                queryKey={['categorias', 'lookup']}
+                queryFn={() => categoriasService.listar().then(cs => cs.map(c => ({ value: c.id, label: c.nome })))}
+                placeholder="Selecione" />
+            )} />
+          </FormCol>
+        </FormGrid>
+        <input type="hidden" {...form.register('moeda')} />
+        {apiError && <p className="text-sm text-destructive">{apiError}</p>}
+        <div className="flex gap-3 pt-2">
+          <Button type="submit" disabled={isSubmitting}>{isSubmitting ? 'Salvando...' : submitLabel}</Button>
+          <Button type="button" variant="outline" onClick={onCancel}>Cancelar</Button>
+        </div>
+      </form>
+    </Form>
+  )
+}
+```
+
+### 7.5 Paginas `nova` e `[id]/editar` (wrappers finos)
+
+```tsx
+// nova/page.tsx — so a mutation de criacao
 const mutation = useMutation({
-  mutationFn: (values: FormValues) => <entidade>Service.criar(values),
+  mutationFn: (values: <Entidade>FormValues) => <entidade>Service.criar(values),
   onSuccess: async () => {
-    clearDraft()
     await queryClient.invalidateQueries({ queryKey: ['<plural>'] })
     router.push('/<plural>')
   },
+  onError: () => setApiError('Erro ao salvar.'),
 })
+return <<Entidade>Form defaultValues={default<Entidade>FormValues()} onSubmit={mutation.mutate}
+         isSubmitting={mutation.isPending} apiError={apiError}
+         onClearApiError={() => setApiError(null)} submitLabel="Salvar"
+         onCancel={() => router.push('/<plural>')} />
 
-// 4. Select para enum (usar Controller, nao FormField — evita double-wrapping base-ui)
-// Ver docs/field-type-catalog.md para o componente certo por tipo de campo
-```
-
-### 7.5 Pagina de edicao ([id])
-
-```typescript
-// Elementos obrigatorios:
-// 1. useQuery para carregar dados existentes
-const { data } = useQuery({
-  queryKey: ['<plural>', id],
-  queryFn: () => <entidade>Service.buscar(id),  // se GET /{id} existir
-  // Se nao houver GET /{id}: listar().find(e => e.id === id)
-})
-
-// 2. resetWithDraft (substitui form.reset — preserva rascunho)
-const { clearDraft, resetWithDraft } = useDraftForm(form)
-useEffect(() => {
-  if (data) resetWithDraft({ nome: data.nome, descricao: data.descricao ?? '' })
-}, [data])
-
-// 3. useMutation de atualizacao
+// [id]/editar/page.tsx — carrega dados e passa como defaultValues
+const { data } = useQuery({ queryKey: ['<plural>', id], queryFn: () => <entidade>Service.buscarPorId(id) })
+// renderizar o <Entidade>Form so quando `data` chegar (defaultValues a partir de `data`),
+// ou montar com defaults e usar resetWithDraft no useEffect (ver CLAUDE.md).
 const mutation = useMutation({
-  mutationFn: (values: FormValues) => <entidade>Service.atualizar(id, values),
+  mutationFn: (values: <Entidade>FormValues) => <entidade>Service.atualizar(id, values),
   onSuccess: async () => {
-    clearDraft()
     await queryClient.invalidateQueries({ queryKey: ['<plural>'] })
+    await queryClient.invalidateQueries({ queryKey: ['<plural>', id] })
     router.push('/<plural>')
   },
 })
 ```
+
+> **Nota de rota:** edicao navega para `/<plural>/${id}/editar` (padrao atual).
+> O `/<plural>/${id}` sem `/editar` so existe em telas legadas.
 
 ---
 
@@ -1409,9 +1748,11 @@ Antes de chamar /ship, confirmar que todos os itens abaixo existem:
 - [ ] `Listar<Entidade>sUseCase.java`
 - [ ] `Atualizar<Entidade>UseCase.java`
 - [ ] `Deletar<Entidade>UseCase.java`
-- [ ] `<Entidade>Controller.java`
-- [ ] DTOs: Criar/AtualizarRequest + Response
-- [ ] `GlobalExceptionHandler.java` atualizado (wiring da nova excecao)
+- [ ] `<Entidade>Controller.java` (com wiring de auditoria — secao 5.1)
+- [ ] DTOs: Criar/AtualizarRequest + Response (Money aninhado se houver — secao 5.2.1)
+- [ ] `GlobalExceptionHandler.java`: adicionar SO o handler `<Entidade>NaoEncontradoException`
+- [ ] Auditoria: `entityType` registrado no middleware (skill `add-entity-to-audit`)
+- [ ] Se M:N por UUID: migration da tabela de juncao `<tabela>_tag` (secao 1.7)
 
 **Testes Java:**
 - [ ] `<Entidade>Test.java` (unit domain)
@@ -1433,3 +1774,255 @@ Antes de chamar /ship, confirmar que todos os itens abaixo existem:
 - [ ] `<plural>/page.test.tsx`
 - [ ] `<plural>/nova/page.test.tsx`
 - [ ] `<plural>/[id]/page.test.tsx`
+
+> Se a entidade usar qualquer padrao da secao 10 (soft-delete, paginacao,
+> calculo cross-context, maquina de estados, hierarquia, value object,
+> operacao composta), o checklist acima ganha itens extras — ver a subsecao
+> correspondente.
+
+---
+
+## 10. Padroes avancados (alem do CRUD simples)
+
+As secoes 1-9 cobrem o CRUD backbone. Quando a entidade exige algo a mais,
+combinar o backbone com um ou mais dos padroes abaixo. Cada um e codigo real
+adaptado; manter a arquitetura (regra de negocio no domain, persistencia na
+infra, orquestracao no use case).
+
+### 10.1 Soft-delete (referencia: `transacao`)
+
+Em vez de remover a linha, marca-se `deleted_at`. Buscas padrao filtram
+`deleted_at IS NULL`. Use quando o registro precisa sobreviver para auditoria/
+historico.
+
+- **Domain** — campo `Instant deletedAt` (null = ativo) + helper:
+  ```java
+  private final Instant deletedAt;
+  public boolean isDeleted() { return deletedAt != null; }
+  ```
+- **Repository (interface)** — `void softDelete(UUID id)` separado de `deletar`
+  (delete fisico, so para testes). `buscarPorId` ja exclui soft-deleted.
+- **JpaRepository** — queries explicitas filtrando `deletedAt`:
+  ```java
+  @Query("SELECT t FROM <Entidade>Entity t WHERE t.id = :id AND t.deletedAt IS NULL")
+  Optional<<Entidade>Entity> findByIdAndNotDeleted(@Param("id") UUID id);
+
+  @Transactional @Modifying
+  @Query("UPDATE <Entidade>Entity t SET t.deletedAt = CURRENT_TIMESTAMP, "
+       + "t.atualizadoEm = CURRENT_TIMESTAMP WHERE t.id = :id")
+  void softDeleteById(@Param("id") UUID id);
+  ```
+- **Migration** — coluna `deleted_at TIMESTAMPTZ` (nullable, sem default).
+- **Controller** — `@DeleteMapping` chama o use case de soft delete; continua
+  retornando `204`.
+
+### 10.2 Paginacao + filtros dinamicos (Specification) (referencia: `transacao`)
+
+Para listagens de alto volume com filtros combinaveis e ordenacao no banco.
+Plugа direto no `useListPage` do frontend (secao 7.3).
+
+- **Domain — objeto de filtros** (`record FiltrosTransacao`): campos opcionais
+  (null = sem filtro) + `List<FiltroGenerico>` para filtros campo:operador:valor.
+  Os campos validos e operadores aceitos sao **regra de dominio** (enum
+  `FiltroTransacaoCampo`), nao de infra.
+- **Domain — repository** retorna `Page<>` e recebe campo de ordenacao **de
+  dominio** (enum `OrdenacaoTransacao` + `DirecaoOrdenacao`), nunca um
+  `org.springframework...Sort` cru:
+  ```java
+  Page<<Entidade>> listarComFiltrosOrdenado(
+      Filtros<Entidade> filtros, int page, int size,
+      Ordenacao<Entidade> ordenacao, DirecaoOrdenacao direcao);
+  ```
+- **Infra — JpaRepository** estende tambem `JpaSpecificationExecutor<<Entidade>Entity>`.
+- **Infra — Specifications** (Criteria API tipada, sem concatenar string -> sem
+  SQL injection). Sempre incluir `cb.isNull(root.get("deletedAt"))` quando houver
+  soft-delete. Money e `@Embedded`: o numero vive em `root.get("valor").get("valor")`.
+  Escapar curingas LIKE (`%`/`_`) em filtros string.
+- **Controller** — `@Validated`; `@RequestParam ... @Min(0) int page`,
+  `@Min(1) @Max(100) int size`; parseia `sort` (`campo:dir`) e `filtros`
+  (`campo:operador:valor,...`, valor URI-encoded) e retorna `Page<Response>` via
+  `resultado.map(Response::fromDomain)`.
+- **Frontend** — service retorna `PageResponse<T>` (secao 7.2 variante paginada).
+
+### 10.3 Agregacao via JPQL (constructor expression) (referencia: `transacao`)
+
+Para totais/somatorios calculados no banco (ex: saldo, totais por conta). Definir
+um `record` de dominio e projeta-lo com `SELECT new ...`:
+
+```java
+// domain: record TotaisTransacaoPorConta(BigDecimal receitas, BigDecimal despesas, ...)
+@Query("""
+    SELECT new com.laboratorio.financas.<contexto>.domain.Totais...(
+        COALESCE(SUM(CASE WHEN t.tipo = ...RECEITA AND t.transferGroupId IS NULL
+                          THEN t.valor.valor ELSE 0 END), 0),
+        ...)
+    FROM <Entidade>Entity t
+    WHERE t.contaId = :contaId AND t.deletedAt IS NULL
+    """)
+Totais... calcularTotaisPorConta(@Param("contaId") UUID contaId);
+```
+
+### 10.4 Calculo cross-context (referencia: `orcamento`)
+
+Um contexto pode **ler** outro injetando o repository **de dominio** do outro
+contexto (nunca a Entity/JpaRepository). A regra divide-se em duas camadas — e a
+separacao e o ponto arquitetural mais importante deste padrao:
+
+- **Use case = orquestracao.** Carrega o agregado, agrega dados do outro contexto
+  (a soma de transacoes e cross-context, logo e orquestracao) e delega a regra ao
+  dominio. NAO contem limiares nem calculo de percentual.
+- **Dominio = regra de negocio.** O calculo do percentual e a classificacao
+  (limiares) vivem num metodo do agregado, que retorna um value object de
+  resultado. Assim a regra e testavel em unit test puro (sem Spring/Mockito).
+
+**Dominio — metodo no agregado + VO de resultado:**
+
+```java
+// <contexto>/domain/Progresso<Entidade>.java
+public record Progresso<Entidade>(Money valorLimite, Money totalGasto,
+                                  BigDecimal percentualUtilizado, StatusProgresso status) { }
+
+// no agregado <Entidade> (regra de negocio aqui, nao no use case):
+public Progresso<Entidade> avaliarProgresso(Money totalGasto) {
+    if (valorLimite.valor().signum() == 0) {
+        return new Progresso<Entidade>(valorLimite, totalGasto, BigDecimal.ZERO, StatusProgresso.EXCEDIDO);
+    }
+    BigDecimal percentual = totalGasto.valor()
+            .multiply(BigDecimal.valueOf(100))
+            .divide(valorLimite.valor(), 2, RoundingMode.HALF_UP);
+    return new Progresso<Entidade>(valorLimite, totalGasto, percentual,
+            StatusProgresso.classificar(percentual));
+}
+
+// limiares no enum (mesmo padrao da secao 10.7 — comportamento junto do dado):
+public enum StatusProgresso {
+    ABAIXO, ATENCAO, ATINGIDO, EXCEDIDO;
+    public static StatusProgresso classificar(BigDecimal percentual) {
+        if (percentual.compareTo(BigDecimal.valueOf(100)) > 0)  return EXCEDIDO;
+        if (percentual.compareTo(BigDecimal.valueOf(100)) == 0) return ATINGIDO;
+        if (percentual.compareTo(BigDecimal.valueOf(80)) >= 0)  return ATENCAO;
+        return ABAIXO;
+    }
+}
+```
+
+**Use case — so orquestra:**
+
+```java
+@Component
+public class CalcularProgressoDo<Entidade>UseCase {
+  private final <Entidade>Repository <entidade>Repository;
+  private final TransacaoRepository transacaoRepository; // repo de DOMINIO do outro contexto
+
+  @Transactional(readOnly = true)
+  public Progresso<Entidade> executar(UUID id) {
+    var <entidade> = <entidade>Repository.buscarPorId(id).orElseThrow(...);
+    var filtros = new FiltrosTransacao(/* mes, categoria, tipo DESPESA */);
+    Money totalGasto = new Money(
+        transacaoRepository.listarComFiltros(filtros, Pageable.unpaged())
+            .getContent().stream().map(t -> t.getValor().valor())
+            .reduce(BigDecimal.ZERO, BigDecimal::add),
+        <entidade>.getValorLimite().moeda());
+    return <entidade>.avaliarProgresso(totalGasto);   // regra delegada ao dominio
+  }
+}
+```
+
+> **Divida tecnica conhecida:** o `orcamento` atual mantem percentual+limiares
+> dentro do `CalcularProgressoDoOrcamentoUseCase`. Isso e um atalho a refatorar —
+> codigo novo deve seguir a separacao acima (regra no dominio, orquestracao no
+> use case).
+
+### 10.5 Maquina de estados no dominio (referencia: `meta`)
+
+Entidade com `status` mutavel e transicoes validadas. O dominio rejeita transicao
+ilegal com `IllegalStateException` — que o `GlobalExceptionHandler` **ja mapeia
+globalmente para 400** (nao criar handler novo; ver "Infra compartilhada assumida").
+O use case so orquestra (carrega, chama o metodo, salva).
+
+```java
+public void registrarDeposito(Money deposito) {
+    if (status != StatusMeta.EM_ANDAMENTO)
+        throw new IllegalStateException("Meta nao esta em andamento");
+    // valida deposito (positivo, mesma moeda) ...
+    this.valorAtual = new Money(valorAtual.valor().add(deposito.valor()), valorAtual.moeda());
+    if (valorAtual.valor().compareTo(valorAlvo.valor()) >= 0)
+        this.status = StatusMeta.CONCLUIDA;   // transicao automatica
+    this.atualizadoEm = Instant.now();
+}
+public void cancelar() {
+    if (status == StatusMeta.CONCLUIDA)
+        throw new IllegalStateException("Meta ja concluida nao pode ser cancelada");
+    this.status = StatusMeta.CANCELADA;
+    this.atualizadoEm = Instant.now();
+}
+```
+
+- **Use cases extras** alem do CRUD: um por transicao (`RegistrarDepositoEm<Entidade>UseCase`,
+  `Cancelar<Entidade>UseCase`), cada um com seu `record Comando`.
+- **Controller** — endpoints de acao: `POST /api/<plural>/{id}/depositos`,
+  `POST /api/<plural>/{id}/cancelamento` (ou similar), nao apenas PUT generico.
+- **Teste de dominio** — cobrir cada transicao valida E cada transicao ilegal.
+
+### 10.6 Queries derivadas, hierarquia e visibilidade (referencia: `categoria`)
+
+Quando ha mais buscas que `findByUserId`:
+
+- **Derived queries** do Spring Data: `findByTipo(...)`, `existsByNomeAndUserId(...)`.
+- **Hierarquia (self-FK)** — campo `UUID categoriaPaiId` (mesmo padrao da secao 1.6,
+  apontando para a propria tabela). Migration: FK auto-referente
+  `REFERENCES categoria(id)`. Queries `findByCategoriaPaiIdIsNull()` (raizes) e
+  `findByCategoriaPaiId(id)` (filhos).
+- **Visibilidade multi-tenant** — registros `system` (globais) + do usuario:
+  ```java
+  @Query("SELECT c FROM <Entidade>Entity c WHERE c.system = true OR c.userId = :userId")
+  List<<Entidade>Entity> findVisiveisPara(@Param("userId") UUID userId);
+  ```
+- **Unicidade condicional** — `existsByNomeAndUserId` + `existsByNomeAndSystemTrue`,
+  validada no use case com excecao de dominio (`<Entidade>JaExisteException` -> 409).
+
+### 10.7 Value object / enum com comportamento (referencia: `lancamentorecorrente.Periodicidade`)
+
+Quando uma escolha (enum) carrega regra. Em vez de `switch` espalhado, o
+comportamento vive no proprio enum (constant-specific methods):
+
+```java
+public enum Periodicidade {
+    MENSAL   { public LocalDate calcularProxima(LocalDate atual) { return atual.plusMonths(1); } },
+    SEMANAL  { public LocalDate calcularProxima(LocalDate atual) { return atual.plusWeeks(1); } },
+    // ...
+    ;
+    public abstract LocalDate calcularProxima(LocalDate atual);
+}
+```
+
+A entidade delega: `this.proximaOcorrencia = periodicidade.calcularProxima(proximaOcorrencia)`.
+Persistir o enum com `@Enumerated(EnumType.STRING)` (secao 2.2).
+
+### 10.8 Operacao composta / registros vinculados (referencia: `transacao` transferencia)
+
+Quando uma acao do usuario cria **mais de um registro** ligados entre si (ex:
+transferencia = 1 DESPESA na origem + 1 RECEITA no destino, com IDs cruzados).
+Usar **static factory** no dominio retornando um `record` com as partes:
+
+```java
+public record TransferenciaPar(Transacao despesa, Transacao receita) { }
+
+public static TransferenciaPar criarParTransferencia(
+        UUID userId, Money valor, UUID contaOrigemId, UUID contaDestinoId,
+        LocalDate data, String descricao, UUID categoriaId) {
+    if (contaOrigemId.equals(contaDestinoId))
+        throw new IllegalArgumentException("origem nao pode ser igual ao destino");
+    UUID groupId = UUID.randomUUID();
+    UUID idDespesa = UUID.randomUUID(), idReceita = UUID.randomUUID();
+    // despesa.transferPairId = idReceita; receita.transferPairId = idDespesa;
+    // ambos compartilham transferGroupId = groupId
+    return new TransferenciaPar(despesa, receita);
+}
+```
+
+- O use case valida as referencias (contas) e **salva as duas partes na mesma
+  transacao** (`@Transactional`).
+- Agregacoes devem tratar os pares (ex: excluir transferencias do total de
+  receitas/despesas "reais" — ver `calcularTotaisPorConta`, secao 10.3).
+- Soft-delete de uma parte normalmente implica a outra (decisao de dominio).
