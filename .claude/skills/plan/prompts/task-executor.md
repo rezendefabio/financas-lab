@@ -161,20 +161,17 @@ crie-os conforme descrito -- nao invoque /feature-front por conta propria.
 3. Nao pule passos. Nao invente passos.
 4. Se um passo falhar: registre o erro e tente corrigir. Aborte se irrecuperavel.
 
-**Regra de leitura de arquivos (bounded context novo):**
+**Regra de leitura de arquivos:**
 
-O prompt contem a secao `## Arquivos a criar` com o codigo COMPLETO e JA ADAPTADO
-de cada arquivo novo. O planejador fez a adaptacao -- voce so escreve.
-
-- **Arquivos NOVOS**: nao ler nenhum arquivo de referencia. Usar exatamente o
-  conteudo fornecido na secao `## Arquivos a criar`. NAO ler Tag.java,
-  CarteirController.java, CarteiraMapper.java nem qualquer outro arquivo do
-  projeto como referencia -- o codigo ja chegou pronto.
+- **Referencia de padrao**: o prompt indica quais secoes de `docs/crud-patterns.md`
+  usar. Leia `docs/crud-patterns.md` (unico arquivo de referencia permitido) e
+  implemente seguindo as secoes indicadas. NAO ler Tag.java, CarteiraController.java,
+  CarteiraEntity.java nem qualquer outro arquivo do projeto como template.
 - **Arquivos a MODIFICAR** (GlobalExceptionHandler, screens.registry.ts, sidebar):
   leia antes de editar. O prompt lista quais sao e o que fazer em cada um.
 - **CLAUDE.md**: leia uma vez no inicio. Nao releia.
 
-Se o prompt NAO contiver a secao `## Arquivos a criar` (task de refactor ou fix):
+Se o prompt for de refactor ou fix (sem secao `## Referencia de implementacao`):
 leia os arquivos que vai modificar -- comportamento correto para esse tipo de task.
 
 ## Wiring obrigatorio ao criar bounded context novo

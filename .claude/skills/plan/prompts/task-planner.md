@@ -90,77 +90,45 @@ Registrar na chave `premissas_globais` do JSON de saida. Cada premissa deve
 ser uma frase afirmativa, curta e precisa. O operador vai ler e aprovar ou
 rejeitar no Passo 3 da skill.
 
-## Passo 1.8 -- Gerar codigo completo para o executor (OBRIGATORIO para bounded contexts)
+## Passo 1.8 -- Classificar complexidade e orientar o executor (OBRIGATORIO para bounded contexts)
 
 Se o objetivo envolve criar um novo bounded context seguindo o padrao existente
 do projeto (domain + application + infra + interfaces + frontend):
 
-**1. Ler o guia de padroes canonico:**
+**1. Classificar o novo bounded context pela matriz de complexidade:**
+
+| Caracteristica do novo dominio | Secoes relevantes em docs/crud-patterns.md |
+|-------------------------------|---------------------------------------------|
+| Campos simples (string, boolean, UUID) | 1.1, 1.4, 1.5, 2.1, 2.4, 2.5, 2.6, 2.7, 3, 4, 5, 6, 7, 8 |
+| Tem enum proprio | + 1.2 enum, 2.2 enum na Entity |
+| Tem campo monetario (Money) | + 1.3 Money, 2.3 @Embedded/@AttributeOverride |
+| Tem FK para outro bounded context | + 1.6 FK |
+
+**2. Incluir no campo `prompt` da task a secao de referencia:**
+
+O prompt deve conter o bloco abaixo informando ao executor qual arquivo ler
+e quais secoes usar -- o executor le o arquivo e implementa:
 
 ```
-docs/crud-patterns.md
+## Referencia de implementacao
+
+Leia `docs/crud-patterns.md` como unico arquivo de referencia de padrao.
+Secoes aplicaveis para este dominio: [listar as secoes da tabela acima].
+NAO ler outros arquivos do projeto como referencia (Tag.java,
+CarteiraController.java, CarteirEntity.java, etc.) -- tudo que voce
+precisa esta em docs/crud-patterns.md.
 ```
 
-**2. Gerar o codigo COMPLETO e ADAPTADO de cada arquivo a criar:**
+**3. Listar no prompt os arquivos que o executor deve MODIFICAR (ler antes de editar):**
 
-Substituir TODOS os placeholders pelos nomes reais do novo dominio:
-- `<Entidade>` → nome real (ex: `Limite`)
-- `<contexto>` → pacote real (ex: `limite`)
-- `<tabela>` → nome real da tabela (ex: `limite`)
-- `<entidade>` → variavel local (ex: `limite`)
-- Campos → os campos reais descritos no objetivo
-
-O executor NAO adapta. O executor NAO le referencia. O executor recebe codigo
-pronto e escreve nos arquivos. A adaptacao e trabalho do planejador.
-
-**3. Incluir no campo `prompt` da task o conteudo completo de cada arquivo:**
-
-```
-## Arquivos a criar (escrever exatamente este conteudo)
-
-O executor NAO deve ler arquivos de referencia. O codigo abaixo ja esta
-adaptado para o dominio. Escrever cada arquivo com o conteudo exato fornecido.
-
-### src/main/java/com/laboratorio/financas/<contexto>/domain/<Entidade>.java
-```java
-[conteudo completo do arquivo, com campos e nomes reais do novo dominio]
-```
-
-### src/main/java/com/laboratorio/financas/<contexto>/domain/<Entidade>Repository.java
-```java
-[conteudo completo]
-```
-
-### src/main/java/com/laboratorio/financas/<contexto>/domain/<Entidade>NaoEncontradoException.java
-```java
-[conteudo completo]
-```
-
-[... todos os arquivos novos: TipoXxx.java se enum, XxxEntity.java, XxxJpaRepository.java,
-XxxMapper.java, XxxRepositoryImpl.java, XxxController.java, DTOs, migration SQL,
-todos os testes Java (XxxTest, XxxUseCaseTest x N, XxxRepositoryImplTest, XxxControllerTest),
-todos os arquivos frontend (types, service, index, 3 paginas, 4 testes Vitest)]
-```
-
-**4. Arquivos que o executor deve MODIFICAR (ler antes de editar -- nao gerar aqui):**
-
-Listar apenas estes (o executor le e edita):
-- `src/main/java/.../shared/infrastructure/web/GlobalExceptionHandler.java`
-  → instrucao: adicionar `@ExceptionHandler` para `<Entidade>NaoEncontradoException`
-- `frontend/src/shared/shell/screens.registry.ts`
-  → instrucao: adicionar entrada `{ code: 'CAD-XXX-001', title: '...', ... }`
-- `frontend/src/shared/shell/screens.registry.test.ts`
-  → instrucao: incrementar contador de telas em 1
-- Sidebar (se aplicavel)
-  → instrucao: adicionar link com icone
-
-**Regra de ouro:** O executor recebe codigo pronto. Nao adapta. Nao le referencia.
-Escreve, commita, roda os gates, abre PR. O custo de adaptacao fica no planejador
-(uma vez), nao no executor (que repetiria para N tasks em paralelo).
+- `GlobalExceptionHandler.java` → adicionar handler da nova excecao
+- `screens.registry.ts` → adicionar entrada da tela
+- `screens.registry.test.ts` → incrementar contador
+- Sidebar → adicionar link (se aplicavel)
 
 **Quando NAO aplicar este passo:** tasks de refactor, fix de bug, ou qualquer
-objetivo que nao seja criacao de bounded context do zero. Nesses casos, o executor
-le os arquivos que vai modificar -- comportamento correto.
+objetivo que nao seja criacao de bounded context do zero. Nesses casos o executor
+le os arquivos que vai modificar -- comportamento correto para esse tipo de task.
 
 ## Passo 2 -- Quebrar em tasks (fatia vertical obrigatoria)
 
