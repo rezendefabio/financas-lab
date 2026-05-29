@@ -775,6 +775,106 @@ public record <Entidade>Response(
 
 ## 6. Testes Java
 
+### 6.0 Classes base de teste (nao modificar — copiar imports e heranca)
+
+**AbstractIntegrationTest** — base para RepositoryImplTest:
+
+```java
+// package com.laboratorio.financas.shared;
+// Extender em tests de repositorio: class <X>RepositoryImplTest extends AbstractIntegrationTest
+@SpringBootTest
+@ActiveProfiles("test")
+@Testcontainers
+public abstract class AbstractIntegrationTest {
+    protected static final PostgreSQLContainer<?> POSTGRES =
+            new PostgreSQLContainer<>("postgres:16-alpine")
+            .withDatabaseName("financas_test").withUsername("test").withPassword("test");
+    protected static final MinIOContainer MINIO =
+            new MinIOContainer("minio/minio:latest")
+            .withUserName("testminio").withPassword("testminio123");
+    static { POSTGRES.start(); MINIO.start(); }
+    @DynamicPropertySource
+    static void registerProperties(DynamicPropertyRegistry registry) {
+        registry.add("spring.datasource.url", POSTGRES::getJdbcUrl);
+        registry.add("spring.datasource.username", POSTGRES::getUsername);
+        registry.add("spring.datasource.password", POSTGRES::getPassword);
+        registry.add("spring.flyway.url", POSTGRES::getJdbcUrl);
+        registry.add("spring.flyway.user", POSTGRES::getUsername);
+        registry.add("spring.flyway.password", POSTGRES::getPassword);
+        registry.add("minio.endpoint", MINIO::getS3URL);
+        registry.add("minio.access-key", MINIO::getUserName);
+        registry.add("minio.secret-key", MINIO::getPassword);
+        registry.add("minio.bucket", () -> "financas-lab-test");
+    }
+}
+```
+
+**AbstractAuthenticatedIntegrationTest** — base para ControllerTest:
+
+```java
+// Extender em tests de controller: class <X>ControllerTest extends AbstractAuthenticatedIntegrationTest
+@AutoConfigureMockMvc
+public abstract class AbstractAuthenticatedIntegrationTest extends AbstractIntegrationTest {
+    @Autowired protected MockMvc mockMvc;
+    @Autowired private UsuarioJpaRepository usuarioJpaRepository;
+    protected String token;
+    protected UUID authenticatedUserId;
+
+    @BeforeEach
+    void autenticar() throws Exception {
+        String body = "{\"email\":\"executor@test.com\",\"senha\":\"senha12345678\"}";
+        mockMvc.perform(post("/api/auth/registrar")
+                .contentType(MediaType.APPLICATION_JSON).content(body)).andReturn();
+        MvcResult result = mockMvc.perform(post("/api/auth/login")
+                .contentType(MediaType.APPLICATION_JSON).content(body))
+                .andExpect(status().isOk()).andReturn();
+        token = new ObjectMapper().readTree(result.getResponse().getContentAsString())
+                .get("token").asText();
+        authenticatedUserId = usuarioJpaRepository.findByEmail("executor@test.com")
+                .map(u -> u.getId()).orElse(null);
+    }
+
+    protected MockHttpServletRequestBuilder comAuth(MockHttpServletRequestBuilder req) {
+        return req.header("Authorization", "Bearer " + token);
+    }
+}
+```
+
+**Padrao de BeforeEach no RepositoryImplTest** (criar usuario persistido):
+
+```java
+@Autowired private UsuarioJpaRepository usuarioJpaRepository;
+private UUID userId;
+
+@BeforeEach
+void setup() {
+    jpaRepository.deleteAll();
+    usuarioJpaRepository.deleteAll();
+    userId = criarUsuarioPersistido();
+}
+
+@AfterEach
+void limpar() {
+    jpaRepository.deleteAll();
+    usuarioJpaRepository.deleteAll();
+}
+
+private UUID criarUsuarioPersistido() {
+    UUID id = UUID.randomUUID();
+    UsuarioEntity entity = new UsuarioEntity(
+            id,
+            "teste+" + id + "@test.com",
+            "hash_bcrypt",
+            true,
+            Instant.now(),
+            null,
+            Instant.now()
+    );
+    usuarioJpaRepository.save(entity);
+    return id;
+}
+```
+
 ### 6.1 Unit test de dominio
 
 Referencia: `tag/domain/TagTest.java`
@@ -1046,6 +1146,89 @@ class <Entidade>ControllerTest extends AbstractAuthenticatedIntegrationTest {
 ---
 
 ## 7. Frontend Layer
+
+### 7.0 Utilitarios e imports frontend
+
+**Formatters disponíveis** — importar de `@/shared/lib/formatters`:
+
+```typescript
+import { formatBRL, formatDate, formatDateTime } from '@/shared/lib/formatters'
+
+// Uso:
+formatBRL(123.45)          // → "R$ 123,45"
+formatDate('2026-05-28')   // → "28/05/2026"
+formatDateTime('2026-05-28T14:30:00Z') // → "28/05/2026, 11:30:00"
+```
+
+Campos monetarios na DataTable: sempre `cell: (v) => formatBRL(v.valor.valor)` (valor e objeto `{ valor, moeda }`).
+Campos de data (Instant/string ISO): `cell: (v) => formatDateTime(v.criadoEm)`.
+Campos LocalDate: `cell: (v) => formatDate(v.data)`.
+
+**Teste de service** — padrao com `vi.mock` (copiar e adaptar):
+
+```typescript
+// frontend/src/features/<dominio>/services/<dominio>-service.test.ts
+import { describe, it, expect, vi, afterEach } from 'vitest'
+
+vi.mock('@/services/api-client', () => ({ apiFetch: vi.fn() }))
+
+import { apiFetch } from '@/services/api-client'
+import { listar<Entidades>, criar<Entidade>, atualizar<Entidade>, deletar<Entidade> }
+  from './<dominio>-service'
+
+const mock<Entidade> = {
+  id: '00000000-0000-0000-0000-000000000001',
+  nome: 'Teste',
+  ativo: true,
+  criadoEm: '2026-01-01T00:00:00Z',
+  atualizadoEm: '2026-01-01T00:00:00Z',
+}
+
+afterEach(() => { vi.restoreAllMocks() })
+
+describe('listar<Entidades>', () => {
+  it('chama apiFetch com path correto', async () => {
+    vi.mocked(apiFetch).mockResolvedValue([mock<Entidade>])
+    const result = await listar<Entidades>()
+    expect(apiFetch).toHaveBeenCalledWith('/api/<dominio>s')
+    expect(result).toEqual([mock<Entidade>])
+  })
+})
+
+describe('criar<Entidade>', () => {
+  it('chama apiFetch com POST e payload', async () => {
+    vi.mocked(apiFetch).mockResolvedValue(mock<Entidade>)
+    const payload = { nome: 'Teste' }
+    await criar<Entidade>(payload)
+    expect(apiFetch).toHaveBeenCalledWith('/api/<dominio>s', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    })
+  })
+})
+
+describe('atualizar<Entidade>', () => {
+  it('chama apiFetch com PUT id e payload', async () => {
+    vi.mocked(apiFetch).mockResolvedValue(mock<Entidade>)
+    const payload = { nome: 'Novo' }
+    await atualizar<Entidade>(mock<Entidade>.id, payload)
+    expect(apiFetch).toHaveBeenCalledWith(`/api/<dominio>s/${mock<Entidade>.id}`, {
+      method: 'PUT',
+      body: JSON.stringify(payload),
+    })
+  })
+})
+
+describe('deletar<Entidade>', () => {
+  it('chama apiFetch com DELETE no path com id', async () => {
+    vi.mocked(apiFetch).mockResolvedValue(undefined)
+    await deletar<Entidade>(mock<Entidade>.id)
+    expect(apiFetch).toHaveBeenCalledWith(`/api/<dominio>s/${mock<Entidade>.id}`, {
+      method: 'DELETE',
+    })
+  })
+})
+```
 
 ### 7.1 Types
 
