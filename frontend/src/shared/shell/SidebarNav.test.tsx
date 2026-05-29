@@ -33,7 +33,9 @@ describe('SidebarNav', () => {
     renderNav()
     expect(screen.getByText('Cadastros')).toBeInTheDocument()
     expect(screen.getByText('Movimento')).toBeInTheDocument()
-    expect(screen.getByText('Planejamento')).toBeInTheDocument()
+    // "Planejamento" aparece como grupo de topo (Orcamentos/Metas/Recorrentes)
+    // e tambem como subgrupo de "Cadastros" (Limites) -- dois nos distintos.
+    expect(screen.getAllByText('Planejamento').length).toBeGreaterThanOrEqual(1)
     expect(screen.getByText('Analise')).toBeInTheDocument()
   })
 
