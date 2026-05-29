@@ -90,92 +90,45 @@ Registrar na chave `premissas_globais` do JSON de saida. Cada premissa deve
 ser uma frase afirmativa, curta e precisa. O operador vai ler e aprovar ou
 rejeitar no Passo 3 da skill.
 
-## Passo 1.8 -- Extrair e inlinar padroes de referencia (OBRIGATORIO para bounded contexts)
+## Passo 1.8 -- Classificar complexidade e orientar o executor (OBRIGATORIO para bounded contexts)
 
 Se o objetivo envolve criar um novo bounded context seguindo o padrao existente
 do projeto (domain + application + infra + interfaces + frontend):
 
 **1. Classificar o novo bounded context pela matriz de complexidade:**
 
-Ler a descricao do objetivo e identificar quais caracteristicas o novo dominio tem.
-Escolher a referencia adequada para cada caracteristica:
+| Caracteristica do novo dominio | Secoes relevantes em docs/crud-patterns.md |
+|-------------------------------|---------------------------------------------|
+| Campos simples (string, boolean, UUID) | 1.1, 1.4, 1.5, 2.1, 2.4, 2.5, 2.6, 2.7, 3, 4, 5, 6, 7, 8 |
+| Tem enum proprio | + 1.2 enum, 2.2 enum na Entity |
+| Tem campo monetario (Money) | + 1.3 Money, 2.3 @Embedded/@AttributeOverride |
+| Tem FK para outro bounded context | + 1.6 FK |
 
-| Caracteristica do novo dominio | Referencia obrigatoria |
-|-------------------------------|----------------------|
-| Campos simples (string, boolean, UUID) | `tag` (sempre -- base minima) |
-| Tem enum proprio | `carteira` (padrão @Enumerated + TipoCarteira) |
-| Tem campo monetario (Money/@Embedded) | `conta` (padrão @Embedded + @AttributeOverride) |
-| Tem filtros paginados ou queries complexas | `transacao` (findComFiltros + Pageable) |
-| Cruza dados de outro bounded context | `orcamento` (injeta segundo Repository no use case) |
+**2. Incluir no campo `prompt` da task a secao de referencia:**
 
-Exemplos de classificacao:
-- "grupo (nome, descricao, ativo)" → so `tag`
-- "ativo (nome, tipo enum, valor)" → `tag` + `carteira`
-- "lancamento (descricao, valor Money, categoria)" → `tag` + `conta`
-- "relatorio-mes (filtros por data/categoria)" → `tag` + `transacao`
-
-**2. Ler o guia de padroes canonico (UMA leitura -- nao ler arquivos individuais):**
+O prompt deve conter o bloco abaixo informando ao executor qual arquivo ler
+e quais secoes usar -- o executor le o arquivo e implementa:
 
 ```
-docs/crud-patterns.md
+## Referencia de implementacao
+
+Leia `docs/crud-patterns.md` como unico arquivo de referencia de padrao.
+Secoes aplicaveis para este dominio: [listar as secoes da tabela acima].
+NAO ler outros arquivos do projeto como referencia (Tag.java,
+CarteiraController.java, CarteirEntity.java, etc.) -- tudo que voce
+precisa esta em docs/crud-patterns.md.
 ```
 
-Este arquivo contem o codigo real de todos os padroes do projeto: domain, entity,
-mapper, repositoryImpl, controller, use cases, todos os niveis de teste Java e
-frontend. Substitui a leitura de 5-10 arquivos individuais.
+**3. Listar no prompt os arquivos que o executor deve MODIFICAR (ler antes de editar):**
 
-**3. Extrair de `docs/crud-patterns.md` os trechos relevantes e inlinar no campo
-`prompt` da task:**
+- `GlobalExceptionHandler.java` → adicionar handler da nova excecao
+- `screens.registry.ts` → adicionar entrada da tela
+- `screens.registry.test.ts` → incrementar contador
+- Sidebar → adicionar link (se aplicavel)
 
-Baseando-se na classificacao feita no passo 1, extrair as secoes correspondentes:
-
-| Caracteristica | Secoes a extrair do crud-patterns.md |
-|---------------|--------------------------------------|
-| Base (sempre) | secoes 1.1, 1.2 Repository, 1.3 Exception, 2.1 Entity base, 2.3 Mapper, 2.4 RepositoryImpl, 3 GlobalExceptionHandler, 4 (todos os use cases), 5 Controller, 6 (todos os testes Java), 7 Frontend, 8 Screen Registry |
-| Tem enum | adicionar secao 1.2 Enum da entidade (`@Enumerated`), secao 2.1 com exemplo de coluna enum |
-| Tem Money | adicionar secoes 1.3 Money, 2.2 Entity com @Embedded/@AttributeOverride |
-| Tem filtros paginados | adicionar padrao findComFiltros + Pageable do RepositoryImpl |
-| Cruza bounded context | adicionar padrao de injecao de segundo Repository no use case |
-
-**Formato de inlining no prompt do executor:**
-
-Inserir no prompt um bloco com cabecalho e os trechos extraidos:
-
-```
-## Padroes de referencia (nao ler arquivos -- usar estes trechos direto)
-
-Fonte: docs/crud-patterns.md — adaptar nomes, campos e tipos para o novo dominio.
-
-### Domain layer
-[colar secao 1.1 adaptada]
-
-### Entity JPA
-[colar secao 2.1 adaptada]
-
-### GlobalExceptionHandler wiring (fazer ANTES do primeiro commit de infra)
-[colar secao 3 adaptada]
-
-### Use cases
-[colar secao 4 adaptada]
-
-### Controller + DTOs
-[colar secao 5 adaptada]
-
-### Testes Java (unit, Mockito, Testcontainers, MockMvc)
-[colar secoes 6.1-6.4 adaptadas]
-
-### Frontend (types, service, paginas, screen registry)
-[colar secoes 7 e 8 adaptadas]
-```
-
-**Regra de ouro:** O executor que recebe um prompt com esses trechos inlinados
-NAO precisa ler nenhum arquivo de referencia. O custo de leitura fica no
-planejador (1 Read de docs/crud-patterns.md), nao no executor (que repetiria
-N leituras para N tasks).
-
-**Quando NAO inlinar:** tasks de refactor, fix de bug, ou qualquer objetivo
-que nao seja criacao de bounded context do zero. Nesses casos, o executor
-precisa ler os arquivos que vai modificar -- o que e correto.
+**Quando NAO aplicar este passo:** tasks de refactor, fix de bug, ou qualquer
+objetivo que nao seja criacao de bounded context do zero. Nesses casos o executor
+le os arquivos que vai modificar -- comportamento correto para esse tipo de task.
 
 ## Passo 2 -- Quebrar em tasks (fatia vertical obrigatoria)
 

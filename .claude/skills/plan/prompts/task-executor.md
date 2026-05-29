@@ -156,19 +156,23 @@ crie-os conforme descrito -- nao invoque /feature-front por conta propria.
 
 ## Execucao
 
-1. Leia `CLAUDE.md` -- apenas para convencoes de ambiente (hooks, commits,
-   encoding). Os padroes de implementacao ja chegam inlinados no prompt da task.
-2. Execute cada passo do fluxo de execucao descrito em "Instrucoes da tarefa"
+1. Leia `CLAUDE.md` -- apenas para convencoes de ambiente (hooks, commits, encoding).
+2. Execute cada passo do fluxo de execucao descrito em "Instrucoes da tarefa".
 3. Nao pule passos. Nao invente passos.
 4. Se um passo falhar: registre o erro e tente corrigir. Aborte se irrecuperavel.
 
 **Regra de leitura de arquivos:**
-- Padroes de referencia (como implementar domain, entity, controller, etc.)
-  ja estao inlinados no prompt. NAO ler arquivos de referencia adicionais
-  (Tag.java, CarteirController.java, etc.) a menos que o prompt instrua explicitamente.
-- Arquivos que voce vai MODIFICAR: leia antes de editar (GlobalExceptionHandler,
-  sidebar, screens.registry.ts, etc.). Isso e obrigatorio -- nunca editar sem ler.
-- CLAUDE.md: leia uma vez no inicio, nao releia durante a execucao.
+
+- **Referencia de padrao**: o prompt indica quais secoes de `docs/crud-patterns.md`
+  usar. Leia `docs/crud-patterns.md` (unico arquivo de referencia permitido) e
+  implemente seguindo as secoes indicadas. NAO ler Tag.java, CarteiraController.java,
+  CarteiraEntity.java nem qualquer outro arquivo do projeto como template.
+- **Arquivos a MODIFICAR** (GlobalExceptionHandler, screens.registry.ts, sidebar):
+  leia antes de editar. O prompt lista quais sao e o que fazer em cada um.
+- **CLAUDE.md**: leia uma vez no inicio. Nao releia.
+
+Se o prompt for de refactor ou fix (sem secao `## Referencia de implementacao`):
+leia os arquivos que vai modificar -- comportamento correto para esse tipo de task.
 
 ## Wiring obrigatorio ao criar bounded context novo
 
