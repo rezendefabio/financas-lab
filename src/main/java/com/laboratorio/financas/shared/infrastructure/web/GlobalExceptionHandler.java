@@ -13,6 +13,7 @@ import com.laboratorio.financas.incidente.application.RegistrarErroUseCase;
 import com.laboratorio.financas.incidente.domain.IncidenteNaoEncontradoException;
 import com.laboratorio.financas.instituicao.domain.InstituicaoNaoEncontradaException;
 import com.laboratorio.financas.lancamentorecorrente.domain.LancamentoRecorrenteNaoEncontradoException;
+import com.laboratorio.financas.limite.domain.LimiteNaoEncontradoException;
 import com.laboratorio.financas.meta.domain.MetaNaoEncontradaException;
 import com.laboratorio.financas.orcamento.domain.OrcamentoNaoEncontradoException;
 import com.laboratorio.financas.payee.domain.PayeeNaoEncontradoException;
@@ -233,6 +234,15 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(GrupoNaoEncontradoException.class)
     public ProblemDetail handleGrupoNaoEncontrado(GrupoNaoEncontradoException ex) {
+        ProblemDetail problem = ProblemDetail.forStatus(HttpStatus.NOT_FOUND);
+        problem.setTitle("Not Found");
+        problem.setDetail(ex.getMessage());
+        problem.setProperty("id", ex.getId().toString());
+        return problem;
+    }
+
+    @ExceptionHandler(LimiteNaoEncontradoException.class)
+    public ProblemDetail handleLimiteNaoEncontrado(LimiteNaoEncontradoException ex) {
         ProblemDetail problem = ProblemDetail.forStatus(HttpStatus.NOT_FOUND);
         problem.setTitle("Not Found");
         problem.setDetail(ex.getMessage());
