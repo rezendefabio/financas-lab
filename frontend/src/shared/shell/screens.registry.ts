@@ -149,6 +149,14 @@ export const screens: ScreenDefinition[] = [
     permissions: [],
   },
   {
+    code: 'CAD-LMT-001',
+    title: 'Limites',
+    path: '/limites',
+    menuPath: ['Cadastros', 'Planejamento', 'Limites'],
+    icon: 'gauge',
+    permissions: [],
+  },
+  {
     code: 'FIN-FAT-001',
     title: 'Faturas',
     path: '/faturas',

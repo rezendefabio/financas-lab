@@ -11,7 +11,7 @@ import {
 describe('screens.registry', () => {
   it('getAllScreens retorna o manifesto completo', () => {
     expect(getAllScreens()).toBe(screens)
-    expect(getAllScreens().length).toBe(18)
+    expect(getAllScreens().length).toBe(19)
   })
 
   it('todos os codes seguem o formato MOD-ENT-NNN', () => {
