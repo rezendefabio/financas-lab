@@ -156,19 +156,26 @@ crie-os conforme descrito -- nao invoque /feature-front por conta propria.
 
 ## Execucao
 
-1. Leia `CLAUDE.md` -- apenas para convencoes de ambiente (hooks, commits,
-   encoding). Os padroes de implementacao ja chegam inlinados no prompt da task.
-2. Execute cada passo do fluxo de execucao descrito em "Instrucoes da tarefa"
+1. Leia `CLAUDE.md` -- apenas para convencoes de ambiente (hooks, commits, encoding).
+2. Execute cada passo do fluxo de execucao descrito em "Instrucoes da tarefa".
 3. Nao pule passos. Nao invente passos.
 4. Se um passo falhar: registre o erro e tente corrigir. Aborte se irrecuperavel.
 
-**Regra de leitura de arquivos:**
-- Padroes de referencia (como implementar domain, entity, controller, etc.)
-  ja estao inlinados no prompt. NAO ler arquivos de referencia adicionais
-  (Tag.java, CarteirController.java, etc.) a menos que o prompt instrua explicitamente.
-- Arquivos que voce vai MODIFICAR: leia antes de editar (GlobalExceptionHandler,
-  sidebar, screens.registry.ts, etc.). Isso e obrigatorio -- nunca editar sem ler.
-- CLAUDE.md: leia uma vez no inicio, nao releia durante a execucao.
+**Regra de leitura de arquivos (bounded context novo):**
+
+O prompt contem a secao `## Arquivos a criar` com o codigo COMPLETO e JA ADAPTADO
+de cada arquivo novo. O planejador fez a adaptacao -- voce so escreve.
+
+- **Arquivos NOVOS**: nao ler nenhum arquivo de referencia. Usar exatamente o
+  conteudo fornecido na secao `## Arquivos a criar`. NAO ler Tag.java,
+  CarteirController.java, CarteiraMapper.java nem qualquer outro arquivo do
+  projeto como referencia -- o codigo ja chegou pronto.
+- **Arquivos a MODIFICAR** (GlobalExceptionHandler, screens.registry.ts, sidebar):
+  leia antes de editar. O prompt lista quais sao e o que fazer em cada um.
+- **CLAUDE.md**: leia uma vez no inicio. Nao releia.
+
+Se o prompt NAO contiver a secao `## Arquivos a criar` (task de refactor ou fix):
+leia os arquivos que vai modificar -- comportamento correto para esse tipo de task.
 
 ## Wiring obrigatorio ao criar bounded context novo
 

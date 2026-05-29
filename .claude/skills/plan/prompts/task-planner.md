@@ -90,92 +90,77 @@ Registrar na chave `premissas_globais` do JSON de saida. Cada premissa deve
 ser uma frase afirmativa, curta e precisa. O operador vai ler e aprovar ou
 rejeitar no Passo 3 da skill.
 
-## Passo 1.8 -- Extrair e inlinar padroes de referencia (OBRIGATORIO para bounded contexts)
+## Passo 1.8 -- Gerar codigo completo para o executor (OBRIGATORIO para bounded contexts)
 
 Se o objetivo envolve criar um novo bounded context seguindo o padrao existente
 do projeto (domain + application + infra + interfaces + frontend):
 
-**1. Classificar o novo bounded context pela matriz de complexidade:**
-
-Ler a descricao do objetivo e identificar quais caracteristicas o novo dominio tem.
-Escolher a referencia adequada para cada caracteristica:
-
-| Caracteristica do novo dominio | Referencia obrigatoria |
-|-------------------------------|----------------------|
-| Campos simples (string, boolean, UUID) | `tag` (sempre -- base minima) |
-| Tem enum proprio | `carteira` (padrão @Enumerated + TipoCarteira) |
-| Tem campo monetario (Money/@Embedded) | `conta` (padrão @Embedded + @AttributeOverride) |
-| Tem filtros paginados ou queries complexas | `transacao` (findComFiltros + Pageable) |
-| Cruza dados de outro bounded context | `orcamento` (injeta segundo Repository no use case) |
-
-Exemplos de classificacao:
-- "grupo (nome, descricao, ativo)" → so `tag`
-- "ativo (nome, tipo enum, valor)" → `tag` + `carteira`
-- "lancamento (descricao, valor Money, categoria)" → `tag` + `conta`
-- "relatorio-mes (filtros por data/categoria)" → `tag` + `transacao`
-
-**2. Ler o guia de padroes canonico (UMA leitura -- nao ler arquivos individuais):**
+**1. Ler o guia de padroes canonico:**
 
 ```
 docs/crud-patterns.md
 ```
 
-Este arquivo contem o codigo real de todos os padroes do projeto: domain, entity,
-mapper, repositoryImpl, controller, use cases, todos os niveis de teste Java e
-frontend. Substitui a leitura de 5-10 arquivos individuais.
+**2. Gerar o codigo COMPLETO e ADAPTADO de cada arquivo a criar:**
 
-**3. Extrair de `docs/crud-patterns.md` os trechos relevantes e inlinar no campo
-`prompt` da task:**
+Substituir TODOS os placeholders pelos nomes reais do novo dominio:
+- `<Entidade>` → nome real (ex: `Limite`)
+- `<contexto>` → pacote real (ex: `limite`)
+- `<tabela>` → nome real da tabela (ex: `limite`)
+- `<entidade>` → variavel local (ex: `limite`)
+- Campos → os campos reais descritos no objetivo
 
-Baseando-se na classificacao feita no passo 1, extrair as secoes correspondentes:
+O executor NAO adapta. O executor NAO le referencia. O executor recebe codigo
+pronto e escreve nos arquivos. A adaptacao e trabalho do planejador.
 
-| Caracteristica | Secoes a extrair do crud-patterns.md |
-|---------------|--------------------------------------|
-| Base (sempre) | secoes 1.1, 1.2 Repository, 1.3 Exception, 2.1 Entity base, 2.3 Mapper, 2.4 RepositoryImpl, 3 GlobalExceptionHandler, 4 (todos os use cases), 5 Controller, 6 (todos os testes Java), 7 Frontend, 8 Screen Registry |
-| Tem enum | adicionar secao 1.2 Enum da entidade (`@Enumerated`), secao 2.1 com exemplo de coluna enum |
-| Tem Money | adicionar secoes 1.3 Money, 2.2 Entity com @Embedded/@AttributeOverride |
-| Tem filtros paginados | adicionar padrao findComFiltros + Pageable do RepositoryImpl |
-| Cruza bounded context | adicionar padrao de injecao de segundo Repository no use case |
-
-**Formato de inlining no prompt do executor:**
-
-Inserir no prompt um bloco com cabecalho e os trechos extraidos:
+**3. Incluir no campo `prompt` da task o conteudo completo de cada arquivo:**
 
 ```
-## Padroes de referencia (nao ler arquivos -- usar estes trechos direto)
+## Arquivos a criar (escrever exatamente este conteudo)
 
-Fonte: docs/crud-patterns.md — adaptar nomes, campos e tipos para o novo dominio.
+O executor NAO deve ler arquivos de referencia. O codigo abaixo ja esta
+adaptado para o dominio. Escrever cada arquivo com o conteudo exato fornecido.
 
-### Domain layer
-[colar secao 1.1 adaptada]
-
-### Entity JPA
-[colar secao 2.1 adaptada]
-
-### GlobalExceptionHandler wiring (fazer ANTES do primeiro commit de infra)
-[colar secao 3 adaptada]
-
-### Use cases
-[colar secao 4 adaptada]
-
-### Controller + DTOs
-[colar secao 5 adaptada]
-
-### Testes Java (unit, Mockito, Testcontainers, MockMvc)
-[colar secoes 6.1-6.4 adaptadas]
-
-### Frontend (types, service, paginas, screen registry)
-[colar secoes 7 e 8 adaptadas]
+### src/main/java/com/laboratorio/financas/<contexto>/domain/<Entidade>.java
+```java
+[conteudo completo do arquivo, com campos e nomes reais do novo dominio]
 ```
 
-**Regra de ouro:** O executor que recebe um prompt com esses trechos inlinados
-NAO precisa ler nenhum arquivo de referencia. O custo de leitura fica no
-planejador (1 Read de docs/crud-patterns.md), nao no executor (que repetiria
-N leituras para N tasks).
+### src/main/java/com/laboratorio/financas/<contexto>/domain/<Entidade>Repository.java
+```java
+[conteudo completo]
+```
 
-**Quando NAO inlinar:** tasks de refactor, fix de bug, ou qualquer objetivo
-que nao seja criacao de bounded context do zero. Nesses casos, o executor
-precisa ler os arquivos que vai modificar -- o que e correto.
+### src/main/java/com/laboratorio/financas/<contexto>/domain/<Entidade>NaoEncontradoException.java
+```java
+[conteudo completo]
+```
+
+[... todos os arquivos novos: TipoXxx.java se enum, XxxEntity.java, XxxJpaRepository.java,
+XxxMapper.java, XxxRepositoryImpl.java, XxxController.java, DTOs, migration SQL,
+todos os testes Java (XxxTest, XxxUseCaseTest x N, XxxRepositoryImplTest, XxxControllerTest),
+todos os arquivos frontend (types, service, index, 3 paginas, 4 testes Vitest)]
+```
+
+**4. Arquivos que o executor deve MODIFICAR (ler antes de editar -- nao gerar aqui):**
+
+Listar apenas estes (o executor le e edita):
+- `src/main/java/.../shared/infrastructure/web/GlobalExceptionHandler.java`
+  → instrucao: adicionar `@ExceptionHandler` para `<Entidade>NaoEncontradoException`
+- `frontend/src/shared/shell/screens.registry.ts`
+  → instrucao: adicionar entrada `{ code: 'CAD-XXX-001', title: '...', ... }`
+- `frontend/src/shared/shell/screens.registry.test.ts`
+  → instrucao: incrementar contador de telas em 1
+- Sidebar (se aplicavel)
+  → instrucao: adicionar link com icone
+
+**Regra de ouro:** O executor recebe codigo pronto. Nao adapta. Nao le referencia.
+Escreve, commita, roda os gates, abre PR. O custo de adaptacao fica no planejador
+(uma vez), nao no executor (que repetiria para N tasks em paralelo).
+
+**Quando NAO aplicar este passo:** tasks de refactor, fix de bug, ou qualquer
+objetivo que nao seja criacao de bounded context do zero. Nesses casos, o executor
+le os arquivos que vai modificar -- comportamento correto.
 
 ## Passo 2 -- Quebrar em tasks (fatia vertical obrigatoria)
 
