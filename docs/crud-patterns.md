@@ -39,6 +39,47 @@ Ao gerar codigo, consultar tambem:
 4. **Frontend** — secao 7: decide entre listagem client-side (backend `List<>`) e
    server-side paginada (backend `Page<>`), e usa o `*Form` compartilhado.
 
+## Infra compartilhada assumida (NAO recriar)
+
+Estes componentes ja existem no repositorio e sao consumidos pelos padroes
+abaixo. Importar/estender — nunca recriar nem duplicar:
+
+**Backend:**
+
+- `shared/domain/Money` — value object `record(BigDecimal valor, Currency moeda)`
+  com `ehPositivo()`, `valor()`, `moeda()`. Construir com
+  `new Money(bd, Currency.getInstance("BRL"))`.
+- `shared/infrastructure/persistence/MoneyEmbeddable` — usado nas Entities (secao 2.3).
+- `shared/infrastructure/web/GlobalExceptionHandler` — **ja trata globalmente**:
+  `MethodArgumentNotValidException` -> 400 com `{ erros: { campo: msg } }` (o teste
+  E2E depende disso); `ConstraintViolationException` -> 400; `IllegalStateException`
+  e `IllegalArgumentException` -> 400; `Exception` -> 500 (registra incidente).
+  **So adicionar o handler `<Entidade>NaoEncontradoException` da entidade nova**
+  (secao 3) — os demais ja cobrem o resto.
+- `usuario/domain/UsuarioRepository` — injetado no controller para resolver userId.
+- `auditlog/infrastructure/AuditPublisher` + `auditlog/domain/{AuditEvent,AuditAction}` —
+  wiring de auditoria do controller (secao 5.1).
+- `shared/AbstractIntegrationTest` e `AbstractAuthenticatedIntegrationTest` — bases
+  de teste (secao 6.0). Estender, nao reescrever.
+
+**Frontend:** `@/services/api-client` (`apiFetch`), `useListPage`, `FilterBar`,
+`ActionsPanel`, `DataTable`, `StatusBadge`, `FormGrid`/`FormCol`, `LookupField`,
+`MoneyInput`, `useDraftForm`, `formatters` — ver `field-type-catalog.md` e
+`frontend-master-spec.md`.
+
+## Convencoes canonicas (alinhadas ao contexto base `tag`)
+
+- **Use cases sao `@Component`** (nao `@Service`). Stereotype usado por todos os
+  contextos do projeto, incluindo a referencia base `tag`.
+- **Use cases que escrevem sao `@Transactional`** (Criar/Atualizar/Deletar e
+  transicoes de estado). Listar/Buscar podem ser `@Transactional(readOnly = true)`
+  ou sem anotacao.
+- **Controller resolve userId** injetando `UsuarioRepository` + parametro
+  `Authentication`, via `authentication.getName()` (secao 5.1, copiar verbatim).
+  NAO usar `SecurityContextHolder` direto (variante legada em `transacao`).
+- **Auditoria e padrao, nao opcional** — todo controller publica `AuditEvent`
+  (secao 5.1).
+
 ---
 
 ## 1. Domain Layer
@@ -325,6 +366,46 @@ ja fixado no campo `migracoes_reservadas` da task — nao recalcula dinamicament
 **Cuidado com ordem de migrations:** a tabela referenciada (ex: `conta`) deve existir
 antes da tabela que tem a FK. O planejador verifica via Passo 1.5 qual V ja existe.
 
+### 1.7 Relacionamento de colecao (M:N por UUID)
+
+Quando a entidade referencia **varios** registros de outro contexto (ex: uma
+transacao tem N tags), o projeto NAO usa `@ManyToMany` com entidades. Guarda uma
+colecao de UUIDs, persistida via tabela de juncao com `@ElementCollection`.
+Referencia: `transacao` (`tagIds`).
+
+**Domain — colecao imutavel de UUID:**
+```java
+private final List<UUID> tagIds;   // nunca List<Tag>
+// no construtor, copia defensiva:
+this.tagIds = (tagIds != null) ? Collections.unmodifiableList(new ArrayList<>(tagIds))
+                               : Collections.emptyList();
+```
+
+**Entity JPA — `@ElementCollection` + `@CollectionTable` (Set, nao @ManyToMany):**
+```java
+@ElementCollection(fetch = FetchType.EAGER)
+@CollectionTable(name = "<tabela>_tag", joinColumns = @JoinColumn(name = "<tabela>_id"))
+@Column(name = "tag_id")
+private Set<UUID> tagIds = new HashSet<>();
+```
+
+**Mapper** — converter `List<UUID>` (domain) <-> `Set<UUID>` (entity):
+`new HashSet<>(domain.getTagIds())` na ida; `new ArrayList<>(entity.getTagIds())` na volta.
+
+**Migration — tabela de juncao dedicada:**
+```sql
+CREATE TABLE <tabela>_tag (
+    <tabela>_id  UUID NOT NULL REFERENCES <tabela>(id) ON DELETE CASCADE,
+    tag_id       UUID NOT NULL,
+    PRIMARY KEY (<tabela>_id, tag_id)
+);
+CREATE INDEX idx_<tabela>_tag_tag ON <tabela>_tag (tag_id);
+```
+
+**DTO** — Request recebe `List<UUID> tagIds` (opcional); Response devolve `List<UUID>`
+(so os UUIDs, nunca objetos Tag aninhados). No frontend e multi-select (checkboxes),
+nao `LookupField` (que e single-select) — ver `TransacaoForm`.
+
 ---
 
 ## 2. Infrastructure Layer
@@ -570,6 +651,11 @@ CREATE TABLE <tabela> (
 **IMPORTANTE:** Registrar a nova excecao no handler ANTES de implementar o Controller.
 Nao fazer isso causa 500 em vez de 404 e exige segundo run de mvn verify.
 
+**So a `<Entidade>NaoEncontradoException` precisa de handler novo.** Validacao (400
+com `erros`), `IllegalStateException`/`IllegalArgumentException` (400) e erro
+generico (500) ja sao tratados globalmente (ver "Infra compartilhada assumida") —
+nao recriar.
+
 Referencia: `shared/infrastructure/web/GlobalExceptionHandler.java`
 
 ```java
@@ -599,9 +685,10 @@ package com.laboratorio.financas.<contexto>.application;
 import com.laboratorio.financas.<contexto>.domain.<Entidade>;
 import com.laboratorio.financas.<contexto>.domain.<Entidade>Repository;
 import java.util.UUID;
-import org.springframework.stereotype.Service;
+import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
-@Service
+@Component
 public class Criar<Entidade>UseCase {
 
     private final <Entidade>Repository repository;
@@ -610,6 +697,7 @@ public class Criar<Entidade>UseCase {
         this.repository = repository;
     }
 
+    @Transactional
     public <Entidade> executar(Comando comando) {
         <Entidade> entidade = new <Entidade>(comando.userId(), comando.nome());
         return repository.salvar(entidade);
@@ -622,7 +710,7 @@ public class Criar<Entidade>UseCase {
 ### 4.2 Padrao Listar
 
 ```java
-@Service
+@Component
 public class Listar<Entidade>sUseCase {
 
     private final <Entidade>Repository repository;
@@ -640,7 +728,7 @@ public class Listar<Entidade>sUseCase {
 ### 4.3 Padrao Atualizar
 
 ```java
-@Service
+@Component
 public class Atualizar<Entidade>UseCase {
 
     private final <Entidade>Repository repository;
@@ -663,7 +751,7 @@ public class Atualizar<Entidade>UseCase {
 ### 4.4 Padrao Deletar
 
 ```java
-@Service
+@Component
 public class Deletar<Entidade>UseCase {
 
     private final <Entidade>Repository repository;
@@ -688,12 +776,20 @@ public class Deletar<Entidade>UseCase {
 
 Referencia: `tag/interfaces/TagController.java`
 
-**ATENCAO:** O Controller injeta `UsuarioRepository` para resolver userId a partir
-do email do token JWT. Este e o padrao do projeto — nao usar UUID direto do token.
+**ATENCAO (dois padroes obrigatorios do projeto, ambos presentes no `tag` base):**
+1. Injeta `UsuarioRepository` para resolver userId pelo email do token JWT — nao
+   usar UUID direto do token, nao usar `SecurityContextHolder`.
+2. Publica `AuditEvent` via `AuditPublisher` em CREATE/UPDATE/DELETE e le o header
+   opcional `X-Screen-Code`. **Auditoria e parte do CRUD, nao opcional.**
 
 ```java
 package com.laboratorio.financas.<contexto>.interfaces;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.laboratorio.financas.auditlog.domain.AuditAction;
+import com.laboratorio.financas.auditlog.domain.AuditEvent;
+import com.laboratorio.financas.auditlog.infrastructure.AuditPublisher;
 import com.laboratorio.financas.<contexto>.application.*;
 import com.laboratorio.financas.<contexto>.domain.<Entidade>;
 import com.laboratorio.financas.usuario.domain.UsuarioRepository;
@@ -711,14 +807,17 @@ import org.springframework.web.bind.annotation.*;
 public class <Entidade>Controller {
 
     private static final Logger LOG = LoggerFactory.getLogger(<Entidade>Controller.class);
+    private static final String ENTITY_TYPE = "<contexto>";   // ex: "tag"
 
     private final Criar<Entidade>UseCase criarUseCase;
     private final Listar<Entidade>sUseCase listarUseCase;
     private final Atualizar<Entidade>UseCase atualizarUseCase;
     private final Deletar<Entidade>UseCase deletarUseCase;
     private final UsuarioRepository usuarioRepository;
+    private final AuditPublisher auditPublisher;
+    private final ObjectMapper objectMapper;
 
-    // Construtor com todos os campos
+    // Construtor com todos os campos (incluindo auditPublisher e objectMapper)
 
     @GetMapping
     public List<<Entidade>Response> listar(Authentication authentication) {
@@ -732,27 +831,45 @@ public class <Entidade>Controller {
     @ResponseStatus(HttpStatus.CREATED)
     public <Entidade>Response criar(
             @Valid @RequestBody Criar<Entidade>Request request,
-            Authentication authentication) {
+            Authentication authentication,
+            @RequestHeader(value = "X-Screen-Code", required = false) String screenCode) {
         UUID userId = resolverUserId(authentication);
         Criar<Entidade>UseCase.Comando comando =
                 new Criar<Entidade>UseCase.Comando(userId, request.nome());
-        return <Entidade>Response.fromDomain(criarUseCase.executar(comando));
+        <Entidade>Response response = <Entidade>Response.fromDomain(criarUseCase.executar(comando));
+        auditPublisher.publish(new AuditEvent(
+                ENTITY_TYPE, response.id(), AuditAction.CREATE,
+                userEmail(authentication), screenCode, null, toJson(response)));
+        return response;
     }
 
     @PutMapping("/{id}")
     public <Entidade>Response atualizar(
             @PathVariable UUID id,
             @Valid @RequestBody Atualizar<Entidade>Request request,
-            Authentication authentication) {
+            Authentication authentication,
+            @RequestHeader(value = "X-Screen-Code", required = false) String screenCode) {
+        UUID userId = resolverUserId(authentication);
         Atualizar<Entidade>UseCase.Comando comando =
                 new Atualizar<Entidade>UseCase.Comando(id, request.nome());
-        return <Entidade>Response.fromDomain(atualizarUseCase.executar(comando));
+        <Entidade>Response response = <Entidade>Response.fromDomain(atualizarUseCase.executar(comando));
+        auditPublisher.publish(new AuditEvent(
+                ENTITY_TYPE, id, AuditAction.UPDATE,
+                userEmail(authentication), screenCode, null, toJson(response)));
+        return response;
     }
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void deletar(@PathVariable UUID id, Authentication authentication) {
+    public void deletar(
+            @PathVariable UUID id,
+            Authentication authentication,
+            @RequestHeader(value = "X-Screen-Code", required = false) String screenCode) {
+        resolverUserId(authentication);
         deletarUseCase.executar(id);
+        auditPublisher.publish(new AuditEvent(
+                ENTITY_TYPE, id, AuditAction.DELETE,
+                userEmail(authentication), screenCode, null, null));
     }
 
     // Extrator de userId — COPIAR VERBATIM, nao reinventar
@@ -763,8 +880,30 @@ public class <Entidade>Controller {
                         "Usuario autenticado nao encontrado: " + email))
                 .getId();
     }
+
+    private String userEmail(Authentication authentication) {
+        return (authentication != null) ? authentication.getName() : null;
+    }
+
+    private String toJson(Object obj) {
+        if (obj == null) {
+            return null;
+        }
+        try {
+            return objectMapper.writeValueAsString(obj);
+        } catch (JsonProcessingException ex) {
+            LOG.warn("Falha ao serializar payload de audit log para {}", ENTITY_TYPE, ex);
+            return null;
+        }
+    }
 }
 ```
+
+> **Diff before/after na auditoria:** o `tag` base nao captura o estado anterior no
+> UPDATE (passa `null` no `before`). Onde o diff importa, buscar a entidade antes
+> de atualizar e passar `toJson(estadoAntes)` no campo `before` (padrao `transacao`).
+> O `entityType` deve constar no middleware de auditoria — ver skill
+> `add-entity-to-audit` e `frontend-master-spec.md` §5.
 
 ### 5.2 DTOs
 
@@ -802,6 +941,47 @@ public record <Entidade>Response(
     }
 }
 ```
+
+### 5.2.1 Campo monetario (Money) em DTOs
+
+Referencia: `orcamento/interfaces/dto/OrcamentoResponse.java`.
+
+`Money` (domain) usa `Currency`, que serializa mal em JSON. **Convencao do projeto:**
+o Request recebe `valor` + `moeda` planos; o Response expoe um **record aninhado**
+`ValorMonetario(BigDecimal valor, String moeda)` (o frontend le `campo.valor` —
+field-type-catalog "Objetos aninhados").
+
+```java
+// Request — valor e moeda planos:
+public record Criar<Entidade>Request(
+        @NotNull BigDecimal valorLimite,                 // dominio exige positivo
+        @NotNull @Size(min = 3, max = 3) String moeda,   // ex: "BRL"
+        // ... outros campos
+) {}
+
+// Use case monta o Money: new Money(req.valorLimite(), Currency.getInstance(req.moeda()))
+
+// Response — record aninhado (nao achatar, nao expor Currency):
+public record <Entidade>Response(
+        UUID id,
+        ValorMonetario valorLimite,
+        // ... outros campos
+) {
+    public record ValorMonetario(BigDecimal valor, String moeda) { }
+
+    public static <Entidade>Response fromDomain(<Entidade> d) {
+        return new <Entidade>Response(
+                d.getId(),
+                new ValorMonetario(d.getValorLimite().valor(),
+                                   d.getValorLimite().moeda().getCurrencyCode()),
+                // ...
+        );
+    }
+}
+```
+
+> No frontend, o tipo TS espelha o aninhamento: `valorLimite: { valor: number; moeda: string }`.
+> Envio (Payload) e plano (`valor`/`moeda`); leitura e aninhada. Ver secao 7.1.
 
 ---
 
@@ -1568,9 +1748,11 @@ Antes de chamar /ship, confirmar que todos os itens abaixo existem:
 - [ ] `Listar<Entidade>sUseCase.java`
 - [ ] `Atualizar<Entidade>UseCase.java`
 - [ ] `Deletar<Entidade>UseCase.java`
-- [ ] `<Entidade>Controller.java`
-- [ ] DTOs: Criar/AtualizarRequest + Response
-- [ ] `GlobalExceptionHandler.java` atualizado (wiring da nova excecao)
+- [ ] `<Entidade>Controller.java` (com wiring de auditoria — secao 5.1)
+- [ ] DTOs: Criar/AtualizarRequest + Response (Money aninhado se houver — secao 5.2.1)
+- [ ] `GlobalExceptionHandler.java`: adicionar SO o handler `<Entidade>NaoEncontradoException`
+- [ ] Auditoria: `entityType` registrado no middleware (skill `add-entity-to-audit`)
+- [ ] Se M:N por UUID: migration da tabela de juncao `<tabela>_tag` (secao 1.7)
 
 **Testes Java:**
 - [ ] `<Entidade>Test.java` (unit domain)
@@ -1754,9 +1936,9 @@ public class CalcularProgressoDo<Entidade>UseCase {
 ### 10.5 Maquina de estados no dominio (referencia: `meta`)
 
 Entidade com `status` mutavel e transicoes validadas. O dominio rejeita transicao
-ilegal com `IllegalStateException`; o use case so orquestra (carrega, chama o
-metodo, salva). Mapear `IllegalStateException` -> 409/422 no `GlobalExceptionHandler`
-se ainda nao houver.
+ilegal com `IllegalStateException` — que o `GlobalExceptionHandler` **ja mapeia
+globalmente para 400** (nao criar handler novo; ver "Infra compartilhada assumida").
+O use case so orquestra (carrega, chama o metodo, salva).
 
 ```java
 public void registrarDeposito(Money deposito) {
