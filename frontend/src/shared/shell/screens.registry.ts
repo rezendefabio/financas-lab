@@ -197,6 +197,14 @@ export const screens: ScreenDefinition[] = [
     permissions: [],
   },
   {
+    code: 'MOD-LEM-001',
+    title: 'Lembretes',
+    path: '/lembretes',
+    menuPath: ['Planejamento', 'Lembretes'],
+    icon: 'bell',
+    permissions: [],
+  },
+  {
     code: 'USR-PRF-001',
     title: 'Meu Perfil',
     path: '/perfil',
