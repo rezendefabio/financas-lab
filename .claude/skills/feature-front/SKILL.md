@@ -1,6 +1,6 @@
 ---
 name: feature-front
-description: Cria scaffold de feature frontend (types, service, pages) a partir dos DTOs Java do bounded context. Gera 6 arquivos stub prontos para o executor preencher. Argumento: nome do bounded context em snake_case.
+description: Cria scaffold de feature frontend completo (13 arquivos = 8 producao + 5 testes) a partir dos DTOs Java do bounded context. Inclui types, service, hooks TanStack, componente Form compartilhado, listagem com DataTable+ActionsPanel, pagina de criacao e pagina de edicao (ambas thin wrappers do Form). Argumento: nome do bounded context em snake_case.
 disable-model-invocation: true
 argument-hint: [nome-do-bounded-context]
 ---
@@ -122,7 +122,7 @@ Leia tambem `docs/field-type-catalog.md` para verificar o mapeamento de campos
 especiais (ValorMonetario, LocalDate como mes/ano, etc.). Use-o para anotar nos
 `// TODO` qual componente o executor deve usar em cada campo.
 
-## Passo 2 -- Gerar os 6 arquivos
+## Passo 2 -- Gerar os 13 arquivos (8 producao + 5 testes)
 
 Use a ferramenta Write para cada arquivo. O Write cria os diretorios pai
 automaticamente. Substitua `ARG`, `PASCAL`, `CAMEL` e `PLURAL` pelos valores
@@ -178,15 +178,54 @@ export const CAMELService = {
 
 Gerar apenas os metodos que existem no Controller. Nao inventar metodos.
 
+### Arquivo 2b: frontend/src/features/ARG/hooks/use-ARG.ts
+
+Hooks TanStack Query/Mutation que encapsulam o service. Eliminam o boilerplate
+de `useQuery`/`useMutation` nas paginas.
+
+```typescript
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { CAMELService } from '../services/ARG-service'
+import type { CriarPASCALPayload } from '../types/ARG'
+
+export function usePASCALs() {
+  return useQuery({
+    queryKey: ['ARGs'],
+    queryFn: () => CAMELService.listar(),
+  })
+}
+
+export function usePASCAL(id: string | undefined) {
+  return useQuery({
+    queryKey: ['ARG', id],
+    queryFn: () => CAMELService.buscar(id as string),
+    enabled: !!id,
+  })
+}
+
+export function useCriarPASCAL() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (payload: CriarPASCALPayload) => CAMELService.criar(payload),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['ARGs'] }),
+  })
+}
+
+// TODO: adicionar useAtualizarPASCAL e useRemoverPASCAL conforme metodos do service.
+```
+
 ### Arquivo 3: frontend/src/features/ARG/index.ts
 
 ```typescript
 export type { PASCAL, CriarPASCALPayload } from './types/ARG'
 export { CAMELService } from './services/ARG-service'
+export { usePASCALs, usePASCAL, useCriarPASCAL } from './hooks/use-ARG'
+export { PASCALForm, defaultPASCALFormValues, type PASCALFormValues } from './components/PASCALForm'
 ```
 
 Exportar tambem os enums e interfaces auxiliares (ex: `PASCALStatus`,
-`ValorMonetario`) realmente presentes em `types/ARG.ts`.
+`ValorMonetario`) realmente presentes em `types/ARG.ts`, e hooks/mutations
+adicionais (useAtualizar*, useRemover*) conforme metodos disponiveis no service.
 
 ### Arquivo 4: frontend/src/app/(dashboard)/ARG/page.tsx
 
@@ -284,7 +323,7 @@ export default function PASCALsPage() {
                       variant="ghost"
                       size="icon-sm"
                       aria-label="Editar"
-                      onClick={() => router.push(`/ARGs/${row.id}`)}
+                      onClick={() => router.push(`/ARGs/${row.id}/editar`)}
                     >
                       <Pencil className="h-4 w-4" />
                     </Button>
@@ -308,26 +347,19 @@ export default function PASCALsPage() {
 }
 ```
 
-### Arquivo 5: frontend/src/app/(dashboard)/ARG/novo/page.tsx
+### Arquivo 4b: frontend/src/features/ARG/components/PASCALForm.tsx
 
-Quando criar e editar compartilham os mesmos campos (regra do projeto), extrair
-um componente `components/PASCALForm.tsx` e reusa-lo nas duas paginas -- ver
-`docs/crud-patterns.md` secao 7.4/7.5. O stub abaixo mantem o form na propria
-pagina `novo`; o executor extrai o componente compartilhado ao implementar a
-pagina de edicao.
+Componente de formulario COMPARTILHADO entre criar e editar (secao 7.4 de
+crud-patterns). Encapsula `useForm` + `zodResolver` + `useDraftForm` + layout
+`FormGrid`. As paginas `novo` e `[id]/editar` sao thin wrappers que so injetam
+defaultValues e a mutation.
 
 ```typescript
 'use client'
 import { useForm, type Resolver } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { useRouter } from 'next/navigation'
-import { useState } from 'react'
-import { ArrowLeft } from 'lucide-react'
-import { CAMELService } from '@/features/ARG/services/ARG-service'
 import { useDraftForm } from '@/shared/hooks/useDraftForm'
-import { Card, CardContent } from '@/shared/components/ui/card'
 import {
   Form, FormControl, FormField, FormItem, FormLabel, FormMessage,
 } from '@/shared/components/ui/form'
@@ -337,37 +369,117 @@ import { Input } from '@/shared/components/ui/input'
 import { Button } from '@/shared/components/ui/button'
 
 // Schema Zod inferido de CriarPASCALRequest.java (espelhamento Java <-> Zod, B6)
-const schema = z.object({
+export const PASCALFormSchema = z.object({
   // Campos com regras inferidas das anotacoes Java
   // Exemplo: nome: z.string().min(1, 'Obrigatorio'),
 })
 
-type FormValues = z.infer<typeof schema>
+export type PASCALFormValues = z.infer<typeof PASCALFormSchema>
+
+/** Valores iniciais padrao do form (string -> '', number -> 0, boolean -> false). */
+export function defaultPASCALFormValues(): PASCALFormValues {
+  return {
+    // valores padrao para cada campo do schema
+  } as PASCALFormValues
+}
+
+interface PASCALFormProps {
+  defaultValues: PASCALFormValues
+  onSubmit: (values: PASCALFormValues) => void
+  isSubmitting: boolean
+  apiError: string | null
+  onClearApiError: () => void
+  submitLabel: string
+  onCancel: () => void
+}
+
+export function PASCALForm({
+  defaultValues, onSubmit, isSubmitting, apiError,
+  onClearApiError, submitLabel, onCancel,
+}: PASCALFormProps) {
+  const form = useForm<PASCALFormValues>({
+    resolver: zodResolver(PASCALFormSchema) as Resolver<PASCALFormValues>,
+    defaultValues,
+  })
+  const { clearDraft } = useDraftForm(form)
+
+  return (
+    <Form {...form}>
+      <form
+        onSubmit={form.handleSubmit((v) => { clearDraft(); onClearApiError(); onSubmit(v) })}
+        className="space-y-4"
+      >
+        <FormGrid>
+          {/* TODO: um FormCol + campo por campo do schema. Componente por tipo
+              conforme docs/field-type-catalog.md:
+              - Money -> <MoneyInput> (FormCol span 7)
+              - FK (UUID) -> <LookupField> (queryKey com sufixo, span 6)
+              - enum -> Controller + <Select> com SelectValue render fn
+              - LocalDate -> <Input type="date"> (span 5)
+              - boolean -> <input type="checkbox"> (Switch UI nao existe no projeto)
+              - texto curto -> <Input> (span 12) */}
+        </FormGrid>
+
+        {apiError && <p className="text-sm text-destructive">{apiError}</p>}
+
+        <div className="flex gap-3 pt-2">
+          <Button type="submit" disabled={isSubmitting}>
+            {isSubmitting ? 'Salvando...' : submitLabel}
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => { clearDraft(); onCancel() }}
+          >
+            Cancelar
+          </Button>
+        </div>
+      </form>
+    </Form>
+  )
+}
+```
+
+Regras:
+- O objeto passado a `z.object({ ... })` deve conter os campos reais com as regras
+  Zod inferidas de `CriarPASCALRequest.java` (espelhamento Java <-> Zod, B6).
+- `defaultPASCALFormValues()` deve retornar valor padrao para cada campo do
+  schema (`''` string, `0` number, `false` boolean).
+- Os `// TODO` dentro de `<FormGrid>` sao para o executor preencher cada `FormCol`
+  + campo conforme `docs/field-type-catalog.md` (componente por tipo) e o layout
+  de spans da secao 7.4 de `crud-patterns.md`.
+
+### Arquivo 5: frontend/src/app/(dashboard)/ARG/novo/page.tsx
+
+Thin wrapper do `PASCALForm`. So orquestra a mutation de criar.
+
+```typescript
+'use client'
+import { useState } from 'react'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useRouter } from 'next/navigation'
+import { ArrowLeft } from 'lucide-react'
+import { CAMELService } from '@/features/ARG/services/ARG-service'
+import {
+  PASCALForm,
+  defaultPASCALFormValues,
+  type PASCALFormValues,
+} from '@/features/ARG/components/PASCALForm'
+import { Card, CardContent } from '@/shared/components/ui/card'
+import { Button } from '@/shared/components/ui/button'
 
 export default function NovoPASCALPage() {
   const router = useRouter()
   const queryClient = useQueryClient()
   const [apiError, setApiError] = useState<string | null>(null)
 
-  const form = useForm<FormValues>({
-    resolver: zodResolver(schema) as Resolver<FormValues>,
-    defaultValues: {
-      // valores padrao para cada campo do schema
-    },
-  })
-  // Rascunho persistente entre trocas de aba (CLAUDE.md): clearDraft no sucesso e no Cancelar.
-  const { clearDraft } = useDraftForm(form)
-
   const mutation = useMutation({
-    mutationFn: (values: FormValues) => CAMELService.criar(values as any),
+    mutationFn: (values: PASCALFormValues) => CAMELService.criar(values as any),
     onSuccess: async () => {
-      clearDraft()
       await queryClient.invalidateQueries({ queryKey: ['ARGs'] })
       router.push('/ARGs')
     },
-    onError: () => {
-      setApiError('Erro ao criar ARG.')
-    },
+    onError: () => setApiError('Erro ao criar PASCAL.'),
   })
 
   return (
@@ -382,37 +494,15 @@ export default function NovoPASCALPage() {
       <div className="max-w-xl">
         <Card>
           <CardContent className="pt-6 space-y-4">
-            <Form {...form}>
-              <form
-                onSubmit={form.handleSubmit((v) => { setApiError(null); mutation.mutate(v) })}
-                className="space-y-4"
-              >
-                <FormGrid>
-                  {/* TODO: um FormCol + campo por campo do schema. Componente por
-                      tipo conforme docs/field-type-catalog.md:
-                      - Money -> <MoneyInput> (FormCol span 7)
-                      - FK (UUID) -> <LookupField> (queryKey com sufixo, span 6)
-                      - enum -> Controller + <Select> com SelectValue render fn
-                      - LocalDate -> <Input type="date"> (span 5)
-                      - texto longo -> <Input> (span 12) */}
-                </FormGrid>
-
-                {apiError && <p className="text-sm text-destructive">{apiError}</p>}
-
-                <div className="flex gap-3 pt-2">
-                  <Button type="submit" disabled={mutation.isPending}>
-                    {mutation.isPending ? 'Salvando...' : 'Salvar'}
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => { clearDraft(); router.push('/ARGs') }}
-                  >
-                    Cancelar
-                  </Button>
-                </div>
-              </form>
-            </Form>
+            <PASCALForm
+              defaultValues={defaultPASCALFormValues()}
+              onSubmit={(v) => mutation.mutate(v)}
+              isSubmitting={mutation.isPending}
+              apiError={apiError}
+              onClearApiError={() => setApiError(null)}
+              submitLabel="Salvar"
+              onCancel={() => router.push('/ARGs')}
+            />
           </CardContent>
         </Card>
       </div>
@@ -421,50 +511,59 @@ export default function NovoPASCALPage() {
 }
 ```
 
-Regras:
-- O objeto passado a `z.object({ ... })` deve conter os campos reais com as regras
-  Zod inferidas de `CriarPASCALRequest.java` (espelhamento Java <-> Zod, B6).
-- `defaultValues` deve conter um valor padrao para cada campo do schema
-  (`''` para string, `0` para number, `false` para boolean).
-- Manter `mutation.mutate(values as any)` no stub -- o `as any` deve ser removido
-  pelo executor quando o payload correto for implementado.
-- Os `// TODO` dentro de `<FormGrid>` sao para o executor preencher cada `FormCol`
-  + campo conforme `docs/field-type-catalog.md` (componente por tipo) e o layout
-  de spans da secao 7.4 de `crud-patterns.md`.
+### Arquivo 6: frontend/src/app/(dashboard)/ARG/[id]/editar/page.tsx
 
-### Arquivo 6: frontend/src/app/(dashboard)/ARG/[id]/page.tsx
+Thin wrapper do `PASCALForm` para edicao. Carrega dados via `usePASCAL(id)`
+(hook do Arquivo 2b) e dispara mutation de atualizacao.
 
-A pagina de detalhe depende do metodo `buscar`. Antes de gerar este arquivo,
-verifique se o Controller tem um `@GetMapping("/{id}")` (ou seja, se o service
-gerado no Arquivo 2 contem `buscar`):
+**Se o Controller NAO tem `@GetMapping("/{id})` (`buscar` ausente no service):**
+reporte no relatorio final que a pagina de edicao foi pulada -- nao ha como
+carregar os dados existentes -- e nao gere este arquivo. Continue com os
+demais. A rota `/<plural>/<id>/editar` ficara inexistente; ajustar a listagem
+no Arquivo 4 para nao expor botao Editar.
 
-- **Se `buscar` existe:** gere o arquivo com o template abaixo.
-- **Se `buscar` NAO existe:** o domino nao expoe busca por id. Gere uma versao
-  reduzida da pagina que nao chama `buscar` -- apenas o cabecalho com botao Voltar,
-  um `Card` com um `// TODO` indicando que o domino nao tem endpoint de detalhe,
-  e o botao Voltar para `/ARGs`. Nao importe `useQuery`. Reporte no relatorio
-  final que a pagina de detalhe foi gerada em modo reduzido (sem `buscar`).
-
-Template (quando `buscar` existe):
+**IMPORTANTE -- regra `react-hooks/set-state-in-effect`:** NAO usar
+`useState` + `useEffect` + `setState` para espelhar dados de `usePASCAL`.
+Isso causa cascading renders (e o lint do projeto rejeita). Em vez disso:
+fazer early-return enquanto `data` nao chegou e DERIVAR `initialValues`
+diretamente apos o return. O `PASCALForm` so monta quando os dados ja
+existem, e o `useForm({ defaultValues })` dentro dele recebe os valores
+corretos na primeira renderizacao.
 
 ```typescript
 'use client'
-import { useQuery } from '@tanstack/react-query'
-import { useRouter, useParams } from 'next/navigation'
+import { useState } from 'react'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useParams, useRouter } from 'next/navigation'
 import { ArrowLeft } from 'lucide-react'
 import { CAMELService } from '@/features/ARG/services/ARG-service'
+import { usePASCAL } from '@/features/ARG/hooks/use-ARG'
+import {
+  PASCALForm,
+  defaultPASCALFormValues,
+  type PASCALFormValues,
+} from '@/features/ARG/components/PASCALForm'
+import { Card, CardContent } from '@/shared/components/ui/card'
 import { Button } from '@/shared/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card'
 import { Skeleton } from '@/shared/components/ui/skeleton'
 
-export default function PASCALDetalhePage() {
+export default function EditarPASCALPage() {
   const router = useRouter()
   const params = useParams()
   const id = params.id as string
+  const queryClient = useQueryClient()
+  const [apiError, setApiError] = useState<string | null>(null)
 
-  const { data: item, isLoading, isError } = useQuery({
-    queryKey: ['ARG', id],
-    queryFn: () => CAMELService.buscar(id),
+  const { data, isLoading, isError } = usePASCAL(id)
+
+  const mutation = useMutation({
+    mutationFn: (v: PASCALFormValues) => CAMELService.atualizar(id, v as any),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['ARGs'] })
+      await queryClient.invalidateQueries({ queryKey: ['ARG', id] })
+      router.push('/ARGs')
+    },
+    onError: () => setApiError('Erro ao atualizar PASCAL.'),
   })
 
   if (isLoading) {
@@ -476,9 +575,21 @@ export default function PASCALDetalhePage() {
     )
   }
 
-  if (isError || !item) {
-    return <p className="text-sm text-destructive">Erro ao carregar ARG.</p>
+  if (isError || !data) {
+    return <p className="text-sm text-destructive">Erro ao carregar PASCAL.</p>
   }
+
+  // Derivar initialValues SINCRONAMENTE a partir de `data` (que ja existe aqui --
+  // o early-return acima garante isso). NUNCA usar useState + useEffect para
+  // espelhar dados de useQuery: viola react-hooks/set-state-in-effect.
+  // TODO: mapear data (PASCAL) -> PASCALFormValues conforme schema.
+  // Ex: const initialValues: PASCALFormValues = {
+  //   nome: data.nome,
+  //   valor: data.valor.valor,
+  //   moeda: data.valor.moeda,
+  //   ...
+  // }
+  const initialValues: PASCALFormValues = defaultPASCALFormValues()
 
   return (
     <div className="space-y-6">
@@ -486,24 +597,23 @@ export default function PASCALDetalhePage() {
         <Button variant="ghost" size="icon" aria-label="Voltar" onClick={() => router.push('/ARGs')}>
           <ArrowLeft className="h-4 w-4" />
         </Button>
-        <h1 className="text-2xl font-semibold tracking-tight">Detalhe do PASCAL</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">Editar PASCAL</h1>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Dados</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {/* TODO: grid com campos do item */}
-          <p className="text-sm text-muted-foreground">ID: {item.id}</p>
-        </CardContent>
-      </Card>
-
-      <div className="flex gap-3">
-        <Button variant="outline" onClick={() => router.push('/ARGs')}>
-          Voltar
-        </Button>
-        {/* TODO: acoes especificas do dominio (remover, cancelar, etc.) */}
+      <div className="max-w-xl">
+        <Card>
+          <CardContent className="pt-6 space-y-4">
+            <PASCALForm
+              defaultValues={initialValues}
+              onSubmit={(v) => mutation.mutate(v)}
+              isSubmitting={mutation.isPending}
+              apiError={apiError}
+              onClearApiError={() => setApiError(null)}
+              submitLabel="Salvar alteracoes"
+              onCancel={() => router.push('/ARGs')}
+            />
+          </CardContent>
+        </Card>
       </div>
     </div>
   )
@@ -556,6 +666,57 @@ describe('CAMELService.criar', () => {
 
 // TODO: testes para buscar/atualizar/remover -- gerar conforme metodos que
 // existem no service (derivados do Controller no Passo 1).
+```
+
+### Arquivo 7b: frontend/src/features/ARG/components/PASCALForm.test.tsx
+
+Testa o componente compartilhado em isolamento (sem react-query, sem router).
+
+```typescript
+import React from 'react'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { render, screen } from '@testing-library/react'
+import { PASCALForm, defaultPASCALFormValues } from './PASCALForm'
+
+beforeEach(() => {
+  vi.clearAllMocks()
+})
+
+describe('PASCALForm', () => {
+  it('renderiza botoes Salvar e Cancelar', () => {
+    render(
+      <PASCALForm
+        defaultValues={defaultPASCALFormValues()}
+        onSubmit={vi.fn()}
+        isSubmitting={false}
+        apiError={null}
+        onClearApiError={vi.fn()}
+        submitLabel="Salvar"
+        onCancel={vi.fn()}
+      />,
+    )
+    expect(screen.getByRole('button', { name: /Salvar/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Cancelar/i })).toBeInTheDocument()
+  })
+
+  it('exibe mensagem de apiError quando fornecida', () => {
+    render(
+      <PASCALForm
+        defaultValues={defaultPASCALFormValues()}
+        onSubmit={vi.fn()}
+        isSubmitting={false}
+        apiError="Erro de teste"
+        onClearApiError={vi.fn()}
+        submitLabel="Salvar"
+        onCancel={vi.fn()}
+      />,
+    )
+    expect(screen.getByText('Erro de teste')).toBeInTheDocument()
+  })
+
+  // TODO: testes especificos do schema (submit valido chama onSubmit, validacao
+  // de campo obrigatorio exibe erro).
+})
 ```
 
 ### Arquivo 8: frontend/src/app/(dashboard)/ARG/page.test.tsx
@@ -660,20 +821,78 @@ describe('NovoPASCALPage', () => {
 })
 ```
 
+### Arquivo 9b: frontend/src/app/(dashboard)/ARG/[id]/editar/page.test.tsx
+
+So gerar se o Controller tem `@GetMapping("/{id}")` (Arquivo 6 existe).
+
+```typescript
+import React from 'react'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { render, screen, waitFor } from '@testing-library/react'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import EditarPASCALPage from './page'
+
+vi.mock('@/features/ARG/services/ARG-service', () => ({
+  CAMELService: {
+    buscar: vi.fn(),
+    atualizar: vi.fn(),
+  },
+}))
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({ push: vi.fn() }),
+  useParams: () => ({ id: '00000000-0000-0000-0000-000000000001' }),
+}))
+
+import { CAMELService } from '@/features/ARG/services/ARG-service'
+
+function renderWithClient(ui: React.ReactElement) {
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+  return render(<QueryClientProvider client={client}>{ui}</QueryClientProvider>)
+}
+
+beforeEach(() => {
+  vi.clearAllMocks()
+})
+
+describe('EditarPASCALPage', () => {
+  it('exibe skeleton enquanto carrega dados', () => {
+    vi.mocked(CAMELService.buscar).mockImplementation(() => new Promise(() => {}))
+    const { container } = renderWithClient(<EditarPASCALPage />)
+    expect(container.querySelector('.animate-pulse, [data-loading]')).toBeTruthy()
+  })
+
+  it('renderiza titulo e form apos carregar dados', async () => {
+    vi.mocked(CAMELService.buscar).mockResolvedValue({
+      id: '00000000-0000-0000-0000-000000000001',
+    } as any)
+    renderWithClient(<EditarPASCALPage />)
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: /Editar PASCAL/i })).toBeInTheDocument()
+    })
+  })
+
+  // TODO: testes especificos (submit chama CAMELService.atualizar, navega apos sucesso).
+})
+```
+
 ## Passo 3 -- Verificacao pos-geracao
 
-Verifique que os 9 arquivos existem (6 producao + 3 testes):
+Verifique que os 13 arquivos existem (8 producao + 5 testes):
 
 ```bash
 ls frontend/src/features/ARG/types/ARG.ts
 ls frontend/src/features/ARG/services/ARG-service.ts
+ls frontend/src/features/ARG/hooks/use-ARG.ts
+ls frontend/src/features/ARG/components/PASCALForm.tsx
+ls frontend/src/features/ARG/components/PASCALForm.test.tsx
 ls frontend/src/features/ARG/services/ARG-service.test.ts
 ls frontend/src/features/ARG/index.ts
 ls "frontend/src/app/(dashboard)/ARG/page.tsx"
 ls "frontend/src/app/(dashboard)/ARG/page.test.tsx"
 ls "frontend/src/app/(dashboard)/ARG/novo/page.tsx"
 ls "frontend/src/app/(dashboard)/ARG/novo/page.test.tsx"
-ls "frontend/src/app/(dashboard)/ARG/[id]/page.tsx"
+ls "frontend/src/app/(dashboard)/ARG/[id]/editar/page.tsx"
+ls "frontend/src/app/(dashboard)/ARG/[id]/editar/page.test.tsx"
 ```
 
 Se algum arquivo estiver ausente: reporte qual falta e nao emita o relatorio de
@@ -695,20 +914,24 @@ Produza o seguinte relatorio (substituindo `ARG` pelo valor real):
 ```
 /feature-front ARG concluido.
 
-Arquivos gerados (9 = 6 producao + 3 testes):
+Arquivos gerados (13 = 8 producao + 5 testes):
 
-Producao:
+Producao (8):
   frontend/src/features/ARG/types/ARG.ts
   frontend/src/features/ARG/services/ARG-service.ts
+  frontend/src/features/ARG/hooks/use-ARG.ts          (TanStack wrappers)
+  frontend/src/features/ARG/components/PASCALForm.tsx (form compartilhado)
   frontend/src/features/ARG/index.ts
-  frontend/src/app/(dashboard)/ARG/page.tsx
-  frontend/src/app/(dashboard)/ARG/novo/page.tsx
-  frontend/src/app/(dashboard)/ARG/[id]/page.tsx
+  frontend/src/app/(dashboard)/ARG/page.tsx           (listagem com DataTable + ActionsPanel)
+  frontend/src/app/(dashboard)/ARG/novo/page.tsx      (thin wrapper do PASCALForm)
+  frontend/src/app/(dashboard)/ARG/[id]/editar/page.tsx (thin wrapper, carrega via usePASCAL)
 
-Testes (baseline -- expandir com casos especificos do dominio):
+Testes (5, baseline -- expandir com casos especificos do dominio):
   frontend/src/features/ARG/services/ARG-service.test.ts
+  frontend/src/features/ARG/components/PASCALForm.test.tsx
   frontend/src/app/(dashboard)/ARG/page.test.tsx
   frontend/src/app/(dashboard)/ARG/novo/page.test.tsx
+  frontend/src/app/(dashboard)/ARG/[id]/editar/page.test.tsx
 
 Tipos inferidos:  <lista de interfaces e enums gerados>
 Metodos service: <lista de metodos do service>
@@ -717,15 +940,17 @@ Schema Zod:      <lista de campos com regras>
 Proximos passos:
   1. Preencher `columns` (ColumnDef) e SCREEN_CODE em page.tsx; formatters/StatusBadge
      conforme docs/field-type-catalog.md
-  2. Preencher os campos dentro de <FormGrid> em novo/page.tsx (componente por tipo:
+  2. Preencher campos dentro de <FormGrid> no PASCALForm (componente por tipo:
      MoneyInput / LookupField / Select / Input) -- crud-patterns secao 7.4
-  3. Se houver edicao: extrair components/PASCALForm.tsx compartilhado e criar
-     [id]/editar/page.tsx + page.test.tsx (crud-patterns secao 7.5)
-  4. Preencher detalhe em [id]/page.tsx
-  5. EXPANDIR os 3 testes gerados com casos especificos do dominio (NAO recriar):
+  3. Preencher defaultPASCALFormValues() com valores padrao para cada campo do schema
+  4. Em [id]/editar/page.tsx, preencher o mapeamento `data (PASCAL) -> PASCALFormValues`
+     no useEffect (substituir defaultPASCALFormValues() pelo mapping real)
+  5. EXPANDIR os 5 testes gerados com casos especificos do dominio (NAO recriar):
      - service.test.ts: testes para buscar/atualizar/remover conforme metodos disponiveis
-     - page.test.tsx: testes de linhas exibindo campos, exclusao com confirmacao
-     - novo/page.test.tsx: testes de submit valido + validacao de campo
-     NAO invocar /write-test para os 3 baseline -- ja estao gerados.
+     - PASCALForm.test.tsx: submit valido chama onSubmit, validacao de campo
+     - page.test.tsx: linhas exibindo campos, exclusao com confirmacao
+     - novo/page.test.tsx: submit chama criar
+     - editar/page.test.tsx: submit chama atualizar
+     NAO invocar /write-test para os 5 baseline -- ja estao gerados.
   6. npm run build (verificar sem erros)
 ```

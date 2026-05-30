@@ -1682,9 +1682,15 @@ return <<Entidade>Form defaultValues={default<Entidade>FormValues()} onSubmit={m
          onCancel={() => router.push('/<plural>')} />
 
 // [id]/editar/page.tsx — carrega dados e passa como defaultValues
-const { data } = useQuery({ queryKey: ['<plural>', id], queryFn: () => <entidade>Service.buscarPorId(id) })
-// renderizar o <Entidade>Form so quando `data` chegar (defaultValues a partir de `data`),
-// ou montar com defaults e usar resetWithDraft no useEffect (ver CLAUDE.md).
+const { data, isLoading, isError } = useQuery({
+  queryKey: ['<plural>', id],
+  queryFn: () => <entidade>Service.buscarPorId(id),
+})
+if (isLoading) return <Skeleton />
+if (isError || !data) return <p>Erro</p>
+// Derivar initialValues SINCRONAMENTE apos o early-return. O <Entidade>Form so
+// monta quando `data` ja existe, entao defaultValues e correto na primeira render.
+const initialValues: <Entidade>FormValues = { /* mapear data -> form values */ }
 const mutation = useMutation({
   mutationFn: (values: <Entidade>FormValues) => <entidade>Service.atualizar(id, values),
   onSuccess: async () => {
@@ -1693,7 +1699,16 @@ const mutation = useMutation({
     router.push('/<plural>')
   },
 })
+return <<Entidade>Form defaultValues={initialValues} onSubmit={mutation.mutate} ... />
 ```
+
+> **PROIBIDO (lint `react-hooks/set-state-in-effect`):** espelhar `data` da
+> useQuery em um `useState` local via `useEffect` + `setValues(data)`. Isso causa
+> cascading renders e o CI rejeita. **Padrao correto:** early-return enquanto
+> `data` for nulo, e derivar `initialValues` diretamente apos o return (como
+> acima). A alternativa de `useDraftForm.resetWithDraft(data)` dentro de
+> `useEffect` (ver CLAUDE.md) e permitida -- `form.reset()` do react-hook-form
+> nao e setState do React, nao viola a regra.
 
 > **Nota de rota:** edicao navega para `/<plural>/${id}/editar` (padrao atual).
 > O `/<plural>/${id}` sem `/editar` so existe em telas legadas.

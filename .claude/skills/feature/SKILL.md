@@ -1,6 +1,6 @@
 ---
 name: feature
-description: Cria bounded context completo (22 arquivos Java = 15 producao + 7 testes) alinhado a docs/crud-patterns.md baseline. Inclui 4 use cases CRUD, controller com auditoria, userId, repository completo, DTOs e os 4 niveis de teste (domain, useCase com Mockito, RepositoryImpl com Testcontainers, Controller E2E). Elimina necessidade de invocar /write-test para o baseline. Recebe nome do contexto em snake_case minusculo.
+description: Cria bounded context completo (24 arquivos Java = 16 producao + 8 testes) alinhado a docs/crud-patterns.md baseline. Inclui 5 use cases (Criar/Listar/BuscarPorId/Atualizar/Deletar), controller com auditoria + GET /{id}, userId, repository completo, DTOs e os 4 niveis de teste (domain, 5 useCases com Mockito, RepositoryImpl com Testcontainers, Controller E2E com 7 cenarios). Elimina necessidade de invocar /write-test para o baseline. Recebe nome do contexto em snake_case minusculo.
 disable-model-invocation: true
 argument-hint: [nome-do-bounded-context]
 ---
@@ -60,7 +60,7 @@ reporte qual falhou e termine.
 **Atencao:** `interfaces/` (NAO `interfaces/rest/`). Controller fica em
 `interfaces/`, DTOs em `interfaces/dto/`. Convencao do projeto.
 
-## Passo 2 -- Criar os 22 arquivos (15 producao + 7 testes)
+## Passo 2 -- Criar os 24 arquivos (16 producao + 8 testes)
 
 Use Write para cada arquivo. Substitua `NOME`, `ARG`, `nome`, `nomes` pelos
 valores definidos. Codificacao: UTF-8 sem BOM.
@@ -243,6 +243,35 @@ public class ListarNOMEsUseCase {
     @Transactional(readOnly = true)
     public List<NOME> executar(UUID userId) {
         return repository.listarPorUserId(userId);
+    }
+}
+```
+
+### Arquivo 5b: src/main/java/com/laboratorio/financas/ARG/application/BuscarNOMEPorIdUseCase.java
+
+```java
+package com.laboratorio.financas.ARG.application;
+
+import com.laboratorio.financas.ARG.domain.NOME;
+import com.laboratorio.financas.ARG.domain.NOMENaoEncontradoException;
+import com.laboratorio.financas.ARG.domain.NOMERepository;
+import java.util.UUID;
+import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
+
+@Component
+public class BuscarNOMEPorIdUseCase {
+
+    private final NOMERepository repository;
+
+    public BuscarNOMEPorIdUseCase(NOMERepository repository) {
+        this.repository = repository;
+    }
+
+    @Transactional(readOnly = true)
+    public NOME executar(UUID id) {
+        return repository.buscarPorId(id)
+                .orElseThrow(() -> new NOMENaoEncontradoException(id));
     }
 }
 ```
@@ -488,6 +517,7 @@ import com.laboratorio.financas.auditlog.domain.AuditAction;
 import com.laboratorio.financas.auditlog.domain.AuditEvent;
 import com.laboratorio.financas.auditlog.infrastructure.AuditPublisher;
 import com.laboratorio.financas.ARG.application.AtualizarNOMEUseCase;
+import com.laboratorio.financas.ARG.application.BuscarNOMEPorIdUseCase;
 import com.laboratorio.financas.ARG.application.CriarNOMEUseCase;
 import com.laboratorio.financas.ARG.application.DeletarNOMEUseCase;
 import com.laboratorio.financas.ARG.application.ListarNOMEsUseCase;
@@ -515,6 +545,7 @@ public class NOMEController {
 
     private final CriarNOMEUseCase criarUseCase;
     private final ListarNOMEsUseCase listarUseCase;
+    private final BuscarNOMEPorIdUseCase buscarPorIdUseCase;
     private final AtualizarNOMEUseCase atualizarUseCase;
     private final DeletarNOMEUseCase deletarUseCase;
     private final UsuarioRepository usuarioRepository;
@@ -524,6 +555,7 @@ public class NOMEController {
     public NOMEController(
             CriarNOMEUseCase criarUseCase,
             ListarNOMEsUseCase listarUseCase,
+            BuscarNOMEPorIdUseCase buscarPorIdUseCase,
             AtualizarNOMEUseCase atualizarUseCase,
             DeletarNOMEUseCase deletarUseCase,
             UsuarioRepository usuarioRepository,
@@ -531,6 +563,7 @@ public class NOMEController {
             ObjectMapper objectMapper) {
         this.criarUseCase = criarUseCase;
         this.listarUseCase = listarUseCase;
+        this.buscarPorIdUseCase = buscarPorIdUseCase;
         this.atualizarUseCase = atualizarUseCase;
         this.deletarUseCase = deletarUseCase;
         this.usuarioRepository = usuarioRepository;
@@ -544,6 +577,14 @@ public class NOMEController {
         return listarUseCase.executar(userId).stream()
                 .map(NOMEResponse::fromDomain)
                 .toList();
+    }
+
+    @GetMapping("/{id}")
+    public NOMEResponse buscar(
+            @PathVariable UUID id,
+            Authentication authentication) {
+        resolverUserId(authentication);
+        return NOMEResponse.fromDomain(buscarPorIdUseCase.executar(id));
     }
 
     @PostMapping
@@ -825,6 +866,58 @@ class ListarNOMEsUseCaseTest {
 }
 ```
 
+### Arquivo 18b: src/test/java/com/laboratorio/financas/ARG/application/BuscarNOMEPorIdUseCaseTest.java
+
+```java
+package com.laboratorio.financas.ARG.application;
+
+import static org.assertj.core.api.Assertions.*;
+import static org.mockito.Mockito.when;
+
+import com.laboratorio.financas.ARG.domain.NOME;
+import com.laboratorio.financas.ARG.domain.NOMENaoEncontradoException;
+import com.laboratorio.financas.ARG.domain.NOMERepository;
+import java.util.Optional;
+import java.util.UUID;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
+
+class BuscarNOMEPorIdUseCaseTest {
+
+    private static final UUID USER_ID = UUID.fromString("00000000-0000-0000-0000-000000000099");
+
+    private NOMERepository repository;
+    private BuscarNOMEPorIdUseCase useCase;
+
+    @BeforeEach
+    void setUp() {
+        repository = Mockito.mock(NOMERepository.class);
+        useCase = new BuscarNOMEPorIdUseCase(repository);
+    }
+
+    @Test
+    void executarComIdExistenteRetornaEntidade() {
+        NOME existente = new NOME(USER_ID, "Teste");
+        when(repository.buscarPorId(existente.getId())).thenReturn(Optional.of(existente));
+
+        NOME resultado = useCase.executar(existente.getId());
+
+        assertThat(resultado).isNotNull();
+        assertThat(resultado.getNome()).isEqualTo("Teste");
+    }
+
+    @Test
+    void executarComIdInexistenteLancaNOMENaoEncontradoException() {
+        UUID id = UUID.randomUUID();
+        when(repository.buscarPorId(id)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> useCase.executar(id))
+                .isInstanceOf(NOMENaoEncontradoException.class);
+    }
+}
+```
+
 ### Arquivo 19: src/test/java/com/laboratorio/financas/ARG/application/AtualizarNOMEUseCaseTest.java
 
 ```java
@@ -1093,6 +1186,25 @@ class NOMEControllerTest extends AbstractAuthenticatedIntegrationTest {
     }
 
     @Test
+    void getPorIdExistenteRetorna200() throws Exception {
+        MvcResult r = mockMvc.perform(comAuth(post("/api/nomes")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of("nome", "Buscavel")))))
+                .andReturn();
+        String id = objectMapper.readTree(r.getResponse().getContentAsString()).get("id").asText();
+
+        mockMvc.perform(comAuth(get("/api/nomes/" + id)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.nome").value("Buscavel"));
+    }
+
+    @Test
+    void getPorIdInexistenteRetorna404() throws Exception {
+        mockMvc.perform(comAuth(get("/api/nomes/" + UUID.randomUUID())))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
     void putExistenteRetorna200ComNomeAtualizado() throws Exception {
         MvcResult r = mockMvc.perform(comAuth(post("/api/nomes")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -1141,39 +1253,41 @@ Get-ChildItem -Recurse "src/main/java/com/laboratorio/financas/ARG/" -File | Sel
 Get-ChildItem -Recurse "src/test/java/com/laboratorio/financas/ARG/" -File | Select-Object FullName
 ```
 
-Confirme que os 22 arquivos existem (15 producao + 7 testes). Se algum ausente:
+Confirme que os 24 arquivos existem (16 producao + 8 testes). Se algum ausente:
 reporte qual falta e nao emita o relatorio de sucesso.
 
 ## Passo 4 -- Relatorio final
 
 ```
-Bounded context 'ARG' criado (baseline completo, 22 arquivos = 15 producao + 7 testes).
+Bounded context 'ARG' criado (baseline completo, 24 arquivos = 16 producao + 8 testes).
 
-Producao (15):
+Producao (16):
   domain/NOME.java
   domain/NOMERepository.java
   domain/NOMENaoEncontradoException.java
   application/CriarNOMEUseCase.java
   application/ListarNOMEsUseCase.java
+  application/BuscarNOMEPorIdUseCase.java
   application/AtualizarNOMEUseCase.java
   application/DeletarNOMEUseCase.java
   infrastructure/persistence/NOMEEntity.java
   infrastructure/persistence/NOMEJpaRepository.java
   infrastructure/persistence/NOMEMapper.java
   infrastructure/persistence/NOMERepositoryImpl.java
-  interfaces/NOMEController.java       (com wiring de auditoria)
+  interfaces/NOMEController.java       (com auditoria + GET /{id})
   interfaces/dto/CriarNOMERequest.java
   interfaces/dto/AtualizarNOMERequest.java
   interfaces/dto/NOMEResponse.java
 
-Testes (7, cobrindo os 4 niveis -- secao 6 de crud-patterns):
+Testes (8, cobrindo os 4 niveis -- secao 6 de crud-patterns):
   domain/NOMETest.java                                 (unit, JUnit + AssertJ)
   application/CriarNOMEUseCaseTest.java                (Mockito)
   application/ListarNOMEsUseCaseTest.java              (Mockito)
+  application/BuscarNOMEPorIdUseCaseTest.java          (Mockito)
   application/AtualizarNOMEUseCaseTest.java            (Mockito)
   application/DeletarNOMEUseCaseTest.java              (Mockito)
   infrastructure/persistence/NOMERepositoryImplTest.java (Testcontainers)
-  interfaces/NOMEControllerTest.java                   (MockMvc E2E)
+  interfaces/NOMEControllerTest.java                   (MockMvc E2E, 7 cenarios)
 
 PROXIMOS PASSOS (responsabilidade do executor):
   1. Adaptar campos especificos do dominio (Money, enum, FK, M:N, soft-delete,
