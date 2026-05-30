@@ -608,6 +608,10 @@ public class NOMEController {
             @Valid @RequestBody AtualizarNOMERequest request,
             Authentication authentication,
             @RequestHeader(value = "X-Screen-Code", required = false) String screenCode) {
+        // Chamar sem atribuir -- so valida o usuario autenticado. NAO fazer
+        // `UUID userId = resolverUserId(...)` aqui: userId nao e usado em
+        // atualizar() (so o id do PathVariable importa) e SpotBugs rejeita
+        // como DLS_DEAD_LOCAL_STORE.
         resolverUserId(authentication);
         AtualizarNOMEUseCase.Comando comando = new AtualizarNOMEUseCase.Comando(id, request.nome());
         NOMEResponse response = NOMEResponse.fromDomain(atualizarUseCase.executar(comando));
@@ -623,6 +627,7 @@ public class NOMEController {
             @PathVariable UUID id,
             Authentication authentication,
             @RequestHeader(value = "X-Screen-Code", required = false) String screenCode) {
+        // Mesma regra do atualizar(): chamar SEM atribuir. SpotBugs DLS_DEAD_LOCAL_STORE.
         resolverUserId(authentication);
         deletarUseCase.executar(id);
         auditPublisher.publish(new AuditEvent(
