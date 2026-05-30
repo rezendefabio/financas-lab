@@ -6,8 +6,10 @@ argument-hint: [path-do-controller]
 ---
 
 Voce deve instrumentar o controller informado em `$ARGUMENTS` com o padrao de
-audit log do projeto. Template de referencia: `ContaController` e
-`CentroCustoController`.
+audit log do projeto. **Padrao de referencia: `docs/crud-patterns.md` secao 5.1
+(controller com wiring de auditoria).** NAO ler `ContaController.java`,
+`CentroCustoController.java` ou qualquer outro controller de outra feature como
+template -- a secao 5.1 ja tem o padrao canonico completo.
 
 ## Passo 0 -- Validacao do argumento
 

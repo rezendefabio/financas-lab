@@ -37,6 +37,9 @@ Usar o Agent tool com:
 - model: "opus"
 - prompt: conteudo de task-planner.md com {OBJETIVO} substituido
 
+O JSON retornado contem o campo `executionMode` (`"fast"` ou `"full"`) decidido
+pelo planejador conforme complexidade das tasks. Guardar para uso nos Passos 4 e 5.
+
 ## Passo 2 -- Registrar tasks no state
 
 Para cada task retornada pelo planejador, adicionar em `.claude/tasks.json`:
@@ -63,6 +66,12 @@ Este texto DEVE aparecer no chat antes do AskUserQuestion:
 
 ```
 /plan: {N} tasks planejadas para "{OBJETIVO}"
+
+Modo de execucao: {fast | full}
+  fast = sem /ship, sem reviewers automaticos, validacao pontual (mvn test do contexto novo
+         + npm run test:run filtrado). Alvo: < 8 min. Usado para CRUDs triviais (todas S/baixo).
+  full = /ship completo (check.ps1 + check-front.ps1) + 2 reviewers em sequencia.
+         15-30 min. Usado para qualquer task M/L/XL ou risco medio/alto.
 
 Premissas assumidas:
   [P1] {premissa_1}
@@ -113,8 +122,10 @@ Para cada task, usar o Agent tool com:
 - isolation: "worktree"
 - run_in_background: false
 - prompt: ler `.claude/skills/plan/prompts/task-executor.md` com a ferramenta
-  Read, substituir `{CONTEUDO}` pelo campo `prompt` da task e `{LABEL}` pelo
-  campo `id` da task.
+  Read, substituir:
+  - `{CONTEUDO}` pelo campo `prompt` da task
+  - `{LABEL}` pelo campo `id` da task
+  - `{EXECUTION_MODE}` pelo `executionMode` global do JSON (`fast` ou `full`)
 
 ACAO OBRIGATORIA: emitir AGORA todos os {N} Agent tool calls em uma unica resposta.
 Nao escrever texto entre os tool calls. Nao aguardar resultado de um antes de emitir os demais.
@@ -175,7 +186,22 @@ PRs abertos: N/{total}
 Bloqueadores: <lista ou "nenhum">
 ```
 
-### Sub-passo 5.4 -- Reviews automaticos de PR (obrigatorio)
+### Sub-passo 5.4 -- Reviews automaticos de PR (condicional)
+
+**Se `executionMode == "fast"`: PULAR este sub-passo inteiramente.** No relatorio
+final, substituir a secao `Reviews:` por:
+
+```
+Reviews:
+  PULADOS (executionMode=fast). Rodar manualmente se desejar:
+    /review-pr <numero>
+    /review-front <numero>   (se houver mudancas em frontend/)
+```
+
+Justificativa: caminho rapido para CRUD trivial gerado direto do crud-patterns
+nao tem improviso a revisar. Reviewers ficam a cargo do operador.
+
+**Se `executionMode == "full"`:** executar normalmente o protocolo abaixo.
 
 Executar APOS o relatorio preliminar do Sub-passo 5.3 ter sido exibido.
 

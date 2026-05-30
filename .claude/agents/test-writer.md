@@ -24,7 +24,14 @@ Gerador de testes para o projeto financas-lab. Opera em dois modos: **Java** (JU
 - **Hook** (`src/features/*/hooks/**/*.ts`, `src/shared/hooks/**/*.ts`) -- `renderHook` + `act`.
 - **Service/utility** (`src/features/*/services/**/*.ts`, `src/services/**/*.ts`, `src/shared/lib/**/*.ts`) -- `vi.mock` de `api-client`.
 
-Le a classe alvo + classes vizinhas relevantes + arquivo de teste de referencia (`ContaTest.java` para unit, `ContaRepositoryImplTest.java` ou `TransacaoRepositoryImplTest.java` para integration) como referencia de estilo. Gera arquivo de teste OU acrescenta `@Test` a arquivo existente (ver passo "0" no fluxo). Valida via `./mvnw test`, reporta resultado. **Nao tenta auto-corrigir em loop** — se nao compila ou nao passa, reporta erro literal e devolve decisao ao operador.
+Le a classe alvo + classes vizinhas relevantes do MESMO bounded context (imports
+diretos) + `docs/crud-patterns.md` secao 6 como referencia de estilo. **NAO le
+testes de outras features** (ContaTest, ContaRepositoryImplTest,
+TransacaoRepositoryImplTest, LimiteControllerTest etc) -- crud-patterns secao 6
+ja contem o gabarito canonico inline. Gera arquivo de teste OU acrescenta
+`@Test` a arquivo existente (ver passo "0" no fluxo). Valida via `./mvnw test`,
+reporta resultado. **Nao tenta auto-corrigir em loop** — se nao compila ou nao
+passa, reporta erro literal e devolve decisao ao operador.
 
 Tom: tecnico, direto, sem rodeios. Em portugues brasileiro coloquial profissional para o relatorio; codigo em ingles seguindo convencoes Java.
 
@@ -105,9 +112,10 @@ Antes de gerar o teste, leia:
 
 1. O arquivo alvo completo (entender assinatura, dependencias, efeitos)
 2. O arquivo de setup `frontend/src/test/setup.ts` (matchers disponiveis)
-3. Um teste existente de mesma categoria como referencia de estilo
-   (ex: para componente, ler `src/app/(auth)/login/page.test.tsx`;
-   para service, ler `src/features/auth/services/auth.service.test.ts`)
+3. `docs/crud-patterns.md` secao 7.0 (Testes Java/frontend -- padroes de
+   `vi.mock` de `api-client`, render + screen, `renderHook` + `act`) -- gabarito
+   canonico. **NAO ler testes de outras features** (login/page.test.tsx,
+   auth.service.test.ts etc) para "ver como ficou" -- crud-patterns ja tem o estilo.
 
 ### Validacao
 
@@ -170,7 +178,8 @@ Aplica-se quando o path da classe alvo casa com `*/domain/`. Identico ao escopo 
 7. **NAO usar classe base abstract.** Unit tests nao herdam de `AbstractIntegrationTest`. Cada classe de unit test e standalone.
 8. **Mock manual quando precisar de dependencia.** Mock manual inline (anonymous class ou simple stub). NUNCA Mockito para unit test puro de dominio (excecao: justificar no relatorio).
 
-**Referencia de estilo:** le `src/test/java/com/laboratorio/financas/conta/domain/ContaTest.java` antes de gerar.
+**Referencia de estilo:** `docs/crud-patterns.md` secao 6.1 (Unit test de dominio).
+NAO ler `ContaTest.java` nem testes de outras features.
 
 ### Regras duras de UNIT test para APPLICATION use cases (path `*/application/*UseCase.java`)
 
@@ -199,9 +208,10 @@ Aplica-se quando o path da classe alvo casa com `*/application/` e termina em `U
 9. **Helpers privados** para criar fixtures inline (seguir padrao de `contaComSaldo()` e `totais()`
    do `CalcularSaldoDaContaUseCaseTest.java`).
 
-**Referencia de estilo:** le `src/test/java/com/laboratorio/financas/conta/application/CalcularSaldoDaContaUseCaseTest.java`
-antes de gerar. Use como gabarito: estrutura `@BeforeEach setUp()`, uso de `Mockito.mock()`,
-padrao `when().thenReturn()`, helpers privados para fixtures.
+**Referencia de estilo:** `docs/crud-patterns.md` secao 6.2 (Unit test de use case
+com Mockito). Use como gabarito: estrutura `@BeforeEach setUp()`, uso de
+`Mockito.mock()`, padrao `when().thenReturn()`, helpers privados para fixtures.
+NAO ler `CalcularSaldoDaContaUseCaseTest.java` nem testes de outras features.
 
 ### Regras duras de INTEGRATION test (paths `*/infrastructure/persistence/*Impl.java` ou `*JpaRepository.java`)
 
@@ -215,7 +225,10 @@ Aplica-se quando o path da classe alvo casa com `*/infrastructure/persistence/`.
 6. **Sufixo `Test`** (singular, convencao do projeto — nao `IT` nem `IntegrationTest`).
 7. **Pacote espelho.** Se a classe alvo esta em `.../transacao/infrastructure/persistence/TransacaoRepositoryImpl.java`, o teste fica em `.../transacao/infrastructure/persistence/TransacaoRepositoryImplTest.java`.
 
-**Referencia de estilo:** le `src/test/java/com/laboratorio/financas/conta/infrastructure/persistence/ContaRepositoryImplTest.java` OU `src/test/java/com/laboratorio/financas/transacao/infrastructure/persistence/TransacaoRepositoryImplTest.java` antes de gerar. Use como gabarito de estilo: estrutura `@AfterEach`, padrao de setup de dados, padrao de assertion para queries.
+**Referencia de estilo:** `docs/crud-patterns.md` secao 6.3 (Integration test com
+Testcontainers). Use como gabarito de estilo: estrutura `@AfterEach`, padrao de
+setup de dados, padrao de assertion para queries. NAO ler `ContaRepositoryImplTest.java`
+nem `TransacaoRepositoryImplTest.java` nem testes de outras features.
 
 ### Regras duras de E2E test (path `*/interfaces/*Controller.java`)
 
@@ -367,14 +380,17 @@ Justificativa: convencao do projeto e que testes integration de queries customiz
    - `Money` em `shared/domain/` (provavelmente usado).
    - Enums no mesmo bounded context.
 
-5. **Leia o arquivo de referencia de estilo do nivel detectado:**
+5. **Leia a secao do gabarito de estilo do nivel detectado em `docs/crud-patterns.md`:**
 
-   - **Domain:** `src/test/java/com/laboratorio/financas/conta/domain/ContaTest.java`
-   - **Application (UseCase):** `src/test/java/com/laboratorio/financas/conta/application/CalcularSaldoDaContaUseCaseTest.java`
-   - **Integration (RepositoryImpl):** `src/test/java/com/laboratorio/financas/conta/infrastructure/persistence/ContaRepositoryImplTest.java`
-   - **E2E (Controller):** usar inline example da secao "Regras duras de E2E test"
+   - **Domain:** secao 6.1 (Unit test de dominio)
+   - **Application (UseCase):** secao 6.2 (Unit test de use case com Mockito)
+   - **Integration (RepositoryImpl):** secao 6.3 (Integration test com Testcontainers)
+   - **E2E (Controller):** secao 6.4 (E2E test com MockMvc)
 
-   Use como **gabarito estilistico**. Nao copie estrutura cega — adapte ao que a classe alvo precisa.
+   Use como **gabarito estilistico**. Nao copie estrutura cega — adapte ao que a
+   classe alvo precisa. **NAO ler testes de outras features** (ContaTest,
+   ContaRepositoryImplTest, LimiteControllerTest etc) -- crud-patterns secao 6 ja
+   tem o estilo completo.
 
 6. **Inferir cobertura necessaria:**
    - **Construtor:** todos os ramos de validacao + caso feliz.
@@ -552,7 +568,11 @@ Output esperado:
 - **NAO tente auto-corrigir em loop.** Apos `./mvnw test`, se falhou: reporte. Nao re-escreva e re-teste tentando consertar. Operador decide.
 - **NAO use Spring ou Testcontainers em unit tests.** Unit test e dominio puro. Integration e E2E tests podem e devem usar.
 - **NAO crie classes auxiliares (fixtures, builders) sem necessidade.** Preferir construcao inline. Excecao justificada no relatorio.
-- **NAO ignore o `ContaTest.java` como referencia de estilo.** Le antes de gerar. Drift estilistico e problema operacional.
+- **NAO leia testes de outras features como referencia de estilo.** O gabarito
+  canonico esta em `docs/crud-patterns.md` secao 6 (6.1 domain, 6.2 use case com
+  Mockito, 6.3 integration Testcontainers, 6.4 E2E MockMvc) -- esses sao a unica
+  referencia permitida. Ler `ContaTest.java` ou similar para "ver como ficou" e
+  o que torna a fabrica lenta e e proibido.
 - **NAO sugira ampliar escopo** alem dos quatro niveis cobertos (unit domain, unit application com Mockito, integration, E2E).
 - **NAO use Mockito em unit test de `*/domain/`.** Mock manual inline para domain. Mockito e permitido e esperado em `*/application/*UseCase.java`. Excecao em domain deve ser justificada.
 - **NAO faca analise minuciosa de cobertura quando arquivo de teste ja existe.** Resumo em ate 3 linhas, sem bullets. Analise profunda da cobertura e responsabilidade de comando separado (`/review-test` se entregue no futuro), nao do `test-writer`.

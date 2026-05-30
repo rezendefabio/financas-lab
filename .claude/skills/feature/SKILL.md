@@ -1,39 +1,42 @@
 ---
 name: feature
-description: Cria estrutura de bounded context com esqueleto basico (domain, application, infrastructure/persistence, interfaces/dto) + 11 arquivos Java stub. Recebe nome do contexto em snake_case minusculo como argumento.
+description: Cria bounded context completo (15 arquivos Java) alinhado a docs/crud-patterns.md baseline: 4 use cases CRUD, controller com auditoria, userId, exception, repository com todos os metodos, DTOs Criar/Atualizar/Response. Recebe nome do contexto em snake_case minusculo.
 disable-model-invocation: true
 argument-hint: [nome-do-bounded-context]
 ---
 
-Voce deve criar o bounded context `$ARGUMENTS` no projeto financas-lab. Execute todos
-os passos em ordem. Pare e reporte ao operador se qualquer pre-condicao falhar.
+Voce deve criar o bounded context `$ARGUMENTS` no projeto financas-lab gerando o
+**baseline completo** ja alinhado com `docs/crud-patterns.md` (secoes 1.1, 1.4,
+1.5, 2.1, 2.4-2.7, 3, 4.1-4.4, 5.1, 5.2).
+
+**Fonte unica de padrao:** `docs/crud-patterns.md`. Esta skill gera o gabarito
+canonico inline. O executor depois so adapta nomes/tipos de campos especificos
+do dominio (Money, enum, FK, M:N, soft-delete, state machine etc -- secoes 1.2,
+1.3, 1.6, 1.7, 5.2.1, 10.x de crud-patterns). **NAO ler outros bounded contexts
+como template** -- os 15 arquivos abaixo ja sao o canonico.
 
 ## Definicoes
 
-Defina internamente antes de qualquer acao:
-
-- `ARG` = `$ARGUMENTS` (ex: `cartao`, `meta_financeira`, `orcamento`)
-- `NOME` = PascalCase de `ARG`: capitalize a primeira letra de cada segmento separado
-  por underscore e concatene. Exemplos: `cartao` -> `Cartao`,
-  `meta_financeira` -> `MetaFinanceira`, `orcamento` -> `Orcamento`.
+- `ARG` = `$ARGUMENTS` (ex: `lembrete`, `meta_financeira`)
+- `NOME` = PascalCase de `ARG`: capitalize a primeira letra de cada segmento
+  separado por underscore e concatene (`lembrete` -> `Lembrete`,
+  `meta_financeira` -> `MetaFinanceira`)
+- `nome` = camelCase de `ARG` (primeira letra minuscula): `lembrete`, `metaFinanceira`
+- `nomes` = plural simples (`lembretes`, `metaFinanceiras`) -- executor ajusta
+  plural pt-BR no @RequestMapping se preciso
 - Pacote base: `com.laboratorio.financas.ARG`
-- Diretorio base: `src/main/java/com/laboratorio/financas/ARG/`
 
 ## Passo 0 -- Validacoes (ADR-011)
 
-**Validacao 1 -- formato:**
-Verifique se ARG casa com `^[a-z][a-z0-9_]*$`. Se nao casar: escreva
-"ERRO: argumento invalido -- use apenas letras minusculas, digitos e underscore,
-comecando com letra (ex: /feature cartao, /feature meta_financeira)" e termine.
+**V1 -- formato:**
+ARG deve casar com `^[a-z][a-z0-9_]*$`. Se nao casar:
+"ERRO: argumento invalido -- use letras minusculas, digitos e underscore (ex: /feature lembrete)" e termine.
 
-**Validacao 2 -- existencia:**
-Use Bash (PowerShell) para verificar:
+**V2 -- existencia:**
 ```powershell
 Test-Path "src/main/java/com/laboratorio/financas/ARG/"
 ```
-Se retornar `True`: escreva "ERRO: bounded context 'ARG' ja existe em
-src/main/java/com/laboratorio/financas/ARG/ -- skill abortada para nao sobrescrever
-trabalho existente" e termine.
+Se `True`: "ERRO: bounded context 'ARG' ja existe" e termine.
 
 ## Passo 1 -- Criar diretorios
 
@@ -43,16 +46,20 @@ New-Item -ItemType Directory -Force `
   -Path "src/main/java/com/laboratorio/financas/ARG/domain", `
          "src/main/java/com/laboratorio/financas/ARG/application", `
          "src/main/java/com/laboratorio/financas/ARG/infrastructure/persistence", `
+         "src/main/java/com/laboratorio/financas/ARG/interfaces", `
          "src/main/java/com/laboratorio/financas/ARG/interfaces/dto"
 ```
 
-Verifique com `Test-Path` que os 4 diretorios foram criados. Se algum ausente:
+Verifique com `Test-Path` que os 5 diretorios foram criados. Se algum ausente:
 reporte qual falhou e termine.
 
-## Passo 2 -- Criar os 11 arquivos
+**Atencao:** `interfaces/` (NAO `interfaces/rest/`). Controller fica em
+`interfaces/`, DTOs em `interfaces/dto/`. Convencao do projeto.
 
-Use a ferramenta Write para cada arquivo. Substitua `NOME` e `ARG` pelos valores
-definidos no inicio. Codificacao: UTF-8 sem BOM.
+## Passo 2 -- Criar os 15 arquivos
+
+Use Write para cada arquivo. Substitua `NOME`, `ARG`, `nome`, `nomes` pelos
+valores definidos. Codificacao: UTF-8 sem BOM.
 
 ### Arquivo 1: src/main/java/com/laboratorio/financas/ARG/domain/NOME.java
 
@@ -65,58 +72,73 @@ import java.util.UUID;
 
 public final class NOME {
 
-    private final UUID id;
-    private final String nome;
-    private final Instant criadoEm;
+    private static final int NOME_MAX_LENGTH = 100;
 
-    public NOME(String nome) {
-        this(UUID.randomUUID(), nome, Instant.now());
+    private final UUID id;
+    private final UUID userId;
+    private String nome;
+    private boolean ativo;
+    private final Instant criadoEm;
+    private Instant atualizadoEm;
+
+    public NOME(UUID userId, String nome) {
+        this(UUID.randomUUID(), userId, nome, true, Instant.now(), Instant.now());
     }
 
-    public NOME(UUID id, String nome, Instant criadoEm) {
+    public NOME(UUID id, UUID userId, String nome,
+                boolean ativo, Instant criadoEm, Instant atualizadoEm) {
         Objects.requireNonNull(id, "id nao pode ser nulo");
-        Objects.requireNonNull(nome, "nome nao pode ser nulo");
+        Objects.requireNonNull(userId, "userId nao pode ser nulo");
         Objects.requireNonNull(criadoEm, "criadoEm nao pode ser nulo");
-        if (nome.isBlank()) {
+        validarNome(nome);
+
+        this.id = id;
+        this.userId = userId;
+        this.nome = nome.trim();
+        this.ativo = ativo;
+        this.criadoEm = criadoEm;
+        this.atualizadoEm = atualizadoEm;
+    }
+
+    private static void validarNome(String nome) {
+        Objects.requireNonNull(nome, "nome nao pode ser nulo");
+        String trimmed = nome.trim();
+        if (trimmed.isEmpty()) {
             throw new IllegalArgumentException("nome nao pode ser vazio");
         }
-        this.id = id;
-        this.nome = nome;
-        this.criadoEm = criadoEm;
+        if (trimmed.length() > NOME_MAX_LENGTH) {
+            throw new IllegalArgumentException(
+                "nome nao pode ter mais de " + NOME_MAX_LENGTH + " caracteres");
+        }
     }
 
-    public UUID getId() {
-        return id;
+    public void desativar() {
+        this.ativo = false;
+        this.atualizadoEm = Instant.now();
     }
 
-    public String getNome() {
-        return nome;
+    public void atualizar(String novoNome) {
+        validarNome(novoNome);
+        this.nome = novoNome.trim();
+        this.atualizadoEm = Instant.now();
     }
 
-    public Instant getCriadoEm() {
-        return criadoEm;
-    }
+    public UUID getId() { return id; }
+    public UUID getUserId() { return userId; }
+    public String getNome() { return nome; }
+    public boolean isAtivo() { return ativo; }
+    public Instant getCriadoEm() { return criadoEm; }
+    public Instant getAtualizadoEm() { return atualizadoEm; }
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (!(o instanceof NOME other)) {
-            return false;
-        }
+        if (this == o) return true;
+        if (!(o instanceof NOME other)) return false;
         return this.id.equals(other.id);
     }
 
     @Override
-    public int hashCode() {
-        return id.hashCode();
-    }
-
-    @Override
-    public String toString() {
-        return "NOME{id=" + id + ", nome='" + nome + "'}";
-    }
+    public int hashCode() { return id.hashCode(); }
 }
 ```
 
@@ -131,33 +153,35 @@ import java.util.UUID;
 
 public interface NOMERepository {
 
-    NOME salvar(NOME domain);
+    NOME salvar(NOME entidade);
 
     Optional<NOME> buscarPorId(UUID id);
 
-    List<NOME> listarTodos();
+    List<NOME> listarPorUserId(UUID userId);
+
+    NOME atualizar(NOME entidade);
+
+    void deletar(UUID id);
 }
 ```
 
-### Arquivo 3: src/main/java/com/laboratorio/financas/ARG/domain/NOMENaoEncontradaException.java
+### Arquivo 3: src/main/java/com/laboratorio/financas/ARG/domain/NOMENaoEncontradoException.java
 
 ```java
 package com.laboratorio.financas.ARG.domain;
 
 import java.util.UUID;
 
-public class NOMENaoEncontradaException extends RuntimeException {
+public class NOMENaoEncontradoException extends RuntimeException {
 
     private final UUID id;
 
-    public NOMENaoEncontradaException(UUID id) {
-        super("ARG nao encontrado: " + id);
+    public NOMENaoEncontradoException(UUID id) {
+        super("NOME nao encontrado: " + id);
         this.id = id;
     }
 
-    public UUID getId() {
-        return id;
-    }
+    public UUID getId() { return id; }
 }
 ```
 
@@ -168,6 +192,7 @@ package com.laboratorio.financas.ARG.application;
 
 import com.laboratorio.financas.ARG.domain.NOME;
 import com.laboratorio.financas.ARG.domain.NOMERepository;
+import java.util.UUID;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -180,17 +205,107 @@ public class CriarNOMEUseCase {
         this.repository = repository;
     }
 
-    public record Comando(String nome) { }
+    public record Comando(UUID userId, String nome) {}
 
     @Transactional
     public NOME executar(Comando comando) {
-        NOME novo = new NOME(comando.nome());
-        return repository.salvar(novo);
+        NOME entidade = new NOME(comando.userId(), comando.nome());
+        return repository.salvar(entidade);
     }
 }
 ```
 
-### Arquivo 5: src/main/java/com/laboratorio/financas/ARG/infrastructure/persistence/NOMEEntity.java
+### Arquivo 5: src/main/java/com/laboratorio/financas/ARG/application/ListarNOMEsUseCase.java
+
+```java
+package com.laboratorio.financas.ARG.application;
+
+import com.laboratorio.financas.ARG.domain.NOME;
+import com.laboratorio.financas.ARG.domain.NOMERepository;
+import java.util.List;
+import java.util.UUID;
+import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
+
+@Component
+public class ListarNOMEsUseCase {
+
+    private final NOMERepository repository;
+
+    public ListarNOMEsUseCase(NOMERepository repository) {
+        this.repository = repository;
+    }
+
+    @Transactional(readOnly = true)
+    public List<NOME> executar(UUID userId) {
+        return repository.listarPorUserId(userId);
+    }
+}
+```
+
+### Arquivo 6: src/main/java/com/laboratorio/financas/ARG/application/AtualizarNOMEUseCase.java
+
+```java
+package com.laboratorio.financas.ARG.application;
+
+import com.laboratorio.financas.ARG.domain.NOME;
+import com.laboratorio.financas.ARG.domain.NOMENaoEncontradoException;
+import com.laboratorio.financas.ARG.domain.NOMERepository;
+import java.util.UUID;
+import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
+
+@Component
+public class AtualizarNOMEUseCase {
+
+    private final NOMERepository repository;
+
+    public AtualizarNOMEUseCase(NOMERepository repository) {
+        this.repository = repository;
+    }
+
+    public record Comando(UUID id, String nome) {}
+
+    @Transactional
+    public NOME executar(Comando comando) {
+        NOME entidade = repository.buscarPorId(comando.id())
+                .orElseThrow(() -> new NOMENaoEncontradoException(comando.id()));
+        entidade.atualizar(comando.nome());
+        return repository.atualizar(entidade);
+    }
+}
+```
+
+### Arquivo 7: src/main/java/com/laboratorio/financas/ARG/application/DeletarNOMEUseCase.java
+
+```java
+package com.laboratorio.financas.ARG.application;
+
+import com.laboratorio.financas.ARG.domain.NOMENaoEncontradoException;
+import com.laboratorio.financas.ARG.domain.NOMERepository;
+import java.util.UUID;
+import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
+
+@Component
+public class DeletarNOMEUseCase {
+
+    private final NOMERepository repository;
+
+    public DeletarNOMEUseCase(NOMERepository repository) {
+        this.repository = repository;
+    }
+
+    @Transactional
+    public void executar(UUID id) {
+        repository.buscarPorId(id)
+                .orElseThrow(() -> new NOMENaoEncontradoException(id));
+        repository.deletar(id);
+    }
+}
+```
+
+### Arquivo 8: src/main/java/com/laboratorio/financas/ARG/infrastructure/persistence/NOMEEntity.java
 
 ```java
 package com.laboratorio.financas.ARG.infrastructure.persistence;
@@ -212,50 +327,101 @@ public class NOMEEntity {
     private UUID id;
 
     @NotNull
+    @Column(name = "user_id", columnDefinition = "uuid", nullable = false)
+    private UUID userId;
+
+    @NotNull
     @Column(name = "nome", nullable = false, length = 100)
     private String nome;
+
+    @NotNull
+    @Column(name = "ativo", nullable = false)
+    private boolean ativo;
 
     @NotNull
     @Column(name = "criado_em", nullable = false, updatable = false)
     private Instant criadoEm;
 
+    @NotNull
+    @Column(name = "atualizado_em", nullable = false)
+    private Instant atualizadoEm;
+
     protected NOMEEntity() {
         // Construtor protected exigido pelo JPA.
     }
 
-    public NOMEEntity(UUID id, String nome, Instant criadoEm) {
+    public NOMEEntity(UUID id, UUID userId, String nome,
+                      boolean ativo, Instant criadoEm, Instant atualizadoEm) {
         this.id = id;
+        this.userId = userId;
         this.nome = nome;
+        this.ativo = ativo;
         this.criadoEm = criadoEm;
+        this.atualizadoEm = atualizadoEm;
     }
 
-    public UUID getId() {
-        return id;
-    }
-
-    public String getNome() {
-        return nome;
-    }
-
-    public Instant getCriadoEm() {
-        return criadoEm;
-    }
+    public UUID getId() { return id; }
+    public UUID getUserId() { return userId; }
+    public String getNome() { return nome; }
+    public boolean isAtivo() { return ativo; }
+    public Instant getCriadoEm() { return criadoEm; }
+    public Instant getAtualizadoEm() { return atualizadoEm; }
 }
 ```
 
-### Arquivo 6: src/main/java/com/laboratorio/financas/ARG/infrastructure/persistence/NOMEJpaRepository.java
+### Arquivo 9: src/main/java/com/laboratorio/financas/ARG/infrastructure/persistence/NOMEJpaRepository.java
 
 ```java
 package com.laboratorio.financas.ARG.infrastructure.persistence;
 
+import java.util.List;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface NOMEJpaRepository extends JpaRepository<NOMEEntity, UUID> {
+
+    List<NOMEEntity> findByUserId(UUID userId);
 }
 ```
 
-### Arquivo 7: src/main/java/com/laboratorio/financas/ARG/infrastructure/persistence/NOMERepositoryImpl.java
+### Arquivo 10: src/main/java/com/laboratorio/financas/ARG/infrastructure/persistence/NOMEMapper.java
+
+```java
+package com.laboratorio.financas.ARG.infrastructure.persistence;
+
+import com.laboratorio.financas.ARG.domain.NOME;
+import org.mapstruct.Mapper;
+
+@Mapper(componentModel = "spring")
+public interface NOMEMapper {
+
+    default NOMEEntity toEntity(NOME domain) {
+        if (domain == null) return null;
+        return new NOMEEntity(
+                domain.getId(),
+                domain.getUserId(),
+                domain.getNome(),
+                domain.isAtivo(),
+                domain.getCriadoEm(),
+                domain.getAtualizadoEm()
+        );
+    }
+
+    default NOME toDomain(NOMEEntity entity) {
+        if (entity == null) return null;
+        return new NOME(
+                entity.getId(),
+                entity.getUserId(),
+                entity.getNome(),
+                entity.isAtivo(),
+                entity.getCriadoEm(),
+                entity.getAtualizadoEm()
+        );
+    }
+}
+```
+
+### Arquivo 11: src/main/java/com/laboratorio/financas/ARG/infrastructure/persistence/NOMERepositoryImpl.java
 
 ```java
 package com.laboratorio.financas.ARG.infrastructure.persistence;
@@ -279,10 +445,8 @@ public class NOMERepositoryImpl implements NOMERepository {
     }
 
     @Override
-    public NOME salvar(NOME domain) {
-        NOMEEntity entity = mapper.toEntity(domain);
-        NOMEEntity salva = jpaRepository.save(entity);
-        return mapper.toDomain(salva);
+    public NOME salvar(NOME entidade) {
+        return mapper.toDomain(jpaRepository.save(mapper.toEntity(entidade)));
     }
 
     @Override
@@ -291,78 +455,161 @@ public class NOMERepositoryImpl implements NOMERepository {
     }
 
     @Override
-    public List<NOME> listarTodos() {
-        return jpaRepository.findAll().stream()
+    public List<NOME> listarPorUserId(UUID userId) {
+        return jpaRepository.findByUserId(userId).stream()
                 .map(mapper::toDomain)
                 .toList();
     }
-}
-```
 
-### Arquivo 8: src/main/java/com/laboratorio/financas/ARG/infrastructure/persistence/NOMEMapper.java
-
-```java
-package com.laboratorio.financas.ARG.infrastructure.persistence;
-
-import com.laboratorio.financas.ARG.domain.NOME;
-import org.mapstruct.Mapper;
-
-@Mapper(componentModel = "spring")
-public interface NOMEMapper {
-
-    default NOMEEntity toEntity(NOME domain) {
-        if (domain == null) {
-            return null;
-        }
-        return new NOMEEntity(domain.getId(), domain.getNome(), domain.getCriadoEm());
+    @Override
+    public NOME atualizar(NOME entidade) {
+        return mapper.toDomain(jpaRepository.save(mapper.toEntity(entidade)));
     }
 
-    default NOME toDomain(NOMEEntity entity) {
-        if (entity == null) {
-            return null;
-        }
-        return new NOME(entity.getId(), entity.getNome(), entity.getCriadoEm());
+    @Override
+    public void deletar(UUID id) {
+        jpaRepository.deleteById(id);
     }
 }
 ```
 
-### Arquivo 9: src/main/java/com/laboratorio/financas/ARG/interfaces/NOMEController.java
+### Arquivo 12: src/main/java/com/laboratorio/financas/ARG/interfaces/NOMEController.java
 
 ```java
 package com.laboratorio.financas.ARG.interfaces;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.laboratorio.financas.auditlog.domain.AuditAction;
+import com.laboratorio.financas.auditlog.domain.AuditEvent;
+import com.laboratorio.financas.auditlog.infrastructure.AuditPublisher;
+import com.laboratorio.financas.ARG.application.AtualizarNOMEUseCase;
 import com.laboratorio.financas.ARG.application.CriarNOMEUseCase;
+import com.laboratorio.financas.ARG.application.DeletarNOMEUseCase;
+import com.laboratorio.financas.ARG.application.ListarNOMEsUseCase;
+import com.laboratorio.financas.ARG.domain.NOME;
+import com.laboratorio.financas.ARG.interfaces.dto.AtualizarNOMERequest;
 import com.laboratorio.financas.ARG.interfaces.dto.CriarNOMERequest;
 import com.laboratorio.financas.ARG.interfaces.dto.NOMEResponse;
+import com.laboratorio.financas.usuario.domain.UsuarioRepository;
 import jakarta.validation.Valid;
+import java.util.List;
+import java.util.UUID;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.ResponseStatus;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.*;
 
-// TODO: ajustar /api/ARGs para plural correto em pt-BR (ex: /api/cartoes)
+// TODO: ajustar /api/nomes para plural correto pt-BR se nao for o padrao default.
 @RestController
-@RequestMapping("/api/ARGs")
+@RequestMapping("/api/nomes")
 public class NOMEController {
 
-    private final CriarNOMEUseCase criarNOMEUseCase;
+    private static final Logger LOG = LoggerFactory.getLogger(NOMEController.class);
+    private static final String ENTITY_TYPE = "ARG";
 
-    public NOMEController(CriarNOMEUseCase criarNOMEUseCase) {
-        this.criarNOMEUseCase = criarNOMEUseCase;
+    private final CriarNOMEUseCase criarUseCase;
+    private final ListarNOMEsUseCase listarUseCase;
+    private final AtualizarNOMEUseCase atualizarUseCase;
+    private final DeletarNOMEUseCase deletarUseCase;
+    private final UsuarioRepository usuarioRepository;
+    private final AuditPublisher auditPublisher;
+    private final ObjectMapper objectMapper;
+
+    public NOMEController(
+            CriarNOMEUseCase criarUseCase,
+            ListarNOMEsUseCase listarUseCase,
+            AtualizarNOMEUseCase atualizarUseCase,
+            DeletarNOMEUseCase deletarUseCase,
+            UsuarioRepository usuarioRepository,
+            AuditPublisher auditPublisher,
+            ObjectMapper objectMapper) {
+        this.criarUseCase = criarUseCase;
+        this.listarUseCase = listarUseCase;
+        this.atualizarUseCase = atualizarUseCase;
+        this.deletarUseCase = deletarUseCase;
+        this.usuarioRepository = usuarioRepository;
+        this.auditPublisher = auditPublisher;
+        this.objectMapper = objectMapper;
+    }
+
+    @GetMapping
+    public List<NOMEResponse> listar(Authentication authentication) {
+        UUID userId = resolverUserId(authentication);
+        return listarUseCase.executar(userId).stream()
+                .map(NOMEResponse::fromDomain)
+                .toList();
     }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public NOMEResponse criar(@RequestBody @Valid CriarNOMERequest request) {
-        // TODO: implementar
-        throw new UnsupportedOperationException("Nao implementado");
+    public NOMEResponse criar(
+            @Valid @RequestBody CriarNOMERequest request,
+            Authentication authentication,
+            @RequestHeader(value = "X-Screen-Code", required = false) String screenCode) {
+        UUID userId = resolverUserId(authentication);
+        CriarNOMEUseCase.Comando comando = new CriarNOMEUseCase.Comando(userId, request.nome());
+        NOMEResponse response = NOMEResponse.fromDomain(criarUseCase.executar(comando));
+        auditPublisher.publish(new AuditEvent(
+                ENTITY_TYPE, response.id(), AuditAction.CREATE,
+                userEmail(authentication), screenCode, null, toJson(response)));
+        return response;
+    }
+
+    @PutMapping("/{id}")
+    public NOMEResponse atualizar(
+            @PathVariable UUID id,
+            @Valid @RequestBody AtualizarNOMERequest request,
+            Authentication authentication,
+            @RequestHeader(value = "X-Screen-Code", required = false) String screenCode) {
+        resolverUserId(authentication);
+        AtualizarNOMEUseCase.Comando comando = new AtualizarNOMEUseCase.Comando(id, request.nome());
+        NOMEResponse response = NOMEResponse.fromDomain(atualizarUseCase.executar(comando));
+        auditPublisher.publish(new AuditEvent(
+                ENTITY_TYPE, id, AuditAction.UPDATE,
+                userEmail(authentication), screenCode, null, toJson(response)));
+        return response;
+    }
+
+    @DeleteMapping("/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deletar(
+            @PathVariable UUID id,
+            Authentication authentication,
+            @RequestHeader(value = "X-Screen-Code", required = false) String screenCode) {
+        resolverUserId(authentication);
+        deletarUseCase.executar(id);
+        auditPublisher.publish(new AuditEvent(
+                ENTITY_TYPE, id, AuditAction.DELETE,
+                userEmail(authentication), screenCode, null, null));
+    }
+
+    private UUID resolverUserId(Authentication authentication) {
+        String email = authentication.getName();
+        return usuarioRepository.buscarPorEmail(email)
+                .orElseThrow(() -> new IllegalStateException(
+                        "Usuario autenticado nao encontrado: " + email))
+                .getId();
+    }
+
+    private String userEmail(Authentication authentication) {
+        return (authentication != null) ? authentication.getName() : null;
+    }
+
+    private String toJson(Object obj) {
+        if (obj == null) return null;
+        try {
+            return objectMapper.writeValueAsString(obj);
+        } catch (JsonProcessingException ex) {
+            LOG.warn("Falha ao serializar payload de audit log para {}", ENTITY_TYPE, ex);
+            return null;
+        }
     }
 }
 ```
 
-### Arquivo 10: src/main/java/com/laboratorio/financas/ARG/interfaces/dto/CriarNOMERequest.java
+### Arquivo 13: src/main/java/com/laboratorio/financas/ARG/interfaces/dto/CriarNOMERequest.java
 
 ```java
 package com.laboratorio.financas.ARG.interfaces.dto;
@@ -371,60 +618,91 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
 public record CriarNOMERequest(
-        @NotBlank
-        @Size(max = 100)
-        String nome
-) { }
+        @NotBlank @Size(max = 100) String nome
+) {}
 ```
 
-### Arquivo 11: src/main/java/com/laboratorio/financas/ARG/interfaces/dto/NOMEResponse.java
+### Arquivo 14: src/main/java/com/laboratorio/financas/ARG/interfaces/dto/AtualizarNOMERequest.java
 
 ```java
 package com.laboratorio.financas.ARG.interfaces.dto;
 
-import java.time.Instant;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
+
+public record AtualizarNOMERequest(
+        @NotBlank @Size(max = 100) String nome
+) {}
+```
+
+### Arquivo 15: src/main/java/com/laboratorio/financas/ARG/interfaces/dto/NOMEResponse.java
+
+```java
+package com.laboratorio.financas.ARG.interfaces.dto;
+
+import com.laboratorio.financas.ARG.domain.NOME;
 import java.util.UUID;
 
 public record NOMEResponse(
         UUID id,
+        UUID userId,
         String nome,
-        Instant criadoEm
-) { }
+        boolean ativo,
+        String criadoEm,
+        String atualizadoEm
+) {
+    public static NOMEResponse fromDomain(NOME domain) {
+        return new NOMEResponse(
+                domain.getId(),
+                domain.getUserId(),
+                domain.getNome(),
+                domain.isAtivo(),
+                domain.getCriadoEm().toString(),
+                domain.getAtualizadoEm().toString()
+        );
+    }
+}
 ```
 
 ## Passo 3 -- Verificar criacao
 
-Execute:
 ```powershell
-Get-ChildItem -Recurse "src/main/java/com/laboratorio/financas/ARG/" | Select-Object FullName
+Get-ChildItem -Recurse "src/main/java/com/laboratorio/financas/ARG/" -File | Select-Object FullName
 ```
 
-Confirme que os 11 arquivos existem. Se algum ausente: reporte qual falta e nao emita
-o relatorio de sucesso.
+Confirme que os 15 arquivos existem. Se algum ausente: reporte qual falta e nao
+emita o relatorio de sucesso.
 
 ## Passo 4 -- Relatorio final
 
-Produza o seguinte relatorio (substituindo ARG e NOME pelos valores reais):
-
 ```
-Bounded context 'ARG' criado.
+Bounded context 'ARG' criado (baseline completo, 15 arquivos).
 
-Estrutura (11 arquivos):
+Estrutura:
   domain/NOME.java
   domain/NOMERepository.java
-  domain/NOMENaoEncontradaException.java
+  domain/NOMENaoEncontradoException.java
   application/CriarNOMEUseCase.java
+  application/ListarNOMEsUseCase.java
+  application/AtualizarNOMEUseCase.java
+  application/DeletarNOMEUseCase.java
   infrastructure/persistence/NOMEEntity.java
   infrastructure/persistence/NOMEJpaRepository.java
-  infrastructure/persistence/NOMERepositoryImpl.java
   infrastructure/persistence/NOMEMapper.java
-  interfaces/NOMEController.java
+  infrastructure/persistence/NOMERepositoryImpl.java
+  interfaces/NOMEController.java       (com wiring de auditoria)
   interfaces/dto/CriarNOMERequest.java
+  interfaces/dto/AtualizarNOMERequest.java
   interfaces/dto/NOMEResponse.java
 
-ATENCAO -- antes do primeiro commit:
-  1. Crie a migration Flyway V<n>__create_ARG_table.sql
-     (hook 4.7 bloqueia commit com @Entity novo sem migration)
-  2. Ajuste /api/ARGs para o plural correto no NOMEController.java
-  3. Preencha os TODO com logica de negocio especifica do dominio
+PROXIMOS PASSOS (responsabilidade do executor):
+  1. Adaptar campos especificos do dominio (Money, enum, FK, M:N, soft-delete,
+     state machine etc) seguindo as secoes correspondentes de docs/crud-patterns.md
+     (1.2, 1.3, 1.6, 1.7, 5.2.1, 10.x). NAO ler outros bounded contexts.
+  2. Criar migration Flyway V<N>__cria_tabela_ARG.sql (numero reservado no prompt da task)
+  3. Ajustar /api/nomes para plural pt-BR se necessario (ex: /api/lembretes)
+  4. Adicionar handler de NOMENaoEncontradoException no GlobalExceptionHandler
+     (secao 3 de crud-patterns.md -- ProblemDetail, NAO void)
+  5. Registrar ENTITY_TYPE 'ARG' no middleware de auditoria via /add-entity-to-audit
+  6. /write-test para cada arquivo gerado (4 niveis: domain, useCase, repositoryImpl, controller)
 ```
