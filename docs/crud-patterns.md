@@ -83,6 +83,12 @@ abaixo. Importar/estender — nunca recriar nem duplicar:
   do usuario chama `usuario` (NAO `users`); idem `conta` (NAO `accounts`),
   `categoria`, `transacao`, `carteira`, `lembrete`, etc. FK para o usuario e
   `REFERENCES usuario(id)` -- NUNCA `users(id)`.
+- **Money tem precisao SQL fixa: `NUMERIC(19,2)`.** BRL usa 2 casas decimais
+  (centavos). NUNCA `(19,4)` ou outras precisoes, mesmo que padroes
+  internacionais usem mais. O `MoneyEmbeddable` mapeia para `precision=19,
+  scale=2` em todas as colunas (`valor_valor`, `saldo_valor`,
+  `valor_limite_valor`, etc.). Aplica-se tanto a `@AttributeOverride` da Entity
+  quanto a migration SQL -- consistencia obrigatoria entre os dois.
 
 ---
 
