@@ -313,9 +313,10 @@ fast path. Usar complexidade como gate exclui o caso para o qual o fast foi feit
   Enum proprio (1.2), Money/Embedded (1.3) e FK simples (1.6) sao OK -- nao
   bumpam para full. Executor pula `/ship` e reviewers, valida so com
   `mvn test -Dtest=<NovoContexto>*` e `npm run test:run` filtrado pelos arquivos
-  novos, abre PR direto. Wall-clock alvo: **10-15 min** (com `/feature` e
-  `/feature-front` gerando templates de teste inline, `/write-test` so e
-  necessario para arquivos novos alem do baseline).
+  novos, abre PR direto. **Wall-clock alvo: 16-18 min** (com `/feature` e
+  `/feature-front` gerando templates inline, mvn test rodando em paralelo com
+  adaptacao frontend, e `/add-entity-to-audit` pulado pois `/feature` ja gera
+  Controller com auditoria embutida).
 
 - `"full"` em qualquer outro caso: mais de 1 task, OU risco medio/alto, OU
   qualquer padrao da secao 10, OU colecao M:N. Pipeline atual: `/ship` completo
