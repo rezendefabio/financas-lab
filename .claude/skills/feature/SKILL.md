@@ -1256,7 +1256,55 @@ Get-ChildItem -Recurse "src/test/java/com/laboratorio/financas/ARG/" -File | Sel
 Confirme que os 24 arquivos existem (16 producao + 8 testes). Se algum ausente:
 reporte qual falta e nao emita o relatorio de sucesso.
 
-## Passo 4 -- Relatorio final
+## Passo 4 -- Guia de adaptacao (para o executor seguir DEPOIS desta skill)
+
+Os 24 arquivos sao gerados com `nome: String` como campo placeholder. O dominio
+real (Emprestimo, Lembrete, Investimento, etc.) tem campos especificos diferentes.
+A adaptacao e trabalho real, mas SEGUIR A ORDEM ABAIXO reduz Updates redundantes
+(observado nos smokes: cada arquivo "Updated" depois de "Written" custa tool
+calls; planejar bem evita ate ~30% dessas iteracoes).
+
+**Ordem sistematica de adaptacao (top-down, fonte-de-verdade primeiro):**
+
+1. **domain/NOME.java** -- definir TODOS os campos finais aqui. Validacoes,
+   construtores, getters, equals. ESTA e a fonte de verdade do dominio.
+2. **infrastructure/persistence/NOMEEntity.java** -- espelhar campos de NOME.java
+   com @Column, @Embedded, @Enumerated. Cada campo do domain tem uma coluna
+   correspondente.
+3. **infrastructure/persistence/NOMEMapper.java** -- mapear os novos campos em
+   toEntity() e toDomain(). Cada campo novo no domain precisa de uma linha aqui.
+4. **interfaces/dto/CriarNOMERequest.java** + **AtualizarNOMERequest.java** --
+   campos correspondentes aos do domain (sem id/timestamps/userId que vem do
+   contexto), com @NotNull/@Size/@NotBlank conforme regra do dominio.
+5. **interfaces/dto/NOMEResponse.java** -- campos a expor + fromDomain() mapeia
+   todos.
+6. **application/Criar/Atualizar*UseCase.java** -- atualizar o `record Comando`
+   com os novos campos e o `executar()` para passa-los ao construtor do dominio.
+7. **interfaces/NOMEController.java** -- passar os novos campos do Request ao
+   Comando.
+8. **migration V<N>__cria_tabela_NOME.sql** -- colunas espelhando NOMEEntity
+   (precision Money = 19,2; tabelas em portugues singular; FK usuario `REFERENCES
+   usuario(id)`).
+9. **Tests (8 arquivos)** -- adaptar assertions para os novos campos. Os tests
+   gerados testam `nome`; substituir/adicionar testes para cada campo do dominio
+   com validacao especifica (positivo, max, enum).
+
+**Regra de ouro:** adapte um arquivo COMPLETAMENTE antes de ir para o proximo.
+NUNCA edite parcialmente e volte. Se descobrir que precisa de um campo novo,
+volte para o passo 1 (domain) e refaca a cascata. Voltar e re-editar parcialmente
+e o que causa os Updates redundantes.
+
+**Anti-pattern observado nos smokes (NAO fazer):**
+- Editar dominio com 2 campos, depois Entity, depois lembrar de 1 campo a mais,
+  voltar para dominio, voltar para Entity = 4 Updates onde poderia haver 2.
+- Editar Mapper antes de fechar Entity = re-edita Mapper quando Entity muda.
+
+**Adapter de uma vez todos os arquivos relacionados a um campo conceitual e
+preferivel a adaptar todos os campos em um arquivo de cada vez.** Ou seja,
+quando adicionar o campo `valor` (Money), faca dominio + Entity + Mapper + DTOs
++ Response para esse campo em sequencia. Nao misture com outros campos no meio.
+
+## Passo 5 -- Relatorio final
 
 ```
 Bounded context 'ARG' criado (baseline completo, 24 arquivos = 16 producao + 8 testes).
