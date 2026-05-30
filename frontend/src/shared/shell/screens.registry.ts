@@ -173,6 +173,14 @@ export const screens: ScreenDefinition[] = [
     permissions: [],
   },
   {
+    code: 'FIN-EMP-001',
+    title: 'Emprestimos',
+    path: '/emprestimos',
+    menuPath: ['Financeiro', 'Emprestimos'],
+    icon: 'hand-coins',
+    permissions: [],
+  },
+  {
     code: 'REL-ANO-001',
     title: 'Anotacoes',
     path: '/anotacoes',
