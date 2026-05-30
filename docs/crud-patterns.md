@@ -79,6 +79,10 @@ abaixo. Importar/estender — nunca recriar nem duplicar:
   NAO usar `SecurityContextHolder` direto (variante legada em `transacao`).
 - **Auditoria e padrao, nao opcional** — todo controller publica `AuditEvent`
   (secao 5.1).
+- **Tabelas usam nomes em portugues singular, NAO em ingles plural.** A tabela
+  do usuario chama `usuario` (NAO `users`); idem `conta` (NAO `accounts`),
+  `categoria`, `transacao`, `carteira`, `lembrete`, etc. FK para o usuario e
+  `REFERENCES usuario(id)` -- NUNCA `users(id)`.
 
 ---
 

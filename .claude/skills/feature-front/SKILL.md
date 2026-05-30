@@ -510,16 +510,169 @@ export default function PASCALDetalhePage() {
 }
 ```
 
+### Arquivo 7: frontend/src/features/ARG/services/ARG-service.test.ts
+
+Testa o contrato do service (path, metodo, payload). Executor expande conforme
+campos especificos do dominio.
+
+```typescript
+import { describe, it, expect, vi, afterEach } from 'vitest'
+
+vi.mock('@/services/api-client', () => ({ apiFetch: vi.fn() }))
+
+import { apiFetch } from '@/services/api-client'
+import { CAMELService } from './ARG-service'
+import type { PASCAL } from '../types/ARG'
+
+const mockEntity = {
+  id: '00000000-0000-0000-0000-000000000001',
+  // TODO: preencher demais campos conforme PASCAL inferido
+} as PASCAL
+
+afterEach(() => {
+  vi.restoreAllMocks()
+})
+
+describe('CAMELService.listar', () => {
+  it('chama apiFetch com path correto', async () => {
+    vi.mocked(apiFetch).mockResolvedValue([mockEntity])
+    const result = await CAMELService.listar()
+    expect(apiFetch).toHaveBeenCalledWith('/api/PLURAL')
+    expect(result).toEqual([mockEntity])
+  })
+})
+
+describe('CAMELService.criar', () => {
+  it('chama apiFetch com POST e payload serializado', async () => {
+    vi.mocked(apiFetch).mockResolvedValue(mockEntity)
+    const payload = { /* TODO: campos do CriarPASCALPayload */ } as any
+    await CAMELService.criar(payload)
+    expect(apiFetch).toHaveBeenCalledWith('/api/PLURAL', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    })
+  })
+})
+
+// TODO: testes para buscar/atualizar/remover -- gerar conforme metodos que
+// existem no service (derivados do Controller no Passo 1).
+```
+
+### Arquivo 8: frontend/src/app/(dashboard)/ARG/page.test.tsx
+
+Testa renderizacao da listagem (titulo, botao Novo, estado vazio). Executor
+expande com cenarios especificos do dominio.
+
+```typescript
+import React from 'react'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { render, screen, waitFor } from '@testing-library/react'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import PASCALsPage from './page'
+
+vi.mock('@/features/ARG/services/ARG-service', () => ({
+  CAMELService: {
+    listar: vi.fn(),
+    remover: vi.fn(),
+  },
+}))
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({ push: vi.fn() }),
+}))
+
+import { CAMELService } from '@/features/ARG/services/ARG-service'
+
+function renderWithClient(ui: React.ReactElement) {
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+  return render(<QueryClientProvider client={client}>{ui}</QueryClientProvider>)
+}
+
+beforeEach(() => {
+  vi.clearAllMocks()
+})
+
+describe('PASCALsPage', () => {
+  it('renderiza titulo e botao Novo', async () => {
+    vi.mocked(CAMELService.listar).mockResolvedValue([])
+    renderWithClient(<PASCALsPage />)
+    expect(screen.getByRole('heading', { name: /PASCAL/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Novo/i })).toBeInTheDocument()
+  })
+
+  it('exibe mensagem de vazio quando a lista chega vazia', async () => {
+    vi.mocked(CAMELService.listar).mockResolvedValue([])
+    renderWithClient(<PASCALsPage />)
+    await waitFor(() => {
+      expect(screen.getByText(/Nenhum/i)).toBeInTheDocument()
+    })
+  })
+
+  // TODO: testes especificos do dominio:
+  // - linhas exibem os campos esperados (titulo, data formatada, etc.)
+  // - clicar em Excluir abre confirmacao inline
+  // - confirmar exclusao chama CAMELService.remover
+})
+```
+
+### Arquivo 9: frontend/src/app/(dashboard)/ARG/novo/page.test.tsx
+
+Testa renderizacao do form de criacao. Executor expande com submit valido e
+validacao de campo conforme schema Zod inferido.
+
+```typescript
+import React from 'react'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { render, screen } from '@testing-library/react'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import NovoPASCALPage from './page'
+
+vi.mock('@/features/ARG/services/ARG-service', () => ({
+  CAMELService: {
+    criar: vi.fn(),
+  },
+}))
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({ push: vi.fn(), back: vi.fn() }),
+  usePathname: () => '/PLURAL/novo',
+}))
+
+function renderWithClient(ui: React.ReactElement) {
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+  return render(<QueryClientProvider client={client}>{ui}</QueryClientProvider>)
+}
+
+beforeEach(() => {
+  vi.clearAllMocks()
+})
+
+describe('NovoPASCALPage', () => {
+  it('renderiza titulo e botoes Salvar/Cancelar', () => {
+    renderWithClient(<NovoPASCALPage />)
+    expect(screen.getByRole('heading', { name: /Novo PASCAL/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Salvar/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Cancelar/i })).toBeInTheDocument()
+  })
+
+  // TODO: testes especificos do schema:
+  // - submit com payload valido chama CAMELService.criar
+  // - campo obrigatorio vazio exibe erro do schema
+  // - apos sucesso, navega para /PLURAL
+})
+```
+
 ## Passo 3 -- Verificacao pos-geracao
 
-Verifique que os 6 arquivos existem:
+Verifique que os 9 arquivos existem (6 producao + 3 testes):
 
 ```bash
 ls frontend/src/features/ARG/types/ARG.ts
 ls frontend/src/features/ARG/services/ARG-service.ts
+ls frontend/src/features/ARG/services/ARG-service.test.ts
 ls frontend/src/features/ARG/index.ts
 ls "frontend/src/app/(dashboard)/ARG/page.tsx"
+ls "frontend/src/app/(dashboard)/ARG/page.test.tsx"
 ls "frontend/src/app/(dashboard)/ARG/novo/page.tsx"
+ls "frontend/src/app/(dashboard)/ARG/novo/page.test.tsx"
 ls "frontend/src/app/(dashboard)/ARG/[id]/page.tsx"
 ```
 
@@ -542,13 +695,20 @@ Produza o seguinte relatorio (substituindo `ARG` pelo valor real):
 ```
 /feature-front ARG concluido.
 
-Arquivos gerados (6):
+Arquivos gerados (9 = 6 producao + 3 testes):
+
+Producao:
   frontend/src/features/ARG/types/ARG.ts
   frontend/src/features/ARG/services/ARG-service.ts
   frontend/src/features/ARG/index.ts
   frontend/src/app/(dashboard)/ARG/page.tsx
   frontend/src/app/(dashboard)/ARG/novo/page.tsx
   frontend/src/app/(dashboard)/ARG/[id]/page.tsx
+
+Testes (baseline -- expandir com casos especificos do dominio):
+  frontend/src/features/ARG/services/ARG-service.test.ts
+  frontend/src/app/(dashboard)/ARG/page.test.tsx
+  frontend/src/app/(dashboard)/ARG/novo/page.test.tsx
 
 Tipos inferidos:  <lista de interfaces e enums gerados>
 Metodos service: <lista de metodos do service>
@@ -560,8 +720,12 @@ Proximos passos:
   2. Preencher os campos dentro de <FormGrid> em novo/page.tsx (componente por tipo:
      MoneyInput / LookupField / Select / Input) -- crud-patterns secao 7.4
   3. Se houver edicao: extrair components/PASCALForm.tsx compartilhado e criar
-     [id]/editar/page.tsx (crud-patterns secao 7.5)
+     [id]/editar/page.tsx + page.test.tsx (crud-patterns secao 7.5)
   4. Preencher detalhe em [id]/page.tsx
-  5. /write-test para cada arquivo gerado
+  5. EXPANDIR os 3 testes gerados com casos especificos do dominio (NAO recriar):
+     - service.test.ts: testes para buscar/atualizar/remover conforme metodos disponiveis
+     - page.test.tsx: testes de linhas exibindo campos, exclusao com confirmacao
+     - novo/page.test.tsx: testes de submit valido + validacao de campo
+     NAO invocar /write-test para os 3 baseline -- ja estao gerados.
   6. npm run build (verificar sem erros)
 ```
