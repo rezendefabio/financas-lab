@@ -16,7 +16,7 @@ public record EmprestimoResponse(
         String criadoEm,
         String atualizadoEm
 ) {
-    public record ValorMonetario(BigDecimal valor, String moeda) {}
+    public record ValorMonetario(BigDecimal valor, String moeda) { }
 
     public static EmprestimoResponse fromDomain(Emprestimo domain) {
         return new EmprestimoResponse(

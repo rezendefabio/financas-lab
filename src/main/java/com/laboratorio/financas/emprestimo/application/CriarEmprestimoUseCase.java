@@ -31,5 +31,5 @@ public class CriarEmprestimoUseCase {
     }
 
     public record Comando(UUID userId, String descricao, String nomeTerceiro,
-                          TipoEmprestimo tipo, Money valor, LocalDate dataEmprestimo) {}
+                          TipoEmprestimo tipo, Money valor, LocalDate dataEmprestimo) { }
 }

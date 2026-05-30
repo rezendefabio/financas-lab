@@ -35,5 +35,5 @@ public class AtualizarEmprestimoUseCase {
 
     public record Comando(UUID id, String descricao, String nomeTerceiro,
                           TipoEmprestimo tipo, Money valor, LocalDate dataEmprestimo,
-                          boolean quitado) {}
+                          boolean quitado) { }
 }

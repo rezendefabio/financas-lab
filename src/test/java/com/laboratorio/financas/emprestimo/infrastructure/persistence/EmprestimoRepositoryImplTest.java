@@ -78,9 +78,10 @@ class EmprestimoRepositoryImplTest extends AbstractIntegrationTest {
 
     @Test
     void listarPorUserIdRetornaApenasDoUsuario() {
+        UUID outroUserId = criarUsuarioPersistido();
         repository.salvar(novoEmprestimo(userId, "A"));
         repository.salvar(novoEmprestimo(userId, "B"));
-        repository.salvar(novoEmprestimo(UUID.randomUUID(), "Outro"));
+        repository.salvar(novoEmprestimo(outroUserId, "Outro"));
 
         List<Emprestimo> lista = repository.listarPorUserId(userId);
 

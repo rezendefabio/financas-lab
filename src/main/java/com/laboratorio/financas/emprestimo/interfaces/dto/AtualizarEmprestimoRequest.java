@@ -15,4 +15,4 @@ public record AtualizarEmprestimoRequest(
         @NotNull @Size(min = 3, max = 3) String moeda,
         @NotNull LocalDate dataEmprestimo,
         boolean quitado
-) {}
+) { }

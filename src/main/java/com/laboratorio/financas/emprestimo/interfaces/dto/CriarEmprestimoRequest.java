@@ -14,4 +14,4 @@ public record CriarEmprestimoRequest(
         @NotNull BigDecimal valor,
         @NotNull @Size(min = 3, max = 3) String moeda,
         @NotNull LocalDate dataEmprestimo
-) {}
+) { }
