@@ -34,8 +34,16 @@ recebido.
 
 Usar o Agent tool com:
 - subagent_type: "general-purpose"
-- model: "claude-opus-4-8"
+- model: "opus"
 - prompt: conteudo de task-planner.md com {OBJETIVO} substituido
+
+**Nota sobre versao do Opus:** o Agent tool aceita SOMENTE os aliases
+`sonnet | opus | haiku` no parametro `model` -- IDs especificos como
+`claude-opus-4-8` sao rejeitados/silently fallback. O alias `opus` resolve
+para a versao Opus que estiver configurada na sessao principal. Para
+forcar uma versao especifica (ex: 4.8 vs 4.7), o operador precisa
+configurar o modelo da sessao Claude Code via `/model` antes de invocar
+`/plan`. Nao da pra pinar no nivel da skill.
 
 O JSON retornado contem o campo `executionMode` (`"fast"` ou `"full"`) decidido
 pelo planejador conforme complexidade das tasks. Guardar para uso nos Passos 4 e 5.
