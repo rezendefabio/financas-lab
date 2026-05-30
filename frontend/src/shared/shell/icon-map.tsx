@@ -26,6 +26,7 @@ import {
   UserCircle,
   Receipt,
   Gauge,
+  Bell,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -49,6 +50,7 @@ export const iconMap: Record<string, LucideIcon> = {
   'user-circle': UserCircle,
   receipt: Receipt,
   gauge: Gauge,
+  bell: Bell,
 }
 
 /**
