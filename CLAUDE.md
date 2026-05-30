@@ -47,9 +47,7 @@ Estado atual e camadas: `docs/progresso.md` (secao "Status geral por Camada").
     no `onSuccess` e no botao Cancelar.
   - Componentes de formulario reutilizaveis (ex: `TransacaoForm`): adicionar
     `useDraftForm(form)` internamente; a pagina pai nao precisa chamar novamente.
-  - Referencia: `frontend/src/app/(dashboard)/centros-custo/novo/page.tsx`
-    (criacao) e `frontend/src/app/(dashboard)/centros-custo/[id]/page.tsx`
-    (edicao).
+  - Referencia: secao 7.4/7.5 de `docs/crud-patterns.md` (padrao canonico).
 
 ## Ambiente
 
@@ -126,6 +124,14 @@ Ao implementar um bounded context, o executor deve executar os itens abaixo
 **independentemente de estarem listados no prompt**. Se o prompt omitir algum,
 o executor preenche a lacuna sem reportar como bloqueador.
 
+**Fonte unica de padrao (proibido vasculhar codigo de outras features):**
+`docs/crud-patterns.md` + `docs/field-type-catalog.md` + `docs/frontend-master-spec.md`
+sao os UNICOS docs de referencia de padrao. NAO ler `Tag.java`, `LimiteController.java`,
+paginas `.tsx` de outras features etc para "ver como ficou". Se uma duvida nao se
+resolve com os 3 docs, e bloqueador (reportar para o operador, nao improvisar).
+Excecao unica: arquivos que o executor vai MODIFICAR (GlobalExceptionHandler,
+screens.registry, sidebar) -- esses sao lidos antes da edicao.
+
 **Testes (invocar `/write-test` para cada arquivo criado):**
 
 - `*/domain/<Entidade>.java` -- unit test sem Spring, sem mocks.
@@ -182,5 +188,10 @@ Prompts versionados de cada sub-etapa ficam em `docs/prompts/prompt-etapa-X-Y.md
 - Tocar em `pom.xml` removendo `<release>` (hook bloqueia, e por bom motivo -- licao 1.4).
 - Criar arquivos `.md` em `docs/` sem linhas em branco antes/depois de headers (hook bloqueia).
 - Validacao destrutiva sem pre-condicoes ADR-011 -- produz falsos positivos silenciosos.
-- Assumir contexto sem ler arquivos vivos antes de editar (lista de "ler arquivos vivos" nos prompts).
+- **Ler codigo de outras features como referencia de padrao.** A unica fonte de
+  padrao sao `docs/crud-patterns.md`, `docs/field-type-catalog.md` e
+  `docs/frontend-master-spec.md`. Ler `Tag.java`, `LimiteController.java`,
+  paginas `.tsx` de outras features etc para "ver como ficou" e o que torna a
+  fabrica lenta -- e proibido. Excecao unica: arquivos que voce vai MODIFICAR
+  (listados no prompt), que devem ser lidos antes de editar.
 - Atualizar CLAUDE.md fora de uma sub-etapa que muda hook/padrao/stack. Sincronizacao e parte do escopo da sub-etapa causadora.

@@ -125,6 +125,37 @@ context novo -- nao sao opcionais.
 10, escolher o padrao da secao 10. Subdimensionar e o que faz o executor
 improvisar ou vasculhar o repo -- exatamente o custo que este fluxo elimina.
 
+**1.1 Estrutura canonica de arquivos (copiar verbatim no prompt da task):**
+
+Usar EXATAMENTE estes paths -- NAO inventar variantes como `interfaces/rest/` ou
+`shared/screens/`. A skill `/feature` ja cria essa estrutura.
+
+Backend (`src/main/java/com/laboratorio/financas/<contexto>/`):
+```
+domain/                          -> entidade, repository (interface), excecao, enums, value objects
+application/                     -> use cases (Criar/Listar/Atualizar/Deletar + acoes de estado)
+infrastructure/persistence/      -> Entity, JpaRepository, Mapper, RepositoryImpl
+interfaces/                      -> Controller (NAO interfaces/rest/)
+interfaces/dto/                  -> Request + Response records
+```
+
+Frontend (`frontend/src/`):
+```
+features/<dominio>/services/     -> <dominio>-service.ts (chama apiFetch)
+features/<dominio>/types/        -> <dominio>.ts (interfaces TS)
+features/<dominio>/hooks/        -> use-<dominio>.ts (TanStack Query wrappers)
+features/<dominio>/components/   -> <Dominio>Form.tsx (form compartilhado)
+features/<dominio>/index.ts      -> reexports publicos
+app/(dashboard)/<plural>/page.tsx           -> listagem
+app/(dashboard)/<plural>/novo/page.tsx      -> criacao
+app/(dashboard)/<plural>/[id]/editar/page.tsx -> edicao (rota EXATA: /editar)
+```
+
+Arquivos compartilhados (PATHS EXATOS):
+- `frontend/src/shared/shell/screens.registry.ts` (NAO `shared/screens/`)
+- `frontend/src/shared/shell/SidebarNav.tsx` (link no sidebar)
+- `src/main/java/com/laboratorio/financas/shared/infrastructure/web/GlobalExceptionHandler.java`
+
 **2. Incluir no campo `prompt` da task a secao de referencia:**
 
 O prompt deve conter o bloco abaixo informando ao executor qual arquivo ler
@@ -134,21 +165,29 @@ e quais secoes usar -- o executor le o arquivo e implementa:
 ## Referencia de implementacao
 
 Leia `docs/crud-patterns.md` como unico arquivo de referencia de padrao.
-Secoes aplicaveis para este dominio: [baseline + secoes adicionais da matriz].
+Secoes aplicaveis para este dominio: [listar APENAS numeros, sem inventar
+rotulos -- ex: "1.1, 1.4, 1.5, 1.6, 2.1, 2.4-2.7, 3, 4, 5.1, 5.2, 6, 7, 8, 9";
+o executor le o doc e encontra os titulos corretos].
 NAO ler nenhum outro arquivo do projeto como referencia de padrao
-(Tag.java, TransacaoController.java, ContaEntity.java, paginas .tsx de
-outras features, etc.) -- tudo que voce precisa esta em docs/crud-patterns.md
-e nos docs que ele referencia (field-type-catalog.md, frontend-master-spec.md).
-A unica excecao sao os arquivos que voce vai MODIFICAR (listados abaixo).
+(Tag.java, TransacaoController.java, ContaEntity.java, LimiteController.java,
+paginas .tsx de outras features, testes ContaTest etc.) -- tudo que voce
+precisa esta em docs/crud-patterns.md e nos docs que ele referencia
+(field-type-catalog.md, frontend-master-spec.md). A unica excecao sao os
+arquivos que voce vai MODIFICAR (listados abaixo).
 ```
 
 **3. Listar no prompt os arquivos que o executor deve MODIFICAR (ler antes de editar):**
 
-- `GlobalExceptionHandler.java` → adicionar SO o handler da nova excecao (secao 3)
-- Auditoria → registrar o `entityType` no middleware via skill `add-entity-to-audit`
-- `screens.registry.ts` → adicionar entrada da tela (codigo `MOD-ENT-001`)
-- `screens.registry.test.ts` → incrementar o contador
-- Sidebar → adicionar link (se aplicavel)
+Usar paths absolutos exatos (a estrutura canonica acima):
+
+- `src/main/java/com/laboratorio/financas/shared/infrastructure/web/GlobalExceptionHandler.java`
+  → adicionar SO o handler da nova excecao (secao 3 de crud-patterns -- ProblemDetail)
+- Auditoria → executar `/add-entity-to-audit <path-do-Controller>` para registrar
+  o `entityType` no middleware
+- `frontend/src/shared/shell/screens.registry.ts` → adicionar entrada da tela
+  (codigo `MOD-ENT-001`)
+- `frontend/src/shared/shell/screens.registry.test.ts` → incrementar o contador
+- `frontend/src/shared/shell/SidebarNav.tsx` → adicionar link (se aplicavel)
 
 **Quando NAO aplicar este passo:** tasks de refactor, fix de bug, ou qualquer
 objetivo que nao seja criacao de bounded context do zero. Nesses casos o executor
@@ -226,6 +265,7 @@ Retornar APENAS o JSON abaixo (sem texto antes ou depois):
 
 ```json
 {
+  "executionMode": "fast | full",
   "premissas_globais": [
     "string -- premissa 1",
     "string -- premissa 2"
@@ -243,6 +283,13 @@ Retornar APENAS o JSON abaixo (sem texto antes ou depois):
   ]
 }
 ```
+
+`executionMode`: roteamento do `/plan`.
+- `"fast"` quando TODAS as tasks tem `complexidade: "S"` E `risco: "baixo"`. CRUD trivial:
+  executor pula `/ship` e reviewers, valida so com `mvn test -Dtest=<NovoContexto>*` e
+  `npm run test:run` filtrado pelos arquivos novos, abre PR direto. Wall-clock alvo: < 8 min.
+- `"full"` em qualquer outro caso (qualquer task M/L/XL OU risco medio/alto OU mais de 1
+  task). Pipeline atual: `/ship` completo + 2 reviewers.
 
 `premissas_globais`: lista de inferencias feitas sobre o objetivo. Minimo 2,
 maximo 10. Obrigatorio mesmo quando o objetivo e detalhado.

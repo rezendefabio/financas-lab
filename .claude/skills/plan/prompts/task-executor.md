@@ -117,6 +117,18 @@ em frontend/ apos o merge."
 Sua unica responsabilidade: executar TODOS os passos descritos abaixo de forma
 completamente autonoma, sem pedir aprovacao ao operador.
 
+## Modo de execucao
+
+Modo: **{EXECUTION_MODE}** (`fast` ou `full`).
+
+- **`fast`** (CRUD trivial -- todas as tasks S/baixo): pular `/ship` e reviewers.
+  Validacao = `./mvnw test -Dtest=<NovoContexto>*` + `npm run test:run` filtrado
+  pelos arquivos novos. Entrega = `git push` + `gh pr create` direto. Alvo de
+  wall-clock: < 8 min. Ver secao "## Entrega -- modo fast" abaixo.
+- **`full`** (qualquer complexidade alem de S/baixo): invocar `/ship` (gate
+  completo + reviewers automaticos). Comportamento padrao detalhado em
+  "## Entrega -- modo full" abaixo.
+
 ## Instrucoes da tarefa
 
 {CONTEUDO}
@@ -200,26 +212,53 @@ aplicar manualmente).
 
 ## Regra de validacao: evitar re-runs caros
 
-Maven `verify` custa 3-6 min; `check-front.ps1` custa 4-7 min.
-O `/ship` ja roda `check.ps1` e `check-front.ps1` como gate obrigatorio.
-**NAO rodar `./mvnw verify` nem `check-front.ps1` completos antes de `/ship`.**
-O gate final e o `/ship` -- uma unica execucao por task.
-
-Durante o desenvolvimento (antes do passo de commit final), usar apenas validacoes pontuais:
+Maven `verify` custa 3-6 min; `check-front.ps1` custa 4-7 min. Durante o
+desenvolvimento, SEMPRE validacoes pontuais (vale para `fast` e `full`):
 
 1. **Validacao pontual de teste Java:** `./mvnw test -Dtest=<NomeDoTeste> -q`
-   - Usar apos correcao de falha em teste especifico.
-   - NUNCA rodar `./mvnw verify` completo para validar um teste pontual.
-   - NUNCA rodar `./mvnw verify` ou `./mvnw test` sem `-Dtest=` durante o desenvolvimento --
-     aguarda o gate do `/ship`.
-
 2. **Validacao pontual de teste frontend:** `npm run test:run -- <path/do/arquivo.test.tsx>`
-   - Usar apos escrever ou corrigir um teste frontend especifico.
-   - NUNCA rodar `check-front.ps1` nem `npm run test:run` sem filtro de arquivo
-     durante o desenvolvimento.
+3. NUNCA rodar `./mvnw verify` ou `npm run test:run` sem filtro durante o desenvolvimento.
 
-3. **Gate final = `/ship`:** o `/ship` roda `check.ps1` (backend) e `check-front.ps1`
-   (frontend, se houver mudancas) uma unica vez. Nao ha necessidade de gate pre-/ship.
+## Entrega -- modo fast
+
+(So se `{EXECUTION_MODE}` = `fast`. Se `full`, pular para "Entrega -- modo full".)
+
+Passos:
+
+1. **Validacao agregada do novo contexto (gate minimo):**
+   ```bash
+   ./mvnw test -Dtest='<NovoContexto>*' -q
+   ```
+   Roda todos os testes do bounded context novo (domain, useCase, repository, controller).
+   Se falhar: corrigir e re-rodar. NAO rodar `mvn verify` nem `check.ps1`.
+
+2. **Validacao agregada do frontend novo (se aplicavel):**
+   ```bash
+   cd frontend && npm run test:run -- "src/features/<dominio>" "src/app/(dashboard)/<plural>"
+   ```
+   So roda os arquivos do novo dominio. Se falhar: corrigir e re-rodar.
+
+3. **Verificacao no repo principal:**
+   ```bash
+   git -C /c/projetos/financas-lab status --short
+   ```
+   Vazio = OK; sujo = BLOQUEADOR (mover arquivos antes de continuar).
+
+4. **Push e PR:**
+   ```bash
+   git push -u origin $(git branch --show-current)
+   gh pr create --base main --title "<titulo>" --body "<lista de commits + nota '/plan executionMode=fast'>"
+   ```
+
+5. **NAO invocar `/ship`. NAO spawnar reviewers.** Reviewers ficam a cargo do operador
+   se necessario (`/review-pr <numero>` manualmente).
+
+## Entrega -- modo full
+
+(So se `{EXECUTION_MODE}` = `full`.)
+
+Invocar `/ship` manualmente (ler `.claude/skills/ship/SKILL.md` e executar passo a passo).
+O `/ship` ja roda `check.ps1` + `check-front.ps1` + push + PR + reviewers automaticos.
 
 ## Verificacao final obrigatoria no repo principal
 
