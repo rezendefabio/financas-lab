@@ -68,10 +68,13 @@ Este texto DEVE aparecer no chat antes do AskUserQuestion:
 /plan: {N} tasks planejadas para "{OBJETIVO}"
 
 Modo de execucao: {fast | full}
-  fast = sem /ship, sem reviewers automaticos, validacao pontual (mvn test do contexto novo
-         + npm run test:run filtrado). Alvo: < 8 min. Usado para CRUDs triviais (todas S/baixo).
+  fast = sem /ship, sem reviewers automaticos. Validacao pontual: mvn test do contexto
+         novo + npm run test:run filtrado. Alvo: < 8 min.
+         Disparado quando: 1 task, risco baixo, sem padroes da secao 10 do crud-patterns
+         (soft-delete, paginacao, state machine etc) e sem colecao M:N. Enum/Money/FK OK.
   full = /ship completo (check.ps1 + check-front.ps1) + 2 reviewers em sequencia.
-         15-30 min. Usado para qualquer task M/L/XL ou risco medio/alto.
+         15-30 min. Disparado para: mais de 1 task, OU risco medio/alto, OU qualquer
+         padrao da secao 10, OU colecao M:N.
 
 Premissas assumidas:
   [P1] {premissa_1}

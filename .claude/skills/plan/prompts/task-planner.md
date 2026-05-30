@@ -284,12 +284,29 @@ Retornar APENAS o JSON abaixo (sem texto antes ou depois):
 }
 ```
 
-`executionMode`: roteamento do `/plan`.
-- `"fast"` quando TODAS as tasks tem `complexidade: "S"` E `risco: "baixo"`. CRUD trivial:
-  executor pula `/ship` e reviewers, valida so com `mvn test -Dtest=<NovoContexto>*` e
-  `npm run test:run` filtrado pelos arquivos novos, abre PR direto. Wall-clock alvo: < 8 min.
-- `"full"` em qualquer outro caso (qualquer task M/L/XL OU risco medio/alto OU mais de 1
-  task). Pipeline atual: `/ship` completo + 2 reviewers.
+`executionMode`: roteamento do `/plan`. **Nao depende da letra de `complexidade`**
+(que e estimativa de esforco) -- depende da **ausencia de padroes caros de
+validacao/revisao**. Um CRUD baseline tem `complexidade: "M"` por convencao
+("bounded context + frontend"), mas valida em poucos minutos -- e o caso-alvo do
+fast path. Usar complexidade como gate exclui o caso para o qual o fast foi feito.
+
+- `"fast"` quando TODAS as condicoes abaixo forem verdadeiras:
+  - (a) exatamente 1 task,
+  - (b) `risco: "baixo"`,
+  - (c) NENHUMA das tasks usa padroes da **secao 10 de `docs/crud-patterns.md`**:
+    10.1 soft-delete, 10.2 paginacao+Specification, 10.3 agregacao JPQL,
+    10.4 cross-context, 10.5 state machine, 10.6 hierarquia/visibilidade,
+    10.7 value object com comportamento, 10.8 par vinculado/operacao composta,
+  - (d) sem colecao M:N por UUID (1.7).
+
+  Enum proprio (1.2), Money/Embedded (1.3) e FK simples (1.6) sao OK -- nao
+  bumpam para full. Executor pula `/ship` e reviewers, valida so com
+  `mvn test -Dtest=<NovoContexto>*` e `npm run test:run` filtrado pelos arquivos
+  novos, abre PR direto. Wall-clock alvo: < 8 min.
+
+- `"full"` em qualquer outro caso: mais de 1 task, OU risco medio/alto, OU
+  qualquer padrao da secao 10, OU colecao M:N. Pipeline atual: `/ship` completo
+  (check.ps1 + check-front.ps1) + 2 reviewers em sequencia.
 
 `premissas_globais`: lista de inferencias feitas sobre o objetivo. Minimo 2,
 maximo 10. Obrigatorio mesmo quando o objetivo e detalhado.
