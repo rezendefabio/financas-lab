@@ -1,6 +1,6 @@
 ---
 name: feature
-description: Cria bounded context completo (15 arquivos Java) alinhado a docs/crud-patterns.md baseline: 4 use cases CRUD, controller com auditoria, userId, exception, repository com todos os metodos, DTOs Criar/Atualizar/Response. Recebe nome do contexto em snake_case minusculo.
+description: Cria bounded context completo (22 arquivos Java = 15 producao + 7 testes) alinhado a docs/crud-patterns.md baseline. Inclui 4 use cases CRUD, controller com auditoria, userId, repository completo, DTOs e os 4 niveis de teste (domain, useCase com Mockito, RepositoryImpl com Testcontainers, Controller E2E). Elimina necessidade de invocar /write-test para o baseline. Recebe nome do contexto em snake_case minusculo.
 disable-model-invocation: true
 argument-hint: [nome-do-bounded-context]
 ---
@@ -47,16 +47,20 @@ New-Item -ItemType Directory -Force `
          "src/main/java/com/laboratorio/financas/ARG/application", `
          "src/main/java/com/laboratorio/financas/ARG/infrastructure/persistence", `
          "src/main/java/com/laboratorio/financas/ARG/interfaces", `
-         "src/main/java/com/laboratorio/financas/ARG/interfaces/dto"
+         "src/main/java/com/laboratorio/financas/ARG/interfaces/dto", `
+         "src/test/java/com/laboratorio/financas/ARG/domain", `
+         "src/test/java/com/laboratorio/financas/ARG/application", `
+         "src/test/java/com/laboratorio/financas/ARG/infrastructure/persistence", `
+         "src/test/java/com/laboratorio/financas/ARG/interfaces"
 ```
 
-Verifique com `Test-Path` que os 5 diretorios foram criados. Se algum ausente:
+Verifique com `Test-Path` que os 9 diretorios foram criados. Se algum ausente:
 reporte qual falhou e termine.
 
 **Atencao:** `interfaces/` (NAO `interfaces/rest/`). Controller fica em
 `interfaces/`, DTOs em `interfaces/dto/`. Convencao do projeto.
 
-## Passo 2 -- Criar os 15 arquivos
+## Passo 2 -- Criar os 22 arquivos (15 producao + 7 testes)
 
 Use Write para cada arquivo. Substitua `NOME`, `ARG`, `nome`, `nomes` pelos
 valores definidos. Codificacao: UTF-8 sem BOM.
@@ -664,21 +668,488 @@ public record NOMEResponse(
 }
 ```
 
+### Arquivo 16: src/test/java/com/laboratorio/financas/ARG/domain/NOMETest.java
+
+```java
+package com.laboratorio.financas.ARG.domain;
+
+import static org.assertj.core.api.Assertions.*;
+
+import java.time.Instant;
+import java.util.UUID;
+import org.junit.jupiter.api.Test;
+
+class NOMETest {
+
+    private static final UUID USER_ID = UUID.randomUUID();
+
+    @Test
+    void construtorCriacaoComArgumentosValidosCriaEntidade() {
+        Instant antes = Instant.now();
+        NOME entidade = new NOME(USER_ID, "Nome Valido");
+        Instant depois = Instant.now();
+
+        assertThat(entidade.getId()).isNotNull();
+        assertThat(entidade.getUserId()).isEqualTo(USER_ID);
+        assertThat(entidade.getNome()).isEqualTo("Nome Valido");
+        assertThat(entidade.isAtivo()).isTrue();
+        assertThat(entidade.getCriadoEm()).isBetween(antes, depois);
+    }
+
+    @Test
+    void construtorCriacaoComUserIdNuloLancaNullPointerException() {
+        assertThatNullPointerException()
+                .isThrownBy(() -> new NOME(null, "Nome"))
+                .withMessageContaining("userId");
+    }
+
+    @Test
+    void construtorCriacaoComNomeNuloLancaNullPointerException() {
+        assertThatNullPointerException()
+                .isThrownBy(() -> new NOME(USER_ID, null))
+                .withMessageContaining("nome");
+    }
+
+    @Test
+    void construtorCriacaoComNomeBlankLancaIllegalArgumentException() {
+        assertThatIllegalArgumentException()
+                .isThrownBy(() -> new NOME(USER_ID, "  "))
+                .withMessageContaining("nome");
+    }
+
+    @Test
+    void desativarMudaAtivoParaFalseEAtualizaTimestamp() {
+        NOME entidade = new NOME(USER_ID, "Nome");
+        Instant antes = entidade.getAtualizadoEm();
+
+        entidade.desativar();
+
+        assertThat(entidade.isAtivo()).isFalse();
+        assertThat(entidade.getAtualizadoEm()).isAfterOrEqualTo(antes);
+    }
+
+    @Test
+    void atualizarMudaNomeEAtualizaTimestamp() {
+        NOME entidade = new NOME(USER_ID, "Nome Antigo");
+
+        entidade.atualizar("Nome Novo");
+
+        assertThat(entidade.getNome()).isEqualTo("Nome Novo");
+    }
+}
+```
+
+### Arquivo 17: src/test/java/com/laboratorio/financas/ARG/application/CriarNOMEUseCaseTest.java
+
+```java
+package com.laboratorio.financas.ARG.application;
+
+import static org.assertj.core.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
+
+import com.laboratorio.financas.ARG.domain.NOME;
+import com.laboratorio.financas.ARG.domain.NOMERepository;
+import java.util.UUID;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
+
+class CriarNOMEUseCaseTest {
+
+    private static final UUID USER_ID = UUID.fromString("00000000-0000-0000-0000-000000000099");
+
+    private NOMERepository repository;
+    private CriarNOMEUseCase useCase;
+
+    @BeforeEach
+    void setUp() {
+        repository = Mockito.mock(NOMERepository.class);
+        useCase = new CriarNOMEUseCase(repository);
+    }
+
+    @Test
+    void executarCaminhoFelizSalvaERetornaEntidade() {
+        NOME salvo = new NOME(USER_ID, "Teste");
+        when(repository.salvar(any(NOME.class))).thenReturn(salvo);
+
+        CriarNOMEUseCase.Comando cmd = new CriarNOMEUseCase.Comando(USER_ID, "Teste");
+        NOME resultado = useCase.executar(cmd);
+
+        assertThat(resultado).isNotNull();
+        assertThat(resultado.getNome()).isEqualTo("Teste");
+        verify(repository, times(1)).salvar(any(NOME.class));
+    }
+}
+```
+
+### Arquivo 18: src/test/java/com/laboratorio/financas/ARG/application/ListarNOMEsUseCaseTest.java
+
+```java
+package com.laboratorio.financas.ARG.application;
+
+import static org.assertj.core.api.Assertions.*;
+import static org.mockito.Mockito.when;
+
+import com.laboratorio.financas.ARG.domain.NOME;
+import com.laboratorio.financas.ARG.domain.NOMERepository;
+import java.util.List;
+import java.util.UUID;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
+
+class ListarNOMEsUseCaseTest {
+
+    private static final UUID USER_ID = UUID.fromString("00000000-0000-0000-0000-000000000099");
+
+    private NOMERepository repository;
+    private ListarNOMEsUseCase useCase;
+
+    @BeforeEach
+    void setUp() {
+        repository = Mockito.mock(NOMERepository.class);
+        useCase = new ListarNOMEsUseCase(repository);
+    }
+
+    @Test
+    void executarRetornaListaDoRepository() {
+        when(repository.listarPorUserId(USER_ID))
+                .thenReturn(List.of(new NOME(USER_ID, "A"), new NOME(USER_ID, "B")));
+
+        List<NOME> resultado = useCase.executar(USER_ID);
+
+        assertThat(resultado).hasSize(2);
+        assertThat(resultado).allMatch(n -> n.getUserId().equals(USER_ID));
+    }
+}
+```
+
+### Arquivo 19: src/test/java/com/laboratorio/financas/ARG/application/AtualizarNOMEUseCaseTest.java
+
+```java
+package com.laboratorio.financas.ARG.application;
+
+import static org.assertj.core.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
+
+import com.laboratorio.financas.ARG.domain.NOME;
+import com.laboratorio.financas.ARG.domain.NOMENaoEncontradoException;
+import com.laboratorio.financas.ARG.domain.NOMERepository;
+import java.util.Optional;
+import java.util.UUID;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
+
+class AtualizarNOMEUseCaseTest {
+
+    private static final UUID USER_ID = UUID.fromString("00000000-0000-0000-0000-000000000099");
+
+    private NOMERepository repository;
+    private AtualizarNOMEUseCase useCase;
+
+    @BeforeEach
+    void setUp() {
+        repository = Mockito.mock(NOMERepository.class);
+        useCase = new AtualizarNOMEUseCase(repository);
+    }
+
+    @Test
+    void executarComIdExistenteAtualizaNome() {
+        NOME existente = new NOME(USER_ID, "Antigo");
+        when(repository.buscarPorId(existente.getId())).thenReturn(Optional.of(existente));
+        when(repository.atualizar(any(NOME.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        NOME resultado = useCase.executar(new AtualizarNOMEUseCase.Comando(existente.getId(), "Novo"));
+
+        assertThat(resultado.getNome()).isEqualTo("Novo");
+        verify(repository).atualizar(any(NOME.class));
+    }
+
+    @Test
+    void executarComIdInexistenteLancaNOMENaoEncontradoException() {
+        UUID id = UUID.randomUUID();
+        when(repository.buscarPorId(id)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> useCase.executar(new AtualizarNOMEUseCase.Comando(id, "X")))
+                .isInstanceOf(NOMENaoEncontradoException.class);
+
+        verify(repository, never()).atualizar(any());
+    }
+}
+```
+
+### Arquivo 20: src/test/java/com/laboratorio/financas/ARG/application/DeletarNOMEUseCaseTest.java
+
+```java
+package com.laboratorio.financas.ARG.application;
+
+import static org.assertj.core.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
+
+import com.laboratorio.financas.ARG.domain.NOME;
+import com.laboratorio.financas.ARG.domain.NOMENaoEncontradoException;
+import com.laboratorio.financas.ARG.domain.NOMERepository;
+import java.util.Optional;
+import java.util.UUID;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
+
+class DeletarNOMEUseCaseTest {
+
+    private static final UUID USER_ID = UUID.fromString("00000000-0000-0000-0000-000000000099");
+
+    private NOMERepository repository;
+    private DeletarNOMEUseCase useCase;
+
+    @BeforeEach
+    void setUp() {
+        repository = Mockito.mock(NOMERepository.class);
+        useCase = new DeletarNOMEUseCase(repository);
+    }
+
+    @Test
+    void executarComIdExistenteDeleta() {
+        UUID id = UUID.randomUUID();
+        when(repository.buscarPorId(id)).thenReturn(Optional.of(new NOME(USER_ID, "A")));
+
+        useCase.executar(id);
+
+        verify(repository).deletar(id);
+    }
+
+    @Test
+    void executarComIdInexistenteLancaExcecaoENaoDeleta() {
+        UUID id = UUID.randomUUID();
+        when(repository.buscarPorId(id)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> useCase.executar(id))
+                .isInstanceOf(NOMENaoEncontradoException.class);
+
+        verify(repository, never()).deletar(any());
+    }
+}
+```
+
+### Arquivo 21: src/test/java/com/laboratorio/financas/ARG/infrastructure/persistence/NOMERepositoryImplTest.java
+
+```java
+package com.laboratorio.financas.ARG.infrastructure.persistence;
+
+import static org.assertj.core.api.Assertions.*;
+
+import com.laboratorio.financas.ARG.domain.NOME;
+import com.laboratorio.financas.shared.AbstractIntegrationTest;
+import com.laboratorio.financas.usuario.infrastructure.persistence.UsuarioEntity;
+import com.laboratorio.financas.usuario.infrastructure.persistence.UsuarioJpaRepository;
+import java.time.Instant;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+
+class NOMERepositoryImplTest extends AbstractIntegrationTest {
+
+    @Autowired
+    private NOMERepositoryImpl repository;
+    @Autowired
+    private NOMEJpaRepository jpaRepository;
+    @Autowired
+    private UsuarioJpaRepository usuarioJpaRepository;
+
+    private UUID userId;
+
+    @BeforeEach
+    void setUp() {
+        jpaRepository.deleteAll();
+        usuarioJpaRepository.deleteAll();
+        userId = criarUsuarioPersistido();
+    }
+
+    @AfterEach
+    void limpar() {
+        jpaRepository.deleteAll();
+        usuarioJpaRepository.deleteAll();
+    }
+
+    private UUID criarUsuarioPersistido() {
+        UUID id = UUID.randomUUID();
+        usuarioJpaRepository.save(new UsuarioEntity(
+                id, "teste+" + id + "@test.com", "hash", true,
+                Instant.now(), null, Instant.now()));
+        return id;
+    }
+
+    @Test
+    void salvarEBuscarPorIdRetornaEntidadePersistida() {
+        NOME entidade = new NOME(userId, "Teste");
+        repository.salvar(entidade);
+
+        Optional<NOME> resultado = repository.buscarPorId(entidade.getId());
+
+        assertThat(resultado).isPresent();
+        assertThat(resultado.get().getNome()).isEqualTo("Teste");
+    }
+
+    @Test
+    void listarPorUserIdRetornaSomenteDoUsuario() {
+        repository.salvar(new NOME(userId, "A"));
+        repository.salvar(new NOME(userId, "B"));
+        UUID outroUserId = criarUsuarioPersistido();
+        repository.salvar(new NOME(outroUserId, "Outro"));
+
+        List<NOME> resultado = repository.listarPorUserId(userId);
+
+        assertThat(resultado).hasSize(2);
+        assertThat(resultado).allMatch(n -> n.getUserId().equals(userId));
+    }
+
+    @Test
+    void deletarRemoveEntidade() {
+        NOME entidade = new NOME(userId, "Para deletar");
+        repository.salvar(entidade);
+
+        repository.deletar(entidade.getId());
+
+        assertThat(repository.buscarPorId(entidade.getId())).isEmpty();
+    }
+}
+```
+
+### Arquivo 22: src/test/java/com/laboratorio/financas/ARG/interfaces/NOMEControllerTest.java
+
+```java
+package com.laboratorio.financas.ARG.interfaces;
+
+import static org.assertj.core.api.Assertions.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.laboratorio.financas.ARG.infrastructure.persistence.NOMEJpaRepository;
+import com.laboratorio.financas.shared.AbstractAuthenticatedIntegrationTest;
+import java.util.Map;
+import java.util.UUID;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
+import org.springframework.test.web.servlet.MvcResult;
+
+class NOMEControllerTest extends AbstractAuthenticatedIntegrationTest {
+
+    @Autowired
+    private ObjectMapper objectMapper;
+    @Autowired
+    private NOMEJpaRepository jpaRepository;
+
+    @BeforeEach
+    void setUp() {
+        jpaRepository.deleteAll();
+    }
+
+    @AfterEach
+    void limpar() {
+        jpaRepository.deleteAll();
+    }
+
+    @Test
+    void postValidoRetorna201() throws Exception {
+        Map<String, Object> body = Map.of("nome", "Teste");
+        mockMvc.perform(comAuth(post("/api/nomes")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(body))))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.id").isNotEmpty())
+                .andExpect(jsonPath("$.nome").value("Teste"));
+    }
+
+    @Test
+    void postNomeBlankRetorna400() throws Exception {
+        Map<String, Object> body = Map.of("nome", "  ");
+        mockMvc.perform(comAuth(post("/api/nomes")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(body))))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void getListaRetornaArray() throws Exception {
+        mockMvc.perform(comAuth(post("/api/nomes")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(Map.of("nome", "A")))));
+
+        mockMvc.perform(comAuth(get("/api/nomes")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isArray());
+    }
+
+    @Test
+    void putExistenteRetorna200ComNomeAtualizado() throws Exception {
+        MvcResult r = mockMvc.perform(comAuth(post("/api/nomes")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of("nome", "Antigo")))))
+                .andReturn();
+        String id = objectMapper.readTree(r.getResponse().getContentAsString()).get("id").asText();
+
+        mockMvc.perform(comAuth(put("/api/nomes/" + id)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of("nome", "Novo")))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.nome").value("Novo"));
+    }
+
+    @Test
+    void putInexistenteRetorna404() throws Exception {
+        mockMvc.perform(comAuth(put("/api/nomes/" + UUID.randomUUID())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of("nome", "X")))))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void deleteExistenteRetorna204() throws Exception {
+        MvcResult r = mockMvc.perform(comAuth(post("/api/nomes")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of("nome", "Apagar")))))
+                .andReturn();
+        String id = objectMapper.readTree(r.getResponse().getContentAsString()).get("id").asText();
+
+        mockMvc.perform(comAuth(delete("/api/nomes/" + id)))
+                .andExpect(status().isNoContent());
+    }
+
+    @Test
+    void semAuthRetorna401() throws Exception {
+        mockMvc.perform(get("/api/nomes")).andExpect(status().isUnauthorized());
+    }
+}
+```
+
 ## Passo 3 -- Verificar criacao
 
 ```powershell
 Get-ChildItem -Recurse "src/main/java/com/laboratorio/financas/ARG/" -File | Select-Object FullName
+Get-ChildItem -Recurse "src/test/java/com/laboratorio/financas/ARG/" -File | Select-Object FullName
 ```
 
-Confirme que os 15 arquivos existem. Se algum ausente: reporte qual falta e nao
-emita o relatorio de sucesso.
+Confirme que os 22 arquivos existem (15 producao + 7 testes). Se algum ausente:
+reporte qual falta e nao emita o relatorio de sucesso.
 
 ## Passo 4 -- Relatorio final
 
 ```
-Bounded context 'ARG' criado (baseline completo, 15 arquivos).
+Bounded context 'ARG' criado (baseline completo, 22 arquivos = 15 producao + 7 testes).
 
-Estrutura:
+Producao (15):
   domain/NOME.java
   domain/NOMERepository.java
   domain/NOMENaoEncontradoException.java
@@ -695,14 +1166,30 @@ Estrutura:
   interfaces/dto/AtualizarNOMERequest.java
   interfaces/dto/NOMEResponse.java
 
+Testes (7, cobrindo os 4 niveis -- secao 6 de crud-patterns):
+  domain/NOMETest.java                                 (unit, JUnit + AssertJ)
+  application/CriarNOMEUseCaseTest.java                (Mockito)
+  application/ListarNOMEsUseCaseTest.java              (Mockito)
+  application/AtualizarNOMEUseCaseTest.java            (Mockito)
+  application/DeletarNOMEUseCaseTest.java              (Mockito)
+  infrastructure/persistence/NOMERepositoryImplTest.java (Testcontainers)
+  interfaces/NOMEControllerTest.java                   (MockMvc E2E)
+
 PROXIMOS PASSOS (responsabilidade do executor):
   1. Adaptar campos especificos do dominio (Money, enum, FK, M:N, soft-delete,
      state machine etc) seguindo as secoes correspondentes de docs/crud-patterns.md
      (1.2, 1.3, 1.6, 1.7, 5.2.1, 10.x). NAO ler outros bounded contexts.
-  2. Criar migration Flyway V<N>__cria_tabela_ARG.sql (numero reservado no prompt da task)
+     IMPORTANTE: ao renomear/adicionar campos no NOME.java/NOMEEntity.java, ATUALIZAR
+     os testes correspondentes (NOMETest, *UseCaseTest, *RepositoryImplTest, *ControllerTest)
+     para refletir os novos campos. Os testes gerados ja cobrem o baseline -- expanda;
+     nao recrie.
+  2. Criar migration Flyway V<N>__cria_tabela_ARG.sql (numero reservado no prompt da task).
+     FK para usuario usa `REFERENCES usuario(id)` -- NAO `users(id)`.
   3. Ajustar /api/nomes para plural pt-BR se necessario (ex: /api/lembretes)
   4. Adicionar handler de NOMENaoEncontradoException no GlobalExceptionHandler
      (secao 3 de crud-patterns.md -- ProblemDetail, NAO void)
   5. Registrar ENTITY_TYPE 'ARG' no middleware de auditoria via /add-entity-to-audit
-  6. /write-test para cada arquivo gerado (4 niveis: domain, useCase, repositoryImpl, controller)
+  6. NAO invocar /write-test para os 4 niveis de teste backend -- ja foram criados.
+     /write-test so e necessario se a expansao do dominio (passo 1) adicionar um arquivo
+     novo de producao que merece teste proprio (ex: um value object com regra propria).
 ```
