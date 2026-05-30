@@ -164,9 +164,13 @@ crie-os conforme descrito -- nao invoque /feature-front por conta propria.
 **Regra de leitura de arquivos:**
 
 - **Referencia de padrao**: o prompt indica quais secoes de `docs/crud-patterns.md`
-  usar. Leia `docs/crud-patterns.md` (unico arquivo de referencia permitido) e
-  implemente seguindo as secoes indicadas. NAO ler Tag.java, CarteiraController.java,
-  CarteiraEntity.java nem qualquer outro arquivo do projeto como template.
+  usar. Leia `docs/crud-patterns.md` e implemente seguindo as secoes indicadas.
+  Os UNICOS docs de referencia permitidos sao `docs/crud-patterns.md` e os dois
+  que ele referencia quando a task tem frontend: `docs/field-type-catalog.md`
+  (tipo de campo -> componente) e `docs/frontend-master-spec.md` (contratos de UX).
+  NAO ler codigo de outras features como template (Tag.java, TransacaoController.java,
+  ContaEntity.java, paginas .tsx de outras features, etc.) -- tudo que voce precisa
+  esta nesses tres docs.
 - **Arquivos a MODIFICAR** (GlobalExceptionHandler, screens.registry.ts, sidebar):
   leia antes de editar. O prompt lista quais sao e o que fazer em cada um.
 - **CLAUDE.md**: leia uma vez no inicio. Nao releia.
@@ -176,19 +180,23 @@ leia os arquivos que vai modificar -- comportamento correto para esse tipo de ta
 
 ## Wiring obrigatorio ao criar bounded context novo
 
-Ao criar um bounded context com excecao de dominio (*NaoEncontrado*Exception),
-registrar no GlobalExceptionHandler ANTES de qualquer commit de infrastructure:
+Dois wirings sao obrigatorios ANTES do commit de infrastructure/interfaces. Nao
+descobrir via falha de gate -- o gate (`/ship`) roda uma vez so; descobrir no
+gate exige segundo run completo de mvn verify.
 
-```java
-// Adicionar em:
-// src/main/java/com/laboratorio/financas/shared/infrastructure/web/GlobalExceptionHandler.java
-@ExceptionHandler(<Nova>NaoEncontradoException.class)
-@ResponseStatus(HttpStatus.NOT_FOUND)
-public void handle<Nova>NaoEncontrado() {}
-```
+**1. GlobalExceptionHandler** -- adicionar SO o handler da nova excecao
+`<Entidade>NaoEncontradoException`, seguindo a **secao 3 de `docs/crud-patterns.md`**
+(retorna `ProblemDetail` com title/detail/id -- NAO um metodo `void` vazio). Os
+handlers de validacao (400), `IllegalStateException`/`IllegalArgumentException`
+(400) e generico (500) ja existem globalmente -- nao recriar.
+Arquivo: `src/main/java/com/laboratorio/financas/shared/infrastructure/web/GlobalExceptionHandler.java`
 
-Nao descobrir esse wiring via falha de gate -- o gate roda uma vez so (/ship).
-Se descoberto apenas no gate: requer segundo run completo de mvn verify.
+**2. Auditoria (obrigatoria, nao opcional)** -- o controller publica `AuditEvent`
+via `AuditPublisher` em CREATE/UPDATE/DELETE e le o header `X-Screen-Code` (ver
+secao 5.1 de crud-patterns.md, padrao do contexto base `tag`). Alem disso, o
+`entityType` da nova entidade deve constar no middleware de auditoria: executar a
+skill `add-entity-to-audit` (ler `.claude/skills/add-entity-to-audit/SKILL.md` e
+aplicar manualmente).
 
 ## Regra de validacao: evitar re-runs caros
 

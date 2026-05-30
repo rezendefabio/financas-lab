@@ -95,14 +95,35 @@ rejeitar no Passo 3 da skill.
 Se o objetivo envolve criar um novo bounded context seguindo o padrao existente
 do projeto (domain + application + infra + interfaces + frontend):
 
-**1. Classificar o novo bounded context pela matriz de complexidade:**
+**1. Classificar o novo bounded context pela matriz de complexidade.**
 
-| Caracteristica do novo dominio | Secoes relevantes em docs/crud-patterns.md |
-|-------------------------------|---------------------------------------------|
-| Campos simples (string, boolean, UUID) | 1.1, 1.4, 1.5, 2.1, 2.4, 2.5, 2.6, 2.7, 3, 4, 5, 6, 7, 8 |
-| Tem enum proprio | + 1.2 enum, 2.2 enum na Entity |
-| Tem campo monetario (Money) | + 1.3 Money, 2.3 @Embedded/@AttributeOverride |
-| Tem FK para outro bounded context | + 1.6 FK |
+**Baseline (SEMPRE incluir, todo CRUD novo):** as secoes "Infra compartilhada
+assumida (NAO recriar)" e "Convencoes canonicas" (topo do doc) + 1.1, 1.4, 1.5,
+2.1, 2.4, 2.5, 2.6, 2.7, 3, 4, 5.1 (controller COM wiring de auditoria), 5.2, 6,
+7, 8, 9. A auditoria no controller (5.1) e o registro do `entityType` no
+middleware (skill `add-entity-to-audit`) sao OBRIGATORIOS em todo bounded
+context novo -- nao sao opcionais.
+
+**Adicionar conforme as caracteristicas do dominio:**
+
+| Caracteristica do novo dominio | Secoes a ADICIONAR |
+|-------------------------------|--------------------|
+| Tem enum proprio | 1.2, 2.2 |
+| Tem campo monetario (Money) | 1.3, 2.3, 5.2.1 (Money em DTO) |
+| Tem FK (UUID) para outro contexto | 1.6 |
+| Tem colecao de FKs (M:N por UUID, ex: tags) | 1.7 |
+| Soft-delete (registro sobrevive p/ auditoria/historico) | 10.1 |
+| Listagem de alto volume com filtros/ordenacao no banco | 10.2 + secao 7 variante server-side (`useListPage`) |
+| Total/somatorio calculado no banco | 10.3 (agregacao JPQL) |
+| Calculo que depende de outro bounded context | 10.4 (cross-context; regra fica no dominio) |
+| Status mutavel com transicoes validadas | 10.5 (maquina de estados) |
+| Hierarquia (self-FK) ou visibilidade system/usuario | 10.6 |
+| Enum que carrega regra/comportamento | 10.7 (value object) |
+| Acao cria multiplos registros vinculados (ex: transferencia) | 10.8 (par vinculado) |
+
+**Regra de classificacao:** na duvida entre "campo simples" e um padrao da secao
+10, escolher o padrao da secao 10. Subdimensionar e o que faz o executor
+improvisar ou vasculhar o repo -- exatamente o custo que este fluxo elimina.
 
 **2. Incluir no campo `prompt` da task a secao de referencia:**
 
@@ -113,17 +134,20 @@ e quais secoes usar -- o executor le o arquivo e implementa:
 ## Referencia de implementacao
 
 Leia `docs/crud-patterns.md` como unico arquivo de referencia de padrao.
-Secoes aplicaveis para este dominio: [listar as secoes da tabela acima].
-NAO ler outros arquivos do projeto como referencia (Tag.java,
-CarteiraController.java, CarteirEntity.java, etc.) -- tudo que voce
-precisa esta em docs/crud-patterns.md.
+Secoes aplicaveis para este dominio: [baseline + secoes adicionais da matriz].
+NAO ler nenhum outro arquivo do projeto como referencia de padrao
+(Tag.java, TransacaoController.java, ContaEntity.java, paginas .tsx de
+outras features, etc.) -- tudo que voce precisa esta em docs/crud-patterns.md
+e nos docs que ele referencia (field-type-catalog.md, frontend-master-spec.md).
+A unica excecao sao os arquivos que voce vai MODIFICAR (listados abaixo).
 ```
 
 **3. Listar no prompt os arquivos que o executor deve MODIFICAR (ler antes de editar):**
 
-- `GlobalExceptionHandler.java` → adicionar handler da nova excecao
-- `screens.registry.ts` → adicionar entrada da tela
-- `screens.registry.test.ts` → incrementar contador
+- `GlobalExceptionHandler.java` → adicionar SO o handler da nova excecao (secao 3)
+- Auditoria → registrar o `entityType` no middleware via skill `add-entity-to-audit`
+- `screens.registry.ts` → adicionar entrada da tela (codigo `MOD-ENT-001`)
+- `screens.registry.test.ts` → incrementar o contador
 - Sidebar → adicionar link (se aplicavel)
 
 **Quando NAO aplicar este passo:** tasks de refactor, fix de bug, ou qualquer
