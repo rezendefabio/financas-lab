@@ -34,7 +34,7 @@ recebido.
 
 Usar o Agent tool com:
 - subagent_type: "general-purpose"
-- model: "opus"
+- model: "claude-opus-4-8"
 - prompt: conteudo de task-planner.md com {OBJETIVO} substituido
 
 O JSON retornado contem o campo `executionMode` (`"fast"` ou `"full"`) decidido
