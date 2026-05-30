@@ -522,9 +522,17 @@ carregar os dados existentes -- e nao gere este arquivo. Continue com os
 demais. A rota `/<plural>/<id>/editar` ficara inexistente; ajustar a listagem
 no Arquivo 4 para nao expor botao Editar.
 
+**IMPORTANTE -- regra `react-hooks/set-state-in-effect`:** NAO usar
+`useState` + `useEffect` + `setState` para espelhar dados de `usePASCAL`.
+Isso causa cascading renders (e o lint do projeto rejeita). Em vez disso:
+fazer early-return enquanto `data` nao chegou e DERIVAR `initialValues`
+diretamente apos o return. O `PASCALForm` so monta quando os dados ja
+existem, e o `useForm({ defaultValues })` dentro dele recebe os valores
+corretos na primeira renderizacao.
+
 ```typescript
 'use client'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useParams, useRouter } from 'next/navigation'
 import { ArrowLeft } from 'lucide-react'
@@ -545,17 +553,8 @@ export default function EditarPASCALPage() {
   const id = params.id as string
   const queryClient = useQueryClient()
   const [apiError, setApiError] = useState<string | null>(null)
-  const [values, setValues] = useState<PASCALFormValues | null>(null)
 
   const { data, isLoading, isError } = usePASCAL(id)
-
-  useEffect(() => {
-    if (data) {
-      // TODO: mapear data (PASCAL) -> PASCALFormValues conforme schema.
-      // Ex: setValues({ nome: data.nome, valor: data.valor.valor, ... })
-      setValues(defaultPASCALFormValues())
-    }
-  }, [data])
 
   const mutation = useMutation({
     mutationFn: (v: PASCALFormValues) => CAMELService.atualizar(id, v as any),
@@ -567,7 +566,7 @@ export default function EditarPASCALPage() {
     onError: () => setApiError('Erro ao atualizar PASCAL.'),
   })
 
-  if (isLoading || !values) {
+  if (isLoading) {
     return (
       <div className="space-y-6">
         <Skeleton className="h-8 w-48" />
@@ -576,9 +575,21 @@ export default function EditarPASCALPage() {
     )
   }
 
-  if (isError) {
+  if (isError || !data) {
     return <p className="text-sm text-destructive">Erro ao carregar PASCAL.</p>
   }
+
+  // Derivar initialValues SINCRONAMENTE a partir de `data` (que ja existe aqui --
+  // o early-return acima garante isso). NUNCA usar useState + useEffect para
+  // espelhar dados de useQuery: viola react-hooks/set-state-in-effect.
+  // TODO: mapear data (PASCAL) -> PASCALFormValues conforme schema.
+  // Ex: const initialValues: PASCALFormValues = {
+  //   nome: data.nome,
+  //   valor: data.valor.valor,
+  //   moeda: data.valor.moeda,
+  //   ...
+  // }
+  const initialValues: PASCALFormValues = defaultPASCALFormValues()
 
   return (
     <div className="space-y-6">
@@ -593,7 +604,7 @@ export default function EditarPASCALPage() {
         <Card>
           <CardContent className="pt-6 space-y-4">
             <PASCALForm
-              defaultValues={values}
+              defaultValues={initialValues}
               onSubmit={(v) => mutation.mutate(v)}
               isSubmitting={mutation.isPending}
               apiError={apiError}
