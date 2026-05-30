@@ -160,6 +160,30 @@ Ativar a fábrica de fato: rodar features no Tier 2, configurar 3 routines Tier 
 
 ### Sub-etapas concluídas
 
+- **5.100 -- Bounded context Lembrete (CRUD backend + frontend)** (2026-05-30):
+  Vertical completa do bounded context lembrete (gestao de lembretes pessoais
+  do usuario autenticado). Backend (`src/main/java/.../lembrete/`): domain
+  (`Lembrete`, `PrioridadeLembrete` enum BAIXA/MEDIA/ALTA,
+  `LembreteRepository`, `LembreteNaoEncontradoException`), application
+  (Criar/Listar/Buscar/Atualizar/Excluir use cases), infrastructure
+  (`LembreteEntity`, `LembreteJpaRepository` com ordenacao por data,
+  `LembreteMapper`, `LembreteRepositoryImpl`), interfaces/rest (controller
+  com wiring de auditoria, request/response, mapper de comando). Migration
+  V32 cria tabela `lembrete` com FK `user_id` para `usuario(id)`, indice
+  `(user_id, data_lembrete)`, DELETE fisico. Handler de
+  `LembreteNaoEncontradoException` adicionado ao `GlobalExceptionHandler`.
+  Frontend (`frontend/src/features/lembrete/`): types + service + hooks
+  React Query + `LembreteForm` compartilhado (criacao e edicao usam o mesmo
+  componente). Tres paginas em `app/(dashboard)/lembretes/`: listagem
+  client-side com `DataTable` (titulo, data BR, prioridade, status,
+  Editar/Excluir com confirmacao inline), criacao com `useDraftForm`,
+  edicao com `resetWithDraft`. Tela `MOD-LMB-001` registrada no
+  `screens.registry` (menuPath `Cadastros / Lembretes`). Cobertura de
+  testes: unit domain (10 testes), unit usecase x5 (Mockito), integration
+  repository (Testcontainers, 5 testes), E2E controller (MockMvc, 13
+  testes), service frontend (5 testes), 3 paginas frontend (14 testes),
+  screens.registry (contador atualizado).
+
 - **fix-metricas-automaticas -- Captura automatica de metricas de execucao** (2026-05-28):
   Sub-etapa de infra de fabrica (scripts + hook, sem produto). Resolve a falha
   recorrente de coletar as metricas E01-E13 (secao "Metricas a capturar"): a
