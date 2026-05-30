@@ -398,6 +398,14 @@ export function PASCALForm({
   onClearApiError, submitLabel, onCancel,
 }: PASCALFormProps) {
   const form = useForm<PASCALFormValues>({
+    // O cast `as Resolver<PASCALFormValues>` e OBRIGATORIO -- NAO REMOVER.
+    // `z.coerce.number()` produz schema com tipo de input `unknown` (aceita
+    // qualquer coisa e coage para number). Sem o cast, o TS falha em
+    // `next build` com:
+    //   Type 'Resolver<{ valor: unknown; ... }>' is not assignable to
+    //   Type 'Resolver<{ valor: number; ... }>'
+    // O cast e seguro porque o resolver de fato produz `PASCALFormValues`
+    // em runtime (coerce funciona).
     resolver: zodResolver(PASCALFormSchema) as Resolver<PASCALFormValues>,
     defaultValues,
   })

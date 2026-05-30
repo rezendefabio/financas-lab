@@ -69,9 +69,9 @@ Este texto DEVE aparecer no chat antes do AskUserQuestion:
 
 Modo de execucao: {fast | full}
   fast = sem /ship, sem reviewers automaticos. Validacao pontual: mvn test do contexto
-         novo + npm run test:run filtrado. Alvo: 10-15 min (15 producao + 7 testes backend
-         + 6 producao + 3 testes frontend ja vem gerados pelas skills /feature e /feature-front;
-         executor so adapta campos do dominio e roda os gates pontuais).
+         novo + npm run test:run filtrado. Alvo: 16-18 min (templates inline em /feature
+         e /feature-front, mvn test em paralelo com adaptacao frontend, /add-entity-to-audit
+         pulado para novos contextos -- Controller ja sai com auditoria embutida).
          Disparado quando: 1 task, risco baixo, sem padroes da secao 10 do crud-patterns
          (soft-delete, paginacao, state machine etc) e sem colecao M:N. Enum/Money/FK OK.
   full = /ship completo (check.ps1 + check-front.ps1) + 2 reviewers em sequencia.

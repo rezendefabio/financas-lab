@@ -124,7 +124,9 @@ Modo: **{EXECUTION_MODE}** (`fast` ou `full`).
 - **`fast`** (CRUD trivial -- todas as tasks S/baixo): pular `/ship` e reviewers.
   Validacao = `./mvnw test -Dtest=<NovoContexto>*` + `npm run test:run` filtrado
   pelos arquivos novos. Entrega = `git push` + `gh pr create` direto. Alvo de
-  wall-clock: < 8 min. Ver secao "## Entrega -- modo fast" abaixo.
+  wall-clock alvo: 16-18 min (com /feature+/feature-front gerando templates inline,
+  mvn test rodando em paralelo com adaptacao frontend, e /add-entity-to-audit
+  pulado para contextos novos). Ver secao "## Entrega -- modo fast" abaixo.
 - **`full`** (qualquer complexidade alem de S/baixo): invocar `/ship` (gate
   completo + reviewers automaticos). Comportamento padrao detalhado em
   "## Entrega -- modo full" abaixo.
@@ -203,12 +205,16 @@ handlers de validacao (400), `IllegalStateException`/`IllegalArgumentException`
 (400) e generico (500) ja existem globalmente -- nao recriar.
 Arquivo: `src/main/java/com/laboratorio/financas/shared/infrastructure/web/GlobalExceptionHandler.java`
 
-**2. Auditoria (obrigatoria, nao opcional)** -- o controller publica `AuditEvent`
-via `AuditPublisher` em CREATE/UPDATE/DELETE e le o header `X-Screen-Code` (ver
-secao 5.1 de crud-patterns.md, padrao do contexto base `tag`). Alem disso, o
-`entityType` da nova entidade deve constar no middleware de auditoria: executar a
-skill `add-entity-to-audit` (ler `.claude/skills/add-entity-to-audit/SKILL.md` e
-aplicar manualmente).
+**2. Auditoria** -- o controller publica `AuditEvent` via `AuditPublisher` em
+CREATE/UPDATE/DELETE e le o header `X-Screen-Code`.
+
+- **Bounded context NOVO criado via `/feature`:** auditoria JA esta embutida no
+  Controller gerado pelo template (`AuditPublisher` + `X-Screen-Code` + helpers
+  `userEmail()`/`toJson()` ja inclusos). NAO invocar `/add-entity-to-audit` --
+  a skill detectaria "ja instrumentado" e exitaria no Passo 2, gastando ~1-2 min
+  de leitura+compile pra fazer nada. Economiza 1-2 min.
+- **Retrofit de controller EXISTENTE** (que nao tem auditoria): invocar
+  `/add-entity-to-audit <path-do-controller>` -- caso de uso original da skill.
 
 ## Regra de validacao: evitar re-runs caros
 
@@ -223,34 +229,49 @@ desenvolvimento, SEMPRE validacoes pontuais (vale para `fast` e `full`):
 
 (So se `{EXECUTION_MODE}` = `fast`. Se `full`, pular para "Entrega -- modo full".)
 
+**Paralelizacao obrigatoria do gate:** mvn test do backend (~2-3 min) e
+adaptacao do frontend nao competem por recurso compartilhado. Dispare o mvn
+test em background ANTES de comecar a adaptacao do `/feature-front`; assim ele
+roda concorrentemente. Economia tipica: 2-3 min.
+
 Passos:
 
-1. **Validacao agregada do novo contexto (gate minimo):**
+1. **Disparar mvn test em background (apos /feature + GlobalExceptionHandler completos):**
    ```bash
    ./mvnw test -Dtest='<NovoContexto>*' -q
    ```
-   Roda todos os testes do bounded context novo (domain, useCase, repository, controller).
-   Se falhar: corrigir e re-rodar. NAO rodar `mvn verify` nem `check.ps1`.
+   USAR `run_in_background: true` no Bash tool. Guardar o `bash_id` retornado.
+   Enquanto roda, prosseguir para o Passo 2 (adaptacao frontend) -- NAO esperar.
 
-2. **Validacao agregada do frontend novo (se aplicavel):**
+2. **Adaptacao frontend (em paralelo ao mvn test):**
+   Executar `/feature-front`, preencher campos do schema/columns/PASCALForm
+   conforme docs/field-type-catalog.md. Atualizar `screens.registry.ts` e
+   sidebar. Enquanto isso, o mvn test do Passo 1 esta rodando em background.
+
+3. **Checar resultado do mvn test (apos /feature-front completar):**
+   Usar BashOutput com o `bash_id` do Passo 1. Se ainda rodando: aguardar
+   conclusao. Se falhou: corrigir o codigo backend e re-rodar (sem background
+   desta vez, para feedback imediato).
+
+4. **Validacao frontend:**
    ```bash
    cd frontend && npm run test:run -- "src/features/<dominio>" "src/app/(dashboard)/<plural>"
    ```
-   So roda os arquivos do novo dominio. Se falhar: corrigir e re-rodar.
+   Pode rodar em foreground (rapido, ~30s-1min). Se falhar: corrigir e re-rodar.
 
-3. **Verificacao no repo principal:**
+5. **Verificacao no repo principal:**
    ```bash
    git -C /c/projetos/financas-lab status --short
    ```
    Vazio = OK; sujo = BLOQUEADOR (mover arquivos antes de continuar).
 
-4. **Push e PR:**
+6. **Push e PR:**
    ```bash
    git push -u origin $(git branch --show-current)
    gh pr create --base main --title "<titulo>" --body "<lista de commits + nota '/plan executionMode=fast'>"
    ```
 
-5. **NAO invocar `/ship`. NAO spawnar reviewers.** Reviewers ficam a cargo do operador
+7. **NAO invocar `/ship`. NAO spawnar reviewers.** Reviewers ficam a cargo do operador
    se necessario (`/review-pr <numero>` manualmente).
 
 ## Entrega -- modo full
