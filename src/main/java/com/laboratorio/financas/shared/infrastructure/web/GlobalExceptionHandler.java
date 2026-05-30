@@ -7,6 +7,7 @@ import com.laboratorio.financas.categoria.domain.CategoriaJaExisteException;
 import com.laboratorio.financas.categoria.domain.CategoriaNaoEncontradaException;
 import com.laboratorio.financas.centrocusto.domain.CentroCustoNaoEncontradoException;
 import com.laboratorio.financas.conta.domain.ContaNaoEncontradaException;
+import com.laboratorio.financas.emprestimo.domain.EmprestimoNaoEncontradoException;
 import com.laboratorio.financas.fatura.domain.FaturaNaoEncontradaException;
 import com.laboratorio.financas.grupo.domain.GrupoNaoEncontradoException;
 import com.laboratorio.financas.incidente.application.RegistrarErroUseCase;
@@ -273,6 +274,15 @@ public class GlobalExceptionHandler {
         ProblemDetail problem = ProblemDetail.forStatus(HttpStatus.BAD_REQUEST);
         problem.setTitle("Bad Request");
         problem.setDetail(ex.getMessage());
+        return problem;
+    }
+
+    @ExceptionHandler(EmprestimoNaoEncontradoException.class)
+    public ProblemDetail handleEmprestimoNaoEncontrado(EmprestimoNaoEncontradoException ex) {
+        ProblemDetail problem = ProblemDetail.forStatus(HttpStatus.NOT_FOUND);
+        problem.setTitle("Not Found");
+        problem.setDetail(ex.getMessage());
+        problem.setProperty("id", ex.getId().toString());
         return problem;
     }
 
