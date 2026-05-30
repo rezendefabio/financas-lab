@@ -24,7 +24,12 @@ Ler antes de gerar qualquer campo. Violacao de B7 bloqueia merge.
 
 | Tipo Java | Input | Exibicao |
 |---|---|---|
-| `boolean` | `<Switch>` (shadcn) ou radio group Sim/Nao | Badge colorido ou icone |
+| `boolean` | `<input type="checkbox" className="accent-primary">` (nativo) | Badge colorido ou icone |
+
+**Nota:** o componente `Switch` do shadcn NAO esta instalado no projeto. Se for
+necessario em algum dia, instalar via `npx shadcn@latest add switch` E atualizar
+esta linha. Ate la, usar checkbox nativo -- e o pattern ja aplicado em
+todos os formularios existentes (ver `TransacaoForm`, `EmprestimoForm`).
 
 ### Referencias (FKs)
 
@@ -126,7 +131,7 @@ Sugestoes de span por tipo de campo:
 | Data | 5 |
 | Tipo / Status (enum) | 4-6 |
 | Conta / Categoria (LookupField) | 6 |
-| Booleano (Switch) | 4 |
+| Booleano (checkbox) | 4 |
 
 Campos simples que nao ganham com grid (formularios de 1-2 campos) podem usar
 `space-y-4` diretamente, sem `FormGrid`.

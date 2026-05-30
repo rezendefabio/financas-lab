@@ -538,19 +538,20 @@ diretamente apos o return. O `PASCALForm` so monta quando os dados ja
 existem, e o `useForm({ defaultValues })` dentro dele recebe os valores
 corretos na primeira renderizacao.
 
-**IMPORTANTE -- Next.js 16 `params` e Promise:** no Next.js 16 (App Router),
-`params` no page component foi mudado de `{ id: string }` para
-`Promise<{ id: string }>`. Em CLIENT components ('use client'), usar o hook
-`use(params)` de React 19 para unwrapping sincrono. NAO usar `useParams()`
-(legacy, pattern do Next.js 14/15) -- o pattern abaixo e o canonico do
-Next.js 16, ja foi descoberto por executor em smoke real lendo
-`node_modules/next/dist/docs/`. Hardcoded aqui pra evitar o lookup.
+**IMPORTANTE -- usar `useParams()` (client hook), NAO `use(params)`:**
+no Next.js 16 a prop `params` virou `Promise` em SERVER components. MAS
+esta pagina e CLIENT (`'use client'`), e o hook `useParams()` de
+`next/navigation` continua sincrono e funciona normalmente em todas as
+versoes do Next.js. Usar `use(params)` aqui exige `vi.mock('react')` no
+teste pra desempacotar a Promise sob jsdom -- complexidade desnecessaria.
+**Padrao canonico para CLIENT pages: `useParams()`.** O pattern
+`use(params)` so e necessario em SERVER components (sem `'use client'`).
 
 ```typescript
 'use client'
-import { use, useState } from 'react'
+import { useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { useRouter } from 'next/navigation'
+import { useParams, useRouter } from 'next/navigation'
 import { ArrowLeft } from 'lucide-react'
 import { CAMELService } from '@/features/ARG/services/ARG-service'
 import { usePASCAL } from '@/features/ARG/hooks/use-ARG'
@@ -563,13 +564,10 @@ import { Card, CardContent } from '@/shared/components/ui/card'
 import { Button } from '@/shared/components/ui/button'
 import { Skeleton } from '@/shared/components/ui/skeleton'
 
-interface PageProps {
-  params: Promise<{ id: string }>
-}
-
-export default function EditarPASCALPage({ params }: PageProps) {
+export default function EditarPASCALPage() {
   const router = useRouter()
-  const { id } = use(params)
+  const params = useParams()
+  const id = params.id as string
   const queryClient = useQueryClient()
   const [apiError, setApiError] = useState<string | null>(null)
 
@@ -844,9 +842,10 @@ describe('NovoPASCALPage', () => {
 
 So gerar se o Controller tem `@GetMapping("/{id}")` (Arquivo 6 existe).
 
-**Next.js 16:** `params` agora e Promise e e passado como PROP, nao mais via
-`useParams()`. No teste, criar uma Promise resolvida e passar via prop:
-`<EditarPASCALPage params={Promise.resolve({ id: '...' })} />`.
+**Pattern test-friendly:** mock `useParams()` retornando `{ id: TEST_ID }`. Nao
+ha necessidade de `vi.mock('react')` (que seria preciso se a pagina usasse
+`use(params)` -- por isso o template do `[id]/editar/page.tsx` mantem
+`useParams()`, nao `use(params)`).
 
 ```typescript
 import React from 'react'
@@ -863,11 +862,10 @@ vi.mock('@/features/ARG/services/ARG-service', () => ({
 }))
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ push: vi.fn() }),
+  useParams: () => ({ id: '00000000-0000-0000-0000-000000000001' }),
 }))
 
 import { CAMELService } from '@/features/ARG/services/ARG-service'
-
-const TEST_ID = '00000000-0000-0000-0000-000000000001'
 
 function renderWithClient(ui: React.ReactElement) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
@@ -881,17 +879,15 @@ beforeEach(() => {
 describe('EditarPASCALPage', () => {
   it('exibe skeleton enquanto carrega dados', () => {
     vi.mocked(CAMELService.buscar).mockImplementation(() => new Promise(() => {}))
-    const { container } = renderWithClient(
-      <EditarPASCALPage params={Promise.resolve({ id: TEST_ID })} />,
-    )
+    const { container } = renderWithClient(<EditarPASCALPage />)
     expect(container.querySelector('.animate-pulse, [data-loading]')).toBeTruthy()
   })
 
   it('renderiza titulo e form apos carregar dados', async () => {
     vi.mocked(CAMELService.buscar).mockResolvedValue({
-      id: TEST_ID,
+      id: '00000000-0000-0000-0000-000000000001',
     } as any)
-    renderWithClient(<EditarPASCALPage params={Promise.resolve({ id: TEST_ID })} />)
+    renderWithClient(<EditarPASCALPage />)
     await waitFor(() => {
       expect(screen.getByRole('heading', { name: /Editar PASCAL/i })).toBeInTheDocument()
     })

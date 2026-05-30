@@ -216,6 +216,42 @@ CREATE/UPDATE/DELETE e le o header `X-Screen-Code`.
 - **Retrofit de controller EXISTENTE** (que nao tem auditoria): invocar
   `/add-entity-to-audit <path-do-controller>` -- caso de uso original da skill.
 
+## Validacao pos-/feature (obrigatoria apos scaffold)
+
+Apos `/feature` terminar de gerar os 24 arquivos, ANTES de adaptar campos,
+rodar estes 3 checks para garantir que o scaffold ficou conforme template
+(executor as vezes "simplifica" sem perceber):
+
+```bash
+ARG=<nome-do-bounded-context>
+
+# 1. Verificar 5 use cases (Criar, Listar, BuscarPorId, Atualizar, Deletar)
+count=$(ls src/main/java/com/laboratorio/financas/$ARG/application/ 2>/dev/null | wc -l)
+if [ "$count" -lt 5 ]; then
+  echo "BLOQUEADOR: aplicacao tem $count use cases, esperado 5. /feature falhou ou foi adaptado."
+  ls src/main/java/com/laboratorio/financas/$ARG/application/
+  exit 1
+fi
+
+# 2. Verificar GET /{id} no Controller
+if ! grep -q '@GetMapping("/{id}")' src/main/java/com/laboratorio/financas/$ARG/interfaces/*Controller.java; then
+  echo "BLOQUEADOR: Controller sem @GetMapping(\"/{id}\"). /feature deve gerar buscar() chamando BuscarPorIdUseCase."
+  exit 1
+fi
+
+# 3. Verificar DLS_DEAD_LOCAL_STORE: atualizar/deletar/buscar NAO podem
+#    atribuir o retorno de resolverUserId (so chamar para validar)
+if grep -n "UUID userId = resolverUserId" src/main/java/com/laboratorio/financas/$ARG/interfaces/*Controller.java | grep -vE "criar|listar"; then
+  echo "BLOQUEADOR: atualizar/deletar/buscar nao podem atribuir resolverUserId."
+  echo "SpotBugs vai falhar com DLS_DEAD_LOCAL_STORE. Substituir por: resolverUserId(authentication);"
+  exit 1
+fi
+```
+
+Se algum check falhar: corrigir o codigo gerado pelo /feature ANTES de prosseguir
+com a adaptacao de campos. Esses 3 checks gastam ~5s e evitam falhas tardias no
+gate ou na pipeline (que custam re-rodadas de 2-3 min cada).
+
 ## Regra de validacao: evitar re-runs caros
 
 Maven `verify` custa 3-6 min; `check-front.ps1` custa 4-7 min. Durante o
