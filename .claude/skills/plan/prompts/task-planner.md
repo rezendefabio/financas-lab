@@ -331,9 +331,18 @@ maximo 10. Obrigatorio mesmo quando o objetivo e detalhado.
 - XL: > 16h, refactor estrutural ou feature com dependencias externas
 
 `risco`:
-- baixo: sem FK nova, sem migracao destrutiva, sem mudanca de API publica
-- medio: nova FK, migracao aditiva, alteracao de endpoint existente
-- alto: migracao destrutiva, mudanca de schema critico, impacto em outros bounded contexts
+- **baixo**: novo bounded context com migration aditiva limpa (CREATE TABLE + indices),
+  FK para `usuario(id)` (padrao multi-tenant universal do projeto -- NAO conta como
+  "FK nova" para fins de risco). Sem migration destrutiva, sem alteracao de endpoint
+  EXISTENTE, sem FK para outro bounded context.
+- **medio**: FK para OUTRO bounded context alem de `usuario` (ex: `conta`, `categoria`);
+  ALTER TABLE com risco (adicao de coluna NOT NULL sem default em tabela populada);
+  alteracao de endpoint EXISTENTE (mudanca de contrato de API).
+- **alto**: migracao destrutiva (DROP TABLE/COLUMN, NOT NULL sem default em coluna
+  populada), mudanca de schema critico, impacto em outros bounded contexts existentes.
+
+**Regra de ouro:** criar um bounded context NOVO seguindo o baseline (com user_id FK)
+e migration que so cria a tabela nova = `baixo`. Esse e o caso-alvo do fast path.
 
 `migracoes_reservadas`: lista de strings no formato `"V{N}"`. Vazio se a task
 nao toca schema de banco.
