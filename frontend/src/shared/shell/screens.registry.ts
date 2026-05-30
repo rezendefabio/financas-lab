@@ -197,6 +197,14 @@ export const screens: ScreenDefinition[] = [
     permissions: [],
   },
   {
+    code: 'MOD-LMB-001',
+    title: 'Lembretes',
+    path: '/lembretes',
+    menuPath: ['Cadastros', 'Lembretes'],
+    icon: 'sticky-note',
+    permissions: [],
+  },
+  {
     code: 'USR-PRF-001',
     title: 'Meu Perfil',
     path: '/perfil',
