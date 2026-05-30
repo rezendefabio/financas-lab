@@ -12,9 +12,20 @@ completo que o executor vai receber.
 
 ## Passo 1 -- Entender o contexto do projeto
 
-Leia os seguintes arquivos para entender o estado atual:
+Leia os seguintes arquivos para entender o estado atual e os padroes:
 - `CLAUDE.md` (convencoes, stack, estrutura)
 - `docs/progresso.md` (o que ja foi feito, sub-etapas concluidas)
+- `docs/crud-patterns.md` (fonte unica de padroes de implementacao -- contem a
+  matriz de complexidade, secoes 1-10 com padroes do baseline ao avancado,
+  convencoes canonicas como `@Component` em use cases, auditoria obrigatoria, e
+  nomes reais de tabelas: **tabelas usam portugues singular** -- `usuario` NAO
+  `users`, `conta` NAO `accounts`, FK = `REFERENCES usuario(id)`). Ler tornou-se
+  obrigatorio na sub-etapa que adicionou esta linha -- planner desinformado
+  inventa paths/nomes errados que o executor depois precisa corrigir.
+- `docs/field-type-catalog.md` (mapeamento tipo Java -> componente frontend) se
+  o objetivo tem frontend
+- `docs/frontend-master-spec.md` (arquitetura do shell, useListPage, FilterBar,
+  ActionsPanel, form-kit) se o objetivo tem frontend
 
 ## Uso de WebSearch (permitido e esperado)
 
