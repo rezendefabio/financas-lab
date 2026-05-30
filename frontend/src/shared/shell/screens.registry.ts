@@ -205,6 +205,14 @@ export const screens: ScreenDefinition[] = [
     permissions: [],
   },
   {
+    code: 'FIN-EMP-001',
+    title: 'Emprestimos',
+    path: '/emprestimos',
+    menuPath: ['Cadastros', 'Financeiro', 'Emprestimos'],
+    icon: 'wallet',
+    permissions: [],
+  },
+  {
     code: 'USR-PRF-001',
     title: 'Meu Perfil',
     path: '/perfil',
