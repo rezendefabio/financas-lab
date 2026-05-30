@@ -11,7 +11,7 @@ import {
 describe('screens.registry', () => {
   it('getAllScreens retorna o manifesto completo', () => {
     expect(getAllScreens()).toBe(screens)
-    expect(getAllScreens().length).toBe(20)
+    expect(getAllScreens().length).toBe(21)
   })
 
   it('todos os codes seguem o formato MOD-ENT-NNN', () => {
@@ -50,6 +50,12 @@ describe('screens.registry', () => {
     it('retorna undefined para code inexistente', () => {
       expect(findScreenByCode('XXX-YYY-999')).toBeUndefined()
     })
+
+    it('localiza a tela de emprestimos pelo code', () => {
+      const emprestimo = findScreenByCode('FIN-EMP-001')
+      expect(emprestimo?.title).toBe('Emprestimos')
+      expect(emprestimo?.path).toBe('/emprestimos')
+    })
   })
 
   describe('findScreenByPath', () => {
@@ -64,6 +70,14 @@ describe('screens.registry', () => {
     it('resolve rota filha para a tela base', () => {
       expect(findScreenByPath('/contas/novo')?.code).toBe('FIN-CTA-001')
       expect(findScreenByPath('/contas/abc-123')?.code).toBe('FIN-CTA-001')
+    })
+
+    it('resolve rotas de emprestimos para a tela base', () => {
+      expect(findScreenByPath('/emprestimos')?.code).toBe('FIN-EMP-001')
+      expect(findScreenByPath('/emprestimos/novo')?.code).toBe('FIN-EMP-001')
+      expect(findScreenByPath('/emprestimos/abc-123/editar')?.code).toBe(
+        'FIN-EMP-001',
+      )
     })
 
     it('retorna undefined para rota nao registrada', () => {
