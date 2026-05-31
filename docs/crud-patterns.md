@@ -82,7 +82,11 @@ abaixo. Importar/estender — nunca recriar nem duplicar:
 - **Tabelas usam nomes em portugues singular, NAO em ingles plural.** A tabela
   do usuario chama `usuario` (NAO `users`); idem `conta` (NAO `accounts`),
   `categoria`, `transacao`, `carteira`, `lembrete`, etc. FK para o usuario e
-  `REFERENCES usuario(id)` -- NUNCA `users(id)`.
+  `REFERENCES usuario(id)` -- NUNCA `users(id)`. Essa FK e OBRIGATORIA e SEMPRE
+  inline na coluna `user_id` da migration (`user_id UUID NOT NULL REFERENCES
+  usuario(id)`), em TODA tabela. NAO omitir -- a regra "sem FK para outros
+  bounded contexts" (secao 2.7) vale so para `conta`/`categoria`/etc, NUNCA para
+  `usuario`.
 - **Money tem precisao SQL fixa: `NUMERIC(19,2)`.** BRL usa 2 casas decimais
   (centavos). NUNCA `(19,4)` ou outras precisoes, mesmo que padroes
   internacionais usem mais. O `MoneyEmbeddable` mapeia para `precision=19,
@@ -359,7 +363,7 @@ public record <Entidade>Response(
 ```sql
 CREATE TABLE <tabela> (
     id              UUID            PRIMARY KEY,
-    user_id         UUID            NOT NULL,
+    user_id         UUID            NOT NULL REFERENCES usuario(id),  -- FK multi-tenant SEMPRE
     conta_id        UUID            NOT NULL,     -- FK obrigatoria
     categoria_id    UUID,                         -- FK opcional (nullable)
     -- ... outros campos
@@ -640,7 +644,10 @@ public class <Entidade>RepositoryImpl implements <Entidade>Repository {
 -- V{N}__cria_tabela_<tabela>.sql
 CREATE TABLE <tabela> (
     id              UUID            PRIMARY KEY,
-    user_id         UUID            NOT NULL,
+    -- user_id SEMPRE leva a FK inline para usuario(id) -- e a FK multi-tenant
+    -- obrigatoria, presente em TODA tabela do projeto (ver lembrete, anotacao).
+    -- NAO confundir com "sem FK para outros bounded contexts" abaixo.
+    user_id         UUID            NOT NULL REFERENCES usuario(id),
     nome            VARCHAR(100)    NOT NULL,
     -- campo enum:
     tipo            VARCHAR(30)     NOT NULL,
@@ -651,7 +658,10 @@ CREATE TABLE <tabela> (
     criado_em       TIMESTAMPTZ     NOT NULL,
     atualizado_em   TIMESTAMPTZ     NOT NULL
 );
--- Sem FK para outros bounded contexts (integridade via aplicacao).
+CREATE INDEX idx_<tabela>_user ON <tabela> (user_id);
+-- FK para usuario: SEMPRE (inline acima). FK para OUTROS bounded contexts
+-- (conta, categoria): integridade via aplicacao -- ver secao 1.6 para quando
+-- usar REFERENCES explicito para esses casos.
 ```
 
 ---

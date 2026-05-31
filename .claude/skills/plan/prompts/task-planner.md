@@ -167,6 +167,23 @@ Arquivos compartilhados (PATHS EXATOS):
 - `frontend/src/shared/shell/SidebarNav.tsx` (link no sidebar)
 - `src/main/java/com/laboratorio/financas/shared/infrastructure/web/GlobalExceptionHandler.java`
 
+**Convencao de `menuPath` (registry):** NAO inventar grupo de topo novo. Os
+grupos de topo existentes sao apenas: `Visao Geral`, `Planejamento`, `Movimento`,
+`Cadastros`, `Analise`, `Conta`. `Financeiro`, `Classificacao` e `Planejamento`
+sao SUB-grupos dentro de `Cadastros` -- NUNCA grupos de topo.
+
+- Cadastro de entidade financeira (conta, carteira, fatura, beneficiario,
+  emprestimo): `['Cadastros', 'Financeiro', '<Plural>']`.
+- Cadastro de classificacao (tag, grupo, categoria, centro de custo):
+  `['Cadastros', 'Classificacao', '<Plural>']`.
+- Planejamento (orcamento, meta, recorrente, lembrete): `['Planejamento', '<Plural>']`.
+
+Antes de definir o `menuPath`, conferir no `screens.registry.ts` onde entidades
+parecidas ja vivem e seguir o mesmo grupo. Incluir o `menuPath` correto no prompt
+da task -- o executor segue literalmente, entao um menuPath errado no prompt vira
+grupo de topo improvisado (bug observado no smoke do emprestimo: `['Financeiro',
+'Emprestimos']` em vez de `['Cadastros', 'Financeiro', 'Emprestimos']`).
+
 **2. Incluir no campo `prompt` da task a secao de referencia:**
 
 O prompt deve conter o bloco abaixo informando ao executor qual arquivo ler
