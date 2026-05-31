@@ -159,7 +159,13 @@ Acesso correto: `formatBRL(orcamento.valorLimite.valor)`.
 - Importacao: `import { MoneyInput } from '@/shared/components/MoneyInput'`
 - Props: `value: number`, `onChange: (value: number) => void`, `disabled?`, `className?`, `id?`
 - Integracao react-hook-form: passar `value={field.value}` e `onChange={field.onChange}`, NAO usar spread `{...field}`
-- Zod schema: `z.coerce.number().min(0)` para valores >= 0, `.positive()` para obrigatorio positivo
+- Zod schema: **`z.number().min(0)`** para valores >= 0, **`z.number().positive()`** para
+  obrigatorio positivo. **NUNCA `z.coerce.number()`.** O `MoneyInput` ja entrega um
+  `number` (`onChange: (value: number) => void`), entao coerce e desnecessario.
+  Pior: `z.coerce.number()` tem tipo de input `unknown`, que faz o `zodResolver`
+  inferir `Resolver<{valor: unknown}>` incompativel com `useForm<{valor: number}>` --
+  quebra o `next build` (type check) e exige um cast `as Resolver<...>` fragil que
+  o executor sempre dropa ao regenerar o form. `z.number()` elimina o problema na raiz.
 - Nao usar: `<Input type="number" step="0.01">` para valores monetarios
 
 ### StatusBadge

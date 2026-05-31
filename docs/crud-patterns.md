@@ -1608,7 +1608,9 @@ schema/campos entre as duas paginas.
 
 O componente concentra:
 - `useForm` + `zodResolver(schema)`, com `schema` Zod **espelhando o `*Request.java`**
-  (B6 — divergencia e bloqueador). Money -> `z.coerce.number().positive()`;
+  (B6 — divergencia e bloqueador). Money -> **`z.number().positive()`** (NUNCA
+  `z.coerce.number()` -- coerce tem input `unknown` que quebra o type check do
+  `next build`; MoneyInput ja da number, ver field-type-catalog);
   `@Size(max=N)` -> `.max(N)`; FK obrigatoria -> `.uuid()`; opcional -> `.optional()`.
 - `useDraftForm(form)` **internamente** (a pagina pai nao chama de novo —
   CLAUDE.md). `clearDraft()` no submit e no Cancelar.
