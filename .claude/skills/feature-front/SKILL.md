@@ -86,7 +86,7 @@ Para cada campo: derive o nome, o tipo TypeScript (tabela acima) e a regra Zod:
 | `@Size(min=M, max=N)` | `.min(M).max(N)` |
 | `@Min(N)` | `.min(N)` |
 | `UUID` com `@NotNull` | `z.string().uuid()` |
-| `BigDecimal` monetario | `z.coerce.number().positive()` |
+| `BigDecimal` monetario | `z.number().positive()` (NUNCA `z.coerce.number()` -- quebra o type check; ver nota no PASCALForm) |
 | `LocalDate` | `z.string().min(1)` |
 | `String` com `@NotBlank` | `z.string().min(1)` |
 | `String` sem `@NotBlank` | `z.string()` |
@@ -398,14 +398,13 @@ export function PASCALForm({
   onClearApiError, submitLabel, onCancel,
 }: PASCALFormProps) {
   const form = useForm<PASCALFormValues>({
-    // O cast `as Resolver<PASCALFormValues>` e OBRIGATORIO -- NAO REMOVER.
-    // `z.coerce.number()` produz schema com tipo de input `unknown` (aceita
-    // qualquer coisa e coage para number). Sem o cast, o TS falha em
-    // `next build` com:
-    //   Type 'Resolver<{ valor: unknown; ... }>' is not assignable to
-    //   Type 'Resolver<{ valor: number; ... }>'
-    // O cast e seguro porque o resolver de fato produz `PASCALFormValues`
-    // em runtime (coerce funciona).
+    // Defesa PRIMARIA: campos Money no schema usam `z.number().positive()`,
+    // NUNCA `z.coerce.number()`. MoneyInput ja entrega number; coerce tem input
+    // `unknown` que faz o zodResolver inferir Resolver<{valor: unknown}>,
+    // incompativel com useForm<{valor: number}> -> `next build` falha no type check.
+    // Com z.number() os tipos batem e o cast abaixo vira no-op inofensivo.
+    // O cast `as Resolver<PASCALFormValues>` fica como rede secundaria (caso
+    // algum campo escape para coerce). NAO trocar z.number() por z.coerce.number().
     resolver: zodResolver(PASCALFormSchema) as Resolver<PASCALFormValues>,
     defaultValues,
   })
