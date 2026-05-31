@@ -8,7 +8,6 @@
  * `globals.css` para esconder o shell na impressao.
  */
 'use client'
-import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Bell, LogOut, UserCircle, X } from 'lucide-react'
 import { Separator } from '@/shared/components/ui/separator'
@@ -24,7 +23,7 @@ import {
 } from '@/shared/components/ui/dropdown-menu'
 import { useAuth } from '@/features/auth/hooks/use-auth'
 import { useCurrentUser } from '@/features/auth/hooks/use-current-user'
-import { useNotificacoes } from '@/shared/hooks/useNotificacoes'
+import { useNotificacoes, useDescartarNotificacao } from '@/shared/hooks/useNotificacoes'
 import { useTabsStore } from './tabs-store'
 
 export function ShellHeader() {
@@ -33,19 +32,22 @@ export function ShellHeader() {
   const { logout } = useAuth()
   const { email, initials } = useCurrentUser()
   const tabCount = useTabsStore((state) => state.tabs.length)
+  // Notificacoes vem do backend (ja filtradas para nao-descartadas).
   const { notificacoes } = useNotificacoes()
+  const descartar = useDescartarNotificacao()
 
-  // IDs dispensados na sessao atual (reseta ao recarregar a pagina)
-  const [dispensados, setDispensados] = useState<Set<string>>(new Set())
-  const visiveis = notificacoes.filter((n) => !dispensados.has(n.id))
+  const visiveis = notificacoes
   const count = visiveis.length
 
+  // O descarte e PERSISTIDO (PATCH no backend) -- nao reaparece no proximo login.
   function dispensar(id: string) {
-    setDispensados((prev) => new Set([...prev, id]))
+    descartar.mutate(id)
   }
 
   function dispensarTodas() {
-    setDispensados(new Set(notificacoes.map((n) => n.id)))
+    for (const n of notificacoes) {
+      descartar.mutate(n.id)
+    }
   }
 
   const handleLogout = () => {

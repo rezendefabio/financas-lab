@@ -18,6 +18,7 @@ import com.laboratorio.financas.lancamentorecorrente.domain.LancamentoRecorrente
 import com.laboratorio.financas.lembrete.domain.LembreteNaoEncontradoException;
 import com.laboratorio.financas.limite.domain.LimiteNaoEncontradoException;
 import com.laboratorio.financas.meta.domain.MetaNaoEncontradaException;
+import com.laboratorio.financas.notificacao.domain.NotificacaoNaoEncontradaException;
 import com.laboratorio.financas.orcamento.domain.OrcamentoNaoEncontradoException;
 import com.laboratorio.financas.payee.domain.PayeeNaoEncontradoException;
 import com.laboratorio.financas.tag.domain.TagNaoEncontradaException;
@@ -146,6 +147,15 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(MetaNaoEncontradaException.class)
     public ProblemDetail handleMetaNaoEncontrada(MetaNaoEncontradaException ex) {
+        ProblemDetail problem = ProblemDetail.forStatus(HttpStatus.NOT_FOUND);
+        problem.setTitle("Not Found");
+        problem.setDetail(ex.getMessage());
+        problem.setProperty("id", ex.getId().toString());
+        return problem;
+    }
+
+    @ExceptionHandler(NotificacaoNaoEncontradaException.class)
+    public ProblemDetail handleNotificacaoNaoEncontrada(NotificacaoNaoEncontradaException ex) {
         ProblemDetail problem = ProblemDetail.forStatus(HttpStatus.NOT_FOUND);
         problem.setTitle("Not Found");
         problem.setDetail(ex.getMessage());

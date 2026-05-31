@@ -4,8 +4,8 @@
  * por `useNotificacoes`, deduplicando por `id` via `useRef<Set>` para nao
  * spammar a tela em rerenders.
  *
- * Toast `error` para tipos criticos (orcamento_excedido, meta_vencida);
- * `warning` para alertas suaves (orcamento_atencao, meta_vencendo).
+ * Toast `error` para tipos criticos (ORCAMENTO_EXCEDIDO, META_VENCIDA);
+ * `warning` para alertas suaves (ORCAMENTO_ATENCAO, META_VENCENDO).
  */
 import { useEffect, useRef } from 'react'
 import { toast } from 'sonner'
@@ -22,7 +22,7 @@ export function useNotificacoesToast(): void {
       if (exibidosRef.current.has(n.id)) continue
       exibidosRef.current.add(n.id)
 
-      if (n.tipo === 'orcamento_excedido' || n.tipo === 'meta_vencida') {
+      if (n.tipo === 'ORCAMENTO_EXCEDIDO' || n.tipo === 'META_VENCIDA') {
         toast.error(n.titulo, { description: n.descricao })
       } else {
         toast.warning(n.titulo, { description: n.descricao })
