@@ -15,6 +15,7 @@ public interface MetaMapper {
         }
         return new MetaEntity(
                 meta.getId(),
+                meta.getUserId(),
                 meta.getNome(),
                 toMoneyEmbeddable(meta.getValorAlvo()),
                 toMoneyEmbeddable(meta.getValorAtual()),
@@ -31,6 +32,7 @@ public interface MetaMapper {
         }
         return new Meta(
                 entity.getId(),
+                entity.getUserId(),
                 entity.getNome(),
                 toMoney(entity.getValorAlvo()),
                 toMoney(entity.getValorAtual()),

@@ -14,12 +14,14 @@ import com.laboratorio.financas.meta.domain.Meta;
 import com.laboratorio.financas.meta.interfaces.dto.CriarMetaRequest;
 import com.laboratorio.financas.meta.interfaces.dto.MetaResponse;
 import com.laboratorio.financas.meta.interfaces.dto.RegistrarDepositoRequest;
+import com.laboratorio.financas.usuario.domain.UsuarioRepository;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -45,6 +47,7 @@ public class MetaController {
     private final RegistrarDepositoEmMetaUseCase registrarDepositoUseCase;
     private final AuditPublisher auditPublisher;
     private final ObjectMapper objectMapper;
+    private final UsuarioRepository usuarioRepository;
 
     public MetaController(
             CriarMetaUseCase criarMetaUseCase,
@@ -53,7 +56,8 @@ public class MetaController {
             CancelarMetaUseCase cancelarMetaUseCase,
             RegistrarDepositoEmMetaUseCase registrarDepositoUseCase,
             AuditPublisher auditPublisher,
-            ObjectMapper objectMapper
+            ObjectMapper objectMapper,
+            UsuarioRepository usuarioRepository
     ) {
         this.criarMetaUseCase = criarMetaUseCase;
         this.listarMetasUseCase = listarMetasUseCase;
@@ -62,14 +66,17 @@ public class MetaController {
         this.registrarDepositoUseCase = registrarDepositoUseCase;
         this.auditPublisher = auditPublisher;
         this.objectMapper = objectMapper;
+        this.usuarioRepository = usuarioRepository;
     }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public MetaResponse criar(
             @RequestBody @Valid CriarMetaRequest request,
+            Authentication authentication,
             @RequestHeader(value = "X-Screen-Code", required = false) String screenCode) {
         CriarMetaUseCase.Comando comando = new CriarMetaUseCase.Comando(
+                resolverUserId(authentication),
                 request.nome(),
                 request.valorAlvoValor(),
                 request.valorAlvoMoeda(),
@@ -126,6 +133,14 @@ public class MetaController {
                 ENTITY_TYPE, id, AuditAction.UPDATE,
                 userEmail(), screenCode, before, toJson(response)));
         return response;
+    }
+
+    private UUID resolverUserId(Authentication authentication) {
+        String email = authentication.getName();
+        return usuarioRepository.buscarPorEmail(email)
+                .orElseThrow(() -> new IllegalStateException(
+                        "Usuario autenticado nao encontrado: " + email))
+                .getId();
     }
 
     private String userEmail() {

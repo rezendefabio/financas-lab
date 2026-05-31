@@ -82,7 +82,7 @@ class ReconciliarNotificacoesUseCaseTest {
     }
 
     private Meta meta(UUID id, String nome, LocalDate prazo, StatusMeta status) {
-        return new Meta(id, nome, new Money(new BigDecimal("1000"), BRL),
+        return new Meta(id, UUID.randomUUID(), nome, new Money(new BigDecimal("1000"), BRL),
                 new Money(BigDecimal.ZERO, BRL), prazo, status, Instant.now(), Instant.now());
     }
 

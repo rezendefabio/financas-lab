@@ -63,6 +63,7 @@ class MetaControllerTest extends AbstractAuthenticatedIntegrationTest {
                         .content(requestValido())))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id", notNullValue()))
+                .andExpect(jsonPath("$.userId", equalTo(authenticatedUserId.toString())))
                 .andExpect(jsonPath("$.nome", equalTo("Viagem Europa")))
                 .andExpect(jsonPath("$.status", equalTo("EM_ANDAMENTO")))
                 .andExpect(jsonPath("$.valorAlvo.valor", equalTo(10000.0)))

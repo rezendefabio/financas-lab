@@ -4,11 +4,13 @@ import com.laboratorio.financas.shared.domain.Money;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.Objects;
 import java.util.UUID;
 
 public final class Meta {
 
     private final UUID id;
+    private final UUID userId;
     private final String nome;
     private final Money valorAlvo;
     private Money valorAtual;
@@ -17,7 +19,8 @@ public final class Meta {
     private final Instant criadoEm;
     private Instant atualizadoEm;
 
-    public Meta(String nome, Money valorAlvo, LocalDate prazo) {
+    public Meta(UUID userId, String nome, Money valorAlvo, LocalDate prazo) {
+        Objects.requireNonNull(userId, "userId nao pode ser nulo");
         if (nome == null || nome.isBlank()) {
             throw new IllegalArgumentException("nome nao pode ser nulo ou vazio");
         }
@@ -31,6 +34,7 @@ public final class Meta {
             throw new IllegalArgumentException("prazo nao pode ser nulo");
         }
         this.id = UUID.randomUUID();
+        this.userId = userId;
         this.nome = nome;
         this.valorAlvo = valorAlvo;
         this.valorAtual = new Money(BigDecimal.ZERO, valorAlvo.moeda());
@@ -40,9 +44,11 @@ public final class Meta {
         this.atualizadoEm = Instant.now();
     }
 
-    public Meta(UUID id, String nome, Money valorAlvo, Money valorAtual, LocalDate prazo,
+    public Meta(UUID id, UUID userId, String nome, Money valorAlvo, Money valorAtual, LocalDate prazo,
                 StatusMeta status, Instant criadoEm, Instant atualizadoEm) {
+        Objects.requireNonNull(userId, "userId nao pode ser nulo");
         this.id = id;
+        this.userId = userId;
         this.nome = nome;
         this.valorAlvo = valorAlvo;
         this.valorAtual = valorAtual;
@@ -79,6 +85,10 @@ public final class Meta {
 
     public UUID getId() {
         return id;
+    }
+
+    public UUID getUserId() {
+        return userId;
     }
 
     public String getNome() {
