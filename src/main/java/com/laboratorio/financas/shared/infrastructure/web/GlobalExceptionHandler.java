@@ -2,6 +2,7 @@ package com.laboratorio.financas.shared.infrastructure.web;
 
 import com.laboratorio.financas.anexo.domain.AnexoNaoEncontradoException;
 import com.laboratorio.financas.anotacao.domain.AnotacaoNaoEncontradaException;
+import com.laboratorio.financas.assinatura.domain.AssinaturaNaoEncontradaException;
 import com.laboratorio.financas.carteira.domain.CarteiraNaoEncontradaException;
 import com.laboratorio.financas.categoria.domain.CategoriaJaExisteException;
 import com.laboratorio.financas.categoria.domain.CategoriaNaoEncontradaException;
@@ -263,6 +264,15 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(EmprestimoNaoEncontradoException.class)
     public ProblemDetail handleEmprestimoNaoEncontrado(EmprestimoNaoEncontradoException ex) {
+        ProblemDetail problem = ProblemDetail.forStatus(HttpStatus.NOT_FOUND);
+        problem.setTitle("Not Found");
+        problem.setDetail(ex.getMessage());
+        problem.setProperty("id", ex.getId().toString());
+        return problem;
+    }
+
+    @ExceptionHandler(AssinaturaNaoEncontradaException.class)
+    public ProblemDetail handleAssinaturaNaoEncontrada(AssinaturaNaoEncontradaException ex) {
         ProblemDetail problem = ProblemDetail.forStatus(HttpStatus.NOT_FOUND);
         problem.setTitle("Not Found");
         problem.setDetail(ex.getMessage());

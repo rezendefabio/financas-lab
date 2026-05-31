@@ -213,6 +213,14 @@ export const screens: ScreenDefinition[] = [
     permissions: [],
   },
   {
+    code: 'FIN-ASS-001',
+    title: 'Assinaturas',
+    path: '/assinaturas',
+    menuPath: ['Planejamento', 'Assinaturas'],
+    icon: 'repeat',
+    permissions: [],
+  },
+  {
     code: 'USR-PRF-001',
     title: 'Meu Perfil',
     path: '/perfil',
