@@ -127,6 +127,34 @@ class ReconciliarNotificacoesUseCaseTest {
     }
 
     @Test
+    void notificacaoDescartadaPermaneceDescartadaAposReconciliar() {
+        // Regressao do bug: usuario descartou a notificacao; a condicao (orcamento
+        // excedido) continua valendo. A reconciliacao deve ATUALIZAR a notificacao
+        // existente preservando o flag descartada -- nunca recriar do zero (o que
+        // resetaria descartada=false e a faria reaparecer no proximo login).
+        UUID orcId = UUID.randomUUID();
+        UUID catId = UUID.randomUUID();
+        when(orcamentoRepository.listar()).thenReturn(List.of(orcamento(orcId, catId, true)));
+        when(calcularProgresso.executar(orcId))
+                .thenReturn(progresso(orcId, StatusProgresso.EXCEDIDO, "140"));
+        when(categoriaRepository.buscarPorId(catId)).thenReturn(Optional.of(categoria("Mercado")));
+
+        Notificacao descartada = new Notificacao(USER_ID, TipoNotificacao.ORCAMENTO_EXCEDIDO, orcId,
+                "Orcamento excedido", "Mercado: 120% utilizado");
+        descartada.descartar();
+        when(notificacaoRepository.buscarPorChaveNatural(USER_ID, TipoNotificacao.ORCAMENTO_EXCEDIDO, orcId))
+                .thenReturn(Optional.of(descartada));
+        when(notificacaoRepository.listarPorUserId(USER_ID)).thenReturn(List.of(descartada));
+
+        useCase.executar(USER_ID);
+
+        verify(notificacaoRepository, never()).salvar(any());
+        ArgumentCaptor<Notificacao> captor = ArgumentCaptor.forClass(Notificacao.class);
+        verify(notificacaoRepository).atualizar(captor.capture());
+        assertThat(captor.getValue().isDescartada()).isTrue();
+    }
+
+    @Test
     void notificacaoPersistidaComCondicaoResolvidaEhDeletada() {
         // Nenhum orcamento/meta no estado atual; mas ha uma notificacao persistida.
         UUID orcId = UUID.randomUUID();
