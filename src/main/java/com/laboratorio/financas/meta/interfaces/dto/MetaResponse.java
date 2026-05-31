@@ -10,6 +10,7 @@ import java.util.UUID;
 
 public record MetaResponse(
         UUID id,
+        UUID userId,
         String nome,
         ValorMonetario valorAlvo,
         ValorMonetario valorAtual,
@@ -34,6 +35,7 @@ public record MetaResponse(
 
         return new MetaResponse(
                 meta.getId(),
+                meta.getUserId(),
                 meta.getNome(),
                 new ValorMonetario(meta.getValorAlvo().valor(), meta.getValorAlvo().moeda().getCurrencyCode()),
                 new ValorMonetario(meta.getValorAtual().valor(), meta.getValorAtual().moeda().getCurrencyCode()),

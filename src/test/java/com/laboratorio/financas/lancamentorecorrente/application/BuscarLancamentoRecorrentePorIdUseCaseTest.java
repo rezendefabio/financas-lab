@@ -22,6 +22,8 @@ import org.mockito.Mockito;
 
 class BuscarLancamentoRecorrentePorIdUseCaseTest {
 
+    private static final java.util.UUID USER_ID = java.util.UUID.randomUUID();
+
     private LancamentoRecorrenteRepository repository;
     private BuscarLancamentoRecorrentePorIdUseCase useCase;
 
@@ -36,6 +38,7 @@ class BuscarLancamentoRecorrentePorIdUseCaseTest {
     void executarRetornaLancamento() {
         UUID id = UUID.randomUUID();
         LancamentoRecorrente l = new LancamentoRecorrente(
+                USER_ID,
                 "Plano", TipoTransacao.DESPESA,
                 new Money(new BigDecimal("50.00"), Currency.getInstance("BRL")),
                 UUID.randomUUID(), null, Periodicidade.MENSAL, LocalDate.now());

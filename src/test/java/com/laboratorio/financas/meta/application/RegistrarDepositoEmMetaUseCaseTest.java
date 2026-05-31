@@ -24,6 +24,8 @@ import org.mockito.Mockito;
 
 class RegistrarDepositoEmMetaUseCaseTest {
 
+    private static final UUID USER_ID = UUID.randomUUID();
+
     private MetaRepository repository;
     private RegistrarDepositoEmMetaUseCase useCase;
 
@@ -39,11 +41,13 @@ class RegistrarDepositoEmMetaUseCaseTest {
         // Given
         UUID metaId = UUID.randomUUID();
         Meta meta = new Meta(
+                USER_ID,
                 "Viagem",
                 new Money(BigDecimal.valueOf(5000), Currency.getInstance("BRL")),
                 LocalDate.now().plusMonths(6)
         );
         Meta metaAtualizada = new Meta(
+                USER_ID,
                 "Viagem",
                 new Money(BigDecimal.valueOf(5000), Currency.getInstance("BRL")),
                 LocalDate.now().plusMonths(6)
@@ -108,11 +112,13 @@ class RegistrarDepositoEmMetaUseCaseTest {
         // Given
         UUID metaId = UUID.randomUUID();
         Meta meta = new Meta(
+                USER_ID,
                 "Reserva de emergencia",
                 new Money(BigDecimal.valueOf(10000), Currency.getInstance("BRL")),
                 LocalDate.now().plusYears(1)
         );
         Meta metaComDeposito = new Meta(
+                USER_ID,
                 "Reserva de emergencia",
                 new Money(BigDecimal.valueOf(10000), Currency.getInstance("BRL")),
                 LocalDate.now().plusYears(1)
@@ -137,6 +143,7 @@ class RegistrarDepositoEmMetaUseCaseTest {
         // Given
         UUID metaId = UUID.randomUUID();
         Meta meta = new Meta(
+                USER_ID,
                 "Notebook",
                 new Money(BigDecimal.valueOf(3000), Currency.getInstance("BRL")),
                 LocalDate.now().plusMonths(3)
@@ -160,6 +167,7 @@ class RegistrarDepositoEmMetaUseCaseTest {
         // Given
         UUID metaId = UUID.randomUUID();
         Meta meta = new Meta(
+                USER_ID,
                 "Carro",
                 new Money(BigDecimal.valueOf(50000), Currency.getInstance("BRL")),
                 LocalDate.now().plusYears(2)
@@ -181,6 +189,7 @@ class RegistrarDepositoEmMetaUseCaseTest {
         // Given
         UUID metaId = UUID.randomUUID();
         Meta meta = new Meta(
+                USER_ID,
                 "Fundo de viagem",
                 new Money(BigDecimal.valueOf(1000), Currency.getInstance("BRL")),
                 LocalDate.now().plusMonths(1)

@@ -23,6 +23,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 class OrcamentoRepositoryImplTest extends AbstractIntegrationTest {
 
     private static final Currency BRL = Currency.getInstance("BRL");
+    private static final UUID USER_ID = UUID.randomUUID();
     private static final Money LIMITE_500 = new Money(new BigDecimal("500.00"), BRL);
     private static final LocalDate MES_ATUAL = LocalDate.now().withDayOfMonth(1);
 
@@ -54,13 +55,14 @@ class OrcamentoRepositoryImplTest extends AbstractIntegrationTest {
     void salvarPersisteOrcamentoERetornaInstanciaEquivalente() {
         // Given
         UUID categoriaId = criarCategoriaPersistida();
-        Orcamento novo = new Orcamento(categoriaId, LIMITE_500, MES_ATUAL);
+        Orcamento novo = new Orcamento(USER_ID, categoriaId, LIMITE_500, MES_ATUAL);
 
         // When
         Orcamento salvo = repository.salvar(novo);
 
         // Then
         assertThat(salvo.getId()).isEqualTo(novo.getId());
+        assertThat(salvo.getUserId()).isEqualTo(USER_ID);
         assertThat(salvo.getCategoriaId()).isEqualTo(categoriaId);
         assertThat(salvo.getValorLimite()).isEqualTo(LIMITE_500);
         assertThat(salvo.getMesAno()).isEqualTo(MES_ATUAL);
@@ -72,7 +74,7 @@ class OrcamentoRepositoryImplTest extends AbstractIntegrationTest {
         // Given — dia 15 deve ser normalizado para dia 1
         UUID categoriaId = criarCategoriaPersistida();
         LocalDate dia15 = LocalDate.now().withDayOfMonth(15);
-        Orcamento novo = new Orcamento(categoriaId, LIMITE_500, dia15);
+        Orcamento novo = new Orcamento(USER_ID, categoriaId, LIMITE_500, dia15);
 
         // When
         repository.salvar(novo);
@@ -88,7 +90,7 @@ class OrcamentoRepositoryImplTest extends AbstractIntegrationTest {
         // Given
         UUID categoriaId = criarCategoriaPersistida();
         Money limiteDecimal = new Money(new BigDecimal("1250.75"), BRL);
-        Orcamento novo = new Orcamento(categoriaId, limiteDecimal, MES_ATUAL);
+        Orcamento novo = new Orcamento(USER_ID, categoriaId, limiteDecimal, MES_ATUAL);
 
         // When
         repository.salvar(novo);
@@ -103,7 +105,7 @@ class OrcamentoRepositoryImplTest extends AbstractIntegrationTest {
     void buscarPorIdRetornaOrcamentoQuandoExiste() {
         // Given
         UUID categoriaId = criarCategoriaPersistida();
-        Orcamento novo = new Orcamento(categoriaId, LIMITE_500, MES_ATUAL);
+        Orcamento novo = new Orcamento(USER_ID, categoriaId, LIMITE_500, MES_ATUAL);
         repository.salvar(novo);
 
         // When
@@ -128,8 +130,8 @@ class OrcamentoRepositoryImplTest extends AbstractIntegrationTest {
     void listarRetornaOrcamentosAtivosEInativos() {
         // Given
         UUID categoriaId = criarCategoriaPersistida();
-        Orcamento o1 = new Orcamento(categoriaId, LIMITE_500, MES_ATUAL);
-        Orcamento o2 = new Orcamento(categoriaId, new Money(new BigDecimal("200.00"), BRL), LocalDate.of(2026, 3, 1));
+        Orcamento o1 = new Orcamento(USER_ID, categoriaId, LIMITE_500, MES_ATUAL);
+        Orcamento o2 = new Orcamento(USER_ID, categoriaId, new Money(new BigDecimal("200.00"), BRL), LocalDate.of(2026, 3, 1));
         repository.salvar(o1);
         Orcamento o2Salvo = repository.salvar(o2);
 
@@ -157,7 +159,7 @@ class OrcamentoRepositoryImplTest extends AbstractIntegrationTest {
     void atualizarPersisteMudancaDeAtivo() throws InterruptedException {
         // Given
         UUID categoriaId = criarCategoriaPersistida();
-        Orcamento novo = new Orcamento(categoriaId, LIMITE_500, MES_ATUAL);
+        Orcamento novo = new Orcamento(USER_ID, categoriaId, LIMITE_500, MES_ATUAL);
         repository.salvar(novo);
         Thread.sleep(2);
 
@@ -177,7 +179,7 @@ class OrcamentoRepositoryImplTest extends AbstractIntegrationTest {
     void atualizarRetornaInstanciaComDadosPersistidos() {
         // Given
         UUID categoriaId = criarCategoriaPersistida();
-        Orcamento novo = new Orcamento(categoriaId, LIMITE_500, MES_ATUAL);
+        Orcamento novo = new Orcamento(USER_ID, categoriaId, LIMITE_500, MES_ATUAL);
         repository.salvar(novo);
 
         // When
@@ -195,7 +197,7 @@ class OrcamentoRepositoryImplTest extends AbstractIntegrationTest {
         UUID categoriaId = criarCategoriaPersistida();
         Currency usd = Currency.getInstance("USD");
         Money limiteUsd = new Money(new BigDecimal("300.00"), usd);
-        Orcamento novo = new Orcamento(categoriaId, limiteUsd, MES_ATUAL);
+        Orcamento novo = new Orcamento(USER_ID, categoriaId, limiteUsd, MES_ATUAL);
 
         // When
         repository.salvar(novo);

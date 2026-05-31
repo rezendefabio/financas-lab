@@ -4,6 +4,7 @@ import com.laboratorio.financas.shared.domain.Money;
 import com.laboratorio.financas.transacao.domain.TipoTransacao;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.Objects;
 import java.util.UUID;
 
 public final class LancamentoRecorrente {
@@ -11,6 +12,7 @@ public final class LancamentoRecorrente {
     private static final int DESCRICAO_MAX_LENGTH = 200;
 
     private final UUID id;
+    private final UUID userId;
     private final String descricao;
     private final TipoTransacao tipo;
     private final Money valor;
@@ -23,6 +25,7 @@ public final class LancamentoRecorrente {
     private Instant atualizadoEm;
 
     public LancamentoRecorrente(
+            UUID userId,
             String descricao,
             TipoTransacao tipo,
             Money valor,
@@ -33,6 +36,7 @@ public final class LancamentoRecorrente {
     ) {
         this(
                 UUID.randomUUID(),
+                userId,
                 descricao,
                 tipo,
                 valor,
@@ -48,6 +52,7 @@ public final class LancamentoRecorrente {
 
     public LancamentoRecorrente(
             UUID id,
+            UUID userId,
             String descricao,
             TipoTransacao tipo,
             Money valor,
@@ -62,6 +67,7 @@ public final class LancamentoRecorrente {
         if (id == null) {
             throw new IllegalArgumentException("id nao pode ser nulo");
         }
+        Objects.requireNonNull(userId, "userId nao pode ser nulo");
         if (descricao == null) {
             throw new IllegalArgumentException("descricao nao pode ser nula");
         }
@@ -97,6 +103,7 @@ public final class LancamentoRecorrente {
         }
 
         this.id = id;
+        this.userId = userId;
         this.descricao = trimmed;
         this.tipo = tipo;
         this.valor = valor;
@@ -121,6 +128,10 @@ public final class LancamentoRecorrente {
 
     public UUID getId() {
         return id;
+    }
+
+    public UUID getUserId() {
+        return userId;
     }
 
     public String getDescricao() {

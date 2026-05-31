@@ -17,6 +17,7 @@ class MetaTest {
 
     private static final Currency BRL = Currency.getInstance("BRL");
     private static final Currency USD = Currency.getInstance("USD");
+    private static final UUID USER_ID = UUID.randomUUID();
     private static final Money VALOR_ALVO_1000 = new Money(new BigDecimal("1000.00"), BRL);
     private static final Money VALOR_ALVO_500 = new Money(new BigDecimal("500.00"), BRL);
     private static final LocalDate PRAZO = LocalDate.of(2027, 12, 31);
@@ -30,10 +31,11 @@ class MetaTest {
         void comArgumentosValidosCriaMetaEmAndamento() {
             Instant antes = Instant.now();
 
-            Meta meta = new Meta("Viagem Europa", VALOR_ALVO_1000, PRAZO);
+            Meta meta = new Meta(USER_ID, "Viagem Europa", VALOR_ALVO_1000, PRAZO);
 
             Instant depois = Instant.now();
             assertThat(meta.getId()).isNotNull();
+            assertThat(meta.getUserId()).isEqualTo(USER_ID);
             assertThat(meta.getNome()).isEqualTo("Viagem Europa");
             assertThat(meta.getValorAlvo()).isEqualTo(VALOR_ALVO_1000);
             assertThat(meta.getValorAtual()).isEqualTo(new Money(BigDecimal.ZERO, BRL));
@@ -45,7 +47,7 @@ class MetaTest {
 
         @Test
         void valorAtualInicialEhZeroNaMoedaDoValorAlvo() {
-            Meta meta = new Meta("Reserva", VALOR_ALVO_1000, PRAZO);
+            Meta meta = new Meta(USER_ID, "Reserva", VALOR_ALVO_1000, PRAZO);
 
             assertThat(meta.getValorAtual().valor()).isEqualByComparingTo(BigDecimal.ZERO);
             assertThat(meta.getValorAtual().moeda()).isEqualTo(BRL);
@@ -53,37 +55,44 @@ class MetaTest {
 
         @Test
         void duasMetasCriadasEmSequenciaTenIdsDiferentes() {
-            Meta meta1 = new Meta("Meta 1", VALOR_ALVO_1000, PRAZO);
-            Meta meta2 = new Meta("Meta 2", VALOR_ALVO_500, PRAZO);
+            Meta meta1 = new Meta(USER_ID, "Meta 1", VALOR_ALVO_1000, PRAZO);
+            Meta meta2 = new Meta(USER_ID, "Meta 2", VALOR_ALVO_500, PRAZO);
 
             assertThat(meta1.getId()).isNotEqualTo(meta2.getId());
         }
 
         @Test
+        void comUserIdNuloLancaNullPointerException() {
+            org.assertj.core.api.Assertions.assertThatNullPointerException()
+                    .isThrownBy(() -> new Meta(null, "Reserva", VALOR_ALVO_1000, PRAZO))
+                    .withMessageContaining("userId");
+        }
+
+        @Test
         void comNomeNuloLancaIllegalArgumentException() {
             assertThatIllegalArgumentException()
-                    .isThrownBy(() -> new Meta(null, VALOR_ALVO_1000, PRAZO))
+                    .isThrownBy(() -> new Meta(USER_ID, null, VALOR_ALVO_1000, PRAZO))
                     .withMessageContaining("nome");
         }
 
         @Test
         void comNomeVazioLancaIllegalArgumentException() {
             assertThatIllegalArgumentException()
-                    .isThrownBy(() -> new Meta("", VALOR_ALVO_1000, PRAZO))
+                    .isThrownBy(() -> new Meta(USER_ID, "", VALOR_ALVO_1000, PRAZO))
                     .withMessageContaining("nome");
         }
 
         @Test
         void comNomeSomenteEspacosLancaIllegalArgumentException() {
             assertThatIllegalArgumentException()
-                    .isThrownBy(() -> new Meta("   ", VALOR_ALVO_1000, PRAZO))
+                    .isThrownBy(() -> new Meta(USER_ID, "   ", VALOR_ALVO_1000, PRAZO))
                     .withMessageContaining("nome");
         }
 
         @Test
         void comValorAlvoNuloLancaIllegalArgumentException() {
             assertThatIllegalArgumentException()
-                    .isThrownBy(() -> new Meta("Reserva", null, PRAZO))
+                    .isThrownBy(() -> new Meta(USER_ID, "Reserva", null, PRAZO))
                     .withMessageContaining("valorAlvo");
         }
 
@@ -92,7 +101,7 @@ class MetaTest {
             Money valorZero = new Money(BigDecimal.ZERO, BRL);
 
             assertThatIllegalArgumentException()
-                    .isThrownBy(() -> new Meta("Reserva", valorZero, PRAZO))
+                    .isThrownBy(() -> new Meta(USER_ID, "Reserva", valorZero, PRAZO))
                     .withMessageContaining("valorAlvo");
         }
 
@@ -101,14 +110,14 @@ class MetaTest {
             Money valorNegativo = new Money(new BigDecimal("-100.00"), BRL);
 
             assertThatIllegalArgumentException()
-                    .isThrownBy(() -> new Meta("Reserva", valorNegativo, PRAZO))
+                    .isThrownBy(() -> new Meta(USER_ID, "Reserva", valorNegativo, PRAZO))
                     .withMessageContaining("valorAlvo");
         }
 
         @Test
         void comPrazoNuloLancaIllegalArgumentException() {
             assertThatIllegalArgumentException()
-                    .isThrownBy(() -> new Meta("Reserva", VALOR_ALVO_1000, null))
+                    .isThrownBy(() -> new Meta(USER_ID, "Reserva", VALOR_ALVO_1000, null))
                     .withMessageContaining("prazo");
         }
     }
@@ -125,7 +134,7 @@ class MetaTest {
             Instant criadoEm = Instant.parse("2026-01-01T10:00:00Z");
             Instant atualizadoEm = Instant.parse("2026-06-01T10:00:00Z");
 
-            Meta meta = new Meta(id, "Viagem", VALOR_ALVO_1000, valorAtual, PRAZO,
+            Meta meta = new Meta(id, USER_ID, "Viagem", VALOR_ALVO_1000, valorAtual, PRAZO,
                     StatusMeta.EM_ANDAMENTO, criadoEm, atualizadoEm);
 
             assertThat(meta.getId()).isEqualTo(id);
@@ -143,7 +152,7 @@ class MetaTest {
             UUID id = UUID.randomUUID();
             Instant t = Instant.now();
 
-            Meta meta = new Meta(id, "Cancelada", VALOR_ALVO_1000,
+            Meta meta = new Meta(id, USER_ID, "Cancelada", VALOR_ALVO_1000,
                     new Money(BigDecimal.ZERO, BRL), PRAZO, StatusMeta.CANCELADA, t, t);
 
             assertThat(meta.getStatus()).isEqualTo(StatusMeta.CANCELADA);
@@ -154,7 +163,7 @@ class MetaTest {
             UUID id = UUID.randomUUID();
             Instant t = Instant.now();
 
-            Meta meta = new Meta(id, "Concluida", VALOR_ALVO_1000,
+            Meta meta = new Meta(id, USER_ID, "Concluida", VALOR_ALVO_1000,
                     VALOR_ALVO_1000, PRAZO, StatusMeta.CONCLUIDA, t, t);
 
             assertThat(meta.getStatus()).isEqualTo(StatusMeta.CONCLUIDA);
@@ -168,7 +177,7 @@ class MetaTest {
 
         @Test
         void depositoValidoIncrementaValorAtual() {
-            Meta meta = new Meta("Reserva", VALOR_ALVO_1000, PRAZO);
+            Meta meta = new Meta(USER_ID, "Reserva", VALOR_ALVO_1000, PRAZO);
             Money deposito = new Money(new BigDecimal("200.00"), BRL);
 
             meta.registrarDeposito(deposito);
@@ -179,7 +188,7 @@ class MetaTest {
 
         @Test
         void depositoValidoAtualizaAtualizadoEm() {
-            Meta meta = new Meta("Reserva", VALOR_ALVO_1000, PRAZO);
+            Meta meta = new Meta(USER_ID, "Reserva", VALOR_ALVO_1000, PRAZO);
             Instant antes = meta.getAtualizadoEm();
             Money deposito = new Money(new BigDecimal("100.00"), BRL);
 
@@ -190,7 +199,7 @@ class MetaTest {
 
         @Test
         void multiplosDepositosAcumulam() {
-            Meta meta = new Meta("Reserva", VALOR_ALVO_1000, PRAZO);
+            Meta meta = new Meta(USER_ID, "Reserva", VALOR_ALVO_1000, PRAZO);
             Money deposito1 = new Money(new BigDecimal("300.00"), BRL);
             Money deposito2 = new Money(new BigDecimal("400.00"), BRL);
 
@@ -203,7 +212,7 @@ class MetaTest {
 
         @Test
         void depositoQueAtingeValorAlvoConclui() {
-            Meta meta = new Meta("Reserva", VALOR_ALVO_1000, PRAZO);
+            Meta meta = new Meta(USER_ID, "Reserva", VALOR_ALVO_1000, PRAZO);
             Money deposito = new Money(new BigDecimal("1000.00"), BRL);
 
             meta.registrarDeposito(deposito);
@@ -213,7 +222,7 @@ class MetaTest {
 
         @Test
         void depositoQueUltrapassaValorAlvoConclui() {
-            Meta meta = new Meta("Reserva", VALOR_ALVO_1000, PRAZO);
+            Meta meta = new Meta(USER_ID, "Reserva", VALOR_ALVO_1000, PRAZO);
             Money deposito = new Money(new BigDecimal("1500.00"), BRL);
 
             meta.registrarDeposito(deposito);
@@ -223,7 +232,7 @@ class MetaTest {
 
         @Test
         void depositoAbaixoDoValorAlvoMantemEmAndamento() {
-            Meta meta = new Meta("Reserva", VALOR_ALVO_1000, PRAZO);
+            Meta meta = new Meta(USER_ID, "Reserva", VALOR_ALVO_1000, PRAZO);
             Money deposito = new Money(new BigDecimal("999.99"), BRL);
 
             meta.registrarDeposito(deposito);
@@ -233,7 +242,7 @@ class MetaTest {
 
         @Test
         void depositoNuloLancaIllegalArgumentException() {
-            Meta meta = new Meta("Reserva", VALOR_ALVO_1000, PRAZO);
+            Meta meta = new Meta(USER_ID, "Reserva", VALOR_ALVO_1000, PRAZO);
 
             assertThatIllegalArgumentException()
                     .isThrownBy(() -> meta.registrarDeposito(null))
@@ -242,7 +251,7 @@ class MetaTest {
 
         @Test
         void depositoZeroLancaIllegalArgumentException() {
-            Meta meta = new Meta("Reserva", VALOR_ALVO_1000, PRAZO);
+            Meta meta = new Meta(USER_ID, "Reserva", VALOR_ALVO_1000, PRAZO);
             Money depositoZero = new Money(BigDecimal.ZERO, BRL);
 
             assertThatIllegalArgumentException()
@@ -252,7 +261,7 @@ class MetaTest {
 
         @Test
         void depositoNegativoLancaIllegalArgumentException() {
-            Meta meta = new Meta("Reserva", VALOR_ALVO_1000, PRAZO);
+            Meta meta = new Meta(USER_ID, "Reserva", VALOR_ALVO_1000, PRAZO);
             Money depositoNegativo = new Money(new BigDecimal("-50.00"), BRL);
 
             assertThatIllegalArgumentException()
@@ -262,7 +271,7 @@ class MetaTest {
 
         @Test
         void depositoComMoedaDiferenteLancaIllegalArgumentException() {
-            Meta meta = new Meta("Reserva", VALOR_ALVO_1000, PRAZO);
+            Meta meta = new Meta(USER_ID, "Reserva", VALOR_ALVO_1000, PRAZO);
             Money depositoUsd = new Money(new BigDecimal("100.00"), USD);
 
             assertThatIllegalArgumentException()
@@ -272,7 +281,7 @@ class MetaTest {
 
         @Test
         void depositoEmMetaCanceladaLancaIllegalStateException() {
-            Meta meta = new Meta("Reserva", VALOR_ALVO_1000, PRAZO);
+            Meta meta = new Meta(USER_ID, "Reserva", VALOR_ALVO_1000, PRAZO);
             meta.cancelar();
             Money deposito = new Money(new BigDecimal("100.00"), BRL);
 
@@ -283,7 +292,7 @@ class MetaTest {
 
         @Test
         void depositoEmMetaConcluidaLancaIllegalStateException() {
-            Meta meta = new Meta("Reserva", VALOR_ALVO_1000, PRAZO);
+            Meta meta = new Meta(USER_ID, "Reserva", VALOR_ALVO_1000, PRAZO);
             meta.registrarDeposito(new Money(new BigDecimal("1000.00"), BRL));
             Money deposito = new Money(new BigDecimal("100.00"), BRL);
 
@@ -300,7 +309,7 @@ class MetaTest {
 
         @Test
         void cancelarMetaEmAndamentoMudaStatusParaCancelada() {
-            Meta meta = new Meta("Reserva", VALOR_ALVO_1000, PRAZO);
+            Meta meta = new Meta(USER_ID, "Reserva", VALOR_ALVO_1000, PRAZO);
 
             meta.cancelar();
 
@@ -309,7 +318,7 @@ class MetaTest {
 
         @Test
         void cancelarAtualizaAtualizadoEm() {
-            Meta meta = new Meta("Reserva", VALOR_ALVO_1000, PRAZO);
+            Meta meta = new Meta(USER_ID, "Reserva", VALOR_ALVO_1000, PRAZO);
             Instant antes = meta.getAtualizadoEm();
 
             meta.cancelar();
@@ -319,7 +328,7 @@ class MetaTest {
 
         @Test
         void cancelarMetaJaCanceladaAinda() {
-            Meta meta = new Meta("Reserva", VALOR_ALVO_1000, PRAZO);
+            Meta meta = new Meta(USER_ID, "Reserva", VALOR_ALVO_1000, PRAZO);
             meta.cancelar();
 
             // segundo cancelar nao deve lancar excecao (nao ha restricao para isso)
@@ -330,7 +339,7 @@ class MetaTest {
 
         @Test
         void cancelarMetaConcluidaLancaIllegalStateException() {
-            Meta meta = new Meta("Reserva", VALOR_ALVO_1000, PRAZO);
+            Meta meta = new Meta(USER_ID, "Reserva", VALOR_ALVO_1000, PRAZO);
             meta.registrarDeposito(new Money(new BigDecimal("1000.00"), BRL));
 
             assertThatIllegalStateException()

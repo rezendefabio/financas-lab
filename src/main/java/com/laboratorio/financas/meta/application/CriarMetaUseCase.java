@@ -6,6 +6,7 @@ import com.laboratorio.financas.shared.domain.Money;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.Currency;
+import java.util.UUID;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,12 +19,13 @@ public class CriarMetaUseCase {
         this.metaRepository = metaRepository;
     }
 
-    public record Comando(String nome, BigDecimal valorAlvoValor, String valorAlvoMoeda, LocalDate prazo) { }
+    public record Comando(UUID userId, String nome, BigDecimal valorAlvoValor,
+                          String valorAlvoMoeda, LocalDate prazo) { }
 
     @Transactional
     public Meta executar(Comando comando) {
         Money valorAlvo = new Money(comando.valorAlvoValor(), Currency.getInstance(comando.valorAlvoMoeda()));
-        Meta meta = new Meta(comando.nome(), valorAlvo, comando.prazo());
+        Meta meta = new Meta(comando.userId(), comando.nome(), valorAlvo, comando.prazo());
         return metaRepository.salvar(meta);
     }
 }

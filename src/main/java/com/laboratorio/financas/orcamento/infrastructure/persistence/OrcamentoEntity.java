@@ -21,6 +21,10 @@ public class OrcamentoEntity {
     private UUID id;
 
     @NotNull
+    @Column(name = "user_id", columnDefinition = "uuid", nullable = false)
+    private UUID userId;
+
+    @NotNull
     @Column(name = "categoria_id", columnDefinition = "uuid", nullable = false)
     private UUID categoriaId;
 
@@ -51,6 +55,7 @@ public class OrcamentoEntity {
 
     public OrcamentoEntity(
             UUID id,
+            UUID userId,
             UUID categoriaId,
             MoneyEmbeddable valorLimite,
             LocalDate mesAno,
@@ -59,6 +64,7 @@ public class OrcamentoEntity {
             Instant atualizadoEm
     ) {
         this.id = id;
+        this.userId = userId;
         this.categoriaId = categoriaId;
         this.valorLimite = valorLimite;
         this.mesAno = mesAno;
@@ -69,6 +75,10 @@ public class OrcamentoEntity {
 
     public UUID getId() {
         return id;
+    }
+
+    public UUID getUserId() {
+        return userId;
     }
 
     public UUID getCategoriaId() {

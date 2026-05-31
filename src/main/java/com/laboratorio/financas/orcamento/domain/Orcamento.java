@@ -4,11 +4,13 @@ import com.laboratorio.financas.shared.domain.Money;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.Objects;
 import java.util.UUID;
 
 public final class Orcamento {
 
     private final UUID id;
+    private final UUID userId;
     private final UUID categoriaId;
     private final Money valorLimite;
     private LocalDate mesAno;
@@ -16,7 +18,8 @@ public final class Orcamento {
     private final Instant criadoEm;
     private Instant atualizadoEm;
 
-    public Orcamento(UUID categoriaId, Money valorLimite, LocalDate mesAno) {
+    public Orcamento(UUID userId, UUID categoriaId, Money valorLimite, LocalDate mesAno) {
+        Objects.requireNonNull(userId, "userId nao pode ser nulo");
         if (categoriaId == null) {
             throw new IllegalArgumentException("categoriaId nao pode ser nulo");
         }
@@ -30,6 +33,7 @@ public final class Orcamento {
             throw new IllegalArgumentException("mesAno nao pode ser nulo");
         }
         this.id = UUID.randomUUID();
+        this.userId = userId;
         this.categoriaId = categoriaId;
         this.valorLimite = valorLimite;
         this.mesAno = mesAno.getDayOfMonth() != 1 ? mesAno.withDayOfMonth(1) : mesAno;
@@ -38,9 +42,11 @@ public final class Orcamento {
         this.atualizadoEm = Instant.now();
     }
 
-    public Orcamento(UUID id, UUID categoriaId, Money valorLimite, LocalDate mesAno,
+    public Orcamento(UUID id, UUID userId, UUID categoriaId, Money valorLimite, LocalDate mesAno,
                      boolean ativo, Instant criadoEm, Instant atualizadoEm) {
+        Objects.requireNonNull(userId, "userId nao pode ser nulo");
         this.id = id;
+        this.userId = userId;
         this.categoriaId = categoriaId;
         this.valorLimite = valorLimite;
         this.mesAno = mesAno;
@@ -56,6 +62,10 @@ public final class Orcamento {
 
     public UUID getId() {
         return id;
+    }
+
+    public UUID getUserId() {
+        return userId;
     }
 
     public UUID getCategoriaId() {

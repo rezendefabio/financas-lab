@@ -64,7 +64,7 @@ class ReconciliarNotificacoesUseCaseTest {
     }
 
     private Orcamento orcamento(UUID id, UUID categoriaId, boolean ativo) {
-        return new Orcamento(id, categoriaId, new Money(new BigDecimal("500"), BRL),
+        return new Orcamento(id, UUID.randomUUID(), categoriaId, new Money(new BigDecimal("500"), BRL),
                 LocalDate.now(), ativo, Instant.now(), Instant.now());
     }
 
@@ -82,7 +82,7 @@ class ReconciliarNotificacoesUseCaseTest {
     }
 
     private Meta meta(UUID id, String nome, LocalDate prazo, StatusMeta status) {
-        return new Meta(id, nome, new Money(new BigDecimal("1000"), BRL),
+        return new Meta(id, UUID.randomUUID(), nome, new Money(new BigDecimal("1000"), BRL),
                 new Money(BigDecimal.ZERO, BRL), prazo, status, Instant.now(), Instant.now());
     }
 

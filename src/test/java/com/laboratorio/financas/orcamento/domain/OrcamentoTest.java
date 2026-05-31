@@ -14,6 +14,7 @@ import org.junit.jupiter.api.Test;
 class OrcamentoTest {
 
     private static final Currency BRL = Currency.getInstance("BRL");
+    private static final UUID USER_ID = UUID.randomUUID();
     private static final UUID CATEGORIA_ID = UUID.randomUUID();
     private static final Money LIMITE_100 = new Money(new BigDecimal("100.00"), BRL);
 
@@ -26,7 +27,7 @@ class OrcamentoTest {
         Instant antes = Instant.now();
 
         // When
-        Orcamento orcamento = new Orcamento(CATEGORIA_ID, LIMITE_100, mes);
+        Orcamento orcamento = new Orcamento(USER_ID, CATEGORIA_ID, LIMITE_100, mes);
 
         // Then
         Instant depois = Instant.now();
@@ -41,22 +42,29 @@ class OrcamentoTest {
 
     @Test
     void construtorNovoComDoisOrcamentosGeraIdsDiferentes() {
-        Orcamento o1 = new Orcamento(CATEGORIA_ID, LIMITE_100, LocalDate.of(2026, 1, 1));
-        Orcamento o2 = new Orcamento(CATEGORIA_ID, LIMITE_100, LocalDate.of(2026, 2, 1));
+        Orcamento o1 = new Orcamento(USER_ID, CATEGORIA_ID, LIMITE_100, LocalDate.of(2026, 1, 1));
+        Orcamento o2 = new Orcamento(USER_ID, CATEGORIA_ID, LIMITE_100, LocalDate.of(2026, 2, 1));
         assertThat(o1.getId()).isNotEqualTo(o2.getId());
+    }
+
+    @Test
+    void construtorNovoComUserIdNuloLancaNullPointerException() {
+        org.assertj.core.api.Assertions.assertThatNullPointerException()
+                .isThrownBy(() -> new Orcamento(null, CATEGORIA_ID, LIMITE_100, LocalDate.of(2026, 5, 1)))
+                .withMessageContaining("userId");
     }
 
     @Test
     void construtorNovoComCategoriaIdNuloLancaIllegalArgumentException() {
         assertThatIllegalArgumentException()
-                .isThrownBy(() -> new Orcamento(null, LIMITE_100, LocalDate.of(2026, 5, 1)))
+                .isThrownBy(() -> new Orcamento(USER_ID, null, LIMITE_100, LocalDate.of(2026, 5, 1)))
                 .withMessageContaining("categoriaId");
     }
 
     @Test
     void construtorNovoComValorLimiteNuloLancaIllegalArgumentException() {
         assertThatIllegalArgumentException()
-                .isThrownBy(() -> new Orcamento(CATEGORIA_ID, null, LocalDate.of(2026, 5, 1)))
+                .isThrownBy(() -> new Orcamento(USER_ID, CATEGORIA_ID, null, LocalDate.of(2026, 5, 1)))
                 .withMessageContaining("valorLimite");
     }
 
@@ -64,7 +72,7 @@ class OrcamentoTest {
     void construtorNovoComValorLimiteZeroLancaIllegalArgumentException() {
         Money limiteZero = new Money(BigDecimal.ZERO, BRL);
         assertThatIllegalArgumentException()
-                .isThrownBy(() -> new Orcamento(CATEGORIA_ID, limiteZero, LocalDate.of(2026, 5, 1)))
+                .isThrownBy(() -> new Orcamento(USER_ID, CATEGORIA_ID, limiteZero, LocalDate.of(2026, 5, 1)))
                 .withMessageContaining("valorLimite");
     }
 
@@ -72,35 +80,35 @@ class OrcamentoTest {
     void construtorNovoComValorLimiteNegativoLancaIllegalArgumentException() {
         Money limiteNegativo = new Money(new BigDecimal("-50.00"), BRL);
         assertThatIllegalArgumentException()
-                .isThrownBy(() -> new Orcamento(CATEGORIA_ID, limiteNegativo, LocalDate.of(2026, 5, 1)))
+                .isThrownBy(() -> new Orcamento(USER_ID, CATEGORIA_ID, limiteNegativo, LocalDate.of(2026, 5, 1)))
                 .withMessageContaining("valorLimite");
     }
 
     @Test
     void construtorNovoComMesAnoNuloLancaIllegalArgumentException() {
         assertThatIllegalArgumentException()
-                .isThrownBy(() -> new Orcamento(CATEGORIA_ID, LIMITE_100, null))
+                .isThrownBy(() -> new Orcamento(USER_ID, CATEGORIA_ID, LIMITE_100, null))
                 .withMessageContaining("mesAno");
     }
 
     @Test
     void construtorNovoNormalizaMesAnoParaPrimeiroDiaDoDia() {
         LocalDate mesComDiaMeio = LocalDate.of(2026, 5, 15);
-        Orcamento orcamento = new Orcamento(CATEGORIA_ID, LIMITE_100, mesComDiaMeio);
+        Orcamento orcamento = new Orcamento(USER_ID, CATEGORIA_ID, LIMITE_100, mesComDiaMeio);
         assertThat(orcamento.getMesAno()).isEqualTo(LocalDate.of(2026, 5, 1));
     }
 
     @Test
     void construtorNovoComDia1NaoAlteraMesAno() {
         LocalDate mesDia1 = LocalDate.of(2026, 5, 1);
-        Orcamento orcamento = new Orcamento(CATEGORIA_ID, LIMITE_100, mesDia1);
+        Orcamento orcamento = new Orcamento(USER_ID, CATEGORIA_ID, LIMITE_100, mesDia1);
         assertThat(orcamento.getMesAno()).isEqualTo(mesDia1);
     }
 
     @Test
     void construtorNovoComUltimoDiaDeMesNormalizaParaDia1() {
         LocalDate ultimoDia = LocalDate.of(2026, 5, 31);
-        Orcamento orcamento = new Orcamento(CATEGORIA_ID, LIMITE_100, ultimoDia);
+        Orcamento orcamento = new Orcamento(USER_ID, CATEGORIA_ID, LIMITE_100, ultimoDia);
         assertThat(orcamento.getMesAno()).isEqualTo(LocalDate.of(2026, 5, 1));
     }
 
@@ -110,6 +118,7 @@ class OrcamentoTest {
     void construtorReconstrucaoPreservaTodosOsCampos() {
         // Given
         UUID id = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
         UUID categoriaId = UUID.randomUUID();
         Money limite = new Money(new BigDecimal("500.00"), BRL);
         LocalDate mes = LocalDate.of(2025, 12, 1);
@@ -117,10 +126,11 @@ class OrcamentoTest {
         Instant atualizadoEm = Instant.parse("2025-12-15T08:30:00Z");
 
         // When
-        Orcamento orcamento = new Orcamento(id, categoriaId, limite, mes, false, criadoEm, atualizadoEm);
+        Orcamento orcamento = new Orcamento(id, userId, categoriaId, limite, mes, false, criadoEm, atualizadoEm);
 
         // Then
         assertThat(orcamento.getId()).isEqualTo(id);
+        assertThat(orcamento.getUserId()).isEqualTo(userId);
         assertThat(orcamento.getCategoriaId()).isEqualTo(categoriaId);
         assertThat(orcamento.getValorLimite()).isEqualTo(limite);
         assertThat(orcamento.getMesAno()).isEqualTo(mes);
@@ -132,7 +142,7 @@ class OrcamentoTest {
     @Test
     void construtorReconstrucaoComAtivoTruePreservaEstado() {
         Orcamento orcamento = new Orcamento(
-                UUID.randomUUID(), CATEGORIA_ID, LIMITE_100,
+                UUID.randomUUID(), USER_ID, CATEGORIA_ID, LIMITE_100,
                 LocalDate.of(2026, 1, 1), true, Instant.now(), Instant.now());
         assertThat(orcamento.isAtivo()).isTrue();
     }
@@ -142,7 +152,7 @@ class OrcamentoTest {
     @Test
     void desativarOrcamentoAtivoMarcaComoInativo() {
         // Given
-        Orcamento orcamento = new Orcamento(CATEGORIA_ID, LIMITE_100, LocalDate.of(2026, 5, 1));
+        Orcamento orcamento = new Orcamento(USER_ID, CATEGORIA_ID, LIMITE_100, LocalDate.of(2026, 5, 1));
         assertThat(orcamento.isAtivo()).isTrue();
 
         // When
@@ -155,7 +165,7 @@ class OrcamentoTest {
     @Test
     void desativarAtualizaAtualizadoEm() {
         // Given
-        Orcamento orcamento = new Orcamento(CATEGORIA_ID, LIMITE_100, LocalDate.of(2026, 5, 1));
+        Orcamento orcamento = new Orcamento(USER_ID, CATEGORIA_ID, LIMITE_100, LocalDate.of(2026, 5, 1));
         Instant antes = orcamento.getAtualizadoEm();
 
         // When
@@ -169,7 +179,7 @@ class OrcamentoTest {
     void desativarPreservaDemaisCampos() {
         // Given
         LocalDate mes = LocalDate.of(2026, 5, 1);
-        Orcamento orcamento = new Orcamento(CATEGORIA_ID, LIMITE_100, mes);
+        Orcamento orcamento = new Orcamento(USER_ID, CATEGORIA_ID, LIMITE_100, mes);
         UUID idOriginal = orcamento.getId();
         Instant criadoEmOriginal = orcamento.getCriadoEm();
 
@@ -187,7 +197,7 @@ class OrcamentoTest {
     @Test
     void desativarOrcamentoJaInativoMantemInativo() {
         // Given
-        Orcamento orcamento = new Orcamento(CATEGORIA_ID, LIMITE_100, LocalDate.of(2026, 5, 1));
+        Orcamento orcamento = new Orcamento(USER_ID, CATEGORIA_ID, LIMITE_100, LocalDate.of(2026, 5, 1));
         orcamento.desativar();
 
         // When

@@ -21,6 +21,7 @@ public class CriarLancamentoRecorrenteUseCase {
     }
 
     public record Comando(
+            UUID userId,
             String descricao,
             TipoTransacao tipo,
             BigDecimal valorValor,
@@ -34,6 +35,7 @@ public class CriarLancamentoRecorrenteUseCase {
     public LancamentoRecorrente executar(Comando comando) {
         Money valor = new Money(comando.valorValor(), Currency.getInstance(comando.valorMoeda()));
         LancamentoRecorrente lancamento = new LancamentoRecorrente(
+                comando.userId(),
                 comando.descricao(),
                 comando.tipo(),
                 valor,

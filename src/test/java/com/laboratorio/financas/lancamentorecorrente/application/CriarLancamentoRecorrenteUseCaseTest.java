@@ -21,6 +21,8 @@ import org.mockito.Mockito;
 
 class CriarLancamentoRecorrenteUseCaseTest {
 
+    private static final UUID USER_ID = UUID.randomUUID();
+
     private LancamentoRecorrenteRepository repository;
     private CriarLancamentoRecorrenteUseCase useCase;
 
@@ -35,12 +37,14 @@ class CriarLancamentoRecorrenteUseCaseTest {
     void executarCriaEChama() {
         UUID contaId = UUID.randomUUID();
         LancamentoRecorrente esperado = new LancamentoRecorrente(
+                USER_ID,
                 "Aluguel", TipoTransacao.DESPESA,
                 new Money(new BigDecimal("1500.00"), Currency.getInstance("BRL")),
                 contaId, null, Periodicidade.MENSAL, LocalDate.of(2026, 6, 1));
         when(repository.salvar(any())).thenReturn(esperado);
 
         CriarLancamentoRecorrenteUseCase.Comando comando = new CriarLancamentoRecorrenteUseCase.Comando(
+                USER_ID,
                 "Aluguel", TipoTransacao.DESPESA, new BigDecimal("1500.00"), "BRL",
                 contaId, null, Periodicidade.MENSAL, LocalDate.of(2026, 6, 1));
 
@@ -55,12 +59,14 @@ class CriarLancamentoRecorrenteUseCaseTest {
     void executarRetornaInstanciaDoRepositorio() {
         UUID contaId = UUID.randomUUID();
         LancamentoRecorrente mock = new LancamentoRecorrente(
+                USER_ID,
                 "Streaming", TipoTransacao.DESPESA,
                 new Money(new BigDecimal("40.00"), Currency.getInstance("BRL")),
                 contaId, null, Periodicidade.MENSAL, LocalDate.of(2026, 7, 1));
         when(repository.salvar(any())).thenReturn(mock);
 
         CriarLancamentoRecorrenteUseCase.Comando comando = new CriarLancamentoRecorrenteUseCase.Comando(
+                USER_ID,
                 "Streaming", TipoTransacao.DESPESA, new BigDecimal("40.00"), "BRL",
                 contaId, null, Periodicidade.MENSAL, LocalDate.of(2026, 7, 1));
 

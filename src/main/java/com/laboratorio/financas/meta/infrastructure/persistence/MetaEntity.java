@@ -24,6 +24,10 @@ public class MetaEntity {
     private UUID id;
 
     @NotNull
+    @Column(name = "user_id", columnDefinition = "uuid", nullable = false)
+    private UUID userId;
+
+    @NotNull
     @Column(name = "nome", nullable = false, length = 200)
     private String nome;
 
@@ -60,9 +64,10 @@ public class MetaEntity {
         // Construtor protected exigido pelo JPA.
     }
 
-    public MetaEntity(UUID id, String nome, MoneyEmbeddable valorAlvo, MoneyEmbeddable valorAtual,
+    public MetaEntity(UUID id, UUID userId, String nome, MoneyEmbeddable valorAlvo, MoneyEmbeddable valorAtual,
                       LocalDate prazo, StatusMeta status, Instant criadoEm, Instant atualizadoEm) {
         this.id = id;
+        this.userId = userId;
         this.nome = nome;
         this.valorAlvo = valorAlvo;
         this.valorAtual = valorAtual;
@@ -74,6 +79,10 @@ public class MetaEntity {
 
     public UUID getId() {
         return id;
+    }
+
+    public UUID getUserId() {
+        return userId;
     }
 
     public String getNome() {
