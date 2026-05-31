@@ -129,6 +129,19 @@ automaticamente. Substitua `ARG`, `PASCAL`, `CAMEL` e `PLURAL` pelos valores
 definidos. Os campos das interfaces e do schema Zod devem ser os campos reais
 inferidos no Passo 1, nao comentarios genericos.
 
+**ANTI-ALUCINACAO (regra dura -- bugs reais observados no smoke):** so importar
+de modulos que EXISTEM nos templates abaixo ou em `@/shared/`. NAO inventar
+hooks/utils/imports. Em particular:
+- SCREEN_CODE e CONST, NUNCA hook (`useScreenCode` NAO existe).
+- Util de CSV: `import { exportToCsv } from '@/shared/lib/export-csv'`, assinatura
+  EXATA `exportToCsv(filename: string, rows: object[], columns: {key,label}[])`.
+  Conferir a assinatura real antes de chamar -- NAO adivinhar aridade/ordem.
+- Nao adicionar funcionalidade alem do template (ex: nao inventar export CSV se
+  o template da listagem nao tem). Manter o escopo dos 13 arquivos.
+Se precisar de um util que nao esta no template, confirmar o caminho e a
+assinatura reais antes de usar -- import/assinatura inventados quebram o
+`next build` e custam re-rodadas caras.
+
 ### Arquivo 1: frontend/src/features/ARG/types/ARG.ts
 
 ```typescript
@@ -246,6 +259,9 @@ import { DataTable, type ColumnDef } from '@/shared/components/DataTable'
 import { ActionsPanel } from '@/shared/components/ActionsPanel'
 import type { PASCAL } from '@/features/ARG/types/ARG'
 
+// SCREEN_CODE e uma CONST simples (string literal), NUNCA um hook.
+// NAO inventar `useScreenCode()` nem importar de `@/shared/hooks/useScreenCode`
+// (esse hook NAO existe). O valor e passado direto como prop screenCode={SCREEN_CODE}.
 // SCREEN_CODE no formato MOD-ENT-001 -- o prompt da task informa o codigo correto.
 const SCREEN_CODE = 'MOD-ENT-001' // TODO: substituir pelo codigo real (screens.registry)
 
@@ -919,14 +935,19 @@ ls "frontend/src/app/(dashboard)/ARG/[id]/editar/page.test.tsx"
 Se algum arquivo estiver ausente: reporte qual falta e nao emita o relatorio de
 sucesso.
 
-Verifique que o TypeScript compila sem erros nos arquivos gerados:
+Verifique que o TypeScript compila sem erros nos arquivos gerados. **SEMPRE
+filtrar a saida pelo dominio** -- o `tsc` roda o projeto inteiro e tem ~10-15
+erros pre-existentes em outras features (contas, orcamentos) que NAO sao seus.
+Peneirar esses erros alheios manualmente desperdica minutos (observado: ~30min
+extras num smoke). Filtre direto:
 
 ```bash
-cd frontend && npx tsc --noEmit --project tsconfig.json
+cd frontend && npx tsc --noEmit --project tsconfig.json 2>&1 | grep -iE "features/ARG|app/.dashboard./PLURAL|shell/(screens.registry|icon-map)" || echo "OK: sem erros tsc nos arquivos novos"
 ```
 
-Se houver erros de TypeScript NOS ARQUIVOS GERADOS: corrija antes de prosseguir.
-Erros em outros arquivos pre-existentes: ignorar -- nao e responsabilidade desta skill.
+Se o grep retornar linhas: ha erro TS nos SEUS arquivos -- corrija. Se imprimir
+"OK" (grep vazio): compila limpo, prosseguir. NUNCA ler/analisar os erros de
+outras features -- nao sao seus.
 
 ## Passo 4 -- Relatorio final
 
