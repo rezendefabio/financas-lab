@@ -289,7 +289,7 @@ class ContaRepositoryImplTest extends AbstractIntegrationTest {
         Money limiteCredito = new Money(new BigDecimal("5000.00"), BRL);
         Conta nova = new Conta(
                 UUID.randomUUID(),
-                null,
+                UUID.randomUUID(),
                 "Cartao Visa",
                 TipoConta.CARTAO_CREDITO,
                 new Money(new BigDecimal("0.00"), BRL),
@@ -320,7 +320,7 @@ class ContaRepositoryImplTest extends AbstractIntegrationTest {
         Money saldoAtual = new Money(new BigDecimal("1500.00"), BRL);
         Conta nova = new Conta(
                 UUID.randomUUID(),
-                null,
+                UUID.randomUUID(),
                 "Conta Atualizada",
                 TipoConta.CORRENTE,
                 saldoInicial,

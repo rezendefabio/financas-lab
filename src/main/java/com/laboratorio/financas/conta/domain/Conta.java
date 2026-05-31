@@ -29,7 +29,7 @@ public final class Conta {
     public Conta(String nome, TipoConta tipo, Money saldoInicial) {
         this(
                 UUID.randomUUID(),
-                null,
+                UUID.randomUUID(),
                 nome,
                 tipo,
                 saldoInicial,
@@ -62,6 +62,7 @@ public final class Conta {
             Instant atualizadoEm
     ) {
         Objects.requireNonNull(id, "id nao pode ser nulo");
+        Objects.requireNonNull(userId, "userId nao pode ser nulo");
         Objects.requireNonNull(tipo, "tipo nao pode ser nulo");
         Objects.requireNonNull(saldoInicial, "saldoInicial nao pode ser nulo");
         Objects.requireNonNull(criadoEm, "criadoEm nao pode ser nulo");

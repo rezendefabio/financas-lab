@@ -17,6 +17,7 @@ class ContaTest {
     private static final Money SALDO_ZERO = new Money(BigDecimal.ZERO, BRL);
     private static final Money SALDO_100 = new Money(new BigDecimal("100.00"), BRL);
     private static final Money SALDO_NEGATIVO = new Money(new BigDecimal("-50.00"), BRL);
+    private static final UUID USER_ID = UUID.randomUUID();
 
     // --- Construtor "novo" ---
 
@@ -170,7 +171,7 @@ class ContaTest {
     void construtorReconstrucaoComCriadoEmNuloLancaNullPointerException() {
         assertThatNullPointerException()
                 .isThrownBy(() -> new Conta(
-                        UUID.randomUUID(), null, "Conta", TipoConta.CORRENTE,
+                        UUID.randomUUID(), USER_ID, "Conta", TipoConta.CORRENTE,
                         SALDO_100, SALDO_100, null,
                         null, null, true, null, null
                 ))
@@ -181,7 +182,7 @@ class ContaTest {
     void construtorReconstrucaoComAtualizadoEmNuloDefaultaParaCriadoEm() {
         Instant criadoEm = Instant.parse("2026-01-01T10:00:00Z");
         Conta conta = new Conta(
-                UUID.randomUUID(), null, "Conta", TipoConta.CORRENTE,
+                UUID.randomUUID(), USER_ID, "Conta", TipoConta.CORRENTE,
                 SALDO_ZERO, SALDO_ZERO, null,
                 null, null, true, criadoEm, null
         );
@@ -193,7 +194,7 @@ class ContaTest {
         Instant criadoEm = Instant.parse("2026-01-01T10:00:00Z");
         Instant atualizadoEm = Instant.parse("2026-06-15T08:30:00Z");
         Conta conta = new Conta(
-                UUID.randomUUID(), null, "Conta", TipoConta.CORRENTE,
+                UUID.randomUUID(), USER_ID, "Conta", TipoConta.CORRENTE,
                 SALDO_ZERO, SALDO_ZERO, null,
                 null, null, true, criadoEm, atualizadoEm
         );
@@ -203,7 +204,7 @@ class ContaTest {
     @Test
     void construtorReconstrucaoComAtivaFalsePreservaEstado() {
         Conta conta = new Conta(
-                UUID.randomUUID(), null, "Conta", TipoConta.CORRENTE,
+                UUID.randomUUID(), USER_ID, "Conta", TipoConta.CORRENTE,
                 SALDO_ZERO, SALDO_ZERO, null,
                 null, null, false, Instant.now(), null
         );
@@ -213,7 +214,7 @@ class ContaTest {
     @Test
     void construtorReconstrucaoSaldoAtualNuloDefaultaParaSaldoInicial() {
         Conta conta = new Conta(
-                UUID.randomUUID(), null, "Conta", TipoConta.CORRENTE,
+                UUID.randomUUID(), USER_ID, "Conta", TipoConta.CORRENTE,
                 SALDO_100, null, null,
                 null, null, true, Instant.now(), null
         );
@@ -221,20 +222,21 @@ class ContaTest {
     }
 
     @Test
-    void construtorReconstrucaoComUserIdNuloAceita() {
-        Conta conta = new Conta(
-                UUID.randomUUID(), null, "Conta", TipoConta.CORRENTE,
-                SALDO_ZERO, SALDO_ZERO, null,
-                null, null, true, Instant.now(), null
-        );
-        assertThat(conta.getUserId()).isNull();
+    void construtorReconstrucaoComUserIdNuloLancaNullPointerException() {
+        assertThatNullPointerException()
+                .isThrownBy(() -> new Conta(
+                        UUID.randomUUID(), null, "Conta", TipoConta.CORRENTE,
+                        SALDO_ZERO, SALDO_ZERO, null,
+                        null, null, true, Instant.now(), null
+                ))
+                .withMessageContaining("userId");
     }
 
     @Test
     void construtorReconstrucaoComCamposCartaoPreserva() {
         Money limiteCredito = new Money(new BigDecimal("10000.00"), BRL);
         Conta conta = new Conta(
-                UUID.randomUUID(), null, "Cartao", TipoConta.CARTAO_CREDITO,
+                UUID.randomUUID(), USER_ID, "Cartao", TipoConta.CARTAO_CREDITO,
                 SALDO_ZERO, SALDO_ZERO, limiteCredito,
                 15, 25, true, Instant.now(), null
         );
@@ -315,12 +317,12 @@ class ContaTest {
         UUID id = UUID.randomUUID();
         Instant t = Instant.now();
         Conta conta1 = new Conta(
-                id, null, "Nome A", TipoConta.CORRENTE,
+                id, USER_ID, "Nome A", TipoConta.CORRENTE,
                 SALDO_100, SALDO_100, null,
                 null, null, true, t, t
         );
         Conta conta2 = new Conta(
-                id, null, "Nome B", TipoConta.POUPANCA,
+                id, USER_ID, "Nome B", TipoConta.POUPANCA,
                 SALDO_ZERO, SALDO_ZERO, null,
                 null, null, false, t, t
         );
@@ -351,12 +353,12 @@ class ContaTest {
         UUID id = UUID.randomUUID();
         Instant t = Instant.now();
         Conta conta1 = new Conta(
-                id, null, "Nome A", TipoConta.CORRENTE,
+                id, USER_ID, "Nome A", TipoConta.CORRENTE,
                 SALDO_100, SALDO_100, null,
                 null, null, true, t, t
         );
         Conta conta2 = new Conta(
-                id, null, "Nome B", TipoConta.POUPANCA,
+                id, USER_ID, "Nome B", TipoConta.POUPANCA,
                 SALDO_ZERO, SALDO_ZERO, null,
                 null, null, false, t, t
         );

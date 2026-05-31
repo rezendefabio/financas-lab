@@ -33,7 +33,7 @@ class CalcularSaldoTotalUseCaseTest {
     private Conta contaFake(UUID id) {
         Money saldoZero = new Money(BigDecimal.ZERO, BRL);
         return new Conta(
-                id, null, "Conta", com.laboratorio.financas.conta.domain.TipoConta.CORRENTE,
+                id, UUID.randomUUID(), "Conta", com.laboratorio.financas.conta.domain.TipoConta.CORRENTE,
                 saldoZero, saldoZero, null,
                 null, null, true, Instant.now(), null
         );

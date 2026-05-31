@@ -214,7 +214,7 @@ class CalcularSaldoDaContaUseCaseTest {
     private Conta contaComSaldo(UUID id, Money saldoInicial) {
         return new Conta(
                 id,
-                null,
+                UUID.randomUUID(),
                 "Conta Teste",
                 TipoConta.CORRENTE,
                 saldoInicial,
