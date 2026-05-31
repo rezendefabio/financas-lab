@@ -65,6 +65,30 @@ reporte qual falhou e termine.
 Use Write para cada arquivo. Substitua `NOME`, `ARG`, `nome`, `nomes` pelos
 valores definidos. Codificacao: UTF-8 sem BOM.
 
+**ESTILO CHECKSTYLE OBRIGATORIO (o gate `mvn test` roda Checkstyle na fase
+validate -- estilo errado FALHA o build).** Os templates abaixo ja estao no
+estilo correto; ao adaptar, MANTER:
+
+- **Getter em multiplas linhas** -- NUNCA `public UUID getId() { return id; }`
+  numa linha (viola `LeftCurly`). Sempre:
+  ```java
+  public UUID getId() {
+      return id;
+  }
+  ```
+- **`if` SEMPRE com chaves** -- NUNCA `if (x == null) return null;` (viola
+  `NeedBraces`). Sempre:
+  ```java
+  if (x == null) {
+      return null;
+  }
+  ```
+- **Bloco vazio com espaco** -- `record Comando(...) { }` e `ValorMonetario(...) { }`
+  com espaco entre as chaves, NUNCA `{}` (viola `WhitespaceAround`).
+- **Logger constante MAIUSCULA** -- `private static final Logger LOG` (nunca `log`,
+  viola `ConstantName`).
+- Sem import nao usado (`UnusedImports`), import na ordem, sem star import.
+
 ### Arquivo 1: src/main/java/com/laboratorio/financas/ARG/domain/NOME.java
 
 ```java
@@ -127,22 +151,45 @@ public final class NOME {
         this.atualizadoEm = Instant.now();
     }
 
-    public UUID getId() { return id; }
-    public UUID getUserId() { return userId; }
-    public String getNome() { return nome; }
-    public boolean isAtivo() { return ativo; }
-    public Instant getCriadoEm() { return criadoEm; }
-    public Instant getAtualizadoEm() { return atualizadoEm; }
+    public UUID getId() {
+        return id;
+    }
+
+    public UUID getUserId() {
+        return userId;
+    }
+
+    public String getNome() {
+        return nome;
+    }
+
+    public boolean isAtivo() {
+        return ativo;
+    }
+
+    public Instant getCriadoEm() {
+        return criadoEm;
+    }
+
+    public Instant getAtualizadoEm() {
+        return atualizadoEm;
+    }
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof NOME other)) return false;
+        if (this == o) {
+            return true;
+        }
+        if (!(o instanceof NOME other)) {
+            return false;
+        }
         return this.id.equals(other.id);
     }
 
     @Override
-    public int hashCode() { return id.hashCode(); }
+    public int hashCode() {
+        return id.hashCode();
+    }
 }
 ```
 
@@ -185,7 +232,9 @@ public class NOMENaoEncontradoException extends RuntimeException {
         this.id = id;
     }
 
-    public UUID getId() { return id; }
+    public UUID getId() {
+        return id;
+    }
 }
 ```
 
@@ -209,7 +258,7 @@ public class CriarNOMEUseCase {
         this.repository = repository;
     }
 
-    public record Comando(UUID userId, String nome) {}
+    public record Comando(UUID userId, String nome) { }
 
     @Transactional
     public NOME executar(Comando comando) {
@@ -297,7 +346,7 @@ public class AtualizarNOMEUseCase {
         this.repository = repository;
     }
 
-    public record Comando(UUID id, String nome) {}
+    public record Comando(UUID id, String nome) { }
 
     @Transactional
     public NOME executar(Comando comando) {
@@ -393,12 +442,29 @@ public class NOMEEntity {
         this.atualizadoEm = atualizadoEm;
     }
 
-    public UUID getId() { return id; }
-    public UUID getUserId() { return userId; }
-    public String getNome() { return nome; }
-    public boolean isAtivo() { return ativo; }
-    public Instant getCriadoEm() { return criadoEm; }
-    public Instant getAtualizadoEm() { return atualizadoEm; }
+    public UUID getId() {
+        return id;
+    }
+
+    public UUID getUserId() {
+        return userId;
+    }
+
+    public String getNome() {
+        return nome;
+    }
+
+    public boolean isAtivo() {
+        return ativo;
+    }
+
+    public Instant getCriadoEm() {
+        return criadoEm;
+    }
+
+    public Instant getAtualizadoEm() {
+        return atualizadoEm;
+    }
 }
 ```
 
@@ -429,7 +495,9 @@ import org.mapstruct.Mapper;
 public interface NOMEMapper {
 
     default NOMEEntity toEntity(NOME domain) {
-        if (domain == null) return null;
+        if (domain == null) {
+            return null;
+        }
         return new NOMEEntity(
                 domain.getId(),
                 domain.getUserId(),
@@ -441,7 +509,9 @@ public interface NOMEMapper {
     }
 
     default NOME toDomain(NOMEEntity entity) {
-        if (entity == null) return null;
+        if (entity == null) {
+            return null;
+        }
         return new NOME(
                 entity.getId(),
                 entity.getUserId(),
@@ -648,7 +718,9 @@ public class NOMEController {
     }
 
     private String toJson(Object obj) {
-        if (obj == null) return null;
+        if (obj == null) {
+            return null;
+        }
         try {
             return objectMapper.writeValueAsString(obj);
         } catch (JsonProcessingException ex) {
@@ -669,7 +741,7 @@ import jakarta.validation.constraints.Size;
 
 public record CriarNOMERequest(
         @NotBlank @Size(max = 100) String nome
-) {}
+) { }
 ```
 
 ### Arquivo 14: src/main/java/com/laboratorio/financas/ARG/interfaces/dto/AtualizarNOMERequest.java
@@ -682,7 +754,7 @@ import jakarta.validation.constraints.Size;
 
 public record AtualizarNOMERequest(
         @NotBlank @Size(max = 100) String nome
-) {}
+) { }
 ```
 
 ### Arquivo 15: src/main/java/com/laboratorio/financas/ARG/interfaces/dto/NOMEResponse.java
