@@ -57,10 +57,20 @@ class LancamentoRecorrenteControllerTest extends AbstractAuthenticatedIntegratio
     }
 
     private UUID criarContaPersistida() {
+        Money saldo = new Money(BigDecimal.ZERO, Currency.getInstance("BRL"));
         Conta conta = new Conta(
+                UUID.randomUUID(),
+                authenticatedUserId,
                 "Conta " + UUID.randomUUID().toString().substring(0, 8),
                 TipoConta.CORRENTE,
-                new Money(BigDecimal.ZERO, Currency.getInstance("BRL"))
+                saldo,
+                saldo,
+                null,
+                null,
+                null,
+                true,
+                java.time.Instant.now(),
+                null
         );
         contaRepositoryImpl.salvar(conta);
         return conta.getId();
