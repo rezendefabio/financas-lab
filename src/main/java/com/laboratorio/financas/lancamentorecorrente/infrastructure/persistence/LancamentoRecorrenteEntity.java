@@ -25,6 +25,10 @@ public class LancamentoRecorrenteEntity {
     private UUID id;
 
     @NotNull
+    @Column(name = "user_id", columnDefinition = "uuid", nullable = false)
+    private UUID userId;
+
+    @NotNull
     @Column(name = "descricao", nullable = false, length = 200)
     private String descricao;
 
@@ -72,6 +76,7 @@ public class LancamentoRecorrenteEntity {
 
     public LancamentoRecorrenteEntity(
             UUID id,
+            UUID userId,
             String descricao,
             TipoTransacao tipo,
             MoneyEmbeddable valor,
@@ -84,6 +89,7 @@ public class LancamentoRecorrenteEntity {
             Instant atualizadoEm
     ) {
         this.id = id;
+        this.userId = userId;
         this.descricao = descricao;
         this.tipo = tipo;
         this.valor = valor;
@@ -98,6 +104,10 @@ public class LancamentoRecorrenteEntity {
 
     public UUID getId() {
         return id;
+    }
+
+    public UUID getUserId() {
+        return userId;
     }
 
     public String getDescricao() {

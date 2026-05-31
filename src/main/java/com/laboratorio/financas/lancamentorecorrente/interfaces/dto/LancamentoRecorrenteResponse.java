@@ -10,6 +10,7 @@ import java.util.UUID;
 
 public record LancamentoRecorrenteResponse(
         UUID id,
+        UUID userId,
         String descricao,
         TipoTransacao tipo,
         ValorMonetario valor,
@@ -26,6 +27,7 @@ public record LancamentoRecorrenteResponse(
     public static LancamentoRecorrenteResponse fromDomain(LancamentoRecorrente lancamento) {
         return new LancamentoRecorrenteResponse(
                 lancamento.getId(),
+                lancamento.getUserId(),
                 lancamento.getDescricao(),
                 lancamento.getTipo(),
                 new ValorMonetario(

@@ -25,6 +25,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 class LancamentoRecorrenteRepositoryImplTest extends AbstractIntegrationTest {
 
     private static final Currency BRL = Currency.getInstance("BRL");
+    private static final UUID USER_ID = UUID.randomUUID();
     private static final Money VALOR_500 = new Money(new BigDecimal("500.00"), BRL);
     private static final LocalDate PROXIMA = LocalDate.of(2026, 7, 1);
 
@@ -58,6 +59,7 @@ class LancamentoRecorrenteRepositoryImplTest extends AbstractIntegrationTest {
 
     private LancamentoRecorrente novoLancamento() {
         return new LancamentoRecorrente(
+                USER_ID,
                 "Aluguel", TipoTransacao.DESPESA, VALOR_500,
                 contaId, null, Periodicidade.MENSAL, PROXIMA);
     }
@@ -69,6 +71,7 @@ class LancamentoRecorrenteRepositoryImplTest extends AbstractIntegrationTest {
         LancamentoRecorrente salvo = repository.salvar(novo);
 
         assertThat(salvo.getId()).isEqualTo(novo.getId());
+        assertThat(salvo.getUserId()).isEqualTo(USER_ID);
         assertThat(salvo.getDescricao()).isEqualTo("Aluguel");
         assertThat(salvo.getTipo()).isEqualTo(TipoTransacao.DESPESA);
         assertThat(salvo.getValor()).isEqualTo(VALOR_500);
@@ -98,10 +101,12 @@ class LancamentoRecorrenteRepositoryImplTest extends AbstractIntegrationTest {
     @Test
     void listarRetornaTodosOsLancamentos() {
         LancamentoRecorrente l1 = new LancamentoRecorrente(
+                USER_ID,
                 "Streaming", TipoTransacao.DESPESA,
                 new Money(new BigDecimal("40.00"), BRL),
                 contaId, null, Periodicidade.MENSAL, PROXIMA);
         LancamentoRecorrente l2 = new LancamentoRecorrente(
+                USER_ID,
                 "Academia", TipoTransacao.DESPESA,
                 new Money(new BigDecimal("100.00"), BRL),
                 contaId, null, Periodicidade.MENSAL, PROXIMA);
@@ -151,6 +156,7 @@ class LancamentoRecorrenteRepositoryImplTest extends AbstractIntegrationTest {
     @Test
     void salvarPersisteComCategoriaIdNulo() {
         LancamentoRecorrente semCategoria = new LancamentoRecorrente(
+                USER_ID,
                 "Supermercado", TipoTransacao.DESPESA, VALOR_500,
                 contaId, null, Periodicidade.SEMANAL, PROXIMA);
         repository.salvar(semCategoria);

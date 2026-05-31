@@ -15,6 +15,7 @@ public interface LancamentoRecorrenteMapper {
         }
         return new LancamentoRecorrenteEntity(
                 lancamento.getId(),
+                lancamento.getUserId(),
                 lancamento.getDescricao(),
                 lancamento.getTipo(),
                 toMoneyEmbeddable(lancamento.getValor()),
@@ -34,6 +35,7 @@ public interface LancamentoRecorrenteMapper {
         }
         return new LancamentoRecorrente(
                 entity.getId(),
+                entity.getUserId(),
                 entity.getDescricao(),
                 entity.getTipo(),
                 toMoney(entity.getValor()),

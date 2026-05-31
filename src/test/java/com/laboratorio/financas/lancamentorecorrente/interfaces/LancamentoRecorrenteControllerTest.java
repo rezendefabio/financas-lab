@@ -97,6 +97,7 @@ class LancamentoRecorrenteControllerTest extends AbstractAuthenticatedIntegratio
                         .content(requestValido(contaId))))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id", notNullValue()))
+                .andExpect(jsonPath("$.userId", equalTo(authenticatedUserId.toString())))
                 .andExpect(jsonPath("$.descricao", equalTo("Aluguel mensal")))
                 .andExpect(jsonPath("$.tipo", equalTo("DESPESA")))
                 .andExpect(jsonPath("$.valor.valor", equalTo(1500.0)))

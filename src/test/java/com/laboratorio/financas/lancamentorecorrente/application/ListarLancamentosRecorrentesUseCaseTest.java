@@ -20,6 +20,8 @@ import org.mockito.Mockito;
 
 class ListarLancamentosRecorrentesUseCaseTest {
 
+    private static final java.util.UUID USER_ID = java.util.UUID.randomUUID();
+
     private LancamentoRecorrenteRepository repository;
     private ListarLancamentosRecorrentesUseCase useCase;
 
@@ -33,6 +35,7 @@ class ListarLancamentosRecorrentesUseCaseTest {
     @DisplayName("executar: retorna lista do repositorio")
     void executarRetornaLista() {
         LancamentoRecorrente l = new LancamentoRecorrente(
+                USER_ID,
                 "Mensal", TipoTransacao.DESPESA,
                 new Money(new BigDecimal("100.00"), Currency.getInstance("BRL")),
                 UUID.randomUUID(), null, Periodicidade.MENSAL, LocalDate.now());

@@ -16,11 +16,13 @@ import org.junit.jupiter.api.Test;
 class LancamentoRecorrenteTest {
 
     private static final Currency BRL = Currency.getInstance("BRL");
+    private static final UUID USER_ID = UUID.randomUUID();
     private static final Money VALOR_100 = new Money(new BigDecimal("100.00"), BRL);
     private static final LocalDate PROXIMA = LocalDate.of(2026, 6, 1);
 
     private LancamentoRecorrente lancamentoValido() {
         return new LancamentoRecorrente(
+                USER_ID,
                 "Assinatura mensal",
                 TipoTransacao.DESPESA,
                 VALOR_100,
@@ -41,6 +43,7 @@ class LancamentoRecorrenteTest {
             Instant depois = Instant.now();
 
             assertThat(l.getId()).isNotNull();
+            assertThat(l.getUserId()).isEqualTo(USER_ID);
             assertThat(l.getDescricao()).isEqualTo("Assinatura mensal");
             assertThat(l.getTipo()).isEqualTo(TipoTransacao.DESPESA);
             assertThat(l.getValor()).isEqualTo(VALOR_100);
@@ -60,9 +63,20 @@ class LancamentoRecorrenteTest {
         }
 
         @Test
+        void comUserIdNuloLancaNullPointerException() {
+            org.assertj.core.api.Assertions.assertThatNullPointerException()
+                    .isThrownBy(() -> new LancamentoRecorrente(
+                            null,
+                            "Teste", TipoTransacao.DESPESA, VALOR_100,
+                            UUID.randomUUID(), null, Periodicidade.MENSAL, PROXIMA))
+                    .withMessageContaining("userId");
+        }
+
+        @Test
         void comDescricaoNulaLancaException() {
             assertThatIllegalArgumentException()
                     .isThrownBy(() -> new LancamentoRecorrente(
+                            USER_ID,
                             null, TipoTransacao.DESPESA, VALOR_100,
                             UUID.randomUUID(), null, Periodicidade.MENSAL, PROXIMA));
         }
@@ -71,6 +85,7 @@ class LancamentoRecorrenteTest {
         void comDescricaoVaziaLancaException() {
             assertThatIllegalArgumentException()
                     .isThrownBy(() -> new LancamentoRecorrente(
+                            USER_ID,
                             "   ", TipoTransacao.DESPESA, VALOR_100,
                             UUID.randomUUID(), null, Periodicidade.MENSAL, PROXIMA));
         }
@@ -80,6 +95,7 @@ class LancamentoRecorrenteTest {
             String longa = "x".repeat(201);
             assertThatIllegalArgumentException()
                     .isThrownBy(() -> new LancamentoRecorrente(
+                            USER_ID,
                             longa, TipoTransacao.DESPESA, VALOR_100,
                             UUID.randomUUID(), null, Periodicidade.MENSAL, PROXIMA));
         }
@@ -88,6 +104,7 @@ class LancamentoRecorrenteTest {
         void comTipoTransferenciaLancaException() {
             assertThatIllegalArgumentException()
                     .isThrownBy(() -> new LancamentoRecorrente(
+                            USER_ID,
                             "Transferencia", TipoTransacao.TRANSFERENCIA, VALOR_100,
                             UUID.randomUUID(), null, Periodicidade.MENSAL, PROXIMA))
                     .withMessageContaining("TRANSFERENCIA");
@@ -97,6 +114,7 @@ class LancamentoRecorrenteTest {
         void comTipoNuloLancaException() {
             assertThatIllegalArgumentException()
                     .isThrownBy(() -> new LancamentoRecorrente(
+                            USER_ID,
                             "Teste", null, VALOR_100,
                             UUID.randomUUID(), null, Periodicidade.MENSAL, PROXIMA));
         }
@@ -105,6 +123,7 @@ class LancamentoRecorrenteTest {
         void comValorNuloLancaException() {
             assertThatIllegalArgumentException()
                     .isThrownBy(() -> new LancamentoRecorrente(
+                            USER_ID,
                             "Teste", TipoTransacao.DESPESA, null,
                             UUID.randomUUID(), null, Periodicidade.MENSAL, PROXIMA));
         }
@@ -114,6 +133,7 @@ class LancamentoRecorrenteTest {
             Money zero = new Money(BigDecimal.ZERO, BRL);
             assertThatIllegalArgumentException()
                     .isThrownBy(() -> new LancamentoRecorrente(
+                            USER_ID,
                             "Teste", TipoTransacao.DESPESA, zero,
                             UUID.randomUUID(), null, Periodicidade.MENSAL, PROXIMA));
         }
@@ -122,6 +142,7 @@ class LancamentoRecorrenteTest {
         void comContaIdNuloLancaException() {
             assertThatIllegalArgumentException()
                     .isThrownBy(() -> new LancamentoRecorrente(
+                            USER_ID,
                             "Teste", TipoTransacao.DESPESA, VALOR_100,
                             null, null, Periodicidade.MENSAL, PROXIMA));
         }
@@ -130,6 +151,7 @@ class LancamentoRecorrenteTest {
         void comPeriodicidadeNulaLancaException() {
             assertThatIllegalArgumentException()
                     .isThrownBy(() -> new LancamentoRecorrente(
+                            USER_ID,
                             "Teste", TipoTransacao.DESPESA, VALOR_100,
                             UUID.randomUUID(), null, null, PROXIMA));
         }
@@ -138,6 +160,7 @@ class LancamentoRecorrenteTest {
         void comProximaOcorrenciaNulaLancaException() {
             assertThatIllegalArgumentException()
                     .isThrownBy(() -> new LancamentoRecorrente(
+                            USER_ID,
                             "Teste", TipoTransacao.DESPESA, VALOR_100,
                             UUID.randomUUID(), null, Periodicidade.MENSAL, null));
         }
@@ -145,6 +168,7 @@ class LancamentoRecorrenteTest {
         @Test
         void tipoReceitaEhAceito() {
             LancamentoRecorrente l = new LancamentoRecorrente(
+                    USER_ID,
                     "Salario", TipoTransacao.RECEITA, VALOR_100,
                     UUID.randomUUID(), null, Periodicidade.MENSAL, PROXIMA);
 
@@ -165,6 +189,7 @@ class LancamentoRecorrenteTest {
         @Test
         void mensalAvancaUmMes() {
             LancamentoRecorrente l = new LancamentoRecorrente(
+                    USER_ID,
                     "Mensal", TipoTransacao.DESPESA, VALOR_100,
                     UUID.randomUUID(), null, Periodicidade.MENSAL, LocalDate.of(2026, 1, 1));
 
@@ -176,6 +201,7 @@ class LancamentoRecorrenteTest {
         @Test
         void semanalAvancaUmaSemana() {
             LancamentoRecorrente l = new LancamentoRecorrente(
+                    USER_ID,
                     "Semanal", TipoTransacao.DESPESA, VALOR_100,
                     UUID.randomUUID(), null, Periodicidade.SEMANAL, LocalDate.of(2026, 1, 1));
 
@@ -187,6 +213,7 @@ class LancamentoRecorrenteTest {
         @Test
         void anualAvancaUmAno() {
             LancamentoRecorrente l = new LancamentoRecorrente(
+                    USER_ID,
                     "Anual", TipoTransacao.DESPESA, VALOR_100,
                     UUID.randomUUID(), null, Periodicidade.ANUAL, LocalDate.of(2026, 1, 1));
 
@@ -241,11 +268,12 @@ class LancamentoRecorrenteTest {
             Instant atualizadoEm = Instant.parse("2026-06-01T10:00:00Z");
 
             LancamentoRecorrente l = new LancamentoRecorrente(
-                    id, "Teste", TipoTransacao.RECEITA, VALOR_100,
+                    id, USER_ID, "Teste", TipoTransacao.RECEITA, VALOR_100,
                     contaId, categoriaId, Periodicidade.TRIMESTRAL, PROXIMA,
                     false, criadoEm, atualizadoEm);
 
             assertThat(l.getId()).isEqualTo(id);
+            assertThat(l.getUserId()).isEqualTo(USER_ID);
             assertThat(l.getDescricao()).isEqualTo("Teste");
             assertThat(l.getTipo()).isEqualTo(TipoTransacao.RECEITA);
             assertThat(l.getContaId()).isEqualTo(contaId);

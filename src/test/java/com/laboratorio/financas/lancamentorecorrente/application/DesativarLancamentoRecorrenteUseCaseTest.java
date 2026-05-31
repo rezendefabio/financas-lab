@@ -23,6 +23,8 @@ import org.mockito.Mockito;
 
 class DesativarLancamentoRecorrenteUseCaseTest {
 
+    private static final java.util.UUID USER_ID = java.util.UUID.randomUUID();
+
     private LancamentoRecorrenteRepository repository;
     private DesativarLancamentoRecorrenteUseCase useCase;
 
@@ -37,6 +39,7 @@ class DesativarLancamentoRecorrenteUseCaseTest {
     void executarDesativaEAtualiza() {
         UUID id = UUID.randomUUID();
         LancamentoRecorrente l = new LancamentoRecorrente(
+                USER_ID,
                 "Plano", TipoTransacao.DESPESA,
                 new Money(new BigDecimal("100.00"), Currency.getInstance("BRL")),
                 UUID.randomUUID(), null, Periodicidade.MENSAL, LocalDate.now());

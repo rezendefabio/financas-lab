@@ -26,6 +26,8 @@ import org.mockito.Mockito;
 
 class ExecutarLancamentoRecorrenteUseCaseTest {
 
+    private static final java.util.UUID USER_ID = java.util.UUID.randomUUID();
+
     private LancamentoRecorrenteRepository lancamentoRepository;
     private TransacaoRepository transacaoRepository;
     private ExecutarLancamentoRecorrenteUseCase useCase;
@@ -42,6 +44,7 @@ class ExecutarLancamentoRecorrenteUseCaseTest {
 
     private LancamentoRecorrente lancamentoAtivo(LocalDate proxima) {
         return new LancamentoRecorrente(
+                USER_ID,
                 "Aluguel", TipoTransacao.DESPESA, VALOR_200,
                 UUID.randomUUID(), null, Periodicidade.MENSAL, proxima);
     }
