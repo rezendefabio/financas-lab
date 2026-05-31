@@ -139,6 +139,7 @@ export default function EmprestimosPage() {
             screenCode={SCREEN_CODE}
             onExportCsv={() =>
               exportToCsv(
+                'emprestimos',
                 emprestimos.map((e) => ({
                   descricao: e.descricao,
                   nomeTerceiro: e.nomeTerceiro ?? '',
@@ -155,7 +156,6 @@ export default function EmprestimosPage() {
                   { key: 'dataEmprestimo', label: 'Data' },
                   { key: 'quitado', label: 'Quitado' },
                 ],
-                'emprestimos',
               )
             }
           />
