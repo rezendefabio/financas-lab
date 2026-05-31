@@ -3,10 +3,8 @@ import userEvent from '@testing-library/user-event'
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 
 const mockReplace = vi.fn()
-let mockSearchParams = new URLSearchParams()
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ push: vi.fn(), replace: mockReplace }),
-  useSearchParams: () => mockSearchParams,
   usePathname: () => '/',
 }))
 
@@ -18,7 +16,6 @@ describe('TabBar', () => {
   beforeEach(() => {
     localStorage.clear()
     mockReplace.mockClear()
-    mockSearchParams = new URLSearchParams()
     useTabsStore.setState({ tabs: [], activeId: null })
     useCommandPaletteStore.setState({ open: false })
   })
@@ -75,36 +72,45 @@ describe('TabBar', () => {
     expect(screen.queryByLabelText('Fechar aba Contas')).not.toBeInTheDocument()
   })
 
-  it('hidratacao via URL preserva currentPath da aba inativa do localStorage', () => {
-    // Cenario: usuario tinha duas abas com currentPath em sub-rotas,
-    // recarrega a pagina. A URL traz os codigos e a aba ativa, mas a aba
-    // inativa deve manter o currentPath salvo no persist do Zustand.
-    useTabsStore.setState({
-      tabs: [
-        {
-          id: 'pre-1',
-          screenCode: 'FIN-CTA-001',
-          pinned: false,
-          currentPath: '/contas/novo',
-        },
-        {
-          id: 'pre-2',
-          screenCode: 'FIN-TRX-001',
-          pinned: false,
-          currentPath: '/transacoes/novo',
-        },
-      ],
-      activeId: 'pre-2',
-    })
-    mockSearchParams = new URLSearchParams(
-      'tabs=FIN-CTA-001,FIN-TRX-001&active=FIN-TRX-001',
-    )
+  it('sincroniza a URL com a rota da aba ativa sem expor tabs/active', () => {
+    // O estado das abas vive no localStorage; a URL reflete apenas a rota da
+    // aba ativa, sem os parametros ?tabs=...&active=... (que antes expunham e
+    // tornavam o estado manipulavel).
+    const { openTab } = useTabsStore.getState()
+    openTab('FIN-CTA-001')
+    openTab('FIN-TRX-001')
 
     render(<TabBar />)
 
-    const { tabs } = useTabsStore.getState()
-    const contas = tabs.find((t) => t.screenCode === 'FIN-CTA-001')
-    expect(contas?.currentPath).toBe('/contas/novo')
+    expect(mockReplace).toHaveBeenCalled()
+    const url = mockReplace.mock.calls.at(-1)![0] as string
+    expect(url).toBe('/transacoes')
+    expect(url).not.toContain('tabs=')
+    expect(url).not.toContain('active=')
+  })
+
+  it('saneia tabs/active residuais do currentPath preservando params de pagina', () => {
+    // currentPath vindo de uma URL antiga (versao que espelhava o estado das
+    // abas) ainda pode conter ?tabs=...&active=...; o sync remove esses e
+    // mantem os params legitimos da pagina (ex: page=2).
+    useTabsStore.setState({
+      tabs: [
+        {
+          id: 't1',
+          screenCode: 'FIN-CTA-001',
+          pinned: false,
+          currentPath: '/contas?tabs=FIN-CTA-001&active=FIN-CTA-001&page=2',
+        },
+      ],
+      activeId: 't1',
+    })
+
+    render(<TabBar />)
+
+    const url = mockReplace.mock.calls.at(-1)![0] as string
+    expect(url).not.toContain('tabs=')
+    expect(url).not.toContain('active=')
+    expect(url).toContain('page=2')
   })
 
   it('botao "+" abre o CommandPalette', async () => {
