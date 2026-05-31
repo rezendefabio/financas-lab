@@ -9,7 +9,6 @@ import { DataTable, type ColumnDef } from '@/shared/components/DataTable'
 import { ActionsPanel } from '@/shared/components/ActionsPanel'
 import { formatBRL, formatDate } from '@/shared/lib/formatters'
 import { exportToCsv } from '@/shared/lib/export-csv'
-import { useScreenCode } from '@/shared/hooks/useScreenCode'
 import { emprestimoService } from '@/features/emprestimo'
 import type { EmprestimoResponse } from '@/features/emprestimo'
 
@@ -21,7 +20,6 @@ const TIPO_LABEL: Record<string, string> = {
 }
 
 export default function EmprestimosPage() {
-  useScreenCode(SCREEN_CODE)
   const router = useRouter()
   const queryClient = useQueryClient()
 
@@ -130,7 +128,7 @@ export default function EmprestimosPage() {
     )
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4" data-screen-code={SCREEN_CODE}>
       <div className="flex items-center justify-between gap-4">
         <h1 className="text-2xl font-semibold">Emprestimos</h1>
         <div className="flex items-center gap-2">
@@ -144,11 +142,19 @@ export default function EmprestimosPage() {
                 emprestimos.map((e) => ({
                   descricao: e.descricao,
                   nomeTerceiro: e.nomeTerceiro ?? '',
-                  tipo: e.tipo,
+                  tipo: TIPO_LABEL[e.tipo] ?? e.tipo,
                   valor: e.valor.valor,
                   dataEmprestimo: e.dataEmprestimo,
                   quitado: e.quitado ? 'Sim' : 'Nao',
                 })),
+                [
+                  { key: 'descricao', label: 'Descricao' },
+                  { key: 'nomeTerceiro', label: 'Terceiro' },
+                  { key: 'tipo', label: 'Tipo' },
+                  { key: 'valor', label: 'Valor' },
+                  { key: 'dataEmprestimo', label: 'Data' },
+                  { key: 'quitado', label: 'Quitado' },
+                ],
                 'emprestimos',
               )
             }
