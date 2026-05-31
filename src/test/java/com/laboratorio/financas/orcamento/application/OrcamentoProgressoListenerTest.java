@@ -166,7 +166,8 @@ class OrcamentoProgressoListenerTest {
     }
 
     private Orcamento orcamento(UUID categoriaId, LocalDate mesAno, boolean ativo) {
-        return new Orcamento(UUID.randomUUID(), categoriaId, new Money(new BigDecimal("1000.00"), BRL),
+        return new Orcamento(UUID.randomUUID(), UUID.randomUUID(), categoriaId,
+                new Money(new BigDecimal("1000.00"), BRL),
                 mesAno, ativo, Instant.now(), Instant.now());
     }
 

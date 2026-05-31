@@ -64,7 +64,7 @@ class ReconciliarNotificacoesUseCaseTest {
     }
 
     private Orcamento orcamento(UUID id, UUID categoriaId, boolean ativo) {
-        return new Orcamento(id, categoriaId, new Money(new BigDecimal("500"), BRL),
+        return new Orcamento(id, UUID.randomUUID(), categoriaId, new Money(new BigDecimal("500"), BRL),
                 LocalDate.now(), ativo, Instant.now(), Instant.now());
     }
 

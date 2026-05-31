@@ -7,6 +7,7 @@ import java.util.UUID;
 
 public record OrcamentoResponse(
         UUID id,
+        UUID userId,
         UUID categoriaId,
         ValorMonetario valorLimite,
         LocalDate mesAno,

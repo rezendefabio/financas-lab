@@ -14,12 +14,14 @@ import com.laboratorio.financas.orcamento.domain.Orcamento;
 import com.laboratorio.financas.orcamento.interfaces.dto.CriarOrcamentoRequest;
 import com.laboratorio.financas.orcamento.interfaces.dto.OrcamentoResponse;
 import com.laboratorio.financas.orcamento.interfaces.dto.ProgressoResponse;
+import com.laboratorio.financas.usuario.domain.UsuarioRepository;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -45,6 +47,7 @@ public class OrcamentoController {
     private final CalcularProgressoDoOrcamentoUseCase calcularProgressoUseCase;
     private final AuditPublisher auditPublisher;
     private final ObjectMapper objectMapper;
+    private final UsuarioRepository usuarioRepository;
 
     public OrcamentoController(
             CriarOrcamentoUseCase criarOrcamentoUseCase,
@@ -53,7 +56,8 @@ public class OrcamentoController {
             DesativarOrcamentoUseCase desativarOrcamentoUseCase,
             CalcularProgressoDoOrcamentoUseCase calcularProgressoUseCase,
             AuditPublisher auditPublisher,
-            ObjectMapper objectMapper
+            ObjectMapper objectMapper,
+            UsuarioRepository usuarioRepository
     ) {
         this.criarOrcamentoUseCase = criarOrcamentoUseCase;
         this.listarOrcamentosUseCase = listarOrcamentosUseCase;
@@ -62,14 +66,17 @@ public class OrcamentoController {
         this.calcularProgressoUseCase = calcularProgressoUseCase;
         this.auditPublisher = auditPublisher;
         this.objectMapper = objectMapper;
+        this.usuarioRepository = usuarioRepository;
     }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public OrcamentoResponse criar(
             @Valid @RequestBody CriarOrcamentoRequest request,
+            Authentication authentication,
             @RequestHeader(value = "X-Screen-Code", required = false) String screenCode) {
         CriarOrcamentoUseCase.Comando comando = new CriarOrcamentoUseCase.Comando(
+                resolverUserId(authentication),
                 request.categoriaId(),
                 request.valorLimiteValor(),
                 request.valorLimiteMoeda(),
@@ -126,6 +133,14 @@ public class OrcamentoController {
         );
     }
 
+    private UUID resolverUserId(Authentication authentication) {
+        String email = authentication.getName();
+        return usuarioRepository.buscarPorEmail(email)
+                .orElseThrow(() -> new IllegalStateException(
+                        "Usuario autenticado nao encontrado: " + email))
+                .getId();
+    }
+
     private String userEmail() {
         var auth = SecurityContextHolder.getContext().getAuthentication();
         return (auth != null) ? auth.getName() : null;
@@ -146,6 +161,7 @@ public class OrcamentoController {
     private OrcamentoResponse toResponse(Orcamento orcamento) {
         return new OrcamentoResponse(
                 orcamento.getId(),
+                orcamento.getUserId(),
                 orcamento.getCategoriaId(),
                 new OrcamentoResponse.ValorMonetario(
                         orcamento.getValorLimite().valor(),

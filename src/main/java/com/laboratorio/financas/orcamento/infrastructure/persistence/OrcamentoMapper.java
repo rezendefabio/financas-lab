@@ -15,6 +15,7 @@ public interface OrcamentoMapper {
         }
         return new OrcamentoEntity(
                 orcamento.getId(),
+                orcamento.getUserId(),
                 orcamento.getCategoriaId(),
                 toMoneyEmbeddable(orcamento.getValorLimite()),
                 orcamento.getMesAno(),
@@ -30,6 +31,7 @@ public interface OrcamentoMapper {
         }
         return new Orcamento(
                 entity.getId(),
+                entity.getUserId(),
                 entity.getCategoriaId(),
                 toMoney(entity.getValorLimite()),
                 entity.getMesAno(),

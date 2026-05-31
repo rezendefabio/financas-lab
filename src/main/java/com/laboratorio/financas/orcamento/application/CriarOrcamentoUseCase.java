@@ -19,12 +19,13 @@ public class CriarOrcamentoUseCase {
         this.orcamentoRepository = orcamentoRepository;
     }
 
-    public record Comando(UUID categoriaId, BigDecimal valorLimiteValor, String valorLimiteMoeda, LocalDate mesAno) { }
+    public record Comando(UUID userId, UUID categoriaId, BigDecimal valorLimiteValor,
+                          String valorLimiteMoeda, LocalDate mesAno) { }
 
     @Transactional
     public Orcamento executar(Comando comando) {
         Money valorLimite = new Money(comando.valorLimiteValor(), Currency.getInstance(comando.valorLimiteMoeda()));
-        Orcamento orcamento = new Orcamento(comando.categoriaId(), valorLimite, comando.mesAno());
+        Orcamento orcamento = new Orcamento(comando.userId(), comando.categoriaId(), valorLimite, comando.mesAno());
         return orcamentoRepository.salvar(orcamento);
     }
 }

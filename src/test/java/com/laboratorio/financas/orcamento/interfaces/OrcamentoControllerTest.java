@@ -70,6 +70,7 @@ class OrcamentoControllerTest extends AbstractAuthenticatedIntegrationTest {
                             .content(criarOrcamentoJson(categoriaId, "2024-06-01"))))
                     .andExpect(status().isCreated())
                     .andExpect(jsonPath("$.id").isNotEmpty())
+                    .andExpect(jsonPath("$.userId").value(authenticatedUserId.toString()))
                     .andExpect(jsonPath("$.categoriaId").value(categoriaId.toString()))
                     .andExpect(jsonPath("$.valorLimite.valor").value(500.00))
                     .andExpect(jsonPath("$.valorLimite.moeda").value("BRL"))

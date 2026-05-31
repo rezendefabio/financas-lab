@@ -170,12 +170,12 @@ class CalcularProgressoDoOrcamentoUseCaseTest {
     }
 
     private Orcamento orcamento(UUID id, BigDecimal valorLimite) {
-        return new Orcamento(id, UUID.randomUUID(), new Money(valorLimite, BRL), MES,
+        return new Orcamento(id, UUID.randomUUID(), UUID.randomUUID(), new Money(valorLimite, BRL), MES,
                 true, Instant.now(), Instant.now());
     }
 
     private Orcamento orcamentoComCategoria(UUID id, BigDecimal valorLimite, UUID categoriaId) {
-        return new Orcamento(id, categoriaId, new Money(valorLimite, BRL), MES,
+        return new Orcamento(id, UUID.randomUUID(), categoriaId, new Money(valorLimite, BRL), MES,
                 true, Instant.now(), Instant.now());
     }
 
