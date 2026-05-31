@@ -16,7 +16,5 @@ public record CriarCategoriaRequest(
 
         UUID categoriaPaiId,
 
-        UUID userId,
-
         boolean system
 ) { }
