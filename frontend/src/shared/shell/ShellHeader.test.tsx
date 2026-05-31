@@ -29,8 +29,10 @@ vi.mock('@/features/auth/hooks/use-current-user', () => ({
 
 let mockNotificacoes: Array<{ id: string; tipo: string; titulo: string; descricao: string }> = []
 
+const mockDescartar = vi.fn()
 vi.mock('@/shared/hooks/useNotificacoes', () => ({
   useNotificacoes: () => ({ notificacoes: mockNotificacoes, isLoading: false }),
+  useDescartarNotificacao: () => ({ mutate: mockDescartar }),
 }))
 
 import { ShellHeader } from './ShellHeader'
