@@ -301,13 +301,36 @@ Passos:
    ```
    Vazio = OK; sujo = BLOQUEADOR (mover arquivos antes de continuar).
 
-6. **Push e PR:**
+6. **Commits (stage DIRETO dos paths, NUNCA `git add -A` + `git reset`):**
+   Para separar commits por camada, fazer `git add <paths-especificos>` direto --
+   NAO usar `git add -A` seguido de `git reset` para "limpar e re-stagear".
+   O `git reset` tem um guard de seguranca no projeto (protege contra `git reset
+   --hard`) que PARA o executor pedindo confirmacao manual, quebrando o fluxo
+   autonomo. Stage seletivo direto evita o guard:
+   ```bash
+   # Commit backend -- stage so os paths do backend, sem add -A nem reset:
+   git add src/main/java/com/laboratorio/financas/<ctx>/ \
+           src/test/java/com/laboratorio/financas/<ctx>/ \
+           src/main/resources/db/migration/V<N>__*.sql \
+           src/main/java/com/laboratorio/financas/shared/infrastructure/web/GlobalExceptionHandler.java
+   git commit -q -m "feat(<ctx>): backend CRUD com auditoria"
+
+   # Commit frontend -- stage so os paths do frontend:
+   git add frontend/src/features/<ctx>/ \
+           "frontend/src/app/(dashboard)/<plural>/" \
+           frontend/src/shared/shell/screens.registry.ts \
+           frontend/src/shared/shell/screens.registry.test.ts \
+           frontend/src/shared/shell/icon-map.tsx
+   git commit -q -m "feat(<ctx>): frontend CRUD (listagem/novo/editar) + testes"
+   ```
+
+7. **Push e PR:**
    ```bash
    git push -u origin $(git branch --show-current)
    gh pr create --base main --title "<titulo>" --body "<lista de commits + nota '/plan executionMode=fast'>"
    ```
 
-7. **NAO invocar `/ship`. NAO spawnar reviewers.** Reviewers ficam a cargo do operador
+8. **NAO invocar `/ship`. NAO spawnar reviewers.** Reviewers ficam a cargo do operador
    se necessario (`/review-pr <numero>` manualmente).
 
 ## Entrega -- modo full
