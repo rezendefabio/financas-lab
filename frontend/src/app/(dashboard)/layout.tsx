@@ -47,11 +47,9 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
       <SidebarInset>
         <ShellHeader />
         <ErrorBanner />
-        {/* TabBar usa useSearchParams: precisa de fronteira Suspense para
-            nao forcar CSR bailout no prerender das paginas filhas. */}
-        <Suspense fallback={null}>
-          <TabBar />
-        </Suspense>
+        {/* TabBar nao le mais a URL (estado das abas vive no localStorage):
+            nao precisa de fronteira Suspense. */}
+        <TabBar />
         {/* Paginas de listagem (useListPage) tambem leem useSearchParams:
             isolar o conteudo numa fronteira Suspense evita o CSR bailout
             no prerender (Next.js missing-suspense-with-csr-bailout). */}

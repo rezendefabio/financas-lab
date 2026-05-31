@@ -3,17 +3,21 @@
  *
  * Renderiza as abas abertas (`useTabsStore`), permite ativar, fechar, fixar,
  * duplicar, reordenar (drag-and-drop HTML5 nativo) e abrir novas (botao "+",
- * que dispara o CommandPalette). Sincroniza o estado das abas com a URL
- * (`?tabs=CODE1,CODE2&active=CODE`); a URL tem prioridade sobre o localStorage
- * na montagem.
+ * que dispara o CommandPalette).
+ *
+ * O estado das abas (lista + aba ativa + sub-rota de cada aba) e persistido
+ * EXCLUSIVAMENTE no localStorage (Zustand `persist`, chave `financas-lab:tabs`).
+ * A URL NAO carrega o estado das abas: ela reflete apenas a rota da aba ativa
+ * (ex: `/emprestimos`), mantida limpa e nao-manipulavel. Trocar de aba ou dar
+ * refresh restaura o estado pelo localStorage, sem expor `?tabs=...&active=...`.
  *
  * Responsividade: >= 768px a faixa horizontal completa com scroll; < 768px
  * apenas a aba ativa + dropdown com a lista.
  */
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { ChevronDown, Pin, Plus, X } from 'lucide-react'
 import { Button } from '@/shared/components/ui/button'
 import {
@@ -27,20 +31,6 @@ import { cn } from '@/shared/lib/utils'
 import { findScreenByCode } from './screens.registry'
 import { useTabsStore, DASHBOARD_CODE, type Tab } from './tabs-store'
 import { useCommandPaletteStore } from './command-palette-store'
-
-/** Le `?tabs=...&active=...` da URL. Retorna null quando nao ha o parametro. */
-function readTabsFromParams(
-  params: URLSearchParams,
-): { codes: string[]; active: string | null } | null {
-  const raw = params.get('tabs')
-  if (!raw) return null
-  const codes = raw
-    .split(',')
-    .map((code) => code.trim())
-    .filter((code) => code.length > 0 && findScreenByCode(code) !== undefined)
-  if (codes.length === 0) return null
-  return { codes, active: params.get('active') }
-}
 
 /** Item de aba individual. */
 function TabItem({
@@ -160,49 +150,15 @@ export function TabBar() {
   const openPalette = useCommandPaletteStore((state) => state.setOpen)
 
   const router = useRouter()
-  const searchParams = useSearchParams()
 
   const [dragIndex, setDragIndex] = useState<number | null>(null)
-  /** Garante que a leitura URL -> store rode apenas uma vez (na montagem). */
-  const hydratedFromUrl = useRef(false)
 
-  // Montagem: URL tem prioridade sobre o localStorage.
+  // Mudancas no store -> navega para a rota da aba ativa (replace unico, sem
+  // poluir historico). A URL reflete apenas a rota (ex: /emprestimos); o estado
+  // das abas NAO vai para a URL -- vive no localStorage (Zustand persist). Usa
+  // currentPath (ultimo path visitado na aba) quando disponivel; cai para o
+  // path raiz da screen como fallback (primeira vez que a aba e aberta).
   useEffect(() => {
-    if (hydratedFromUrl.current) return
-    hydratedFromUrl.current = true
-    const fromUrl = readTabsFromParams(searchParams)
-    if (!fromUrl) return
-    // A aba ativa recebe currentPath = window.location.pathname para que o
-    // efeito de navegacao nao volte ao caminho raiz da tela em caso de reload.
-    // (Ex: reload em /beneficiarios/novo deve manter /beneficiarios/novo, nao /beneficiarios)
-    const activePathname =
-      typeof window !== 'undefined' ? window.location.pathname : undefined
-    const persistedTabs = useTabsStore.getState().tabs
-    const urlTabs: Tab[] = fromUrl.codes.map((screenCode) => ({
-      id:
-        typeof crypto !== 'undefined' && crypto.randomUUID
-          ? crypto.randomUUID()
-          : Math.random().toString(36).slice(2),
-      screenCode,
-      pinned: false,
-      currentPath:
-        screenCode === fromUrl.active
-          ? activePathname
-          : persistedTabs.find((t) => t.screenCode === screenCode)?.currentPath,
-    }))
-    const active =
-      urlTabs.find((tab) => tab.screenCode === fromUrl.active)?.id ??
-      urlTabs[0]?.id ??
-      null
-    useTabsStore.setState({ tabs: urlTabs, activeId: active })
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
-
-  // Mudancas no store -> URL + navegacao (replace unico, sem poluir historico).
-  // Usa currentPath (ultimo path visitado na aba) quando disponivel; cai para
-  // o path raiz da screen como fallback (primeira vez que a aba e aberta).
-  useEffect(() => {
-    if (!hydratedFromUrl.current) return
     const activeTab = tabs.find((tab) => tab.id === activeId)
     // Sem aba ativa (ex: logout reseta o store): nao navegar -- evita
     // sobrescrever o router.push('/login') disparado pelo DashboardLayout.
@@ -211,21 +167,16 @@ export function TabBar() {
     const targetPath =
       activeTab?.currentPath ?? targetScreen?.path ?? window.location.pathname
 
-    // Separar pathname e query string existente do targetPath.
-    // targetPath pode conter params de pagina (ex: /incidentes?submitted=1);
-    // concatenar ?tabs=... diretamente produziria URL invalida com dois '?'.
+    // Separar pathname e query string existente do targetPath. O currentPath
+    // pode conter params de pagina (ex: /incidentes?submitted=1) que devem ser
+    // preservados; apenas saneamos eventuais tabs/active residuais de URLs
+    // antigas (versoes anteriores espelhavam o estado das abas na URL).
     const qIdx = targetPath.indexOf('?')
     const targetPathname = qIdx >= 0 ? targetPath.slice(0, qIdx) : targetPath
     const existingSearch = qIdx >= 0 ? targetPath.slice(qIdx + 1) : ''
     const merged = new URLSearchParams(existingSearch)
-    // Remover eventuais tabs/active residuais do currentPath (saneamento)
     merged.delete('tabs')
     merged.delete('active')
-    // Adicionar params do sistema de abas
-    if (tabs.length > 0) {
-      merged.set('tabs', tabs.map((tab) => tab.screenCode).join(','))
-      if (activeTab) merged.set('active', activeTab.screenCode)
-    }
     const finalQuery = merged.toString()
     const url = finalQuery ? `${targetPathname}?${finalQuery}` : targetPathname
     router.replace(url)
