@@ -14,7 +14,5 @@ public record CriarCategoriaRequest(
         @NotNull
         TipoCategoria tipo,
 
-        UUID categoriaPaiId,
-
-        boolean system
+        UUID categoriaPaiId
 ) { }
