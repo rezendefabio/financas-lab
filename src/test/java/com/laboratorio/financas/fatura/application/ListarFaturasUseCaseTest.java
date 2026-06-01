@@ -28,21 +28,21 @@ class ListarFaturasUseCaseTest {
     }
 
     @Test
-    void executarRetornaFaturasDoRepositorio() {
+    void executarRetornaTodasAsFaturas() {
         Fatura f1 = new Fatura(USER_ID, CONTA_ID, "Maio", VENCIMENTO, null, null);
-        Fatura f2 = new Fatura(USER_ID, CONTA_ID, "Junho", VENCIMENTO, null, null);
-        when(repository.listarPorUserId(USER_ID)).thenReturn(List.of(f1, f2));
+        Fatura f2 = new Fatura(UUID.randomUUID(), CONTA_ID, "Junho", VENCIMENTO, null, null);
+        when(repository.listarTodos()).thenReturn(List.of(f1, f2));
 
-        List<Fatura> resultado = useCase.executar(USER_ID);
+        List<Fatura> resultado = useCase.executar();
 
         assertThat(resultado).hasSize(2);
     }
 
     @Test
     void executarRetornaListaVaziaQuandoSemRegistros() {
-        when(repository.listarPorUserId(USER_ID)).thenReturn(List.of());
+        when(repository.listarTodos()).thenReturn(List.of());
 
-        List<Fatura> resultado = useCase.executar(USER_ID);
+        List<Fatura> resultado = useCase.executar();
 
         assertThat(resultado).isEmpty();
     }

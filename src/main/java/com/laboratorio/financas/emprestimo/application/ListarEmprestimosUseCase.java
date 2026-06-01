@@ -3,7 +3,6 @@ package com.laboratorio.financas.emprestimo.application;
 import com.laboratorio.financas.emprestimo.domain.Emprestimo;
 import com.laboratorio.financas.emprestimo.domain.EmprestimoRepository;
 import java.util.List;
-import java.util.UUID;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,7 +16,7 @@ public class ListarEmprestimosUseCase {
     }
 
     @Transactional(readOnly = true)
-    public List<Emprestimo> executar(UUID userId) {
-        return repository.listarPorUserId(userId);
+    public List<Emprestimo> executar() {
+        return repository.listarTodos();
     }
 }

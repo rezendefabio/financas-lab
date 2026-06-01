@@ -3,7 +3,6 @@ package com.laboratorio.financas.assinatura.application;
 import com.laboratorio.financas.assinatura.domain.Assinatura;
 import com.laboratorio.financas.assinatura.domain.AssinaturaRepository;
 import java.util.List;
-import java.util.UUID;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,7 +16,7 @@ public class ListarAssinaturasUseCase {
     }
 
     @Transactional(readOnly = true)
-    public List<Assinatura> executar(UUID userId) {
-        return repository.listarPorUserId(userId);
+    public List<Assinatura> executar() {
+        return repository.listarTodos();
     }
 }

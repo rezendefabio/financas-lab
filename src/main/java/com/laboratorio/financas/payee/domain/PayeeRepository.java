@@ -8,7 +8,7 @@ public interface PayeeRepository {
 
     Optional<Payee> findById(UUID id);
 
-    List<Payee> findByUserId(UUID userId);
+    List<Payee> listarTodos();
 
     Optional<Payee> findByIdAndUserId(UUID id, UUID userId);
 

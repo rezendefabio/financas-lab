@@ -65,16 +65,17 @@ class LembreteRepositoryImplTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void listarPorUserIdRetornaApenasDoUsuario() {
+    void listarTodosRetornaLembretesDeQualquerUsuario() {
         UUID outroUserId = criarUsuarioPersistido();
         repository.salvar(new Lembrete(userId, "A", null, LocalDate.now(), Prioridade.BAIXA));
         repository.salvar(new Lembrete(userId, "B", null, LocalDate.now(), Prioridade.ALTA));
         repository.salvar(new Lembrete(outroUserId, "X", null, LocalDate.now(), Prioridade.BAIXA));
 
-        List<Lembrete> lista = repository.listarPorUserId(userId);
+        List<Lembrete> lista = repository.listarTodos();
 
-        assertThat(lista).hasSize(2);
-        assertThat(lista).allMatch(e -> e.getUserId().equals(userId));
+        assertThat(lista).hasSize(3);
+        assertThat(lista).anyMatch(e -> e.getUserId().equals(userId));
+        assertThat(lista).anyMatch(e -> e.getUserId().equals(outroUserId));
     }
 
     @Test

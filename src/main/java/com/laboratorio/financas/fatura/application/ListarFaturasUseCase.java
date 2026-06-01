@@ -3,7 +3,6 @@ package com.laboratorio.financas.fatura.application;
 import com.laboratorio.financas.fatura.domain.Fatura;
 import com.laboratorio.financas.fatura.domain.FaturaRepository;
 import java.util.List;
-import java.util.UUID;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,7 +16,7 @@ public class ListarFaturasUseCase {
     }
 
     @Transactional(readOnly = true)
-    public List<Fatura> executar(UUID userId) {
-        return repository.listarPorUserId(userId);
+    public List<Fatura> executar() {
+        return repository.listarTodos();
     }
 }

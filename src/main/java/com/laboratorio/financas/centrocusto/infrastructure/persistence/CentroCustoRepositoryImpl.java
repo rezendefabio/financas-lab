@@ -36,8 +36,8 @@ public class CentroCustoRepositoryImpl implements CentroCustoRepository {
     }
 
     @Override
-    public List<CentroCusto> findByUserId(UUID userId) {
-        return jpaRepository.findByUserId(userId).stream()
+    public List<CentroCusto> listarTodos() {
+        return jpaRepository.findAll().stream()
                 .map(mapper::toDomain)
                 .toList();
     }

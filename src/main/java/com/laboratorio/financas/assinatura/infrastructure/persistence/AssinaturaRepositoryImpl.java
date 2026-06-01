@@ -29,8 +29,8 @@ public class AssinaturaRepositoryImpl implements AssinaturaRepository {
     }
 
     @Override
-    public List<Assinatura> listarPorUserId(UUID userId) {
-        return jpaRepository.findByUserId(userId).stream()
+    public List<Assinatura> listarTodos() {
+        return jpaRepository.findAll().stream()
                 .map(mapper::toDomain)
                 .toList();
     }

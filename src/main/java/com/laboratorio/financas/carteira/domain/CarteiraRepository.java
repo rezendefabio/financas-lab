@@ -10,7 +10,7 @@ public interface CarteiraRepository {
 
     Optional<Carteira> buscarPorId(UUID id);
 
-    List<Carteira> listarPorUserId(UUID userId);
+    List<Carteira> listarTodos();
 
     Carteira atualizar(Carteira carteira);
 

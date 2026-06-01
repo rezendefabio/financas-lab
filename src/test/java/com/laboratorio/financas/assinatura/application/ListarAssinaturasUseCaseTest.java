@@ -32,14 +32,14 @@ class ListarAssinaturasUseCaseTest {
     }
 
     @Test
-    void executarRetornaListaDoRepository() {
-        when(repository.listarPorUserId(USER_ID)).thenReturn(List.of(
+    void executarRetornaTodasAsAssinaturas() {
+        UUID outroUser = UUID.randomUUID();
+        when(repository.listarTodos()).thenReturn(List.of(
                 new Assinatura(USER_ID, "Netflix", TipoAssinatura.STREAMING, VALOR, RENOVACAO),
-                new Assinatura(USER_ID, "Spotify", TipoAssinatura.STREAMING, VALOR, RENOVACAO)));
+                new Assinatura(outroUser, "Spotify", TipoAssinatura.STREAMING, VALOR, RENOVACAO)));
 
-        List<Assinatura> resultado = useCase.executar(USER_ID);
+        List<Assinatura> resultado = useCase.executar();
 
         assertThat(resultado).hasSize(2);
-        assertThat(resultado).allMatch(a -> a.getUserId().equals(USER_ID));
     }
 }

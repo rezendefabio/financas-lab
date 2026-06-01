@@ -12,5 +12,5 @@ public interface CentroCustoRepository {
 
     Optional<CentroCusto> findByIdAndUserId(UUID id, UUID userId);
 
-    List<CentroCusto> findByUserId(UUID userId);
+    List<CentroCusto> listarTodos();
 }

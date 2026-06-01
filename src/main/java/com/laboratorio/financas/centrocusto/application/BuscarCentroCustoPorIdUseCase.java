@@ -17,8 +17,8 @@ public class BuscarCentroCustoPorIdUseCase {
     }
 
     @Transactional(readOnly = true)
-    public CentroCusto executar(UUID id, UUID userId) {
-        return repository.findByIdAndUserId(id, userId)
+    public CentroCusto executar(UUID id) {
+        return repository.findById(id)
                 .orElseThrow(() -> new CentroCustoNaoEncontradoException(id));
     }
 }

@@ -30,13 +30,13 @@ class ListarLimitesUseCaseTest {
     }
 
     @Test
-    void executarRetornaLimitesDoUsuario() {
+    void executarRetornaTodosOsLimites() {
         Money valor = new Money(new BigDecimal("100.00"), BRL);
-        when(repository.listarPorUserId(USER_ID)).thenReturn(List.of(
+        when(repository.listarTodos()).thenReturn(List.of(
                 new Limite(USER_ID, "A", TipoLimite.DIARIO, valor),
-                new Limite(USER_ID, "B", TipoLimite.MENSAL, valor)));
+                new Limite(UUID.randomUUID(), "B", TipoLimite.MENSAL, valor)));
 
-        List<Limite> resultado = useCase.executar(USER_ID);
+        List<Limite> resultado = useCase.executar();
 
         assertThat(resultado).hasSize(2);
     }

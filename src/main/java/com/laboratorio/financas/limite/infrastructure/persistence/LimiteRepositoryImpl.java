@@ -29,8 +29,8 @@ public class LimiteRepositoryImpl implements LimiteRepository {
     }
 
     @Override
-    public List<Limite> listarPorUserId(UUID userId) {
-        return jpaRepository.findByUserId(userId).stream()
+    public List<Limite> listarTodos() {
+        return jpaRepository.findAll().stream()
                 .map(mapper::toDomain)
                 .toList();
     }

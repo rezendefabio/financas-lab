@@ -89,20 +89,21 @@ class PayeeRepositoryImplTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void findByUserIdRetornaApenasPayeesDoUsuario() {
+    void listarTodosRetornaPayeesDeQualquerUsuario() {
         repository.save(new Payee(userId, "Supermercado", null));
         repository.save(new Payee(userId, "Farmacia", null));
         repository.save(new Payee(outroUserId, "Padaria", null));
 
-        List<Payee> resultado = repository.findByUserId(userId);
+        List<Payee> resultado = repository.listarTodos();
 
-        assertThat(resultado).hasSize(2);
-        assertThat(resultado).allMatch(p -> p.getUserId().equals(userId));
+        assertThat(resultado).hasSize(3);
+        assertThat(resultado).anyMatch(p -> p.getUserId().equals(userId));
+        assertThat(resultado).anyMatch(p -> p.getUserId().equals(outroUserId));
     }
 
     @Test
-    void findByUserIdRetornaListaVaziaQuandoNaoHaPayees() {
-        List<Payee> resultado = repository.findByUserId(userId);
+    void listarTodosRetornaListaVaziaQuandoNaoHaPayees() {
+        List<Payee> resultado = repository.listarTodos();
         assertThat(resultado).isEmpty();
     }
 

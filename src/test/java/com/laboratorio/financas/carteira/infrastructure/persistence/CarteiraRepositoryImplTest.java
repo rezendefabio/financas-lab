@@ -95,20 +95,21 @@ class CarteiraRepositoryImplTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void listarPorUserIdRetornaApenasCarteirasDoUsuario() {
+    void listarTodosRetornaCarteirasDeQualquerUsuario() {
         repository.salvar(new Carteira(userIdA, contaId, "Carteira A1", TipoCarteira.RENDA_FIXA));
         repository.salvar(new Carteira(userIdA, contaId, "Carteira A2", TipoCarteira.CRIPTOMOEDA));
         repository.salvar(new Carteira(userIdB, contaId, "Carteira B1", TipoCarteira.OUTROS));
 
-        List<Carteira> carteirasA = repository.listarPorUserId(userIdA);
+        List<Carteira> todas = repository.listarTodos();
 
-        assertThat(carteirasA).hasSize(2);
-        assertThat(carteirasA).allMatch(c -> c.getUserId().equals(userIdA));
+        assertThat(todas).hasSize(3);
+        assertThat(todas).anyMatch(c -> c.getUserId().equals(userIdA));
+        assertThat(todas).anyMatch(c -> c.getUserId().equals(userIdB));
     }
 
     @Test
-    void listarPorUserIdRetornaListaVaziaParaUsuarioSemCarteiras() {
-        List<Carteira> carteiras = repository.listarPorUserId(UUID.randomUUID());
+    void listarTodosRetornaListaVaziaQuandoNaoHaCarteiras() {
+        List<Carteira> carteiras = repository.listarTodos();
 
         assertThat(carteiras).isEmpty();
     }

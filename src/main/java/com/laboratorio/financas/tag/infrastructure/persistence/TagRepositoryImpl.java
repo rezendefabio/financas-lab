@@ -24,6 +24,13 @@ public class TagRepositoryImpl implements TagRepository {
     }
 
     @Override
+    public List<Tag> listarTodos() {
+        return jpaRepository.findAll().stream()
+                .map(mapper::toDomain)
+                .toList();
+    }
+
+    @Override
     public List<Tag> buscarPorUserId(UUID userId) {
         return jpaRepository.findByUserId(userId).stream()
                 .map(mapper::toDomain)

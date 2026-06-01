@@ -90,20 +90,21 @@ class GrupoRepositoryImplTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void listarPorUserIdRetornaApenasGruposDoUsuario() {
+    void listarTodosRetornaGruposDeQualquerUsuario() {
         repository.salvar(new Grupo(userIdA, "Grupo A1", null));
         repository.salvar(new Grupo(userIdA, "Grupo A2", null));
         repository.salvar(new Grupo(userIdB, "Grupo B1", null));
 
-        List<Grupo> gruposA = repository.listarPorUserId(userIdA);
+        List<Grupo> todos = repository.listarTodos();
 
-        assertThat(gruposA).hasSize(2);
-        assertThat(gruposA).allMatch(g -> g.getUserId().equals(userIdA));
+        assertThat(todos).hasSize(3);
+        assertThat(todos).anyMatch(g -> g.getUserId().equals(userIdA));
+        assertThat(todos).anyMatch(g -> g.getUserId().equals(userIdB));
     }
 
     @Test
-    void listarPorUserIdRetornaListaVaziaParaUsuarioSemGrupos() {
-        List<Grupo> grupos = repository.listarPorUserId(UUID.randomUUID());
+    void listarTodosRetornaListaVaziaQuandoNaoHaGrupos() {
+        List<Grupo> grupos = repository.listarTodos();
 
         assertThat(grupos).isEmpty();
     }

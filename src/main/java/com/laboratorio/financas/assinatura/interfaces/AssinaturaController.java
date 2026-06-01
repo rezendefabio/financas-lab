@@ -70,9 +70,8 @@ public class AssinaturaController {
     }
 
     @GetMapping
-    public List<AssinaturaResponse> listar(Authentication authentication) {
-        UUID userId = userIdResolver.resolve(authentication);
-        return listarUseCase.executar(userId).stream()
+    public List<AssinaturaResponse> listar() {
+        return listarUseCase.executar().stream()
                 .map(AssinaturaResponse::fromDomain)
                 .toList();
     }

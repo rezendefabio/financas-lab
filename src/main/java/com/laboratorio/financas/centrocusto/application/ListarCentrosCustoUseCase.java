@@ -3,7 +3,6 @@ package com.laboratorio.financas.centrocusto.application;
 import com.laboratorio.financas.centrocusto.domain.CentroCusto;
 import com.laboratorio.financas.centrocusto.domain.CentroCustoRepository;
 import java.util.List;
-import java.util.UUID;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,7 +16,7 @@ public class ListarCentrosCustoUseCase {
     }
 
     @Transactional(readOnly = true)
-    public List<CentroCusto> executar(UUID userId) {
-        return repository.findByUserId(userId);
+    public List<CentroCusto> executar() {
+        return repository.listarTodos();
     }
 }

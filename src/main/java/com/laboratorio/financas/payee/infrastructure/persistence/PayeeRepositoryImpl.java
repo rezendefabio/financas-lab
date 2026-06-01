@@ -24,8 +24,8 @@ public class PayeeRepositoryImpl implements PayeeRepository {
     }
 
     @Override
-    public List<Payee> findByUserId(UUID userId) {
-        return jpaRepository.findByUserId(userId).stream()
+    public List<Payee> listarTodos() {
+        return jpaRepository.findAll().stream()
                 .map(mapper::toDomain)
                 .toList();
     }

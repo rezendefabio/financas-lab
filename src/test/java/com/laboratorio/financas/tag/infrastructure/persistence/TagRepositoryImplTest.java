@@ -108,6 +108,24 @@ class TagRepositoryImplTest extends AbstractIntegrationTest {
     }
 
     @Test
+    void listarTodosRetornaTagsDeQualquerUsuario() {
+        repository.salvar(new Tag(userIdA, "Tag A1", null));
+        repository.salvar(new Tag(userIdA, "Tag A2", null));
+        repository.salvar(new Tag(userIdB, "Tag B1", null));
+
+        List<Tag> todas = repository.listarTodos();
+
+        assertThat(todas).hasSize(3);
+        assertThat(todas).anyMatch(t -> t.getUserId().equals(userIdA));
+        assertThat(todas).anyMatch(t -> t.getUserId().equals(userIdB));
+    }
+
+    @Test
+    void listarTodosRetornaListaVaziaQuandoNaoHaTags() {
+        assertThat(repository.listarTodos()).isEmpty();
+    }
+
+    @Test
     void findByIdAndUserIdRetornaTagQuandoExisteParaUsuario() {
         Tag tag = new Tag(userIdA, "Viagem", "#0000FF");
         repository.salvar(tag);

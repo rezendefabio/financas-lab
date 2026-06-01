@@ -55,17 +55,15 @@ public class LimiteController {
     }
 
     @GetMapping
-    public List<LimiteResponse> listar(Authentication authentication) {
-        UUID userId = userIdResolver.resolve(authentication);
-        return listarUseCase.executar(userId).stream()
+    public List<LimiteResponse> listar() {
+        return listarUseCase.executar().stream()
                 .map(LimiteResponse::fromDomain)
                 .toList();
     }
 
     @GetMapping("/{id}")
-    public LimiteResponse buscar(@PathVariable UUID id, Authentication authentication) {
-        UUID userId = userIdResolver.resolve(authentication);
-        return LimiteResponse.fromDomain(buscarUseCase.executar(id, userId));
+    public LimiteResponse buscar(@PathVariable UUID id) {
+        return LimiteResponse.fromDomain(buscarUseCase.executar(id));
     }
 
     @PostMapping

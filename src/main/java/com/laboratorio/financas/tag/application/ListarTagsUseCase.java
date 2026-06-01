@@ -3,7 +3,6 @@ package com.laboratorio.financas.tag.application;
 import com.laboratorio.financas.tag.domain.Tag;
 import com.laboratorio.financas.tag.domain.TagRepository;
 import java.util.List;
-import java.util.UUID;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,7 +16,7 @@ public class ListarTagsUseCase {
     }
 
     @Transactional(readOnly = true)
-    public List<Tag> executar(UUID userId) {
-        return tagRepository.buscarPorUserId(userId);
+    public List<Tag> executar() {
+        return tagRepository.listarTodos();
     }
 }

@@ -15,12 +15,8 @@ public class BuscarLimiteUseCase {
         this.repository = repository;
     }
 
-    public Limite executar(UUID id, UUID userId) {
-        Limite limite = repository.buscarPorId(id)
+    public Limite executar(UUID id) {
+        return repository.buscarPorId(id)
                 .orElseThrow(() -> new LimiteNaoEncontradoException(id));
-        if (!limite.getUserId().equals(userId)) {
-            throw new LimiteNaoEncontradoException(id);
-        }
-        return limite;
     }
 }

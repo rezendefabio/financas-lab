@@ -73,8 +73,7 @@ public class FaturaController {
 
     @GetMapping
     public List<FaturaResponse> listar() {
-        UUID userId = userIdResolver.resolve();
-        return listarFaturasUseCase.executar(userId).stream()
+        return listarFaturasUseCase.executar().stream()
                 .map(FaturaResponse::fromDomain)
                 .toList();
     }

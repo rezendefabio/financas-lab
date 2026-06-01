@@ -25,24 +25,22 @@ class ListarCentrosCustoUseCaseTest {
     }
 
     @Test
-    void executarRetornaCentrosDoUsuario() {
-        UUID userId = UUID.randomUUID();
-        CentroCusto cc1 = new CentroCusto(userId, "Casa", null);
-        CentroCusto cc2 = new CentroCusto(userId, "Trabalho", null);
-        when(repository.findByUserId(userId)).thenReturn(List.of(cc1, cc2));
+    void executarRetornaTodosOsCentros() {
+        CentroCusto cc1 = new CentroCusto(UUID.randomUUID(), "Casa", null);
+        CentroCusto cc2 = new CentroCusto(UUID.randomUUID(), "Trabalho", null);
+        when(repository.listarTodos()).thenReturn(List.of(cc1, cc2));
 
-        List<CentroCusto> resultado = useCase.executar(userId);
+        List<CentroCusto> resultado = useCase.executar();
 
         assertThat(resultado).hasSize(2);
-        verify(repository, times(1)).findByUserId(userId);
+        verify(repository, times(1)).listarTodos();
     }
 
     @Test
     void executarRetornaListaVaziaQuandoSemRegistros() {
-        UUID userId = UUID.randomUUID();
-        when(repository.findByUserId(userId)).thenReturn(List.of());
+        when(repository.listarTodos()).thenReturn(List.of());
 
-        List<CentroCusto> resultado = useCase.executar(userId);
+        List<CentroCusto> resultado = useCase.executar();
 
         assertThat(resultado).isEmpty();
     }

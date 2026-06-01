@@ -31,8 +31,8 @@ public class CarteiraRepositoryImpl implements CarteiraRepository {
     }
 
     @Override
-    public List<Carteira> listarPorUserId(UUID userId) {
-        return jpaRepository.findByUserId(userId).stream()
+    public List<Carteira> listarTodos() {
+        return jpaRepository.findAll().stream()
                 .map(mapper::toDomain)
                 .toList();
     }

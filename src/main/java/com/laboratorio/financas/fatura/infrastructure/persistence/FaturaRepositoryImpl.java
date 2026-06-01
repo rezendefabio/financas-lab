@@ -31,8 +31,8 @@ public class FaturaRepositoryImpl implements FaturaRepository {
     }
 
     @Override
-    public List<Fatura> listarPorUserId(UUID userId) {
-        return jpaRepository.findByUserId(userId).stream()
+    public List<Fatura> listarTodos() {
+        return jpaRepository.findAll().stream()
                 .map(mapper::toDomain)
                 .toList();
     }

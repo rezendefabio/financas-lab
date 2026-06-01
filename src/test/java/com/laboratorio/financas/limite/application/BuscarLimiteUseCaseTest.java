@@ -32,12 +32,12 @@ class BuscarLimiteUseCaseTest {
     }
 
     @Test
-    void executarComLimiteExistenteEDoUsuarioRetornaLimite() {
+    void executarComLimiteExistenteRetornaLimite() {
         Money valor = new Money(new BigDecimal("100.00"), BRL);
         Limite limite = new Limite(USER_ID, "X", TipoLimite.MENSAL, valor);
         when(repository.buscarPorId(limite.getId())).thenReturn(Optional.of(limite));
 
-        Limite resultado = useCase.executar(limite.getId(), USER_ID);
+        Limite resultado = useCase.executar(limite.getId());
 
         assertThat(resultado).isEqualTo(limite);
     }
@@ -47,17 +47,18 @@ class BuscarLimiteUseCaseTest {
         UUID id = UUID.randomUUID();
         when(repository.buscarPorId(id)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> useCase.executar(id, USER_ID))
+        assertThatThrownBy(() -> useCase.executar(id))
                 .isInstanceOf(LimiteNaoEncontradoException.class);
     }
 
     @Test
-    void executarComLimiteDeOutroUsuarioLancaLimiteNaoEncontradoException() {
+    void executarRetornaLimiteDeQualquerUsuario() {
         Money valor = new Money(new BigDecimal("100.00"), BRL);
         Limite limite = new Limite(UUID.randomUUID(), "X", TipoLimite.MENSAL, valor);
         when(repository.buscarPorId(limite.getId())).thenReturn(Optional.of(limite));
 
-        assertThatThrownBy(() -> useCase.executar(limite.getId(), USER_ID))
-                .isInstanceOf(LimiteNaoEncontradoException.class);
+        Limite resultado = useCase.executar(limite.getId());
+
+        assertThat(resultado).isEqualTo(limite);
     }
 }

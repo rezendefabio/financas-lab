@@ -3,7 +3,6 @@ package com.laboratorio.financas.carteira.application;
 import com.laboratorio.financas.carteira.domain.Carteira;
 import com.laboratorio.financas.carteira.domain.CarteiraRepository;
 import java.util.List;
-import java.util.UUID;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,7 +16,7 @@ public class ListarCarteirasUseCase {
     }
 
     @Transactional(readOnly = true)
-    public List<Carteira> executar(UUID userId) {
-        return carteiraRepository.listarPorUserId(userId);
+    public List<Carteira> executar() {
+        return carteiraRepository.listarTodos();
     }
 }
