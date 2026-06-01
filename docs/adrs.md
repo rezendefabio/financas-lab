@@ -706,6 +706,26 @@ feature. A referencia completa esta em `docs/frontend-master-spec.md`.
 - Refatorar 13 telas existentes para `<ListPage>` e `form-kit` e uma serie de
   sub-etapas subsequentes (uma por tela ou grupo de telas similares).
 
+### Revisao 2026-06-01 -- persistencia de abas vira localStorage-only
+
+O item 2 da Decisao (Tab Manager) e a linha "Persistencia de tabs | URL +
+localStorage hibrido" da tabela descreviam persistencia **hibrida**: o estado das
+abas (`?tabs=...&active=...`) era espelhado na URL alem do localStorage.
+
+O PR #322 (2026-06-01) **removeu a parte da URL**: o estado das abas passa a viver
+**exclusivamente no localStorage** (Zustand `persist`, chave `financas-lab:tabs`).
+A URL reflete apenas a rota da aba ativa (ex: `/emprestimos`), limpa.
+
+**Motivo:** a URL expunha o estado interno das abas e permitia que um usuario
+editasse a query string e corrompesse a lista de abas. O localStorage ja sustentava
+toda a persistencia que importa (sobreviver a troca de aba e a refresh); a URL era
+redundante para isso e so adicionava superficie de manipulacao.
+
+**Consequencia aceita:** perde-se o compartilhamento de um conjunto de abas por
+link (descrito como "compartilhavel" na decisao original) -- comportamento avaliado
+como passivo (risco), nao recurso. Deep-link de uma pagina especifica continua
+funcionando. O restante do ADR-014 permanece valido.
+
 ---
 
 ## ADR-015 -- userId como carimbo de autoria; leitura compartilhada (base unica, multi-operador) (2026-06-01)
