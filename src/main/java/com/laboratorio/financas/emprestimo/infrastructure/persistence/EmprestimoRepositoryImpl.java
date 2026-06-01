@@ -30,8 +30,8 @@ public class EmprestimoRepositoryImpl implements EmprestimoRepository {
     }
 
     @Override
-    public List<Emprestimo> listarPorUserId(UUID userId) {
-        return jpaRepository.findByUserId(userId).stream()
+    public List<Emprestimo> listarTodos() {
+        return jpaRepository.findAll().stream()
                 .map(mapper::toDomain)
                 .toList();
     }

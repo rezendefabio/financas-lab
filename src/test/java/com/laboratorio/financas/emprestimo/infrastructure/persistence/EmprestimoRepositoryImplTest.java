@@ -79,16 +79,17 @@ class EmprestimoRepositoryImplTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void listarPorUserIdRetornaApenasDoUsuario() {
+    void listarTodosRetornaEmprestimosDeQualquerUsuario() {
         UUID outro = criarUsuarioPersistido();
         repository.salvar(novoEmprestimo(userId, "A"));
         repository.salvar(novoEmprestimo(userId, "B"));
         repository.salvar(novoEmprestimo(outro, "Outro"));
 
-        List<Emprestimo> lista = repository.listarPorUserId(userId);
+        List<Emprestimo> lista = repository.listarTodos();
 
-        assertThat(lista).hasSize(2);
-        assertThat(lista).allMatch(e -> e.getUserId().equals(userId));
+        assertThat(lista).hasSize(3);
+        assertThat(lista).anyMatch(e -> e.getUserId().equals(userId));
+        assertThat(lista).anyMatch(e -> e.getUserId().equals(outro));
     }
 
     @Test

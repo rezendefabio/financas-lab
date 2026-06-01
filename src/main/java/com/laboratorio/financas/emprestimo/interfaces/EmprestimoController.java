@@ -63,9 +63,8 @@ public class EmprestimoController {
     }
 
     @GetMapping
-    public List<EmprestimoResponse> listar(Authentication authentication) {
-        UUID userId = userIdResolver.resolve(authentication);
-        return listarUseCase.executar(userId).stream()
+    public List<EmprestimoResponse> listar() {
+        return listarUseCase.executar().stream()
                 .map(EmprestimoResponse::fromDomain)
                 .toList();
     }

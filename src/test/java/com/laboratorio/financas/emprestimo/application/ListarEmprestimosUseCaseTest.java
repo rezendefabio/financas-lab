@@ -31,13 +31,13 @@ class ListarEmprestimosUseCaseTest {
     }
 
     @Test
-    void executarRetornaListaDoUsuario() {
+    void executarRetornaTodosOsEmprestimos() {
         Emprestimo e = new Emprestimo(USER_ID, "Desc", "Joao",
                 TipoEmprestimo.CONCEDIDO, new Money(new BigDecimal("100.00"), BRL),
                 LocalDate.of(2026, 1, 1));
-        when(repository.listarPorUserId(USER_ID)).thenReturn(List.of(e));
+        when(repository.listarTodos()).thenReturn(List.of(e));
 
-        List<Emprestimo> resultado = useCase.executar(USER_ID);
+        List<Emprestimo> resultado = useCase.executar();
 
         assertThat(resultado).hasSize(1);
         assertThat(resultado.get(0).getDescricao()).isEqualTo("Desc");

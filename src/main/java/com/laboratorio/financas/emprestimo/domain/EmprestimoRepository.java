@@ -9,7 +9,7 @@ public interface EmprestimoRepository {
 
     Optional<Emprestimo> buscarPorId(UUID id);
 
-    List<Emprestimo> listarPorUserId(UUID userId);
+    List<Emprestimo> listarTodos();
 
     Emprestimo atualizar(Emprestimo emprestimo);
 
