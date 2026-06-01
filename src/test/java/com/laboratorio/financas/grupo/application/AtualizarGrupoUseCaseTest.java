@@ -34,11 +34,11 @@ class AtualizarGrupoUseCaseTest {
     @Test
     void executarAtualizaNomeEDescricao() {
         Grupo existente = new Grupo(GRUPO_ID, USER_ID, "Velho", "Desc velha", true, Instant.now(), Instant.now());
-        when(repository.buscarPorIdEUserId(GRUPO_ID, USER_ID)).thenReturn(Optional.of(existente));
+        when(repository.buscarPorId(GRUPO_ID)).thenReturn(Optional.of(existente));
         when(repository.salvar(any(Grupo.class))).thenAnswer(inv -> inv.getArgument(0));
 
         AtualizarGrupoUseCase.Comando comando =
-                new AtualizarGrupoUseCase.Comando(GRUPO_ID, USER_ID, "Novo", "Desc nova");
+                new AtualizarGrupoUseCase.Comando(GRUPO_ID, "Novo", "Desc nova");
         Grupo resultado = useCase.executar(comando);
 
         assertThat(resultado.getNome()).isEqualTo("Novo");
@@ -48,10 +48,10 @@ class AtualizarGrupoUseCaseTest {
 
     @Test
     void executarGrupoNaoEncontradoLancaException() {
-        when(repository.buscarPorIdEUserId(GRUPO_ID, USER_ID)).thenReturn(Optional.empty());
+        when(repository.buscarPorId(GRUPO_ID)).thenReturn(Optional.empty());
 
         AtualizarGrupoUseCase.Comando comando =
-                new AtualizarGrupoUseCase.Comando(GRUPO_ID, USER_ID, "Novo", null);
+                new AtualizarGrupoUseCase.Comando(GRUPO_ID, "Novo", null);
 
         assertThatThrownBy(() -> useCase.executar(comando))
                 .isInstanceOf(GrupoNaoEncontradoException.class);
@@ -60,16 +60,18 @@ class AtualizarGrupoUseCaseTest {
     }
 
     @Test
-    void executarNaoAtualizaGrupoDeOutroUsuario() {
+    void executarAtualizaGrupoCriadoPorOutroUsuario() {
         UUID outroUserId = UUID.randomUUID();
-        when(repository.buscarPorIdEUserId(GRUPO_ID, outroUserId)).thenReturn(Optional.empty());
+        Grupo existente = new Grupo(GRUPO_ID, outroUserId, "Velho", "Desc velha", true, Instant.now(), Instant.now());
+        when(repository.buscarPorId(GRUPO_ID)).thenReturn(Optional.of(existente));
+        when(repository.salvar(any(Grupo.class))).thenAnswer(inv -> inv.getArgument(0));
 
         AtualizarGrupoUseCase.Comando comando =
-                new AtualizarGrupoUseCase.Comando(GRUPO_ID, outroUserId, "Novo", null);
+                new AtualizarGrupoUseCase.Comando(GRUPO_ID, "Novo", "Desc nova");
+        Grupo resultado = useCase.executar(comando);
 
-        assertThatThrownBy(() -> useCase.executar(comando))
-                .isInstanceOf(GrupoNaoEncontradoException.class);
-
-        verify(repository, never()).salvar(any(Grupo.class));
+        assertThat(resultado.getNome()).isEqualTo("Novo");
+        assertThat(resultado.getUserId()).isEqualTo(outroUserId);
+        verify(repository).salvar(any(Grupo.class));
     }
 }

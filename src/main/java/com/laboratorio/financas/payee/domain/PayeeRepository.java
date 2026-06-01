@@ -10,8 +10,6 @@ public interface PayeeRepository {
 
     List<Payee> listarTodos();
 
-    Optional<Payee> findByIdAndUserId(UUID id, UUID userId);
-
     Payee save(Payee payee);
 
     void deleteById(UUID id);

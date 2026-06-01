@@ -19,7 +19,7 @@ public class AtualizarCentroCustoUseCase {
 
     @Transactional
     public CentroCusto executar(AtualizarCentroCustoComando comando) {
-        CentroCusto existente = repository.findByIdAndUserId(comando.id(), comando.userId())
+        CentroCusto existente = repository.findById(comando.id())
                 .orElseThrow(() -> new CentroCustoNaoEncontradoException(comando.id()));
 
         CentroCusto atualizado = new CentroCusto(

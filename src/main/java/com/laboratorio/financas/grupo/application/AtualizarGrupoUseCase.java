@@ -16,11 +16,11 @@ public class AtualizarGrupoUseCase {
         this.grupoRepository = grupoRepository;
     }
 
-    public record Comando(UUID id, UUID userId, String nome, String descricao) { }
+    public record Comando(UUID id, String nome, String descricao) { }
 
     @Transactional
     public Grupo executar(Comando comando) {
-        Grupo existente = grupoRepository.buscarPorIdEUserId(comando.id(), comando.userId())
+        Grupo existente = grupoRepository.buscarPorId(comando.id())
                 .orElseThrow(() -> new GrupoNaoEncontradoException(comando.id()));
 
         Grupo atualizado = existente.atualizar(comando.nome(), comando.descricao());

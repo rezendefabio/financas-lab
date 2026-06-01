@@ -41,7 +41,7 @@ class DesativarLimiteUseCaseTest {
         Limite existente = new Limite(USER_ID, "X", TipoLimite.MENSAL, valor);
         when(repository.buscarPorId(existente.getId())).thenReturn(Optional.of(existente));
 
-        useCase.executar(existente.getId(), USER_ID);
+        useCase.executar(existente.getId());
 
         ArgumentCaptor<Limite> captor = ArgumentCaptor.forClass(Limite.class);
         verify(repository).atualizar(captor.capture());
@@ -53,21 +53,22 @@ class DesativarLimiteUseCaseTest {
         UUID id = UUID.randomUUID();
         when(repository.buscarPorId(id)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> useCase.executar(id, USER_ID))
+        assertThatThrownBy(() -> useCase.executar(id))
                 .isInstanceOf(LimiteNaoEncontradoException.class);
 
         verify(repository, never()).atualizar(any());
     }
 
     @Test
-    void executarComLimiteDeOutroUsuarioLancaLimiteNaoEncontradoException() {
+    void executarDesativaLimiteCriadoPorOutroUsuario() {
         Money valor = new Money(new BigDecimal("50.00"), BRL);
         Limite outro = new Limite(UUID.randomUUID(), "X", TipoLimite.MENSAL, valor);
         when(repository.buscarPorId(outro.getId())).thenReturn(Optional.of(outro));
 
-        assertThatThrownBy(() -> useCase.executar(outro.getId(), USER_ID))
-                .isInstanceOf(LimiteNaoEncontradoException.class);
+        useCase.executar(outro.getId());
 
-        verify(repository, never()).atualizar(any());
+        ArgumentCaptor<Limite> captor = ArgumentCaptor.forClass(Limite.class);
+        verify(repository).atualizar(captor.capture());
+        assertThat(captor.getValue().isAtivo()).isFalse();
     }
 }

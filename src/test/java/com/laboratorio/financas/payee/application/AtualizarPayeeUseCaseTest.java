@@ -33,9 +33,9 @@ class AtualizarPayeeUseCaseTest {
     void executarCaminhoFelizAtualizaENome() {
         Payee existente = payeeExistente("Supermercado", null);
         Payee atualizado = payeeExistente("Mercado Extra", null);
-        when(repository.findByIdAndUserId(existente.getId(), USER_ID)).thenReturn(Optional.of(existente));
+        when(repository.findById(existente.getId())).thenReturn(Optional.of(existente));
         when(repository.save(any(Payee.class))).thenReturn(atualizado);
-        AtualizarPayeeComando comando = new AtualizarPayeeComando(existente.getId(), USER_ID, "Mercado Extra", null);
+        AtualizarPayeeComando comando = new AtualizarPayeeComando(existente.getId(), "Mercado Extra", null);
 
         Payee resultado = useCase.executar(comando);
 
@@ -45,20 +45,35 @@ class AtualizarPayeeUseCaseTest {
     @Test
     void executarPayeeNaoEncontradoLancaExcecao() {
         UUID id = UUID.randomUUID();
-        when(repository.findByIdAndUserId(id, USER_ID)).thenReturn(Optional.empty());
-        AtualizarPayeeComando comando = new AtualizarPayeeComando(id, USER_ID, "Novo Nome", null);
+        when(repository.findById(id)).thenReturn(Optional.empty());
+        AtualizarPayeeComando comando = new AtualizarPayeeComando(id, "Novo Nome", null);
 
         assertThatThrownBy(() -> useCase.executar(comando))
                 .isInstanceOf(PayeeNaoEncontradoException.class);
     }
 
     @Test
+    void executarAtualizaPayeeCriadoPorOutroUsuario() {
+        UUID outroUserId = UUID.randomUUID();
+        Instant now = Instant.now();
+        Payee existente = new Payee(UUID.randomUUID(), outroUserId, "Supermercado", null, now, now);
+        when(repository.findById(existente.getId())).thenReturn(Optional.of(existente));
+        when(repository.save(any(Payee.class))).thenAnswer(inv -> inv.getArgument(0));
+        AtualizarPayeeComando comando = new AtualizarPayeeComando(existente.getId(), "Mercado Extra", null);
+
+        Payee resultado = useCase.executar(comando);
+
+        assertThat(resultado.getNome()).isEqualTo("Mercado Extra");
+        assertThat(resultado.getUserId()).isEqualTo(outroUserId);
+    }
+
+    @Test
     void executarMantendoNomeExistenteQuandoNomeNulo() {
         Payee existente = payeeExistente("Farmacia", null);
         Payee atualizado = payeeExistente("Farmacia", null);
-        when(repository.findByIdAndUserId(existente.getId(), USER_ID)).thenReturn(Optional.of(existente));
+        when(repository.findById(existente.getId())).thenReturn(Optional.of(existente));
         when(repository.save(any(Payee.class))).thenReturn(atualizado);
-        AtualizarPayeeComando comando = new AtualizarPayeeComando(existente.getId(), USER_ID, null, null);
+        AtualizarPayeeComando comando = new AtualizarPayeeComando(existente.getId(), null, null);
 
         Payee resultado = useCase.executar(comando);
 

@@ -30,10 +30,10 @@ class DeletarPayeeUseCaseTest {
     @Test
     void executarCaminhoFelizDeletaPayee() {
         UUID id = UUID.randomUUID();
-        Payee existente = payee(id, "Supermercado");
-        when(repository.findByIdAndUserId(id, USER_ID)).thenReturn(Optional.of(existente));
+        Payee existente = payee(id, USER_ID, "Supermercado");
+        when(repository.findById(id)).thenReturn(Optional.of(existente));
 
-        useCase.executar(id, USER_ID);
+        useCase.executar(id);
 
         verify(repository).deleteById(id);
     }
@@ -41,14 +41,26 @@ class DeletarPayeeUseCaseTest {
     @Test
     void executarPayeeNaoEncontradoLancaExcecao() {
         UUID id = UUID.randomUUID();
-        when(repository.findByIdAndUserId(id, USER_ID)).thenReturn(Optional.empty());
+        when(repository.findById(id)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> useCase.executar(id, USER_ID))
+        assertThatThrownBy(() -> useCase.executar(id))
                 .isInstanceOf(PayeeNaoEncontradoException.class);
     }
 
-    private Payee payee(UUID id, String nome) {
+    @Test
+    void executarDeletaPayeeCriadoPorOutroUsuario() {
+        UUID id = UUID.randomUUID();
+        UUID outroUserId = UUID.randomUUID();
+        Payee existente = payee(id, outroUserId, "Supermercado");
+        when(repository.findById(id)).thenReturn(Optional.of(existente));
+
+        useCase.executar(id);
+
+        verify(repository).deleteById(id);
+    }
+
+    private Payee payee(UUID id, UUID userId, String nome) {
         Instant now = Instant.now();
-        return new Payee(id, USER_ID, nome, null, now, now);
+        return new Payee(id, userId, nome, null, now, now);
     }
 }

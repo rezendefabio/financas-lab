@@ -31,11 +31,6 @@ public class PayeeRepositoryImpl implements PayeeRepository {
     }
 
     @Override
-    public Optional<Payee> findByIdAndUserId(UUID id, UUID userId) {
-        return jpaRepository.findByIdAndUserId(id, userId).map(mapper::toDomain);
-    }
-
-    @Override
     public Payee save(Payee payee) {
         PayeeEntity entity = mapper.toEntity(payee);
         PayeeEntity salvo = jpaRepository.save(entity);

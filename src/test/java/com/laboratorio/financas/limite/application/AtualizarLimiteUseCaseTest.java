@@ -45,7 +45,7 @@ class AtualizarLimiteUseCaseTest {
         when(repository.atualizar(any(Limite.class))).thenAnswer(inv -> inv.getArgument(0));
 
         AtualizarLimiteUseCase.Comando cmd = new AtualizarLimiteUseCase.Comando(
-                existente.getId(), USER_ID, "Novo", TipoLimite.SEMANAL, valor("80.00"));
+                existente.getId(), "Novo", TipoLimite.SEMANAL, valor("80.00"));
         Limite resultado = useCase.executar(cmd);
 
         assertThat(resultado.getNome()).isEqualTo("Novo");
@@ -59,7 +59,7 @@ class AtualizarLimiteUseCaseTest {
         when(repository.buscarPorId(id)).thenReturn(Optional.empty());
 
         AtualizarLimiteUseCase.Comando cmd = new AtualizarLimiteUseCase.Comando(
-                id, USER_ID, "X", TipoLimite.DIARIO, valor("10.00"));
+                id, "X", TipoLimite.DIARIO, valor("10.00"));
         assertThatThrownBy(() -> useCase.executar(cmd))
                 .isInstanceOf(LimiteNaoEncontradoException.class);
 
@@ -67,15 +67,17 @@ class AtualizarLimiteUseCaseTest {
     }
 
     @Test
-    void executarComLimiteDeOutroUsuarioLancaLimiteNaoEncontradoException() {
+    void executarAtualizaLimiteCriadoPorOutroUsuario() {
         Limite outro = new Limite(UUID.randomUUID(), "Antigo", TipoLimite.DIARIO, valor("50.00"));
         when(repository.buscarPorId(outro.getId())).thenReturn(Optional.of(outro));
+        when(repository.atualizar(any(Limite.class))).thenAnswer(inv -> inv.getArgument(0));
 
         AtualizarLimiteUseCase.Comando cmd = new AtualizarLimiteUseCase.Comando(
-                outro.getId(), USER_ID, "X", TipoLimite.DIARIO, valor("10.00"));
-        assertThatThrownBy(() -> useCase.executar(cmd))
-                .isInstanceOf(LimiteNaoEncontradoException.class);
+                outro.getId(), "Novo", TipoLimite.MENSAL, valor("10.00"));
+        Limite resultado = useCase.executar(cmd);
 
-        verify(repository, never()).atualizar(any());
+        assertThat(resultado.getNome()).isEqualTo("Novo");
+        assertThat(resultado.getUserId()).isEqualTo(outro.getUserId());
+        verify(repository).atualizar(any(Limite.class));
     }
 }

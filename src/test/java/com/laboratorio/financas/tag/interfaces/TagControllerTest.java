@@ -10,9 +10,17 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.Mockito.timeout;
+import static org.mockito.Mockito.verify;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.laboratorio.financas.auditlog.domain.AuditAction;
+import com.laboratorio.financas.auditlog.infrastructure.AuditPublisher;
+import com.laboratorio.financas.tag.infrastructure.persistence.TagEntity;
 import com.laboratorio.financas.tag.infrastructure.persistence.TagJpaRepository;
 import com.laboratorio.financas.shared.AbstractAuthenticatedIntegrationTest;
+import java.time.Instant;
 import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.AfterEach;
@@ -21,6 +29,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.web.servlet.MvcResult;
 
 @AutoConfigureMockMvc
@@ -31,6 +40,9 @@ class TagControllerTest extends AbstractAuthenticatedIntegrationTest {
 
     @Autowired
     private TagJpaRepository jpaRepository;
+
+    @MockitoSpyBean
+    private AuditPublisher auditPublisher;
 
     @BeforeEach
     void limparAntes() {
@@ -201,5 +213,36 @@ class TagControllerTest extends AbstractAuthenticatedIntegrationTest {
     void semAuthRetorna401() throws Exception {
         mockMvc.perform(get("/api/tags"))
                 .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void putTagDeOutroUsuarioRetorna200() throws Exception {
+        UUID outroUserId = registrarOutroUsuario("outro-tag-put@test.com");
+        TagEntity tagDeOutro = new TagEntity(
+                UUID.randomUUID(), outroUserId, "Tag de outro", "#000000", Instant.now());
+        jpaRepository.save(tagDeOutro);
+
+        Map<String, Object> update = Map.of("nome", "Editada por outro", "cor", "#00FF00");
+        mockMvc.perform(comAuth(put("/api/tags/" + tagDeOutro.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(update))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.nome", equalTo("Editada por outro")));
+    }
+
+    @Test
+    void deleteTagDeOutroUsuarioRetorna204() throws Exception {
+        UUID outroUserId = registrarOutroUsuario("outro-tag-delete@test.com");
+        TagEntity tagDeOutro = new TagEntity(
+                UUID.randomUUID(), outroUserId, "Tag de outro", null, Instant.now());
+        jpaRepository.save(tagDeOutro);
+
+        mockMvc.perform(comAuth(delete("/api/tags/" + tagDeOutro.getId())))
+                .andExpect(status().isNoContent());
+
+        verify(auditPublisher, timeout(2000)).publish(argThat(event ->
+                event.action() == AuditAction.DELETE
+                        && event.entityId().equals(tagDeOutro.getId())
+                        && event.userEmail() != null));
     }
 }

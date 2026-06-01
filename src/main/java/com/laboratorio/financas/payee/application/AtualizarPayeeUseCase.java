@@ -19,7 +19,7 @@ public class AtualizarPayeeUseCase {
 
     @Transactional
     public Payee executar(AtualizarPayeeComando comando) {
-        Payee existente = repository.findByIdAndUserId(comando.id(), comando.userId())
+        Payee existente = repository.findById(comando.id())
                 .orElseThrow(() -> new PayeeNaoEncontradoException(comando.id()));
 
         Payee atualizado = new Payee(

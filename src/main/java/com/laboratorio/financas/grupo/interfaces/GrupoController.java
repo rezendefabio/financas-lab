@@ -88,12 +88,10 @@ public class GrupoController {
     @PutMapping("/{id}")
     public GrupoResponse atualizar(
             @PathVariable UUID id,
-            @Valid @RequestBody GrupoRequest request,
-            Authentication authentication
+            @Valid @RequestBody GrupoRequest request
     ) {
-        UUID userId = userIdResolver.resolve(authentication);
         AtualizarGrupoUseCase.Comando comando =
-                new AtualizarGrupoUseCase.Comando(id, userId, request.nome(), request.descricao());
+                new AtualizarGrupoUseCase.Comando(id, request.nome(), request.descricao());
         Grupo atualizado = atualizarGrupoUseCase.executar(comando);
         return GrupoResponse.fromDomain(atualizado);
     }
@@ -104,8 +102,7 @@ public class GrupoController {
             @PathVariable UUID id,
             Authentication authentication,
             @RequestHeader(value = "X-Screen-Code", required = false) String screenCode) {
-        UUID userId = userIdResolver.resolve(authentication);
-        deletarGrupoUseCase.executar(id, userId);
+        deletarGrupoUseCase.executar(id);
         auditPublisher.publish(new AuditEvent(
                 ENTITY_TYPE, id, AuditAction.DELETE,
                 userEmail(authentication), screenCode, null, null));

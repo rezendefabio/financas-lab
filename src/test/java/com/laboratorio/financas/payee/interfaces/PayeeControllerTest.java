@@ -7,12 +7,19 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.Mockito.timeout;
+import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.laboratorio.financas.auditlog.domain.AuditAction;
+import com.laboratorio.financas.auditlog.infrastructure.AuditPublisher;
+import com.laboratorio.financas.payee.infrastructure.persistence.PayeeEntity;
 import com.laboratorio.financas.payee.infrastructure.persistence.PayeeJpaRepository;
 import com.laboratorio.financas.shared.AbstractAuthenticatedIntegrationTest;
+import java.time.Instant;
 import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.AfterEach;
@@ -21,6 +28,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.web.servlet.MvcResult;
 
 @AutoConfigureMockMvc
@@ -31,6 +39,9 @@ class PayeeControllerTest extends AbstractAuthenticatedIntegrationTest {
 
     @Autowired
     private PayeeJpaRepository jpaRepository;
+
+    @MockitoSpyBean
+    private AuditPublisher auditPublisher;
 
     @BeforeEach
     void limparAntes() {
@@ -145,6 +156,44 @@ class PayeeControllerTest extends AbstractAuthenticatedIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(requestValido())))
                 .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void putPayeeDeOutroUsuarioRetorna200EAuditaUpdate() throws Exception {
+        UUID outroUserId = registrarOutroUsuario("outro-payee-put@test.com");
+        Instant now = Instant.now();
+        PayeeEntity payeeDeOutro = new PayeeEntity(
+                UUID.randomUUID(), outroUserId, "Payee de outro", null, now, now);
+        jpaRepository.save(payeeDeOutro);
+
+        Map<String, Object> update = Map.of("nome", "Editado por outro");
+        mockMvc.perform(comAuth(put("/api/payees/" + payeeDeOutro.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(update))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.nome", equalTo("Editado por outro")));
+
+        verify(auditPublisher, timeout(2000)).publish(argThat(event ->
+                event.action() == AuditAction.UPDATE
+                        && event.entityId().equals(payeeDeOutro.getId())
+                        && event.userEmail() != null));
+    }
+
+    @Test
+    void deletePayeeDeOutroUsuarioRetorna204EAuditaDelete() throws Exception {
+        UUID outroUserId = registrarOutroUsuario("outro-payee-delete@test.com");
+        Instant now = Instant.now();
+        PayeeEntity payeeDeOutro = new PayeeEntity(
+                UUID.randomUUID(), outroUserId, "Payee de outro", null, now, now);
+        jpaRepository.save(payeeDeOutro);
+
+        mockMvc.perform(comAuth(delete("/api/payees/" + payeeDeOutro.getId())))
+                .andExpect(status().isNoContent());
+
+        verify(auditPublisher, timeout(2000)).publish(argThat(event ->
+                event.action() == AuditAction.DELETE
+                        && event.entityId().equals(payeeDeOutro.getId())
+                        && event.userEmail() != null));
     }
 
     @Test

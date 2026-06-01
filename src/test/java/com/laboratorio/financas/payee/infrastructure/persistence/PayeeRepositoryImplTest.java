@@ -108,30 +108,15 @@ class PayeeRepositoryImplTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void findByIdAndUserIdRetornaPayeeQuandoExisteEPertenceAoUsuario() {
-        Payee novo = new Payee(userId, "Academia", null);
+    void findByIdRetornaPayeeIndependenteDoAutor() {
+        Payee novo = new Payee(outroUserId, "Academia", null);
         repository.save(novo);
 
-        Optional<Payee> resultado = repository.findByIdAndUserId(novo.getId(), userId);
+        Optional<Payee> resultado = repository.findById(novo.getId());
 
         assertThat(resultado).isPresent();
         assertThat(resultado.get().getId()).isEqualTo(novo.getId());
-    }
-
-    @Test
-    void findByIdAndUserIdRetornaVazioQuandoUserIdDiferente() {
-        Payee novo = new Payee(userId, "Academia", null);
-        repository.save(novo);
-
-        Optional<Payee> resultado = repository.findByIdAndUserId(novo.getId(), outroUserId);
-
-        assertThat(resultado).isEmpty();
-    }
-
-    @Test
-    void findByIdAndUserIdRetornaVazioQuandoNaoExiste() {
-        Optional<Payee> resultado = repository.findByIdAndUserId(UUID.randomUUID(), userId);
-        assertThat(resultado).isEmpty();
+        assertThat(resultado.get().getUserId()).isEqualTo(outroUserId);
     }
 
     @Test

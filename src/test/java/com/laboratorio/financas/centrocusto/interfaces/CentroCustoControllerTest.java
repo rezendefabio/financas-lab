@@ -7,12 +7,19 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.Mockito.timeout;
+import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.laboratorio.financas.auditlog.domain.AuditAction;
+import com.laboratorio.financas.auditlog.infrastructure.AuditPublisher;
+import com.laboratorio.financas.centrocusto.infrastructure.persistence.CentroCustoEntity;
 import com.laboratorio.financas.centrocusto.infrastructure.persistence.CentroCustoJpaRepository;
 import com.laboratorio.financas.shared.AbstractAuthenticatedIntegrationTest;
+import java.time.Instant;
 import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.AfterEach;
@@ -21,6 +28,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.web.servlet.MvcResult;
 
 @AutoConfigureMockMvc
@@ -31,6 +39,9 @@ class CentroCustoControllerTest extends AbstractAuthenticatedIntegrationTest {
 
     @Autowired
     private CentroCustoJpaRepository jpaRepository;
+
+    @MockitoSpyBean
+    private AuditPublisher auditPublisher;
 
     @BeforeEach
     void limparAntes() {
@@ -168,5 +179,46 @@ class CentroCustoControllerTest extends AbstractAuthenticatedIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(Map.of("nome", "Casa"))))
                 .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void putCentroCustoDeOutroUsuarioRetorna200EAuditaUpdate() throws Exception {
+        UUID outroUserId = registrarOutroUsuario("outro-cc-put@test.com");
+        Instant now = Instant.now();
+        CentroCustoEntity ccDeOutro = new CentroCustoEntity(
+                UUID.randomUUID(), outroUserId, "Centro de outro", null, true, now, now);
+        jpaRepository.save(ccDeOutro);
+
+        mockMvc.perform(comAuth(put("/api/centros-custo/" + ccDeOutro.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of("nome", "Editado por outro")))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.nome", equalTo("Editado por outro")));
+
+        verify(auditPublisher, timeout(2000)).publish(argThat(event ->
+                event.action() == AuditAction.UPDATE
+                        && event.entityId().equals(ccDeOutro.getId())
+                        && event.userEmail() != null));
+    }
+
+    @Test
+    void deleteCentroCustoDeOutroUsuarioRetorna204EAuditaUpdate() throws Exception {
+        UUID outroUserId = registrarOutroUsuario("outro-cc-delete@test.com");
+        Instant now = Instant.now();
+        CentroCustoEntity ccDeOutro = new CentroCustoEntity(
+                UUID.randomUUID(), outroUserId, "Centro de outro", null, true, now, now);
+        jpaRepository.save(ccDeOutro);
+
+        mockMvc.perform(comAuth(delete("/api/centros-custo/" + ccDeOutro.getId())))
+                .andExpect(status().isNoContent());
+
+        mockMvc.perform(comAuth(get("/api/centros-custo/" + ccDeOutro.getId())))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.ativo", equalTo(false)));
+
+        verify(auditPublisher, timeout(2000)).publish(argThat(event ->
+                event.action() == AuditAction.UPDATE
+                        && event.entityId().equals(ccDeOutro.getId())
+                        && event.userEmail() != null));
     }
 }

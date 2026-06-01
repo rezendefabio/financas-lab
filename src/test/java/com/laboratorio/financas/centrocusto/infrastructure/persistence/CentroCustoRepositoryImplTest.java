@@ -98,23 +98,14 @@ class CentroCustoRepositoryImplTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void findByIdAndUserIdRetornaVazioQuandoUserIdDiferente() {
-        CentroCusto novo = new CentroCusto(userId, "Casa", null);
+    void findByIdRetornaCentroCustoIndependenteDoAutor() {
+        CentroCusto novo = new CentroCusto(outroUserId, "Casa", null);
         repository.save(novo);
 
-        Optional<CentroCusto> resultado = repository.findByIdAndUserId(novo.getId(), outroUserId);
-
-        assertThat(resultado).isEmpty();
-    }
-
-    @Test
-    void findByIdAndUserIdRetornaQuandoCasaUsuario() {
-        CentroCusto novo = new CentroCusto(userId, "Casa", null);
-        repository.save(novo);
-
-        Optional<CentroCusto> resultado = repository.findByIdAndUserId(novo.getId(), userId);
+        Optional<CentroCusto> resultado = repository.findById(novo.getId());
 
         assertThat(resultado).isPresent();
+        assertThat(resultado.get().getUserId()).isEqualTo(outroUserId);
     }
 
     @Test

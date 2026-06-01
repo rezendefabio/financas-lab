@@ -33,11 +33,11 @@ class AtualizarCentroCustoUseCaseTest {
     @Test
     void executarAtualizaNomeEDescricao() {
         CentroCusto existente = new CentroCusto(USER_ID, "Casa", "old");
-        when(repository.findByIdAndUserId(existente.getId(), USER_ID)).thenReturn(Optional.of(existente));
+        when(repository.findById(existente.getId())).thenReturn(Optional.of(existente));
         when(repository.save(any(CentroCusto.class))).thenAnswer(inv -> inv.getArgument(0));
 
         AtualizarCentroCustoComando comando = new AtualizarCentroCustoComando(
-                existente.getId(), USER_ID, "Trabalho", "nova desc");
+                existente.getId(), "Trabalho", "nova desc");
 
         CentroCusto resultado = useCase.executar(comando);
 
@@ -49,10 +49,10 @@ class AtualizarCentroCustoUseCaseTest {
     @Test
     void executarLancaExcecaoQuandoNaoEncontrado() {
         UUID id = UUID.randomUUID();
-        when(repository.findByIdAndUserId(id, USER_ID)).thenReturn(Optional.empty());
+        when(repository.findById(id)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> useCase.executar(
-                new AtualizarCentroCustoComando(id, USER_ID, "Casa", null)))
+                new AtualizarCentroCustoComando(id, "Casa", null)))
                 .isInstanceOf(CentroCustoNaoEncontradoException.class);
     }
 
@@ -60,13 +60,27 @@ class AtualizarCentroCustoUseCaseTest {
     void executarPreservaAtivoEUserIdDoExistente() {
         CentroCusto existente = new CentroCusto(USER_ID, "Casa", null);
         CentroCusto desativado = existente.desativar();
-        when(repository.findByIdAndUserId(desativado.getId(), USER_ID)).thenReturn(Optional.of(desativado));
+        when(repository.findById(desativado.getId())).thenReturn(Optional.of(desativado));
         when(repository.save(any(CentroCusto.class))).thenAnswer(inv -> inv.getArgument(0));
 
         CentroCusto resultado = useCase.executar(
-                new AtualizarCentroCustoComando(desativado.getId(), USER_ID, "Renomeado", null));
+                new AtualizarCentroCustoComando(desativado.getId(), "Renomeado", null));
 
         assertThat(resultado.isAtivo()).isFalse();
         assertThat(resultado.getUserId()).isEqualTo(USER_ID);
+    }
+
+    @Test
+    void executarAtualizaCentroCustoCriadoPorOutroUsuario() {
+        UUID outroUserId = UUID.randomUUID();
+        CentroCusto existente = new CentroCusto(outroUserId, "Casa", "old");
+        when(repository.findById(existente.getId())).thenReturn(Optional.of(existente));
+        when(repository.save(any(CentroCusto.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        CentroCusto resultado = useCase.executar(
+                new AtualizarCentroCustoComando(existente.getId(), "Trabalho", "nova desc"));
+
+        assertThat(resultado.getNome()).isEqualTo("Trabalho");
+        assertThat(resultado.getUserId()).isEqualTo(outroUserId);
     }
 }

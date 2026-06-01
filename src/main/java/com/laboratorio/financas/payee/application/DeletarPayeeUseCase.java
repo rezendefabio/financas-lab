@@ -16,8 +16,8 @@ public class DeletarPayeeUseCase {
     }
 
     @Transactional
-    public void executar(UUID id, UUID userId) {
-        repository.findByIdAndUserId(id, userId)
+    public void executar(UUID id) {
+        repository.findById(id)
                 .orElseThrow(() -> new PayeeNaoEncontradoException(id));
         repository.deleteById(id);
     }

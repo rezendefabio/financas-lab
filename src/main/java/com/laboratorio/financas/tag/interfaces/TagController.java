@@ -87,11 +87,9 @@ public class TagController {
     @PutMapping("/{id}")
     public TagResponse atualizar(
             @PathVariable UUID id,
-            @Valid @RequestBody TagRequest request,
-            Authentication authentication
+            @Valid @RequestBody TagRequest request
     ) {
-        UUID userId = userIdResolver.resolve(authentication);
-        AtualizarTagUseCase.Comando comando = new AtualizarTagUseCase.Comando(id, userId, request.nome(), request.cor());
+        AtualizarTagUseCase.Comando comando = new AtualizarTagUseCase.Comando(id, request.nome(), request.cor());
         Tag atualizada = atualizarTagUseCase.executar(comando);
         return TagResponse.fromDomain(atualizada);
     }
@@ -102,8 +100,7 @@ public class TagController {
             @PathVariable UUID id,
             Authentication authentication,
             @RequestHeader(value = "X-Screen-Code", required = false) String screenCode) {
-        UUID userId = userIdResolver.resolve(authentication);
-        deletarTagUseCase.executar(id, userId);
+        deletarTagUseCase.executar(id);
         auditPublisher.publish(new AuditEvent(
                 ENTITY_TYPE, id, AuditAction.DELETE,
                 userEmail(authentication), screenCode, null, null));

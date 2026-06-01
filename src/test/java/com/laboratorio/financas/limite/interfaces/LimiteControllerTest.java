@@ -11,8 +11,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.laboratorio.financas.limite.domain.TipoLimite;
+import com.laboratorio.financas.limite.infrastructure.persistence.LimiteEntity;
 import com.laboratorio.financas.limite.infrastructure.persistence.LimiteJpaRepository;
 import com.laboratorio.financas.shared.AbstractAuthenticatedIntegrationTest;
+import com.laboratorio.financas.shared.infrastructure.persistence.MoneyEmbeddable;
+import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -183,5 +188,42 @@ class LimiteControllerTest extends AbstractAuthenticatedIntegrationTest {
     @Test
     void semAuthRetorna401() throws Exception {
         mockMvc.perform(get("/api/limites")).andExpect(status().isUnauthorized());
+    }
+
+    private UUID persistirLimiteDeOutroUsuario(String email, String nome) throws Exception {
+        UUID outroUserId = registrarOutroUsuario(email);
+        Instant now = Instant.now();
+        LimiteEntity limiteDeOutro = new LimiteEntity(
+                UUID.randomUUID(), outroUserId, nome, TipoLimite.MENSAL,
+                new MoneyEmbeddable(new BigDecimal("500.00"), "BRL"), true, now, now);
+        jpaRepository.save(limiteDeOutro);
+        return limiteDeOutro.getId();
+    }
+
+    @Test
+    void putLimiteDeOutroUsuarioRetorna200() throws Exception {
+        UUID id = persistirLimiteDeOutroUsuario("outro-limite-put@test.com", "Limite de outro");
+        Map<String, Object> body = corpoValido();
+        body.put("nome", "Editado por outro");
+        body.put("tipo", "ANUAL");
+        body.put("valor", 1000.00);
+
+        mockMvc.perform(comAuth(put("/api/limites/" + id)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(body))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.nome", equalTo("Editado por outro")));
+    }
+
+    @Test
+    void deleteLimiteDeOutroUsuarioRetorna204EFazSoftDelete() throws Exception {
+        UUID id = persistirLimiteDeOutroUsuario("outro-limite-delete@test.com", "Limite de outro");
+
+        mockMvc.perform(comAuth(delete("/api/limites/" + id)))
+                .andExpect(status().isNoContent());
+
+        mockMvc.perform(comAuth(get("/api/limites/" + id)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.ativo", equalTo(false)));
     }
 }
