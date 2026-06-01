@@ -101,11 +101,8 @@ public class CarteiraController {
     @PutMapping("/{id}")
     public CarteiraResponse atualizar(
             @PathVariable UUID id,
-            @Valid @RequestBody AtualizarCarteiraRequest request,
-            Authentication authentication
+            @Valid @RequestBody AtualizarCarteiraRequest request
     ) {
-        UUID userId = userIdResolver.resolve(authentication);
-        buscarDoUsuario(id, userId);
         AtualizarCarteiraUseCase.Comando comando = new AtualizarCarteiraUseCase.Comando(
                 id, request.nome(), request.tipo());
         Carteira atualizada = atualizarCarteiraUseCase.executar(comando);
@@ -118,18 +115,10 @@ public class CarteiraController {
             @PathVariable UUID id,
             Authentication authentication,
             @RequestHeader(value = "X-Screen-Code", required = false) String screenCode) {
-        UUID userId = userIdResolver.resolve(authentication);
-        buscarDoUsuario(id, userId);
         deletarCarteiraUseCase.executar(id);
         auditPublisher.publish(new AuditEvent(
                 ENTITY_TYPE, id, AuditAction.DELETE,
                 userEmail(authentication), screenCode, null, null));
-    }
-
-    private Carteira buscarDoUsuario(UUID id, UUID userId) {
-        return carteiraRepository.buscarPorId(id)
-                .filter(c -> c.getUserId().equals(userId))
-                .orElseThrow(() -> new CarteiraNaoEncontradaException(id));
     }
 
     private String userEmail(Authentication authentication) {
