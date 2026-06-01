@@ -20,6 +20,8 @@ import org.mockito.Mockito;
 
 class CriarContaUseCaseTest {
 
+    private static final UUID USER_ID = UUID.randomUUID();
+
     private ContaRepository repository;
     private CriarContaUseCase useCase;
 
@@ -30,7 +32,7 @@ class CriarContaUseCaseTest {
     }
 
     private CriarContaUseCase.Comando comandoSimples(String nome, TipoConta tipo, BigDecimal valor, String moeda) {
-        return new CriarContaUseCase.Comando(nome, tipo, valor, moeda, null, null, null, null, null);
+        return new CriarContaUseCase.Comando(nome, tipo, valor, moeda, USER_ID, null, null, null, null);
     }
 
     @Test
@@ -175,7 +177,7 @@ class CriarContaUseCaseTest {
 
         CriarContaUseCase.Comando comando = new CriarContaUseCase.Comando(
                 "Cartao", TipoConta.CARTAO_CREDITO, BigDecimal.ZERO, "BRL",
-                null, new BigDecimal("5000.00"), "BRL", 10, 20
+                USER_ID, new BigDecimal("5000.00"), "BRL", 10, 20
         );
 
         // When

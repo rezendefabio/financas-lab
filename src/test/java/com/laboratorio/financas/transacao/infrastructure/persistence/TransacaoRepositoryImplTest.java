@@ -22,6 +22,8 @@ import com.laboratorio.financas.transacao.domain.StatusTransacao;
 import com.laboratorio.financas.transacao.domain.Transacao;
 import com.laboratorio.financas.transacao.domain.TipoTransacao;
 import com.laboratorio.financas.transacao.domain.TotaisTransacaoPorConta;
+import com.laboratorio.financas.usuario.infrastructure.persistence.UsuarioEntity;
+import com.laboratorio.financas.usuario.infrastructure.persistence.UsuarioJpaRepository;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -61,15 +63,54 @@ class TransacaoRepositoryImplTest extends AbstractIntegrationTest {
     @Autowired
     private CategoriaJpaRepository categoriaJpaRepository;
 
+    @Autowired
+    private UsuarioJpaRepository usuarioJpaRepository;
+
+    private UUID userIdPadrao;
+
+    @org.junit.jupiter.api.BeforeEach
+    void preparar() {
+        userIdPadrao = criarUsuarioPersistido();
+    }
+
     @AfterEach
     void limpar() {
         jpaRepository.deleteAll();
         contaJpaRepository.deleteAll();
         categoriaJpaRepository.deleteAll();
+        usuarioJpaRepository.deleteAll();
+    }
+
+    private UUID criarUsuarioPersistido() {
+        UUID id = UUID.randomUUID();
+        UsuarioEntity entity = new UsuarioEntity(
+                id,
+                "teste+" + id + "@test.com",
+                "hash_bcrypt",
+                true,
+                Instant.now(),
+                null,
+                Instant.now()
+        );
+        usuarioJpaRepository.save(entity);
+        return id;
     }
 
     private UUID criarContaPersistida() {
-        Conta conta = new Conta("Conta de Teste", TipoConta.CORRENTE, new Money(BigDecimal.ZERO, BRL));
+        Conta conta = new Conta(
+                UUID.randomUUID(),
+                userIdPadrao,
+                "Conta de Teste",
+                TipoConta.CORRENTE,
+                new Money(BigDecimal.ZERO, BRL),
+                new Money(BigDecimal.ZERO, BRL),
+                null,
+                null,
+                null,
+                true,
+                Instant.now(),
+                null
+        );
         contaRepositoryImpl.salvar(conta);
         return conta.getId();
     }

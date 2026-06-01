@@ -32,6 +32,13 @@ class ContaRepositoryImplTest extends AbstractIntegrationTest {
     @Autowired
     private UsuarioJpaRepository usuarioJpaRepository;
 
+    private UUID userIdPadrao;
+
+    @org.junit.jupiter.api.BeforeEach
+    void preparar() {
+        userIdPadrao = criarUsuarioPersistido();
+    }
+
     @AfterEach
     void limpar() {
         jpaRepository.deleteAll();
@@ -53,10 +60,27 @@ class ContaRepositoryImplTest extends AbstractIntegrationTest {
         return id;
     }
 
+    private Conta contaNova(String nome, TipoConta tipo, Money saldoInicial) {
+        return new Conta(
+                UUID.randomUUID(),
+                userIdPadrao,
+                nome,
+                tipo,
+                saldoInicial,
+                saldoInicial,
+                null,
+                null,
+                null,
+                true,
+                Instant.now(),
+                null
+        );
+    }
+
     @Test
     void salvarPersisteContaERetornaInstanciaEquivalente() {
         // Given
-        Conta nova = new Conta(
+        Conta nova = contaNova(
                 "Conta Corrente",
                 TipoConta.CORRENTE,
                 new Money(new BigDecimal("100.00"), BRL)
@@ -76,7 +100,7 @@ class ContaRepositoryImplTest extends AbstractIntegrationTest {
     @Test
     void salvarPersisteCorretamenteSaldoComDuasCasasDecimais() {
         // Given
-        Conta nova = new Conta(
+        Conta nova = contaNova(
                 "Poupanca",
                 TipoConta.POUPANCA,
                 new Money(new BigDecimal("100.50"), BRL)
@@ -95,7 +119,7 @@ class ContaRepositoryImplTest extends AbstractIntegrationTest {
     @Test
     void salvarPersisteCorretamenteSaldoZero() {
         // Given
-        Conta nova = new Conta(
+        Conta nova = contaNova(
                 "Dinheiro Vivo",
                 TipoConta.DINHEIRO,
                 new Money(new BigDecimal("0.00"), BRL)
@@ -114,7 +138,7 @@ class ContaRepositoryImplTest extends AbstractIntegrationTest {
     @Test
     void salvarPersisteCorretamenteSaldoNegativo() {
         // Given
-        Conta nova = new Conta(
+        Conta nova = contaNova(
                 "Cartao Credito",
                 TipoConta.CARTAO_CREDITO,
                 new Money(new BigDecimal("-250.00"), BRL)
@@ -133,7 +157,7 @@ class ContaRepositoryImplTest extends AbstractIntegrationTest {
     @Test
     void salvarPersisteCorretamenteContaCartaoCredito() {
         // Given
-        Conta nova = new Conta(
+        Conta nova = contaNova(
                 "Cartao Visa",
                 TipoConta.CARTAO_CREDITO,
                 new Money(new BigDecimal("0.00"), BRL)
@@ -151,7 +175,7 @@ class ContaRepositoryImplTest extends AbstractIntegrationTest {
     @Test
     void buscarPorIdRetornaContaQuandoExiste() {
         // Given
-        Conta nova = new Conta(
+        Conta nova = contaNova(
                 "Corrente",
                 TipoConta.CORRENTE,
                 new Money(new BigDecimal("500.00"), BRL)
@@ -179,9 +203,9 @@ class ContaRepositoryImplTest extends AbstractIntegrationTest {
     @Test
     void listarTodasRetornaContasAtivasEInativas() {
         // Given
-        Conta c1 = new Conta("Corrente", TipoConta.CORRENTE, new Money(new BigDecimal("100.00"), BRL));
-        Conta c2 = new Conta("Poupanca", TipoConta.POUPANCA, new Money(new BigDecimal("200.00"), BRL));
-        Conta c3 = new Conta("Dinheiro", TipoConta.DINHEIRO, new Money(new BigDecimal("50.00"), BRL));
+        Conta c1 = contaNova("Corrente", TipoConta.CORRENTE, new Money(new BigDecimal("100.00"), BRL));
+        Conta c2 = contaNova("Poupanca", TipoConta.POUPANCA, new Money(new BigDecimal("200.00"), BRL));
+        Conta c3 = contaNova("Dinheiro", TipoConta.DINHEIRO, new Money(new BigDecimal("50.00"), BRL));
         repository.salvar(c1);
         repository.salvar(c2);
         Conta c3Salva = repository.salvar(c3);
@@ -197,9 +221,9 @@ class ContaRepositoryImplTest extends AbstractIntegrationTest {
     @Test
     void listarAtivasRetornaApenasAtivas() {
         // Given
-        Conta c1 = new Conta("Corrente", TipoConta.CORRENTE, new Money(new BigDecimal("100.00"), BRL));
-        Conta c2 = new Conta("Poupanca", TipoConta.POUPANCA, new Money(new BigDecimal("200.00"), BRL));
-        Conta c3 = new Conta("Dinheiro", TipoConta.DINHEIRO, new Money(new BigDecimal("50.00"), BRL));
+        Conta c1 = contaNova("Corrente", TipoConta.CORRENTE, new Money(new BigDecimal("100.00"), BRL));
+        Conta c2 = contaNova("Poupanca", TipoConta.POUPANCA, new Money(new BigDecimal("200.00"), BRL));
+        Conta c3 = contaNova("Dinheiro", TipoConta.DINHEIRO, new Money(new BigDecimal("50.00"), BRL));
         repository.salvar(c1);
         repository.salvar(c2);
         Conta c3Salva = repository.salvar(c3);
@@ -216,7 +240,7 @@ class ContaRepositoryImplTest extends AbstractIntegrationTest {
     @Test
     void salvarAplicaDesativacao() throws InterruptedException {
         // Given
-        Conta nova = new Conta(
+        Conta nova = contaNova(
                 "Corrente",
                 TipoConta.CORRENTE,
                 new Money(new BigDecimal("0.00"), BRL)
@@ -240,7 +264,7 @@ class ContaRepositoryImplTest extends AbstractIntegrationTest {
     void salvarComMoedaDiferentePersisteCodigoCorretamente() {
         // Given
         Currency usd = Currency.getInstance("USD");
-        Conta nova = new Conta(
+        Conta nova = contaNova(
                 "Conta Dolar",
                 TipoConta.CORRENTE,
                 new Money(new BigDecimal("1000.00"), usd)
@@ -289,7 +313,7 @@ class ContaRepositoryImplTest extends AbstractIntegrationTest {
         Money limiteCredito = new Money(new BigDecimal("5000.00"), BRL);
         Conta nova = new Conta(
                 UUID.randomUUID(),
-                null,
+                userIdPadrao,
                 "Cartao Visa",
                 TipoConta.CARTAO_CREDITO,
                 new Money(new BigDecimal("0.00"), BRL),
@@ -320,7 +344,7 @@ class ContaRepositoryImplTest extends AbstractIntegrationTest {
         Money saldoAtual = new Money(new BigDecimal("1500.00"), BRL);
         Conta nova = new Conta(
                 UUID.randomUUID(),
-                null,
+                userIdPadrao,
                 "Conta Atualizada",
                 TipoConta.CORRENTE,
                 saldoInicial,
@@ -345,7 +369,7 @@ class ContaRepositoryImplTest extends AbstractIntegrationTest {
     @Test
     void salvarComTipoInvestimentoPersisteCorretamente() {
         // Given
-        Conta nova = new Conta(
+        Conta nova = contaNova(
                 "CDB Nubank",
                 TipoConta.INVESTIMENTO,
                 new Money(new BigDecimal("2000.00"), BRL)
@@ -363,7 +387,7 @@ class ContaRepositoryImplTest extends AbstractIntegrationTest {
     @Test
     void salvarComTipoOutroPersisteCorretamente() {
         // Given
-        Conta nova = new Conta(
+        Conta nova = contaNova(
                 "Conta Outro",
                 TipoConta.OUTRO,
                 new Money(new BigDecimal("100.00"), BRL)
@@ -381,7 +405,7 @@ class ContaRepositoryImplTest extends AbstractIntegrationTest {
     @Test
     void deletarContaExistenteRemoveDoRepositorio() {
         // Given
-        Conta nova = new Conta(
+        Conta nova = contaNova(
                 "Conta Para Deletar",
                 TipoConta.CORRENTE,
                 new Money(new BigDecimal("100.00"), BRL)

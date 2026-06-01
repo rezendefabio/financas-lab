@@ -23,7 +23,8 @@ public class ContaEntity {
     @Column(name = "id", columnDefinition = "uuid", nullable = false, updatable = false)
     private UUID id;
 
-    @Column(name = "user_id", columnDefinition = "uuid")
+    @NotNull
+    @Column(name = "user_id", columnDefinition = "uuid", nullable = false)
     private UUID userId;
 
     @NotNull

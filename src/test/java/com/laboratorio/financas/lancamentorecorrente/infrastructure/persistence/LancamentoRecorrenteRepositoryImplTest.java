@@ -11,7 +11,10 @@ import com.laboratorio.financas.lancamentorecorrente.domain.Periodicidade;
 import com.laboratorio.financas.shared.AbstractIntegrationTest;
 import com.laboratorio.financas.shared.domain.Money;
 import com.laboratorio.financas.transacao.domain.TipoTransacao;
+import com.laboratorio.financas.usuario.infrastructure.persistence.UsuarioEntity;
+import com.laboratorio.financas.usuario.infrastructure.persistence.UsuarioJpaRepository;
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.Currency;
 import java.util.List;
@@ -41,12 +44,27 @@ class LancamentoRecorrenteRepositoryImplTest extends AbstractIntegrationTest {
     @Autowired
     private ContaJpaRepository contaJpaRepository;
 
+    @Autowired
+    private UsuarioJpaRepository usuarioJpaRepository;
+
     private UUID contaId;
 
     @BeforeEach
     void criarContaParaTestes() {
-        Conta conta = new Conta("Conta Teste", TipoConta.CORRENTE,
-                new Money(BigDecimal.ZERO, BRL));
+        UUID userId = criarUsuarioPersistido();
+        Conta conta = new Conta(
+                UUID.randomUUID(),
+                userId,
+                "Conta Teste",
+                TipoConta.CORRENTE,
+                new Money(BigDecimal.ZERO, BRL),
+                new Money(BigDecimal.ZERO, BRL),
+                null,
+                null,
+                null,
+                true,
+                Instant.now(),
+                null);
         contaRepository.salvar(conta);
         contaId = conta.getId();
     }
@@ -55,6 +73,21 @@ class LancamentoRecorrenteRepositoryImplTest extends AbstractIntegrationTest {
     void limpar() {
         jpaRepository.deleteAll();
         contaJpaRepository.deleteAll();
+        usuarioJpaRepository.deleteAll();
+    }
+
+    private UUID criarUsuarioPersistido() {
+        UUID id = UUID.randomUUID();
+        UsuarioEntity entity = new UsuarioEntity(
+                id,
+                "teste+" + id + "@test.com",
+                "hash_bcrypt",
+                true,
+                Instant.now(),
+                null,
+                Instant.now());
+        usuarioJpaRepository.save(entity);
+        return id;
     }
 
     private LancamentoRecorrente novoLancamento() {
