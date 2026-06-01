@@ -16,8 +16,8 @@ public class DeletarGrupoUseCase {
     }
 
     @Transactional
-    public void executar(UUID id, UUID userId) {
-        grupoRepository.buscarPorIdEUserId(id, userId)
+    public void executar(UUID id) {
+        grupoRepository.buscarPorId(id)
                 .orElseThrow(() -> new GrupoNaoEncontradoException(id));
         grupoRepository.deletar(id);
     }

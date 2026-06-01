@@ -10,8 +10,6 @@ public interface GrupoRepository {
 
     Optional<Grupo> buscarPorId(UUID id);
 
-    Optional<Grupo> buscarPorIdEUserId(UUID id, UUID userId);
-
     List<Grupo> listarTodos();
 
     void deletar(UUID id);

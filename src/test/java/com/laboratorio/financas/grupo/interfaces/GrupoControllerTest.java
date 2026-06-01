@@ -7,12 +7,19 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.Mockito.timeout;
+import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.laboratorio.financas.auditlog.domain.AuditAction;
+import com.laboratorio.financas.auditlog.infrastructure.AuditPublisher;
+import com.laboratorio.financas.grupo.infrastructure.persistence.GrupoEntity;
 import com.laboratorio.financas.grupo.infrastructure.persistence.GrupoJpaRepository;
 import com.laboratorio.financas.shared.AbstractAuthenticatedIntegrationTest;
+import java.time.Instant;
 import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.AfterEach;
@@ -21,6 +28,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.web.servlet.MvcResult;
 
 @AutoConfigureMockMvc
@@ -31,6 +39,9 @@ class GrupoControllerTest extends AbstractAuthenticatedIntegrationTest {
 
     @Autowired
     private GrupoJpaRepository jpaRepository;
+
+    @MockitoSpyBean
+    private AuditPublisher auditPublisher;
 
     @BeforeEach
     void limparAntes() {
@@ -200,5 +211,38 @@ class GrupoControllerTest extends AbstractAuthenticatedIntegrationTest {
     void semAuthRetorna401() throws Exception {
         mockMvc.perform(get("/api/grupos"))
                 .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void putGrupoDeOutroUsuarioRetorna200() throws Exception {
+        UUID outroUserId = registrarOutroUsuario("outro-grupo-put@test.com");
+        Instant now = Instant.now();
+        GrupoEntity grupoDeOutro = new GrupoEntity(
+                UUID.randomUUID(), outroUserId, "Grupo de outro", null, true, now, now);
+        jpaRepository.save(grupoDeOutro);
+
+        Map<String, Object> update = Map.of("nome", "Editado por outro");
+        mockMvc.perform(comAuth(put("/api/grupos/" + grupoDeOutro.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(update))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.nome", equalTo("Editado por outro")));
+    }
+
+    @Test
+    void deleteGrupoDeOutroUsuarioRetorna204EAuditaDelete() throws Exception {
+        UUID outroUserId = registrarOutroUsuario("outro-grupo-delete@test.com");
+        Instant now = Instant.now();
+        GrupoEntity grupoDeOutro = new GrupoEntity(
+                UUID.randomUUID(), outroUserId, "Grupo de outro", null, true, now, now);
+        jpaRepository.save(grupoDeOutro);
+
+        mockMvc.perform(comAuth(delete("/api/grupos/" + grupoDeOutro.getId())))
+                .andExpect(status().isNoContent());
+
+        verify(auditPublisher, timeout(2000)).publish(argThat(event ->
+                event.action() == AuditAction.DELETE
+                        && event.entityId().equals(grupoDeOutro.getId())
+                        && event.userEmail() != null));
     }
 }

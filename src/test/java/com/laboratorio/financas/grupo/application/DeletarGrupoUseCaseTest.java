@@ -33,31 +33,31 @@ class DeletarGrupoUseCaseTest {
     @Test
     void executarCaminhoFelizChamaDeletar() {
         Grupo grupo = new Grupo(GRUPO_ID, USER_ID, "Viagem", null, true, Instant.now(), Instant.now());
-        when(repository.buscarPorIdEUserId(GRUPO_ID, USER_ID)).thenReturn(Optional.of(grupo));
+        when(repository.buscarPorId(GRUPO_ID)).thenReturn(Optional.of(grupo));
 
-        useCase.executar(GRUPO_ID, USER_ID);
+        useCase.executar(GRUPO_ID);
 
         verify(repository, times(1)).deletar(GRUPO_ID);
     }
 
     @Test
     void executarGrupoNaoEncontradoLancaException() {
-        when(repository.buscarPorIdEUserId(GRUPO_ID, USER_ID)).thenReturn(Optional.empty());
+        when(repository.buscarPorId(GRUPO_ID)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> useCase.executar(GRUPO_ID, USER_ID))
+        assertThatThrownBy(() -> useCase.executar(GRUPO_ID))
                 .isInstanceOf(GrupoNaoEncontradoException.class);
 
         verify(repository, never()).deletar(GRUPO_ID);
     }
 
     @Test
-    void executarNaoRemoveGrupoDeOutroUsuario() {
+    void executarRemoveGrupoCriadoPorOutroUsuario() {
         UUID outroUserId = UUID.randomUUID();
-        when(repository.buscarPorIdEUserId(GRUPO_ID, outroUserId)).thenReturn(Optional.empty());
+        Grupo grupo = new Grupo(GRUPO_ID, outroUserId, "Viagem", null, true, Instant.now(), Instant.now());
+        when(repository.buscarPorId(GRUPO_ID)).thenReturn(Optional.of(grupo));
 
-        assertThatThrownBy(() -> useCase.executar(GRUPO_ID, outroUserId))
-                .isInstanceOf(GrupoNaoEncontradoException.class);
+        useCase.executar(GRUPO_ID);
 
-        verify(repository, never()).deletar(GRUPO_ID);
+        verify(repository, times(1)).deletar(GRUPO_ID);
     }
 }

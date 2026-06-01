@@ -31,11 +31,6 @@ public class GrupoRepositoryImpl implements GrupoRepository {
     }
 
     @Override
-    public Optional<Grupo> buscarPorIdEUserId(UUID id, UUID userId) {
-        return jpaRepository.findByIdAndUserId(id, userId).map(mapper::toDomain);
-    }
-
-    @Override
     public List<Grupo> listarTodos() {
         return jpaRepository.findAll().stream()
                 .map(mapper::toDomain)

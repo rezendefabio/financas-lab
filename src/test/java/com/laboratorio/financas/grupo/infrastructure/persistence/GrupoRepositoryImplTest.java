@@ -110,24 +110,15 @@ class GrupoRepositoryImplTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void buscarPorIdEUserIdRetornaGrupoQuandoExisteParaUsuario() {
+    void buscarPorIdRetornaGrupoIndependenteDoAutor() {
         Grupo grupo = new Grupo(userIdA, "Reforma", "Detalhes");
         repository.salvar(grupo);
 
-        Optional<Grupo> resultado = repository.buscarPorIdEUserId(grupo.getId(), userIdA);
+        Optional<Grupo> resultado = repository.buscarPorId(grupo.getId());
 
         assertThat(resultado).isPresent();
         assertThat(resultado.get().getId()).isEqualTo(grupo.getId());
-    }
-
-    @Test
-    void buscarPorIdEUserIdRetornaVazioParaOutroUsuario() {
-        Grupo grupo = new Grupo(userIdA, "Reforma", null);
-        repository.salvar(grupo);
-
-        Optional<Grupo> resultado = repository.buscarPorIdEUserId(grupo.getId(), userIdB);
-
-        assertThat(resultado).isEmpty();
+        assertThat(resultado.get().getUserId()).isEqualTo(userIdA);
     }
 
     @Test
