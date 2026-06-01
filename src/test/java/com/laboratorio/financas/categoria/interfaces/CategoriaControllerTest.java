@@ -103,13 +103,13 @@ class CategoriaControllerTest extends AbstractAuthenticatedIntegrationTest {
 
     @Test
     void postCategoriaComTipoNeutralRetorna201() throws Exception {
-        Map<String, Object> body = Map.of("nome", "Transferencia entre contas", "tipo", "NEUTRAL", "system", true);
+        Map<String, Object> body = Map.of("nome", "Transferencia entre contas", "tipo", "NEUTRAL");
         mockMvc.perform(comAuth(post("/api/categorias")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(body))))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.tipo", equalTo("NEUTRAL")))
-                .andExpect(jsonPath("$.system", equalTo(true)));
+                .andExpect(jsonPath("$.system", equalTo(false)));
     }
 
     @Test

@@ -78,7 +78,7 @@ public class CategoriaController {
                 request.tipo(),
                 request.categoriaPaiId(),
                 userId,
-                request.system()
+                false
         );
         Categoria criada = criarCategoriaUseCase.executar(comando);
         CategoriaResponse response = CategoriaResponse.fromDomain(criada);
