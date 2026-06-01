@@ -14,7 +14,7 @@ import com.laboratorio.financas.meta.domain.Meta;
 import com.laboratorio.financas.meta.interfaces.dto.CriarMetaRequest;
 import com.laboratorio.financas.meta.interfaces.dto.MetaResponse;
 import com.laboratorio.financas.meta.interfaces.dto.RegistrarDepositoRequest;
-import com.laboratorio.financas.usuario.domain.UsuarioRepository;
+import com.laboratorio.financas.shared.infrastructure.web.UserIdResolver;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
@@ -47,7 +47,7 @@ public class MetaController {
     private final RegistrarDepositoEmMetaUseCase registrarDepositoUseCase;
     private final AuditPublisher auditPublisher;
     private final ObjectMapper objectMapper;
-    private final UsuarioRepository usuarioRepository;
+    private final UserIdResolver userIdResolver;
 
     public MetaController(
             CriarMetaUseCase criarMetaUseCase,
@@ -57,7 +57,7 @@ public class MetaController {
             RegistrarDepositoEmMetaUseCase registrarDepositoUseCase,
             AuditPublisher auditPublisher,
             ObjectMapper objectMapper,
-            UsuarioRepository usuarioRepository
+            UserIdResolver userIdResolver
     ) {
         this.criarMetaUseCase = criarMetaUseCase;
         this.listarMetasUseCase = listarMetasUseCase;
@@ -66,7 +66,7 @@ public class MetaController {
         this.registrarDepositoUseCase = registrarDepositoUseCase;
         this.auditPublisher = auditPublisher;
         this.objectMapper = objectMapper;
-        this.usuarioRepository = usuarioRepository;
+        this.userIdResolver = userIdResolver;
     }
 
     @PostMapping
@@ -76,7 +76,7 @@ public class MetaController {
             Authentication authentication,
             @RequestHeader(value = "X-Screen-Code", required = false) String screenCode) {
         CriarMetaUseCase.Comando comando = new CriarMetaUseCase.Comando(
-                resolverUserId(authentication),
+                userIdResolver.resolve(authentication),
                 request.nome(),
                 request.valorAlvoValor(),
                 request.valorAlvoMoeda(),
@@ -133,14 +133,6 @@ public class MetaController {
                 ENTITY_TYPE, id, AuditAction.UPDATE,
                 userEmail(), screenCode, before, toJson(response)));
         return response;
-    }
-
-    private UUID resolverUserId(Authentication authentication) {
-        String email = authentication.getName();
-        return usuarioRepository.buscarPorEmail(email)
-                .orElseThrow(() -> new IllegalStateException(
-                        "Usuario autenticado nao encontrado: " + email))
-                .getId();
     }
 
     private String userEmail() {

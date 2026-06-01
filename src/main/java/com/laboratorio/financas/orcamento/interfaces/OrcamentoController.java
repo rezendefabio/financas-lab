@@ -14,7 +14,7 @@ import com.laboratorio.financas.orcamento.domain.Orcamento;
 import com.laboratorio.financas.orcamento.interfaces.dto.CriarOrcamentoRequest;
 import com.laboratorio.financas.orcamento.interfaces.dto.OrcamentoResponse;
 import com.laboratorio.financas.orcamento.interfaces.dto.ProgressoResponse;
-import com.laboratorio.financas.usuario.domain.UsuarioRepository;
+import com.laboratorio.financas.shared.infrastructure.web.UserIdResolver;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
@@ -47,7 +47,7 @@ public class OrcamentoController {
     private final CalcularProgressoDoOrcamentoUseCase calcularProgressoUseCase;
     private final AuditPublisher auditPublisher;
     private final ObjectMapper objectMapper;
-    private final UsuarioRepository usuarioRepository;
+    private final UserIdResolver userIdResolver;
 
     public OrcamentoController(
             CriarOrcamentoUseCase criarOrcamentoUseCase,
@@ -57,7 +57,7 @@ public class OrcamentoController {
             CalcularProgressoDoOrcamentoUseCase calcularProgressoUseCase,
             AuditPublisher auditPublisher,
             ObjectMapper objectMapper,
-            UsuarioRepository usuarioRepository
+            UserIdResolver userIdResolver
     ) {
         this.criarOrcamentoUseCase = criarOrcamentoUseCase;
         this.listarOrcamentosUseCase = listarOrcamentosUseCase;
@@ -66,7 +66,7 @@ public class OrcamentoController {
         this.calcularProgressoUseCase = calcularProgressoUseCase;
         this.auditPublisher = auditPublisher;
         this.objectMapper = objectMapper;
-        this.usuarioRepository = usuarioRepository;
+        this.userIdResolver = userIdResolver;
     }
 
     @PostMapping
@@ -76,7 +76,7 @@ public class OrcamentoController {
             Authentication authentication,
             @RequestHeader(value = "X-Screen-Code", required = false) String screenCode) {
         CriarOrcamentoUseCase.Comando comando = new CriarOrcamentoUseCase.Comando(
-                resolverUserId(authentication),
+                userIdResolver.resolve(authentication),
                 request.categoriaId(),
                 request.valorLimiteValor(),
                 request.valorLimiteMoeda(),
@@ -131,14 +131,6 @@ public class OrcamentoController {
                 resultado.percentualUtilizado(),
                 resultado.status().name()
         );
-    }
-
-    private UUID resolverUserId(Authentication authentication) {
-        String email = authentication.getName();
-        return usuarioRepository.buscarPorEmail(email)
-                .orElseThrow(() -> new IllegalStateException(
-                        "Usuario autenticado nao encontrado: " + email))
-                .getId();
     }
 
     private String userEmail() {

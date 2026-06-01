@@ -16,8 +16,7 @@ import com.laboratorio.financas.centrocusto.domain.CentroCusto;
 import com.laboratorio.financas.centrocusto.interfaces.dto.AtualizarCentroCustoRequest;
 import com.laboratorio.financas.centrocusto.interfaces.dto.CentroCustoResponse;
 import com.laboratorio.financas.centrocusto.interfaces.dto.CriarCentroCustoRequest;
-import com.laboratorio.financas.usuario.domain.Usuario;
-import com.laboratorio.financas.usuario.domain.UsuarioRepository;
+import com.laboratorio.financas.shared.infrastructure.web.UserIdResolver;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
@@ -50,7 +49,7 @@ public class CentroCustoController {
     private final BuscarCentroCustoPorIdUseCase buscarCentroCustoPorIdUseCase;
     private final AtualizarCentroCustoUseCase atualizarCentroCustoUseCase;
     private final DesativarCentroCustoUseCase desativarCentroCustoUseCase;
-    private final UsuarioRepository usuarioRepository;
+    private final UserIdResolver userIdResolver;
     private final AuditPublisher auditPublisher;
     private final ObjectMapper objectMapper;
 
@@ -60,7 +59,7 @@ public class CentroCustoController {
             BuscarCentroCustoPorIdUseCase buscarCentroCustoPorIdUseCase,
             AtualizarCentroCustoUseCase atualizarCentroCustoUseCase,
             DesativarCentroCustoUseCase desativarCentroCustoUseCase,
-            UsuarioRepository usuarioRepository,
+            UserIdResolver userIdResolver,
             AuditPublisher auditPublisher,
             ObjectMapper objectMapper
     ) {
@@ -69,14 +68,14 @@ public class CentroCustoController {
         this.buscarCentroCustoPorIdUseCase = buscarCentroCustoPorIdUseCase;
         this.atualizarCentroCustoUseCase = atualizarCentroCustoUseCase;
         this.desativarCentroCustoUseCase = desativarCentroCustoUseCase;
-        this.usuarioRepository = usuarioRepository;
+        this.userIdResolver = userIdResolver;
         this.auditPublisher = auditPublisher;
         this.objectMapper = objectMapper;
     }
 
     @GetMapping
     public List<CentroCustoResponse> listar() {
-        UUID userId = resolverUserId();
+        UUID userId = userIdResolver.resolve();
         return listarCentrosCustoUseCase.executar(userId).stream()
                 .map(CentroCustoResponse::fromDomain)
                 .toList();
@@ -84,7 +83,7 @@ public class CentroCustoController {
 
     @GetMapping("/{id}")
     public CentroCustoResponse buscar(@PathVariable UUID id) {
-        UUID userId = resolverUserId();
+        UUID userId = userIdResolver.resolve();
         CentroCusto centroCusto = buscarCentroCustoPorIdUseCase.executar(id, userId);
         return CentroCustoResponse.fromDomain(centroCusto);
     }
@@ -93,7 +92,7 @@ public class CentroCustoController {
     public ResponseEntity<CentroCustoResponse> criar(
             @Valid @RequestBody CriarCentroCustoRequest request,
             @RequestHeader(value = "X-Screen-Code", required = false) String screenCode) {
-        UUID userId = resolverUserId();
+        UUID userId = userIdResolver.resolve();
         CriarCentroCustoComando comando = new CriarCentroCustoComando(
                 userId,
                 request.nome(),
@@ -113,7 +112,7 @@ public class CentroCustoController {
             @Valid @RequestBody AtualizarCentroCustoRequest request,
             @RequestHeader(value = "X-Screen-Code", required = false) String screenCode
     ) {
-        UUID userId = resolverUserId();
+        UUID userId = userIdResolver.resolve();
         CentroCusto antes = buscarCentroCustoPorIdUseCase.executar(id, userId);
         String before = toJson(CentroCustoResponse.fromDomain(antes));
         AtualizarCentroCustoComando comando = new AtualizarCentroCustoComando(
@@ -135,7 +134,7 @@ public class CentroCustoController {
     public void desativar(
             @PathVariable UUID id,
             @RequestHeader(value = "X-Screen-Code", required = false) String screenCode) {
-        UUID userId = resolverUserId();
+        UUID userId = userIdResolver.resolve();
         CentroCusto antes = buscarCentroCustoPorIdUseCase.executar(id, userId);
         String before = toJson(CentroCustoResponse.fromDomain(antes));
         desativarCentroCustoUseCase.executar(id, userId);
@@ -143,14 +142,6 @@ public class CentroCustoController {
         auditPublisher.publish(new AuditEvent(
                 ENTITY_TYPE, id, AuditAction.UPDATE,
                 userEmail(), screenCode, before, toJson(CentroCustoResponse.fromDomain(depois))));
-    }
-
-    private UUID resolverUserId() {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        String email = (String) auth.getPrincipal();
-        Usuario usuario = usuarioRepository.buscarPorEmail(email)
-                .orElseThrow(() -> new IllegalStateException("Usuario autenticado nao encontrado: " + email));
-        return usuario.getId();
     }
 
     private String userEmail() {

@@ -5,16 +5,13 @@ import com.laboratorio.financas.relatorio.application.FluxoCaixaUseCase;
 import com.laboratorio.financas.relatorio.application.GastosPorCategoriaUseCase;
 import com.laboratorio.financas.relatorio.interfaces.dto.EvolucaoSaldoResponse;
 import com.laboratorio.financas.relatorio.interfaces.dto.GastosPorCategoriaResponse;
-import com.laboratorio.financas.usuario.domain.Usuario;
-import com.laboratorio.financas.usuario.domain.UsuarioRepository;
+import com.laboratorio.financas.shared.infrastructure.web.UserIdResolver;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import java.time.LocalDate;
 import java.util.UUID;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -29,16 +26,16 @@ public class RelatorioController {
     private final GastosPorCategoriaUseCase gastosPorCategoriaUseCase;
     private final EvolucaoSaldoUseCase evolucaoSaldoUseCase;
     private final FluxoCaixaUseCase fluxoCaixaUseCase;
-    private final UsuarioRepository usuarioRepository;
+    private final UserIdResolver userIdResolver;
 
     public RelatorioController(GastosPorCategoriaUseCase gastosPorCategoriaUseCase,
                                EvolucaoSaldoUseCase evolucaoSaldoUseCase,
                                FluxoCaixaUseCase fluxoCaixaUseCase,
-                               UsuarioRepository usuarioRepository) {
+                               UserIdResolver userIdResolver) {
         this.gastosPorCategoriaUseCase = gastosPorCategoriaUseCase;
         this.evolucaoSaldoUseCase = evolucaoSaldoUseCase;
         this.fluxoCaixaUseCase = fluxoCaixaUseCase;
-        this.usuarioRepository = usuarioRepository;
+        this.userIdResolver = userIdResolver;
     }
 
     @GetMapping("/gastos-por-categoria")
@@ -46,7 +43,7 @@ public class RelatorioController {
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dataInicio,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dataFim,
             @RequestParam(required = false) UUID contaId) {
-        UUID userId = resolverUserId();
+        UUID userId = userIdResolver.resolve();
         var resultado = gastosPorCategoriaUseCase.executar(
                 new GastosPorCategoriaUseCase.Consulta(dataInicio, dataFim, contaId, userId));
         return GastosPorCategoriaResponse.fromResultado(resultado);
@@ -57,7 +54,7 @@ public class RelatorioController {
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dataInicio,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dataFim,
             @RequestParam(required = false) UUID contaId) {
-        UUID userId = resolverUserId();
+        UUID userId = userIdResolver.resolve();
         var resultado = evolucaoSaldoUseCase.executar(
                 new EvolucaoSaldoUseCase.Consulta(dataInicio, dataFim, contaId, userId));
         return EvolucaoSaldoResponse.fromResultado(resultado);
@@ -67,15 +64,8 @@ public class RelatorioController {
     public ResponseEntity<FluxoCaixaUseCase.FluxoCaixaResponse> fluxoCaixa(
             @RequestParam int ano,
             @RequestParam @Min(1) @Max(12) int mes) {
-        UUID userId = resolverUserId();
+        UUID userId = userIdResolver.resolve();
         return ResponseEntity.ok(fluxoCaixaUseCase.executar(ano, mes, userId));
     }
 
-    private UUID resolverUserId() {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        String email = (String) auth.getPrincipal();
-        Usuario usuario = usuarioRepository.buscarPorEmail(email)
-                .orElseThrow(() -> new IllegalStateException("Usuario autenticado nao encontrado: " + email));
-        return usuario.getId();
-    }
 }

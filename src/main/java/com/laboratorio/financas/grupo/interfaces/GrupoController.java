@@ -10,7 +10,7 @@ import com.laboratorio.financas.grupo.application.CriarGrupoUseCase;
 import com.laboratorio.financas.grupo.application.DeletarGrupoUseCase;
 import com.laboratorio.financas.grupo.application.ListarGruposUseCase;
 import com.laboratorio.financas.grupo.domain.Grupo;
-import com.laboratorio.financas.usuario.domain.UsuarioRepository;
+import com.laboratorio.financas.shared.infrastructure.web.UserIdResolver;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
@@ -40,7 +40,7 @@ public class GrupoController {
     private final ListarGruposUseCase listarGruposUseCase;
     private final AtualizarGrupoUseCase atualizarGrupoUseCase;
     private final DeletarGrupoUseCase deletarGrupoUseCase;
-    private final UsuarioRepository usuarioRepository;
+    private final UserIdResolver userIdResolver;
     private final AuditPublisher auditPublisher;
     private final ObjectMapper objectMapper;
 
@@ -49,7 +49,7 @@ public class GrupoController {
             ListarGruposUseCase listarGruposUseCase,
             AtualizarGrupoUseCase atualizarGrupoUseCase,
             DeletarGrupoUseCase deletarGrupoUseCase,
-            UsuarioRepository usuarioRepository,
+            UserIdResolver userIdResolver,
             AuditPublisher auditPublisher,
             ObjectMapper objectMapper
     ) {
@@ -57,14 +57,14 @@ public class GrupoController {
         this.listarGruposUseCase = listarGruposUseCase;
         this.atualizarGrupoUseCase = atualizarGrupoUseCase;
         this.deletarGrupoUseCase = deletarGrupoUseCase;
-        this.usuarioRepository = usuarioRepository;
+        this.userIdResolver = userIdResolver;
         this.auditPublisher = auditPublisher;
         this.objectMapper = objectMapper;
     }
 
     @GetMapping
     public List<GrupoResponse> listar(Authentication authentication) {
-        UUID userId = resolverUserId(authentication);
+        UUID userId = userIdResolver.resolve(authentication);
         List<Grupo> grupos = listarGruposUseCase.executar(userId);
         return grupos.stream().map(GrupoResponse::fromDomain).toList();
     }
@@ -75,7 +75,7 @@ public class GrupoController {
             @Valid @RequestBody GrupoRequest request,
             Authentication authentication,
             @RequestHeader(value = "X-Screen-Code", required = false) String screenCode) {
-        UUID userId = resolverUserId(authentication);
+        UUID userId = userIdResolver.resolve(authentication);
         CriarGrupoUseCase.Comando comando =
                 new CriarGrupoUseCase.Comando(userId, request.nome(), request.descricao());
         Grupo criado = criarGrupoUseCase.executar(comando);
@@ -92,7 +92,7 @@ public class GrupoController {
             @Valid @RequestBody GrupoRequest request,
             Authentication authentication
     ) {
-        UUID userId = resolverUserId(authentication);
+        UUID userId = userIdResolver.resolve(authentication);
         AtualizarGrupoUseCase.Comando comando =
                 new AtualizarGrupoUseCase.Comando(id, userId, request.nome(), request.descricao());
         Grupo atualizado = atualizarGrupoUseCase.executar(comando);
@@ -105,18 +105,11 @@ public class GrupoController {
             @PathVariable UUID id,
             Authentication authentication,
             @RequestHeader(value = "X-Screen-Code", required = false) String screenCode) {
-        UUID userId = resolverUserId(authentication);
+        UUID userId = userIdResolver.resolve(authentication);
         deletarGrupoUseCase.executar(id, userId);
         auditPublisher.publish(new AuditEvent(
                 ENTITY_TYPE, id, AuditAction.DELETE,
                 userEmail(authentication), screenCode, null, null));
-    }
-
-    private UUID resolverUserId(Authentication authentication) {
-        String email = authentication.getName();
-        return usuarioRepository.buscarPorEmail(email)
-                .orElseThrow(() -> new IllegalStateException("Usuario autenticado nao encontrado: " + email))
-                .getId();
     }
 
     private String userEmail(Authentication authentication) {

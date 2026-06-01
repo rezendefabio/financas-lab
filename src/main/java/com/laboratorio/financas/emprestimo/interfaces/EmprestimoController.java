@@ -12,7 +12,7 @@ import com.laboratorio.financas.emprestimo.application.ListarEmprestimosUseCase;
 import com.laboratorio.financas.emprestimo.interfaces.dto.AtualizarEmprestimoRequest;
 import com.laboratorio.financas.emprestimo.interfaces.dto.CriarEmprestimoRequest;
 import com.laboratorio.financas.emprestimo.interfaces.dto.EmprestimoResponse;
-import com.laboratorio.financas.usuario.domain.UsuarioRepository;
+import com.laboratorio.financas.shared.infrastructure.web.UserIdResolver;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
@@ -42,7 +42,7 @@ public class EmprestimoController {
     private final ListarEmprestimosUseCase listarUseCase;
     private final AtualizarEmprestimoUseCase atualizarUseCase;
     private final DeletarEmprestimoUseCase deletarUseCase;
-    private final UsuarioRepository usuarioRepository;
+    private final UserIdResolver userIdResolver;
     private final AuditPublisher auditPublisher;
     private final ObjectMapper objectMapper;
 
@@ -50,21 +50,21 @@ public class EmprestimoController {
                                ListarEmprestimosUseCase listarUseCase,
                                AtualizarEmprestimoUseCase atualizarUseCase,
                                DeletarEmprestimoUseCase deletarUseCase,
-                               UsuarioRepository usuarioRepository,
+                               UserIdResolver userIdResolver,
                                AuditPublisher auditPublisher,
                                ObjectMapper objectMapper) {
         this.criarUseCase = criarUseCase;
         this.listarUseCase = listarUseCase;
         this.atualizarUseCase = atualizarUseCase;
         this.deletarUseCase = deletarUseCase;
-        this.usuarioRepository = usuarioRepository;
+        this.userIdResolver = userIdResolver;
         this.auditPublisher = auditPublisher;
         this.objectMapper = objectMapper;
     }
 
     @GetMapping
     public List<EmprestimoResponse> listar(Authentication authentication) {
-        UUID userId = resolverUserId(authentication);
+        UUID userId = userIdResolver.resolve(authentication);
         return listarUseCase.executar(userId).stream()
                 .map(EmprestimoResponse::fromDomain)
                 .toList();
@@ -76,7 +76,7 @@ public class EmprestimoController {
             @Valid @RequestBody CriarEmprestimoRequest request,
             Authentication authentication,
             @RequestHeader(value = "X-Screen-Code", required = false) String screenCode) {
-        UUID userId = resolverUserId(authentication);
+        UUID userId = userIdResolver.resolve(authentication);
         CriarEmprestimoUseCase.Comando comando = new CriarEmprestimoUseCase.Comando(
                 userId,
                 request.descricao(),
@@ -99,7 +99,7 @@ public class EmprestimoController {
             @Valid @RequestBody AtualizarEmprestimoRequest request,
             Authentication authentication,
             @RequestHeader(value = "X-Screen-Code", required = false) String screenCode) {
-        resolverUserId(authentication);
+        userIdResolver.resolve(authentication);
         AtualizarEmprestimoUseCase.Comando comando = new AtualizarEmprestimoUseCase.Comando(
                 id,
                 request.descricao(),
@@ -121,19 +121,11 @@ public class EmprestimoController {
             @PathVariable UUID id,
             Authentication authentication,
             @RequestHeader(value = "X-Screen-Code", required = false) String screenCode) {
-        resolverUserId(authentication);
+        userIdResolver.resolve(authentication);
         deletarUseCase.executar(id);
         auditPublisher.publish(new AuditEvent(
                 ENTITY_TYPE, id, AuditAction.DELETE,
                 userEmail(authentication), screenCode, null, null));
-    }
-
-    private UUID resolverUserId(Authentication authentication) {
-        String email = authentication.getName();
-        return usuarioRepository.buscarPorEmail(email)
-                .orElseThrow(() -> new IllegalStateException(
-                        "Usuario autenticado nao encontrado: " + email))
-                .getId();
     }
 
     private String userEmail(Authentication authentication) {

@@ -14,7 +14,7 @@ import com.laboratorio.financas.auditlog.domain.AuditAction;
 import com.laboratorio.financas.auditlog.domain.AuditEvent;
 import com.laboratorio.financas.auditlog.infrastructure.AuditPublisher;
 import com.laboratorio.financas.shared.domain.Money;
-import com.laboratorio.financas.usuario.domain.UsuarioRepository;
+import com.laboratorio.financas.shared.infrastructure.web.UserIdResolver;
 import jakarta.validation.Valid;
 import java.util.Currency;
 import java.util.List;
@@ -46,7 +46,7 @@ public class AssinaturaController {
     private final BuscarAssinaturaPorIdUseCase buscarPorIdUseCase;
     private final AtualizarAssinaturaUseCase atualizarUseCase;
     private final DeletarAssinaturaUseCase deletarUseCase;
-    private final UsuarioRepository usuarioRepository;
+    private final UserIdResolver userIdResolver;
     private final AuditPublisher auditPublisher;
     private final ObjectMapper objectMapper;
 
@@ -56,7 +56,7 @@ public class AssinaturaController {
             BuscarAssinaturaPorIdUseCase buscarPorIdUseCase,
             AtualizarAssinaturaUseCase atualizarUseCase,
             DeletarAssinaturaUseCase deletarUseCase,
-            UsuarioRepository usuarioRepository,
+            UserIdResolver userIdResolver,
             AuditPublisher auditPublisher,
             ObjectMapper objectMapper) {
         this.criarUseCase = criarUseCase;
@@ -64,14 +64,14 @@ public class AssinaturaController {
         this.buscarPorIdUseCase = buscarPorIdUseCase;
         this.atualizarUseCase = atualizarUseCase;
         this.deletarUseCase = deletarUseCase;
-        this.usuarioRepository = usuarioRepository;
+        this.userIdResolver = userIdResolver;
         this.auditPublisher = auditPublisher;
         this.objectMapper = objectMapper;
     }
 
     @GetMapping
     public List<AssinaturaResponse> listar(Authentication authentication) {
-        UUID userId = resolverUserId(authentication);
+        UUID userId = userIdResolver.resolve(authentication);
         return listarUseCase.executar(userId).stream()
                 .map(AssinaturaResponse::fromDomain)
                 .toList();
@@ -81,7 +81,7 @@ public class AssinaturaController {
     public AssinaturaResponse buscar(
             @PathVariable UUID id,
             Authentication authentication) {
-        resolverUserId(authentication);
+        userIdResolver.resolve(authentication);
         return AssinaturaResponse.fromDomain(buscarPorIdUseCase.executar(id));
     }
 
@@ -91,7 +91,7 @@ public class AssinaturaController {
             @Valid @RequestBody CriarAssinaturaRequest request,
             Authentication authentication,
             @RequestHeader(value = "X-Screen-Code", required = false) String screenCode) {
-        UUID userId = resolverUserId(authentication);
+        UUID userId = userIdResolver.resolve(authentication);
         Money valorMensal = new Money(request.valorMensal(), Currency.getInstance(request.moeda()));
         CriarAssinaturaUseCase.Comando comando = new CriarAssinaturaUseCase.Comando(
                 userId, request.nome(), request.tipo(), valorMensal, request.dataRenovacao());
@@ -108,7 +108,7 @@ public class AssinaturaController {
             @Valid @RequestBody AtualizarAssinaturaRequest request,
             Authentication authentication,
             @RequestHeader(value = "X-Screen-Code", required = false) String screenCode) {
-        resolverUserId(authentication);
+        userIdResolver.resolve(authentication);
         Money valorMensal = new Money(request.valorMensal(), Currency.getInstance(request.moeda()));
         AtualizarAssinaturaUseCase.Comando comando = new AtualizarAssinaturaUseCase.Comando(
                 id, request.nome(), request.tipo(), valorMensal,
@@ -126,19 +126,11 @@ public class AssinaturaController {
             @PathVariable UUID id,
             Authentication authentication,
             @RequestHeader(value = "X-Screen-Code", required = false) String screenCode) {
-        resolverUserId(authentication);
+        userIdResolver.resolve(authentication);
         deletarUseCase.executar(id);
         auditPublisher.publish(new AuditEvent(
                 ENTITY_TYPE, id, AuditAction.DELETE,
                 userEmail(authentication), screenCode, null, null));
-    }
-
-    private UUID resolverUserId(Authentication authentication) {
-        String email = authentication.getName();
-        return usuarioRepository.buscarPorEmail(email)
-                .orElseThrow(() -> new IllegalStateException(
-                        "Usuario autenticado nao encontrado: " + email))
-                .getId();
     }
 
     private String userEmail(Authentication authentication) {

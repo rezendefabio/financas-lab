@@ -11,7 +11,7 @@ import com.laboratorio.financas.carteira.application.DeletarCarteiraUseCase;
 import com.laboratorio.financas.carteira.application.ListarCarteirasUseCase;
 import com.laboratorio.financas.carteira.domain.Carteira;
 import com.laboratorio.financas.carteira.domain.CarteiraNaoEncontradaException;
-import com.laboratorio.financas.usuario.domain.UsuarioRepository;
+import com.laboratorio.financas.shared.infrastructure.web.UserIdResolver;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
@@ -41,7 +41,7 @@ public class CarteiraController {
     private final ListarCarteirasUseCase listarCarteirasUseCase;
     private final AtualizarCarteiraUseCase atualizarCarteiraUseCase;
     private final DeletarCarteiraUseCase deletarCarteiraUseCase;
-    private final UsuarioRepository usuarioRepository;
+    private final UserIdResolver userIdResolver;
     private final AuditPublisher auditPublisher;
     private final ObjectMapper objectMapper;
 
@@ -50,7 +50,7 @@ public class CarteiraController {
             ListarCarteirasUseCase listarCarteirasUseCase,
             AtualizarCarteiraUseCase atualizarCarteiraUseCase,
             DeletarCarteiraUseCase deletarCarteiraUseCase,
-            UsuarioRepository usuarioRepository,
+            UserIdResolver userIdResolver,
             AuditPublisher auditPublisher,
             ObjectMapper objectMapper
     ) {
@@ -58,14 +58,14 @@ public class CarteiraController {
         this.listarCarteirasUseCase = listarCarteirasUseCase;
         this.atualizarCarteiraUseCase = atualizarCarteiraUseCase;
         this.deletarCarteiraUseCase = deletarCarteiraUseCase;
-        this.usuarioRepository = usuarioRepository;
+        this.userIdResolver = userIdResolver;
         this.auditPublisher = auditPublisher;
         this.objectMapper = objectMapper;
     }
 
     @GetMapping
     public List<CarteiraResponse> listar(Authentication authentication) {
-        UUID userId = resolverUserId(authentication);
+        UUID userId = userIdResolver.resolve(authentication);
         return listarCarteirasUseCase.executar(userId).stream()
                 .map(CarteiraResponse::fromDomain)
                 .toList();
@@ -73,7 +73,7 @@ public class CarteiraController {
 
     @GetMapping("/{id}")
     public CarteiraResponse buscar(@PathVariable UUID id, Authentication authentication) {
-        UUID userId = resolverUserId(authentication);
+        UUID userId = userIdResolver.resolve(authentication);
         Carteira carteira = buscarDoUsuario(id, userId);
         return CarteiraResponse.fromDomain(carteira);
     }
@@ -84,7 +84,7 @@ public class CarteiraController {
             @Valid @RequestBody CriarCarteiraRequest request,
             Authentication authentication,
             @RequestHeader(value = "X-Screen-Code", required = false) String screenCode) {
-        UUID userId = resolverUserId(authentication);
+        UUID userId = userIdResolver.resolve(authentication);
         CriarCarteiraUseCase.Comando comando = new CriarCarteiraUseCase.Comando(
                 userId, request.contaId(), request.nome(), request.tipo());
         Carteira criada = criarCarteiraUseCase.executar(comando);
@@ -101,7 +101,7 @@ public class CarteiraController {
             @Valid @RequestBody AtualizarCarteiraRequest request,
             Authentication authentication
     ) {
-        UUID userId = resolverUserId(authentication);
+        UUID userId = userIdResolver.resolve(authentication);
         buscarDoUsuario(id, userId);
         AtualizarCarteiraUseCase.Comando comando = new AtualizarCarteiraUseCase.Comando(
                 id, request.nome(), request.tipo());
@@ -115,7 +115,7 @@ public class CarteiraController {
             @PathVariable UUID id,
             Authentication authentication,
             @RequestHeader(value = "X-Screen-Code", required = false) String screenCode) {
-        UUID userId = resolverUserId(authentication);
+        UUID userId = userIdResolver.resolve(authentication);
         buscarDoUsuario(id, userId);
         deletarCarteiraUseCase.executar(id);
         auditPublisher.publish(new AuditEvent(
@@ -128,13 +128,6 @@ public class CarteiraController {
                 .filter(c -> c.getId().equals(id))
                 .findFirst()
                 .orElseThrow(() -> new CarteiraNaoEncontradaException(id));
-    }
-
-    private UUID resolverUserId(Authentication authentication) {
-        String email = authentication.getName();
-        return usuarioRepository.buscarPorEmail(email)
-                .orElseThrow(() -> new IllegalStateException("Usuario autenticado nao encontrado: " + email))
-                .getId();
     }
 
     private String userEmail(Authentication authentication) {

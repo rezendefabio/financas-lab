@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.laboratorio.financas.auditlog.domain.AuditAction;
 import com.laboratorio.financas.auditlog.domain.AuditEvent;
 import com.laboratorio.financas.auditlog.infrastructure.AuditPublisher;
+import com.laboratorio.financas.shared.infrastructure.web.UserIdResolver;
 import com.laboratorio.financas.transacao.application.BuscarTransacaoPorIdUseCase;
 import com.laboratorio.financas.transacao.application.CriarTransacaoUseCase;
 import com.laboratorio.financas.transacao.application.DeletarTransacaoUseCase;
@@ -20,8 +21,6 @@ import com.laboratorio.financas.transacao.domain.TipoTransacao;
 import com.laboratorio.financas.transacao.domain.Transacao;
 import com.laboratorio.financas.transacao.interfaces.dto.TransacaoRequest;
 import com.laboratorio.financas.transacao.interfaces.dto.TransacaoResponse;
-import com.laboratorio.financas.usuario.domain.Usuario;
-import com.laboratorio.financas.usuario.domain.UsuarioRepository;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
@@ -68,7 +67,7 @@ public class TransacaoController {
     private final BuscarTransacaoPorIdUseCase buscarTransacaoPorIdUseCase;
     private final EditarTransacaoUseCase editarTransacaoUseCase;
     private final DeletarTransacaoUseCase deletarTransacaoUseCase;
-    private final UsuarioRepository usuarioRepository;
+    private final UserIdResolver userIdResolver;
     private final AuditPublisher auditPublisher;
     private final ObjectMapper objectMapper;
 
@@ -78,7 +77,7 @@ public class TransacaoController {
             BuscarTransacaoPorIdUseCase buscarTransacaoPorIdUseCase,
             EditarTransacaoUseCase editarTransacaoUseCase,
             DeletarTransacaoUseCase deletarTransacaoUseCase,
-            UsuarioRepository usuarioRepository,
+            UserIdResolver userIdResolver,
             AuditPublisher auditPublisher,
             ObjectMapper objectMapper
     ) {
@@ -87,7 +86,7 @@ public class TransacaoController {
         this.buscarTransacaoPorIdUseCase = buscarTransacaoPorIdUseCase;
         this.editarTransacaoUseCase = editarTransacaoUseCase;
         this.deletarTransacaoUseCase = deletarTransacaoUseCase;
-        this.usuarioRepository = usuarioRepository;
+        this.userIdResolver = userIdResolver;
         this.auditPublisher = auditPublisher;
         this.objectMapper = objectMapper;
     }
@@ -96,7 +95,7 @@ public class TransacaoController {
     public ResponseEntity<TransacaoResponse> criar(
             @Valid @RequestBody TransacaoRequest request,
             @RequestHeader(value = "X-Screen-Code", required = false) String screenCode) {
-        UUID userId = resolverUserId();
+        UUID userId = userIdResolver.resolve();
         CriarTransacaoUseCase.Comando comando = toComando(request, userId);
         Transacao criada = criarTransacaoUseCase.executar(comando);
         TransacaoResponse response = TransacaoResponse.fromDomain(criada);
@@ -121,7 +120,7 @@ public class TransacaoController {
             @RequestParam(name = "page", defaultValue = "0") @Min(0) int page,
             @RequestParam(name = "size", defaultValue = "20") @Min(1) @Max(SIZE_MAX) int size
     ) {
-        UUID userId = resolverUserId();
+        UUID userId = userIdResolver.resolve();
         List<FiltroGenerico> filtrosAdicionais = parseFiltrosAdicionais(filtrosAdicionaisRaw);
         FiltrosTransacao filtros = new FiltrosTransacao(
                 contaId, dataInicio, dataFim, tipo, categoriaId, userId, status, filtrosAdicionais);
@@ -219,7 +218,7 @@ public class TransacaoController {
             @Valid @RequestBody TransacaoRequest request,
             @RequestHeader(value = "X-Screen-Code", required = false) String screenCode
     ) {
-        UUID userId = resolverUserId();
+        UUID userId = userIdResolver.resolve();
         Transacao antes = buscarTransacaoPorIdUseCase.executar(id);
         String before = toJson(TransacaoResponse.fromDomain(antes));
         CriarTransacaoUseCase.Comando comando = toComando(request, userId);
@@ -246,14 +245,6 @@ public class TransacaoController {
         auditPublisher.publish(new AuditEvent(
                 ENTITY_TYPE, id, AuditAction.DELETE,
                 userEmail(), screenCode, before, null));
-    }
-
-    private UUID resolverUserId() {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        String email = (String) auth.getPrincipal();
-        Usuario usuario = usuarioRepository.buscarPorEmail(email)
-                .orElseThrow(() -> new IllegalStateException("Usuario autenticado nao encontrado: " + email));
-        return usuario.getId();
     }
 
     private String userEmail() {

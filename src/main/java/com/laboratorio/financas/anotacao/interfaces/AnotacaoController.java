@@ -15,8 +15,7 @@ import com.laboratorio.financas.auditlog.domain.AuditAction;
 import com.laboratorio.financas.auditlog.domain.AuditEvent;
 import com.laboratorio.financas.auditlog.infrastructure.AuditPublisher;
 import com.laboratorio.financas.shared.domain.Money;
-import com.laboratorio.financas.usuario.domain.Usuario;
-import com.laboratorio.financas.usuario.domain.UsuarioRepository;
+import com.laboratorio.financas.shared.infrastructure.web.UserIdResolver;
 import jakarta.validation.Valid;
 import java.math.BigDecimal;
 import java.util.Currency;
@@ -50,7 +49,7 @@ public class AnotacaoController {
     private final BuscarAnotacaoPorIdUseCase buscarUseCase;
     private final AtualizarAnotacaoUseCase atualizarUseCase;
     private final DeletarAnotacaoUseCase deletarUseCase;
-    private final UsuarioRepository usuarioRepository;
+    private final UserIdResolver userIdResolver;
     private final AuditPublisher auditPublisher;
     private final ObjectMapper objectMapper;
 
@@ -60,7 +59,7 @@ public class AnotacaoController {
             BuscarAnotacaoPorIdUseCase buscarUseCase,
             AtualizarAnotacaoUseCase atualizarUseCase,
             DeletarAnotacaoUseCase deletarUseCase,
-            UsuarioRepository usuarioRepository,
+            UserIdResolver userIdResolver,
             AuditPublisher auditPublisher,
             ObjectMapper objectMapper
     ) {
@@ -69,7 +68,7 @@ public class AnotacaoController {
         this.buscarUseCase = buscarUseCase;
         this.atualizarUseCase = atualizarUseCase;
         this.deletarUseCase = deletarUseCase;
-        this.usuarioRepository = usuarioRepository;
+        this.userIdResolver = userIdResolver;
         this.auditPublisher = auditPublisher;
         this.objectMapper = objectMapper;
     }
@@ -79,7 +78,7 @@ public class AnotacaoController {
     public AnotacaoResponse criar(
             @Valid @RequestBody CriarAnotacaoRequest request,
             @RequestHeader(value = "X-Screen-Code", required = false) String screenCode) {
-        UUID userId = resolverUserId();
+        UUID userId = userIdResolver.resolve();
         Money valor = buildMoney(request.valorMontante(), request.valorMoeda());
         Anotacao anotacao = criarUseCase.executar(
                 userId,
@@ -99,7 +98,7 @@ public class AnotacaoController {
 
     @GetMapping
     public List<AnotacaoResponse> listar() {
-        UUID userId = resolverUserId();
+        UUID userId = userIdResolver.resolve();
         return listarUseCase.executar(userId).stream()
                 .map(AnotacaoResponse::fromDomain)
                 .toList();
@@ -145,14 +144,6 @@ public class AnotacaoController {
         auditPublisher.publish(new AuditEvent(
                 ENTITY_TYPE, id, AuditAction.DELETE,
                 userEmail(), screenCode, before, null));
-    }
-
-    private UUID resolverUserId() {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        String email = (String) auth.getPrincipal();
-        Usuario usuario = usuarioRepository.buscarPorEmail(email)
-                .orElseThrow(() -> new IllegalStateException("Usuario autenticado nao encontrado: " + email));
-        return usuario.getId();
     }
 
     private String userEmail() {
