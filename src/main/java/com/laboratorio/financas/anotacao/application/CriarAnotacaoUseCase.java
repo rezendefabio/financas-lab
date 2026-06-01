@@ -18,9 +18,9 @@ public class CriarAnotacaoUseCase {
         this.repository = repository;
     }
 
-    public Anotacao executar(UUID usuarioId, String titulo, String conteudo, TipoAnotacao tipo,
+    public Anotacao executar(UUID userId, String titulo, String conteudo, TipoAnotacao tipo,
                              PrioridadeAnotacao prioridade, Money valor, LocalDate dataReferencia) {
-        Anotacao anotacao = new Anotacao(usuarioId, titulo, conteudo, tipo, prioridade, valor, dataReferencia);
+        Anotacao anotacao = new Anotacao(userId, titulo, conteudo, tipo, prioridade, valor, dataReferencia);
         return repository.salvar(anotacao);
     }
 }

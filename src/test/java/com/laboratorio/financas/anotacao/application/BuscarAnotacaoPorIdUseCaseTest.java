@@ -30,9 +30,9 @@ class BuscarAnotacaoPorIdUseCaseTest {
     void executarRetornaAnotacaoQuandoExiste() {
         // Given
         UUID id = UUID.randomUUID();
-        UUID usuarioId = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
         Anotacao anotacao = new Anotacao(
-                usuarioId, "Titulo", null, TipoAnotacao.LEMBRETE, PrioridadeAnotacao.MEDIA, null, null
+                userId, "Titulo", null, TipoAnotacao.LEMBRETE, PrioridadeAnotacao.MEDIA, null, null
         );
         when(repository.buscarPorId(id)).thenReturn(Optional.of(anotacao));
 

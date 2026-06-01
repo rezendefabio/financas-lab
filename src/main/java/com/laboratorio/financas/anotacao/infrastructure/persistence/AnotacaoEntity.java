@@ -25,8 +25,8 @@ public class AnotacaoEntity {
     private UUID id;
 
     @NotNull
-    @Column(name = "usuario_id", nullable = false)
-    private UUID usuarioId;
+    @Column(name = "user_id", nullable = false)
+    private UUID userId;
 
     @NotNull
     @Column(name = "titulo", nullable = false, length = 200)
@@ -65,12 +65,12 @@ public class AnotacaoEntity {
         // Construtor protected exigido pelo JPA.
     }
 
-    public AnotacaoEntity(UUID id, UUID usuarioId, String titulo, String conteudo,
+    public AnotacaoEntity(UUID id, UUID userId, String titulo, String conteudo,
                           TipoAnotacao tipo, PrioridadeAnotacao prioridade,
                           MoneyEmbeddable valor, LocalDate dataReferencia,
                           Instant criadoEm, Instant atualizadoEm) {
         this.id = id;
-        this.usuarioId = usuarioId;
+        this.userId = userId;
         this.titulo = titulo;
         this.conteudo = conteudo;
         this.tipo = tipo;
@@ -85,8 +85,8 @@ public class AnotacaoEntity {
         return id;
     }
 
-    public UUID getUsuarioId() {
-        return usuarioId;
+    public UUID getUserId() {
+        return userId;
     }
 
     public String getTitulo() {

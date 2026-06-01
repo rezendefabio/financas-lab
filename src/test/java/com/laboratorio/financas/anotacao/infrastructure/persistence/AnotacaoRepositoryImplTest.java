@@ -57,9 +57,9 @@ class AnotacaoRepositoryImplTest extends AbstractIntegrationTest {
     @Test
     void salvarPersisteAnotacaoERetornaInstanciaEquivalente() {
         // Given
-        UUID usuarioId = criarUsuarioPersistido();
+        UUID userId = criarUsuarioPersistido();
         Anotacao nova = new Anotacao(
-                usuarioId,
+                userId,
                 "Pagar fatura",
                 "Fatura do cartao",
                 TipoAnotacao.LEMBRETE,
@@ -83,10 +83,10 @@ class AnotacaoRepositoryImplTest extends AbstractIntegrationTest {
     @Test
     void salvarPersisteAnotacaoComValorMonetario() {
         // Given
-        UUID usuarioId = criarUsuarioPersistido();
+        UUID userId = criarUsuarioPersistido();
         Money valor = new Money(new BigDecimal("500.00"), BRL);
         Anotacao nova = new Anotacao(
-                usuarioId,
+                userId,
                 "Planejamento",
                 null,
                 TipoAnotacao.PLANEJAMENTO,
@@ -109,9 +109,9 @@ class AnotacaoRepositoryImplTest extends AbstractIntegrationTest {
     @Test
     void buscarPorIdRetornaAnotacaoQuandoExiste() {
         // Given
-        UUID usuarioId = criarUsuarioPersistido();
+        UUID userId = criarUsuarioPersistido();
         Anotacao nova = new Anotacao(
-                usuarioId, "Titulo", null, TipoAnotacao.OBSERVACAO, PrioridadeAnotacao.BAIXA, null, null
+                userId, "Titulo", null, TipoAnotacao.OBSERVACAO, PrioridadeAnotacao.BAIXA, null, null
         );
         repository.salvar(nova);
 
@@ -136,24 +136,24 @@ class AnotacaoRepositoryImplTest extends AbstractIntegrationTest {
     @Test
     void listarPorUsuarioRetornaApenasAnotacoesDoUsuario() {
         // Given
-        UUID usuarioId = criarUsuarioPersistido();
-        UUID outroUsuarioId = criarUsuarioPersistido();
+        UUID userId = criarUsuarioPersistido();
+        UUID outrouserId = criarUsuarioPersistido();
 
         Anotacao a1 = new Anotacao(
-                usuarioId, "A1", null, TipoAnotacao.LEMBRETE, PrioridadeAnotacao.MEDIA, null, null
+                userId, "A1", null, TipoAnotacao.LEMBRETE, PrioridadeAnotacao.MEDIA, null, null
         );
         Anotacao a2 = new Anotacao(
-                usuarioId, "A2", null, TipoAnotacao.ALERTA, PrioridadeAnotacao.ALTA, null, null
+                userId, "A2", null, TipoAnotacao.ALERTA, PrioridadeAnotacao.ALTA, null, null
         );
         Anotacao outroUsuario = new Anotacao(
-                outroUsuarioId, "Outro", null, TipoAnotacao.OBSERVACAO, PrioridadeAnotacao.BAIXA, null, null
+                outrouserId, "Outro", null, TipoAnotacao.OBSERVACAO, PrioridadeAnotacao.BAIXA, null, null
         );
         repository.salvar(a1);
         repository.salvar(a2);
         repository.salvar(outroUsuario);
 
         // When
-        List<Anotacao> resultado = repository.listarPorUsuario(usuarioId);
+        List<Anotacao> resultado = repository.listarPorUsuario(userId);
 
         // Then
         assertThat(resultado).hasSize(2);
@@ -165,10 +165,10 @@ class AnotacaoRepositoryImplTest extends AbstractIntegrationTest {
     @Test
     void listarPorUsuarioRetornaListaVaziaQuandoNaoHaAnotacoes() {
         // Given
-        UUID usuarioId = criarUsuarioPersistido();
+        UUID userId = criarUsuarioPersistido();
 
         // When
-        List<Anotacao> resultado = repository.listarPorUsuario(usuarioId);
+        List<Anotacao> resultado = repository.listarPorUsuario(userId);
 
         // Then
         assertThat(resultado).isEmpty();
@@ -177,9 +177,9 @@ class AnotacaoRepositoryImplTest extends AbstractIntegrationTest {
     @Test
     void deletarRemoveAnotacaoDoRepositorio() {
         // Given
-        UUID usuarioId = criarUsuarioPersistido();
+        UUID userId = criarUsuarioPersistido();
         Anotacao nova = new Anotacao(
-                usuarioId, "Para deletar", null, TipoAnotacao.LEMBRETE, PrioridadeAnotacao.BAIXA, null, null
+                userId, "Para deletar", null, TipoAnotacao.LEMBRETE, PrioridadeAnotacao.BAIXA, null, null
         );
         repository.salvar(nova);
 

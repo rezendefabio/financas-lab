@@ -31,8 +31,8 @@ public class AnotacaoRepositoryImpl implements AnotacaoRepository {
     }
 
     @Override
-    public List<Anotacao> listarPorUsuario(UUID usuarioId) {
-        return jpaRepository.findByUsuarioId(usuarioId).stream()
+    public List<Anotacao> listarPorUsuario(UUID userId) {
+        return jpaRepository.findByUserId(userId).stream()
                 .map(mapper::toAnotacao)
                 .toList();
     }

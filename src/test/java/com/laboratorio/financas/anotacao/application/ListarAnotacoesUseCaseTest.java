@@ -27,17 +27,17 @@ class ListarAnotacoesUseCaseTest {
     @Test
     void executarRetornaListaDeAnotacoesDoUsuario() {
         // Given
-        UUID usuarioId = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
         Anotacao a1 = new Anotacao(
-                usuarioId, "Titulo 1", null, TipoAnotacao.LEMBRETE, PrioridadeAnotacao.MEDIA, null, null
+                userId, "Titulo 1", null, TipoAnotacao.LEMBRETE, PrioridadeAnotacao.MEDIA, null, null
         );
         Anotacao a2 = new Anotacao(
-                usuarioId, "Titulo 2", null, TipoAnotacao.ALERTA, PrioridadeAnotacao.ALTA, null, null
+                userId, "Titulo 2", null, TipoAnotacao.ALERTA, PrioridadeAnotacao.ALTA, null, null
         );
-        when(repository.listarPorUsuario(usuarioId)).thenReturn(List.of(a1, a2));
+        when(repository.listarPorUsuario(userId)).thenReturn(List.of(a1, a2));
 
         // When
-        List<Anotacao> resultado = useCase.executar(usuarioId);
+        List<Anotacao> resultado = useCase.executar(userId);
 
         // Then
         assertThat(resultado).hasSize(2);
@@ -47,11 +47,11 @@ class ListarAnotacoesUseCaseTest {
     @Test
     void executarRetornaListaVaziaQuandoNaoHaAnotacoes() {
         // Given
-        UUID usuarioId = UUID.randomUUID();
-        when(repository.listarPorUsuario(usuarioId)).thenReturn(List.of());
+        UUID userId = UUID.randomUUID();
+        when(repository.listarPorUsuario(userId)).thenReturn(List.of());
 
         // When
-        List<Anotacao> resultado = useCase.executar(usuarioId);
+        List<Anotacao> resultado = useCase.executar(userId);
 
         // Then
         assertThat(resultado).isEmpty();

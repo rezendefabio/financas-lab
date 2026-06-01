@@ -15,7 +15,7 @@ public interface AnotacaoMapper {
         }
         return new AnotacaoEntity(
                 anotacao.getId(),
-                anotacao.getUsuarioId(),
+                anotacao.getUserId(),
                 anotacao.getTitulo(),
                 anotacao.getConteudo(),
                 anotacao.getTipo(),
@@ -33,7 +33,7 @@ public interface AnotacaoMapper {
         }
         return new Anotacao(
                 entity.getId(),
-                entity.getUsuarioId(),
+                entity.getUserId(),
                 entity.getTitulo(),
                 entity.getConteudo(),
                 entity.getTipo(),

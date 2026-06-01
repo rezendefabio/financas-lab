@@ -29,15 +29,15 @@ class CriarAnotacaoUseCaseTest {
     @Test
     void executarCaminhoFelizRetornaAnotacaoCriada() {
         // Given
-        UUID usuarioId = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
         Anotacao anotacaoSalva = new Anotacao(
-                usuarioId, "Lembrete", null, TipoAnotacao.LEMBRETE, PrioridadeAnotacao.MEDIA, null, null
+                userId, "Lembrete", null, TipoAnotacao.LEMBRETE, PrioridadeAnotacao.MEDIA, null, null
         );
         when(repository.salvar(any(Anotacao.class))).thenReturn(anotacaoSalva);
 
         // When
         Anotacao resultado = useCase.executar(
-                usuarioId, "Lembrete", null, TipoAnotacao.LEMBRETE, PrioridadeAnotacao.MEDIA, null, null
+                userId, "Lembrete", null, TipoAnotacao.LEMBRETE, PrioridadeAnotacao.MEDIA, null, null
         );
 
         // Then
@@ -49,14 +49,14 @@ class CriarAnotacaoUseCaseTest {
     @Test
     void executarChamaRepositorioSalvarUmaVez() {
         // Given
-        UUID usuarioId = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
         Anotacao anotacaoSalva = new Anotacao(
-                usuarioId, "Observacao", null, TipoAnotacao.OBSERVACAO, PrioridadeAnotacao.BAIXA, null, null
+                userId, "Observacao", null, TipoAnotacao.OBSERVACAO, PrioridadeAnotacao.BAIXA, null, null
         );
         when(repository.salvar(any(Anotacao.class))).thenReturn(anotacaoSalva);
 
         // When
-        useCase.executar(usuarioId, "Observacao", null, TipoAnotacao.OBSERVACAO, PrioridadeAnotacao.BAIXA, null, null);
+        useCase.executar(userId, "Observacao", null, TipoAnotacao.OBSERVACAO, PrioridadeAnotacao.BAIXA, null, null);
 
         // Then
         verify(repository, times(1)).salvar(any(Anotacao.class));
@@ -65,15 +65,15 @@ class CriarAnotacaoUseCaseTest {
     @Test
     void executarRetornaOQueRepositorioRetornou() {
         // Given
-        UUID usuarioId = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
         Anotacao esperado = new Anotacao(
-                usuarioId, "Alerta", null, TipoAnotacao.ALERTA, PrioridadeAnotacao.URGENTE, null, null
+                userId, "Alerta", null, TipoAnotacao.ALERTA, PrioridadeAnotacao.URGENTE, null, null
         );
         when(repository.salvar(any(Anotacao.class))).thenReturn(esperado);
 
         // When
         Anotacao resultado = useCase.executar(
-                usuarioId, "Alerta", null, TipoAnotacao.ALERTA, PrioridadeAnotacao.URGENTE, null, null
+                userId, "Alerta", null, TipoAnotacao.ALERTA, PrioridadeAnotacao.URGENTE, null, null
         );
 
         // Then

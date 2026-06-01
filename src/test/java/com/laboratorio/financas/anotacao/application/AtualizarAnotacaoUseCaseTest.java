@@ -31,10 +31,10 @@ class AtualizarAnotacaoUseCaseTest {
     @Test
     void executarAtualizaERetornaAnotacao() {
         // Given
-        UUID usuarioId = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
         UUID id = UUID.randomUUID();
         Anotacao existente = new Anotacao(
-                id, usuarioId, "Titulo original", null,
+                id, userId, "Titulo original", null,
                 TipoAnotacao.LEMBRETE, PrioridadeAnotacao.BAIXA,
                 null, null, java.time.Instant.now(), java.time.Instant.now()
         );
