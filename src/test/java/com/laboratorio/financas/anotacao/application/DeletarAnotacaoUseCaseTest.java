@@ -32,10 +32,10 @@ class DeletarAnotacaoUseCaseTest {
     @Test
     void executarDeletaAnotacaoExistente() {
         // Given
-        UUID usuarioId = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
         UUID id = UUID.randomUUID();
         Anotacao existente = new Anotacao(
-                id, usuarioId, "Titulo", null,
+                id, userId, "Titulo", null,
                 TipoAnotacao.LEMBRETE, PrioridadeAnotacao.MEDIA,
                 null, null, java.time.Instant.now(), java.time.Instant.now()
         );

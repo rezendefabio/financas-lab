@@ -79,10 +79,10 @@ public class AnotacaoController {
     public AnotacaoResponse criar(
             @Valid @RequestBody CriarAnotacaoRequest request,
             @RequestHeader(value = "X-Screen-Code", required = false) String screenCode) {
-        UUID usuarioId = resolverUserId();
+        UUID userId = resolverUserId();
         Money valor = buildMoney(request.valorMontante(), request.valorMoeda());
         Anotacao anotacao = criarUseCase.executar(
-                usuarioId,
+                userId,
                 request.titulo(),
                 request.conteudo(),
                 request.tipo(),
@@ -99,8 +99,8 @@ public class AnotacaoController {
 
     @GetMapping
     public List<AnotacaoResponse> listar() {
-        UUID usuarioId = resolverUserId();
-        return listarUseCase.executar(usuarioId).stream()
+        UUID userId = resolverUserId();
+        return listarUseCase.executar(userId).stream()
                 .map(AnotacaoResponse::fromDomain)
                 .toList();
     }

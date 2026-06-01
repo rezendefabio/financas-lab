@@ -8,7 +8,7 @@ import java.util.UUID;
 public final class Anotacao {
 
     private final UUID id;
-    private final UUID usuarioId;
+    private final UUID userId;
     private String titulo;
     private String conteudo;
     private TipoAnotacao tipo;
@@ -18,10 +18,10 @@ public final class Anotacao {
     private final Instant criadoEm;
     private Instant atualizadoEm;
 
-    public Anotacao(UUID usuarioId, String titulo, String conteudo, TipoAnotacao tipo,
+    public Anotacao(UUID userId, String titulo, String conteudo, TipoAnotacao tipo,
                     PrioridadeAnotacao prioridade, Money valor, LocalDate dataReferencia) {
-        if (usuarioId == null) {
-            throw new IllegalArgumentException("usuarioId nao pode ser nulo");
+        if (userId == null) {
+            throw new IllegalArgumentException("userId nao pode ser nulo");
         }
         if (titulo == null || titulo.isBlank()) {
             throw new IllegalArgumentException("titulo nao pode ser nulo ou vazio");
@@ -33,7 +33,7 @@ public final class Anotacao {
             throw new IllegalArgumentException("prioridade nao pode ser nula");
         }
         this.id = UUID.randomUUID();
-        this.usuarioId = usuarioId;
+        this.userId = userId;
         this.titulo = titulo;
         this.conteudo = conteudo;
         this.tipo = tipo;
@@ -44,11 +44,11 @@ public final class Anotacao {
         this.atualizadoEm = Instant.now();
     }
 
-    public Anotacao(UUID id, UUID usuarioId, String titulo, String conteudo, TipoAnotacao tipo,
+    public Anotacao(UUID id, UUID userId, String titulo, String conteudo, TipoAnotacao tipo,
                     PrioridadeAnotacao prioridade, Money valor, LocalDate dataReferencia,
                     Instant criadoEm, Instant atualizadoEm) {
         this.id = id;
-        this.usuarioId = usuarioId;
+        this.userId = userId;
         this.titulo = titulo;
         this.conteudo = conteudo;
         this.tipo = tipo;
@@ -83,8 +83,8 @@ public final class Anotacao {
         return id;
     }
 
-    public UUID getUsuarioId() {
-        return usuarioId;
+    public UUID getUserId() {
+        return userId;
     }
 
     public String getTitulo() {

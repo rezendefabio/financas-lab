@@ -10,7 +10,7 @@ public interface AnotacaoRepository {
 
     Optional<Anotacao> buscarPorId(UUID id);
 
-    List<Anotacao> listarPorUsuario(UUID usuarioId);
+    List<Anotacao> listarPorUsuario(UUID userId);
 
     void deletar(UUID id);
 }

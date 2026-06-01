@@ -6,5 +6,5 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface AnotacaoJpaRepository extends JpaRepository<AnotacaoEntity, UUID> {
 
-    List<AnotacaoEntity> findByUsuarioId(UUID usuarioId);
+    List<AnotacaoEntity> findByUserId(UUID userId);
 }

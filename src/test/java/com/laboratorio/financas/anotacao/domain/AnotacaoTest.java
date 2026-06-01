@@ -28,7 +28,7 @@ class AnotacaoTest {
         );
 
         assertThat(anotacao.getId()).isNotNull();
-        assertThat(anotacao.getUsuarioId()).isEqualTo(USUARIO_ID);
+        assertThat(anotacao.getUserId()).isEqualTo(USUARIO_ID);
         assertThat(anotacao.getTitulo()).isEqualTo("Lembrar de pagar fatura");
         assertThat(anotacao.getConteudo()).isNull();
         assertThat(anotacao.getTipo()).isEqualTo(TipoAnotacao.LEMBRETE);
@@ -72,7 +72,7 @@ class AnotacaoTest {
                         null,
                         null
                 ))
-                .withMessageContaining("usuarioId");
+                .withMessageContaining("userId");
     }
 
     @Test

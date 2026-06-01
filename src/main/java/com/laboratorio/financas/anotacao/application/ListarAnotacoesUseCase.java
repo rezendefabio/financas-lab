@@ -15,7 +15,7 @@ public class ListarAnotacoesUseCase {
         this.repository = repository;
     }
 
-    public List<Anotacao> executar(UUID usuarioId) {
-        return repository.listarPorUsuario(usuarioId);
+    public List<Anotacao> executar(UUID userId) {
+        return repository.listarPorUsuario(userId);
     }
 }

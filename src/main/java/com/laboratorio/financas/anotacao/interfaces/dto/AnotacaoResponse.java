@@ -8,7 +8,7 @@ import java.util.UUID;
 
 public record AnotacaoResponse(
         UUID id,
-        UUID usuarioId,
+        UUID userId,
         String titulo,
         String conteudo,
         String tipo,
@@ -22,7 +22,7 @@ public record AnotacaoResponse(
     public static AnotacaoResponse fromDomain(Anotacao anotacao) {
         return new AnotacaoResponse(
                 anotacao.getId(),
-                anotacao.getUsuarioId(),
+                anotacao.getUserId(),
                 anotacao.getTitulo(),
                 anotacao.getConteudo(),
                 anotacao.getTipo().name(),
