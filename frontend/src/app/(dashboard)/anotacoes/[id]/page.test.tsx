@@ -32,7 +32,7 @@ function makeWrapper() {
 
 const anotacaoFixture = (overrides?: Partial<Anotacao>): Anotacao => ({
   id: 'abc-123',
-  usuarioId: 'user-1',
+  userId: 'user-1',
   titulo: 'Pagar fatura',
   conteudo: 'Fatura do cartao',
   tipo: 'LEMBRETE',

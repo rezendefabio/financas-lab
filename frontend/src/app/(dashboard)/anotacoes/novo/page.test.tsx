@@ -57,7 +57,7 @@ describe('NovaAnotacao', () => {
       titulo: 'Pagar fatura',
       tipo: 'LEMBRETE',
       prioridade: 'MEDIA',
-      usuarioId: 'user-1',
+      userId: 'user-1',
       conteudo: null,
       valorMontante: null,
       valorMoeda: null,

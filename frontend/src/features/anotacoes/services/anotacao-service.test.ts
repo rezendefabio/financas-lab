@@ -10,7 +10,7 @@ import type { Anotacao } from '../types/anotacao'
 
 const mockAnotacao: Anotacao = {
   id: '00000000-0000-0000-0000-000000000001',
-  usuarioId: '00000000-0000-0000-0000-000000000002',
+  userId: '00000000-0000-0000-0000-000000000002',
   titulo: 'Pagar fatura',
   conteudo: null,
   tipo: 'LEMBRETE',

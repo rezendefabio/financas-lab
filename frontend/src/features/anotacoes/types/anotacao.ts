@@ -3,7 +3,7 @@ export type PrioridadeAnotacao = 'BAIXA' | 'MEDIA' | 'ALTA' | 'URGENTE'
 
 export interface Anotacao {
   id: string
-  usuarioId: string
+  userId: string
   titulo: string
   conteudo: string | null
   tipo: TipoAnotacao
