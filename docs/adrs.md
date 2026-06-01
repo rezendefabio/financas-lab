@@ -705,3 +705,91 @@ feature. A referencia completa esta em `docs/frontend-master-spec.md`.
   `register-screen` em vez de descrever arquivos explicitamente.
 - Refatorar 13 telas existentes para `<ListPage>` e `form-kit` e uma serie de
   sub-etapas subsequentes (uma por tela ou grupo de telas similares).
+
+---
+
+## ADR-015 -- userId como carimbo de autoria; leitura compartilhada (base unica, multi-operador) (2026-06-01)
+
+**Status:** Aceito
+
+### Contexto
+
+A visao do projeto sempre foi **base unica de dados com multiplos operadores** --
+ex: 10 pessoas gerenciando as financas da mesma empresa, onde toda operacao deve
+ser **auditada e rastreavel** ("quem criou a conta"). Base unica nunca significou
+"tabelas sem dono".
+
+Em 2026-05-31, ao implementar o bounded context `notificacao`, descobriu-se que o
+modelo de propriedade dos registros estava **inconsistente** entre contextos:
+
+- Contextos novos (conta, categoria, tag, payee, transacao, carteira, centrocusto,
+  fatura, grupo, lembrete, limite, emprestimo, assinatura, notificacao) tinham
+  `userId`; os antigos (`orcamento`, `meta`, `lancamentorecorrente`) **nao tinham
+  coluna de dono** nenhuma.
+- `conta`/`categoria` recebiam o `userId` do **corpo do request** -- e como o
+  frontend nao envia esse campo, gravavam `userId = null` na pratica.
+- `anotacao` usava nomenclatura divergente (`usuarioId`/`usuario_id`).
+- Parte dos contextos **filtrava a listagem** por `userId` (isolamento por usuario),
+  parte nao -- dois modelos semanticos opostos coexistindo.
+
+Era preciso cravar **um** modelo de propriedade consistente para toda a base.
+
+### Decisao
+
+**`userId` e carimbo de autoria (`created_by`), nao isolamento de visibilidade.**
+
+1. **Fonte:** gravado na criacao a partir do **token autenticado**, nunca do corpo
+   do request. Resolucao centralizada no componente `UserIdResolver`
+   (`shared/infrastructure/web/`), injetado nos controllers.
+2. **Leitura compartilhada:** listagem e get-by-id **nao filtram** por `userId` --
+   todos os operadores veem os mesmos dados da empresa.
+3. **Auditoria:** toda mutacao e registrada (AuditPublisher + header `X-Screen-Code`);
+   `userId` responde "quem criou" estruturalmente, com FK para `usuario(id)`.
+4. **Excecao per-user:** `notificacao` filtra por `userId`. Notificacao/descarte e
+   estado pessoal de UI -- a unica colecao genuinamente per-user, por design.
+5. **Nomenclatura canonica:** `userId` no dominio, `user_id` na coluna.
+6. **NOT NULL onde aplicavel.** Excecao: `categoria.user_id` permanece nullable --
+   categorias de sistema (`system = true`) sao globais e tem `userId` NULL; a API
+   forca `system = false` (categorias de sistema so via seed/migration).
+
+### Alternativas consideradas
+
+- **Isolamento por usuario** (cada operador ve apenas os proprios registros, listagem
+  filtra por `userId`) -- rejeitada: contradiz a visao de base compartilhada
+  multi-operador. Era o que `limite` e outros faziam, e a origem da inconsistencia.
+- **Sem coluna de dono, rastreabilidade so via email no audit log** -- rejeitada: o
+  log de auditoria nao da rastreabilidade estrutural por registro nem integridade
+  referencial (FK). "Quem criou" precisa viver no proprio registro.
+- **`userId` vindo do corpo do request** -- rejeitada: o cliente nao deve declarar a
+  propria autoria (forjavel, e o frontend nem envia -> null). O token e a fonte de
+  verdade.
+
+### Consequencias
+
+**Aceitas:**
+
+- Coluna `user_id` em todas as tabelas de negocio. Migrations V36-V42 com backfill
+  das linhas existentes ao usuario unico -- valido enquanto a base e single-operator;
+  quando houver multiplos usuarios reais, registros antigos ficam atribuidos ao
+  primeiro usuario.
+- **Autorizacao de escrita ainda restrita por dono** em 6 contextos (`tag`, `payee`,
+  `grupo`, `centrocusto`, `carteira`, `limite`): update/delete checam `userId`. Isso
+  e concern de **autorizacao**, distinto de visibilidade, e fica como **ponta pendente
+  de decisao de produto** (escrita compartilhada com auditoria vs. dono-restrita).
+  Nao resolvido por esta ADR.
+- `categoria.user_id` nullable (system = global) -- assimetria consciente.
+
+**Ganhos:**
+
+- Rastreabilidade real: todo registro tem autor + trilha de auditoria.
+- Base compartilhada coerente com a visao multi-operador (todos veem tudo da empresa).
+- Padrao unico e ensinavel para executores: **"userId e autoria, nao isolamento;
+  leitura nao filtra; notificacao e a unica excecao per-user"**.
+- Resolucao de autoria centralizada (`UserIdResolver`) -- sem duplicacao por controller.
+
+### Implementacao
+
+Serie de PRs #323-#328 (2026-05-31 a 2026-06-01): adicao de `userId` aos 3 contextos
+sem dono (V36-V38), correcao da fonte em conta/categoria (V39-V40), rename em
+`anotacao` (V41), `system=false` na API de categoria (V42), consolidacao em
+`UserIdResolver`, e remocao do filtro de leitura nos 10 contextos compartilhados.
