@@ -92,10 +92,8 @@ public class PayeeController {
             @Valid @RequestBody PayeeRequest request,
             @RequestHeader(value = "X-Screen-Code", required = false) String screenCode
     ) {
-        UUID userId = userIdResolver.resolve();
         AtualizarPayeeComando comando = new AtualizarPayeeComando(
                 id,
-                userId,
                 request.nome(),
                 request.categoriaPadraoId()
         );
@@ -112,8 +110,7 @@ public class PayeeController {
     public void deletar(
             @PathVariable UUID id,
             @RequestHeader(value = "X-Screen-Code", required = false) String screenCode) {
-        UUID userId = userIdResolver.resolve();
-        deletarPayeeUseCase.executar(id, userId);
+        deletarPayeeUseCase.executar(id);
         auditPublisher.publish(new AuditEvent(
                 ENTITY_TYPE, id, AuditAction.DELETE,
                 userEmail(), screenCode, null, null));
