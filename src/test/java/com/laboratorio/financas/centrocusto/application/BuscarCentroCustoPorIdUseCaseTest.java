@@ -28,9 +28,9 @@ class BuscarCentroCustoPorIdUseCaseTest {
     void executarRetornaCentroCustoQuandoExiste() {
         UUID userId = UUID.randomUUID();
         CentroCusto cc = new CentroCusto(userId, "Casa", null);
-        when(repository.findByIdAndUserId(cc.getId(), userId)).thenReturn(Optional.of(cc));
+        when(repository.findById(cc.getId())).thenReturn(Optional.of(cc));
 
-        CentroCusto resultado = useCase.executar(cc.getId(), userId);
+        CentroCusto resultado = useCase.executar(cc.getId());
 
         assertThat(resultado).isSameAs(cc);
     }
@@ -38,10 +38,9 @@ class BuscarCentroCustoPorIdUseCaseTest {
     @Test
     void executarLancaExcecaoQuandoNaoExiste() {
         UUID id = UUID.randomUUID();
-        UUID userId = UUID.randomUUID();
-        when(repository.findByIdAndUserId(id, userId)).thenReturn(Optional.empty());
+        when(repository.findById(id)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> useCase.executar(id, userId))
+        assertThatThrownBy(() -> useCase.executar(id))
                 .isInstanceOf(CentroCustoNaoEncontradoException.class);
     }
 }

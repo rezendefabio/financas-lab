@@ -85,15 +85,16 @@ class CentroCustoRepositoryImplTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void findByUserIdRetornaApenasDoUsuario() {
+    void listarTodosRetornaCentrosDeQualquerUsuario() {
         repository.save(new CentroCusto(userId, "Casa", null));
         repository.save(new CentroCusto(userId, "Trabalho", null));
         repository.save(new CentroCusto(outroUserId, "Casa", null));
 
-        List<CentroCusto> resultado = repository.findByUserId(userId);
+        List<CentroCusto> resultado = repository.listarTodos();
 
-        assertThat(resultado).hasSize(2);
-        assertThat(resultado).allMatch(c -> c.getUserId().equals(userId));
+        assertThat(resultado).hasSize(3);
+        assertThat(resultado).anyMatch(c -> c.getUserId().equals(userId));
+        assertThat(resultado).anyMatch(c -> c.getUserId().equals(outroUserId));
     }
 
     @Test

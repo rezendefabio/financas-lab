@@ -75,16 +75,14 @@ public class CentroCustoController {
 
     @GetMapping
     public List<CentroCustoResponse> listar() {
-        UUID userId = userIdResolver.resolve();
-        return listarCentrosCustoUseCase.executar(userId).stream()
+        return listarCentrosCustoUseCase.executar().stream()
                 .map(CentroCustoResponse::fromDomain)
                 .toList();
     }
 
     @GetMapping("/{id}")
     public CentroCustoResponse buscar(@PathVariable UUID id) {
-        UUID userId = userIdResolver.resolve();
-        CentroCusto centroCusto = buscarCentroCustoPorIdUseCase.executar(id, userId);
+        CentroCusto centroCusto = buscarCentroCustoPorIdUseCase.executar(id);
         return CentroCustoResponse.fromDomain(centroCusto);
     }
 
@@ -113,7 +111,7 @@ public class CentroCustoController {
             @RequestHeader(value = "X-Screen-Code", required = false) String screenCode
     ) {
         UUID userId = userIdResolver.resolve();
-        CentroCusto antes = buscarCentroCustoPorIdUseCase.executar(id, userId);
+        CentroCusto antes = buscarCentroCustoPorIdUseCase.executar(id);
         String before = toJson(CentroCustoResponse.fromDomain(antes));
         AtualizarCentroCustoComando comando = new AtualizarCentroCustoComando(
                 id,
@@ -135,10 +133,10 @@ public class CentroCustoController {
             @PathVariable UUID id,
             @RequestHeader(value = "X-Screen-Code", required = false) String screenCode) {
         UUID userId = userIdResolver.resolve();
-        CentroCusto antes = buscarCentroCustoPorIdUseCase.executar(id, userId);
+        CentroCusto antes = buscarCentroCustoPorIdUseCase.executar(id);
         String before = toJson(CentroCustoResponse.fromDomain(antes));
         desativarCentroCustoUseCase.executar(id, userId);
-        CentroCusto depois = buscarCentroCustoPorIdUseCase.executar(id, userId);
+        CentroCusto depois = buscarCentroCustoPorIdUseCase.executar(id);
         auditPublisher.publish(new AuditEvent(
                 ENTITY_TYPE, id, AuditAction.UPDATE,
                 userEmail(), screenCode, before, toJson(CentroCustoResponse.fromDomain(depois))));
