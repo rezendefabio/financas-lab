@@ -68,8 +68,7 @@ public class PayeeController {
 
     @GetMapping
     public List<PayeeResponse> listar() {
-        UUID userId = userIdResolver.resolve();
-        List<Payee> payees = listarPayeesUseCase.executar(userId);
+        List<Payee> payees = listarPayeesUseCase.executar();
         return payees.stream().map(PayeeResponse::fromDomain).toList();
     }
 

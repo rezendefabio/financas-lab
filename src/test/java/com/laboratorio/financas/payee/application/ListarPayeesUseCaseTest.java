@@ -26,14 +26,14 @@ class ListarPayeesUseCaseTest {
     }
 
     @Test
-    void executarRetornaPayeesDoUsuario() {
+    void executarRetornaTodosOsPayees() {
         List<Payee> payees = List.of(
                 new Payee(USER_ID, "Supermercado", null),
-                new Payee(USER_ID, "Farmacia", null)
+                new Payee(UUID.randomUUID(), "Farmacia", null)
         );
-        when(repository.findByUserId(USER_ID)).thenReturn(payees);
+        when(repository.listarTodos()).thenReturn(payees);
 
-        List<Payee> resultado = useCase.executar(USER_ID);
+        List<Payee> resultado = useCase.executar();
 
         assertThat(resultado).hasSize(2);
         assertThat(resultado).isSameAs(payees);
@@ -41,19 +41,19 @@ class ListarPayeesUseCaseTest {
 
     @Test
     void executarRetornaListaVaziaQuandoNaoHaPayees() {
-        when(repository.findByUserId(USER_ID)).thenReturn(List.of());
+        when(repository.listarTodos()).thenReturn(List.of());
 
-        List<Payee> resultado = useCase.executar(USER_ID);
+        List<Payee> resultado = useCase.executar();
 
         assertThat(resultado).isEmpty();
     }
 
     @Test
-    void executarChamaRepositorioComUserIdCorreto() {
-        when(repository.findByUserId(USER_ID)).thenReturn(List.of());
+    void executarDelegaParaListarTodos() {
+        when(repository.listarTodos()).thenReturn(List.of());
 
-        useCase.executar(USER_ID);
+        useCase.executar();
 
-        verify(repository).findByUserId(USER_ID);
+        verify(repository).listarTodos();
     }
 }
