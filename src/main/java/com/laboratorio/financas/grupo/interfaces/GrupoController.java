@@ -63,9 +63,8 @@ public class GrupoController {
     }
 
     @GetMapping
-    public List<GrupoResponse> listar(Authentication authentication) {
-        UUID userId = userIdResolver.resolve(authentication);
-        List<Grupo> grupos = listarGruposUseCase.executar(userId);
+    public List<GrupoResponse> listar() {
+        List<Grupo> grupos = listarGruposUseCase.executar();
         return grupos.stream().map(GrupoResponse::fromDomain).toList();
     }
 

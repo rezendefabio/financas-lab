@@ -36,8 +36,8 @@ public class GrupoRepositoryImpl implements GrupoRepository {
     }
 
     @Override
-    public List<Grupo> listarPorUserId(UUID userId) {
-        return jpaRepository.findByUserId(userId).stream()
+    public List<Grupo> listarTodos() {
+        return jpaRepository.findAll().stream()
                 .map(mapper::toDomain)
                 .toList();
     }

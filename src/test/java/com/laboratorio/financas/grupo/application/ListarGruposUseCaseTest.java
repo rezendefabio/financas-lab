@@ -25,12 +25,12 @@ class ListarGruposUseCaseTest {
     }
 
     @Test
-    void executarRetornaListaDeGrupos() {
+    void executarRetornaTodosOsGrupos() {
         Grupo g1 = new Grupo(USER_ID, "Viagem", null);
-        Grupo g2 = new Grupo(USER_ID, "Casa", "Desc");
-        when(repository.listarPorUserId(USER_ID)).thenReturn(List.of(g1, g2));
+        Grupo g2 = new Grupo(UUID.randomUUID(), "Casa", "Desc");
+        when(repository.listarTodos()).thenReturn(List.of(g1, g2));
 
-        List<Grupo> resultado = useCase.executar(USER_ID);
+        List<Grupo> resultado = useCase.executar();
 
         assertThat(resultado).hasSize(2);
         assertThat(resultado).contains(g1, g2);
@@ -38,19 +38,19 @@ class ListarGruposUseCaseTest {
 
     @Test
     void executarRetornaListaVaziaQuandoNaoHaGrupos() {
-        when(repository.listarPorUserId(USER_ID)).thenReturn(List.of());
+        when(repository.listarTodos()).thenReturn(List.of());
 
-        List<Grupo> resultado = useCase.executar(USER_ID);
+        List<Grupo> resultado = useCase.executar();
 
         assertThat(resultado).isEmpty();
     }
 
     @Test
-    void executarPassaUserIdCorretoParaRepositorio() {
-        when(repository.listarPorUserId(USER_ID)).thenReturn(List.of());
+    void executarDelegaParaListarTodos() {
+        when(repository.listarTodos()).thenReturn(List.of());
 
-        useCase.executar(USER_ID);
+        useCase.executar();
 
-        Mockito.verify(repository).listarPorUserId(USER_ID);
+        Mockito.verify(repository).listarTodos();
     }
 }

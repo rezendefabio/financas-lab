@@ -3,7 +3,6 @@ package com.laboratorio.financas.grupo.application;
 import com.laboratorio.financas.grupo.domain.Grupo;
 import com.laboratorio.financas.grupo.domain.GrupoRepository;
 import java.util.List;
-import java.util.UUID;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,7 +16,7 @@ public class ListarGruposUseCase {
     }
 
     @Transactional(readOnly = true)
-    public List<Grupo> executar(UUID userId) {
-        return grupoRepository.listarPorUserId(userId);
+    public List<Grupo> executar() {
+        return grupoRepository.listarTodos();
     }
 }
