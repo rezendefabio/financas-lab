@@ -17,7 +17,7 @@ import com.laboratorio.financas.conta.interfaces.dto.ContaResponse;
 import com.laboratorio.financas.conta.interfaces.dto.CriarContaRequest;
 import com.laboratorio.financas.conta.interfaces.dto.SaldoResponse;
 import com.laboratorio.financas.conta.interfaces.dto.SaldoTotalResponse;
-import com.laboratorio.financas.usuario.domain.UsuarioRepository;
+import com.laboratorio.financas.shared.infrastructure.web.UserIdResolver;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
@@ -54,7 +54,7 @@ public class ContaController {
     private final CalcularSaldoTotalUseCase calcularSaldoTotalUseCase;
     private final AuditPublisher auditPublisher;
     private final ObjectMapper objectMapper;
-    private final UsuarioRepository usuarioRepository;
+    private final UserIdResolver userIdResolver;
 
     public ContaController(
             CriarContaUseCase criarContaUseCase,
@@ -66,7 +66,7 @@ public class ContaController {
             CalcularSaldoTotalUseCase calcularSaldoTotalUseCase,
             AuditPublisher auditPublisher,
             ObjectMapper objectMapper,
-            UsuarioRepository usuarioRepository
+            UserIdResolver userIdResolver
     ) {
         this.criarContaUseCase = criarContaUseCase;
         this.listarContasUseCase = listarContasUseCase;
@@ -77,7 +77,7 @@ public class ContaController {
         this.calcularSaldoTotalUseCase = calcularSaldoTotalUseCase;
         this.auditPublisher = auditPublisher;
         this.objectMapper = objectMapper;
-        this.usuarioRepository = usuarioRepository;
+        this.userIdResolver = userIdResolver;
     }
 
     @PostMapping
@@ -85,7 +85,7 @@ public class ContaController {
             @Valid @RequestBody CriarContaRequest request,
             @RequestHeader(value = "X-Screen-Code", required = false) String screenCode,
             Authentication authentication) {
-        UUID userId = resolverUserId(authentication);
+        UUID userId = userIdResolver.resolve(authentication);
         CriarContaUseCase.Comando comando = new CriarContaUseCase.Comando(
                 request.nome(),
                 request.tipo(),
@@ -154,14 +154,6 @@ public class ContaController {
     public SaldoResponse calcularSaldo(@PathVariable UUID id) {
         CalcularSaldoDaContaUseCase.Resultado resultado = calcularSaldoDaContaUseCase.executar(id);
         return SaldoResponse.fromResultado(resultado);
-    }
-
-    private UUID resolverUserId(Authentication authentication) {
-        String email = authentication.getName();
-        return usuarioRepository.buscarPorEmail(email)
-                .orElseThrow(() -> new IllegalStateException(
-                        "Usuario autenticado nao encontrado: " + email))
-                .getId();
     }
 
     private String userEmail() {

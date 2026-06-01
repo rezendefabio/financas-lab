@@ -13,7 +13,7 @@ import com.laboratorio.financas.categoria.domain.Categoria;
 import com.laboratorio.financas.categoria.domain.TipoCategoria;
 import com.laboratorio.financas.categoria.interfaces.dto.CategoriaResponse;
 import com.laboratorio.financas.categoria.interfaces.dto.CriarCategoriaRequest;
-import com.laboratorio.financas.usuario.domain.UsuarioRepository;
+import com.laboratorio.financas.shared.infrastructure.web.UserIdResolver;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
@@ -47,7 +47,7 @@ public class CategoriaController {
     private final DeletarCategoriaUseCase deletarCategoriaUseCase;
     private final AuditPublisher auditPublisher;
     private final ObjectMapper objectMapper;
-    private final UsuarioRepository usuarioRepository;
+    private final UserIdResolver userIdResolver;
 
     public CategoriaController(
             CriarCategoriaUseCase criarCategoriaUseCase,
@@ -56,7 +56,7 @@ public class CategoriaController {
             DeletarCategoriaUseCase deletarCategoriaUseCase,
             AuditPublisher auditPublisher,
             ObjectMapper objectMapper,
-            UsuarioRepository usuarioRepository
+            UserIdResolver userIdResolver
     ) {
         this.criarCategoriaUseCase = criarCategoriaUseCase;
         this.listarCategoriasUseCase = listarCategoriasUseCase;
@@ -64,7 +64,7 @@ public class CategoriaController {
         this.deletarCategoriaUseCase = deletarCategoriaUseCase;
         this.auditPublisher = auditPublisher;
         this.objectMapper = objectMapper;
-        this.usuarioRepository = usuarioRepository;
+        this.userIdResolver = userIdResolver;
     }
 
     @PostMapping
@@ -72,7 +72,7 @@ public class CategoriaController {
             @Valid @RequestBody CriarCategoriaRequest request,
             @RequestHeader(value = "X-Screen-Code", required = false) String screenCode,
             Authentication authentication) {
-        UUID userId = resolverUserId(authentication);
+        UUID userId = userIdResolver.resolve(authentication);
         CriarCategoriaUseCase.Comando comando = new CriarCategoriaUseCase.Comando(
                 request.nome(),
                 request.tipo(),
@@ -113,14 +113,6 @@ public class CategoriaController {
         auditPublisher.publish(new AuditEvent(
                 ENTITY_TYPE, id, AuditAction.DELETE,
                 userEmail(), screenCode, before, null));
-    }
-
-    private UUID resolverUserId(Authentication authentication) {
-        String email = authentication.getName();
-        return usuarioRepository.buscarPorEmail(email)
-                .orElseThrow(() -> new IllegalStateException(
-                        "Usuario autenticado nao encontrado: " + email))
-                .getId();
     }
 
     private String userEmail() {

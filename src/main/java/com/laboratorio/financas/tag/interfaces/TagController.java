@@ -5,12 +5,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.laboratorio.financas.auditlog.domain.AuditAction;
 import com.laboratorio.financas.auditlog.domain.AuditEvent;
 import com.laboratorio.financas.auditlog.infrastructure.AuditPublisher;
+import com.laboratorio.financas.shared.infrastructure.web.UserIdResolver;
 import com.laboratorio.financas.tag.application.AtualizarTagUseCase;
 import com.laboratorio.financas.tag.application.CriarTagUseCase;
 import com.laboratorio.financas.tag.application.DeletarTagUseCase;
 import com.laboratorio.financas.tag.application.ListarTagsUseCase;
 import com.laboratorio.financas.tag.domain.Tag;
-import com.laboratorio.financas.usuario.domain.UsuarioRepository;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
@@ -40,7 +40,7 @@ public class TagController {
     private final ListarTagsUseCase listarTagsUseCase;
     private final AtualizarTagUseCase atualizarTagUseCase;
     private final DeletarTagUseCase deletarTagUseCase;
-    private final UsuarioRepository usuarioRepository;
+    private final UserIdResolver userIdResolver;
     private final AuditPublisher auditPublisher;
     private final ObjectMapper objectMapper;
 
@@ -49,7 +49,7 @@ public class TagController {
             ListarTagsUseCase listarTagsUseCase,
             AtualizarTagUseCase atualizarTagUseCase,
             DeletarTagUseCase deletarTagUseCase,
-            UsuarioRepository usuarioRepository,
+            UserIdResolver userIdResolver,
             AuditPublisher auditPublisher,
             ObjectMapper objectMapper
     ) {
@@ -57,14 +57,14 @@ public class TagController {
         this.listarTagsUseCase = listarTagsUseCase;
         this.atualizarTagUseCase = atualizarTagUseCase;
         this.deletarTagUseCase = deletarTagUseCase;
-        this.usuarioRepository = usuarioRepository;
+        this.userIdResolver = userIdResolver;
         this.auditPublisher = auditPublisher;
         this.objectMapper = objectMapper;
     }
 
     @GetMapping
     public List<TagResponse> listar(Authentication authentication) {
-        UUID userId = resolverUserId(authentication);
+        UUID userId = userIdResolver.resolve(authentication);
         List<Tag> tags = listarTagsUseCase.executar(userId);
         return tags.stream().map(TagResponse::fromDomain).toList();
     }
@@ -75,7 +75,7 @@ public class TagController {
             @Valid @RequestBody TagRequest request,
             Authentication authentication,
             @RequestHeader(value = "X-Screen-Code", required = false) String screenCode) {
-        UUID userId = resolverUserId(authentication);
+        UUID userId = userIdResolver.resolve(authentication);
         CriarTagUseCase.Comando comando = new CriarTagUseCase.Comando(userId, request.nome(), request.cor());
         Tag criada = criarTagUseCase.executar(comando);
         TagResponse response = TagResponse.fromDomain(criada);
@@ -91,7 +91,7 @@ public class TagController {
             @Valid @RequestBody TagRequest request,
             Authentication authentication
     ) {
-        UUID userId = resolverUserId(authentication);
+        UUID userId = userIdResolver.resolve(authentication);
         AtualizarTagUseCase.Comando comando = new AtualizarTagUseCase.Comando(id, userId, request.nome(), request.cor());
         Tag atualizada = atualizarTagUseCase.executar(comando);
         return TagResponse.fromDomain(atualizada);
@@ -103,18 +103,11 @@ public class TagController {
             @PathVariable UUID id,
             Authentication authentication,
             @RequestHeader(value = "X-Screen-Code", required = false) String screenCode) {
-        UUID userId = resolverUserId(authentication);
+        UUID userId = userIdResolver.resolve(authentication);
         deletarTagUseCase.executar(id, userId);
         auditPublisher.publish(new AuditEvent(
                 ENTITY_TYPE, id, AuditAction.DELETE,
                 userEmail(authentication), screenCode, null, null));
-    }
-
-    private UUID resolverUserId(Authentication authentication) {
-        String email = authentication.getName();
-        return usuarioRepository.buscarPorEmail(email)
-                .orElseThrow(() -> new IllegalStateException("Usuario autenticado nao encontrado: " + email))
-                .getId();
     }
 
     private String userEmail(Authentication authentication) {

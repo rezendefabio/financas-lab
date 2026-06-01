@@ -6,7 +6,7 @@ import com.laboratorio.financas.auditlog.infrastructure.AuditPublisher;
 import com.laboratorio.financas.notificacao.application.DescartarNotificacaoUseCase;
 import com.laboratorio.financas.notificacao.application.ListarNotificacoesUseCase;
 import com.laboratorio.financas.notificacao.interfaces.dto.NotificacaoResponse;
-import com.laboratorio.financas.usuario.domain.UsuarioRepository;
+import com.laboratorio.financas.shared.infrastructure.web.UserIdResolver;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
@@ -27,23 +27,23 @@ public class NotificacaoController {
 
     private final ListarNotificacoesUseCase listarUseCase;
     private final DescartarNotificacaoUseCase descartarUseCase;
-    private final UsuarioRepository usuarioRepository;
+    private final UserIdResolver userIdResolver;
     private final AuditPublisher auditPublisher;
 
     public NotificacaoController(
             ListarNotificacoesUseCase listarUseCase,
             DescartarNotificacaoUseCase descartarUseCase,
-            UsuarioRepository usuarioRepository,
+            UserIdResolver userIdResolver,
             AuditPublisher auditPublisher) {
         this.listarUseCase = listarUseCase;
         this.descartarUseCase = descartarUseCase;
-        this.usuarioRepository = usuarioRepository;
+        this.userIdResolver = userIdResolver;
         this.auditPublisher = auditPublisher;
     }
 
     @GetMapping
     public List<NotificacaoResponse> listar(Authentication authentication) {
-        UUID userId = resolverUserId(authentication);
+        UUID userId = userIdResolver.resolve(authentication);
         return listarUseCase.executar(userId).stream()
                 .map(NotificacaoResponse::fromDomain)
                 .toList();
@@ -55,19 +55,11 @@ public class NotificacaoController {
             @PathVariable UUID id,
             Authentication authentication,
             @RequestHeader(value = "X-Screen-Code", required = false) String screenCode) {
-        resolverUserId(authentication);
+        userIdResolver.resolve(authentication);
         descartarUseCase.executar(id);
         auditPublisher.publish(new AuditEvent(
                 ENTITY_TYPE, id, AuditAction.UPDATE,
                 userEmail(authentication), screenCode, null, null));
-    }
-
-    private UUID resolverUserId(Authentication authentication) {
-        String email = authentication.getName();
-        return usuarioRepository.buscarPorEmail(email)
-                .orElseThrow(() -> new IllegalStateException(
-                        "Usuario autenticado nao encontrado: " + email))
-                .getId();
     }
 
     private String userEmail(Authentication authentication) {

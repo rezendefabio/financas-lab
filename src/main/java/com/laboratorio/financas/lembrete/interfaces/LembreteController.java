@@ -13,7 +13,7 @@ import com.laboratorio.financas.lembrete.application.ListarLembretesUseCase;
 import com.laboratorio.financas.lembrete.interfaces.dto.AtualizarLembreteRequest;
 import com.laboratorio.financas.lembrete.interfaces.dto.CriarLembreteRequest;
 import com.laboratorio.financas.lembrete.interfaces.dto.LembreteResponse;
-import com.laboratorio.financas.usuario.domain.UsuarioRepository;
+import com.laboratorio.financas.shared.infrastructure.web.UserIdResolver;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
@@ -44,7 +44,7 @@ public class LembreteController {
     private final BuscarLembreteUseCase buscarUseCase;
     private final AtualizarLembreteUseCase atualizarUseCase;
     private final DeletarLembreteUseCase deletarUseCase;
-    private final UsuarioRepository usuarioRepository;
+    private final UserIdResolver userIdResolver;
     private final AuditPublisher auditPublisher;
     private final ObjectMapper objectMapper;
 
@@ -53,7 +53,7 @@ public class LembreteController {
                               BuscarLembreteUseCase buscarUseCase,
                               AtualizarLembreteUseCase atualizarUseCase,
                               DeletarLembreteUseCase deletarUseCase,
-                              UsuarioRepository usuarioRepository,
+                              UserIdResolver userIdResolver,
                               AuditPublisher auditPublisher,
                               ObjectMapper objectMapper) {
         this.criarUseCase = criarUseCase;
@@ -61,14 +61,14 @@ public class LembreteController {
         this.buscarUseCase = buscarUseCase;
         this.atualizarUseCase = atualizarUseCase;
         this.deletarUseCase = deletarUseCase;
-        this.usuarioRepository = usuarioRepository;
+        this.userIdResolver = userIdResolver;
         this.auditPublisher = auditPublisher;
         this.objectMapper = objectMapper;
     }
 
     @GetMapping
     public List<LembreteResponse> listar(Authentication authentication) {
-        UUID userId = resolverUserId(authentication);
+        UUID userId = userIdResolver.resolve(authentication);
         return listarUseCase.executar(userId).stream()
                 .map(LembreteResponse::fromDomain)
                 .toList();
@@ -77,7 +77,7 @@ public class LembreteController {
     @GetMapping("/{id}")
     public LembreteResponse buscarPorId(@PathVariable UUID id,
                                         Authentication authentication) {
-        resolverUserId(authentication);
+        userIdResolver.resolve(authentication);
         return LembreteResponse.fromDomain(buscarUseCase.executar(id));
     }
 
@@ -87,7 +87,7 @@ public class LembreteController {
             @Valid @RequestBody CriarLembreteRequest request,
             Authentication authentication,
             @RequestHeader(value = "X-Screen-Code", required = false) String screenCode) {
-        UUID userId = resolverUserId(authentication);
+        UUID userId = userIdResolver.resolve(authentication);
         CriarLembreteUseCase.Comando comando = new CriarLembreteUseCase.Comando(
                 userId,
                 request.titulo(),
@@ -108,7 +108,7 @@ public class LembreteController {
             @Valid @RequestBody AtualizarLembreteRequest request,
             Authentication authentication,
             @RequestHeader(value = "X-Screen-Code", required = false) String screenCode) {
-        resolverUserId(authentication);
+        userIdResolver.resolve(authentication);
         String before = toJson(LembreteResponse.fromDomain(buscarUseCase.executar(id)));
         AtualizarLembreteUseCase.Comando comando = new AtualizarLembreteUseCase.Comando(
                 id,
@@ -131,20 +131,12 @@ public class LembreteController {
             @PathVariable UUID id,
             Authentication authentication,
             @RequestHeader(value = "X-Screen-Code", required = false) String screenCode) {
-        resolverUserId(authentication);
+        userIdResolver.resolve(authentication);
         String before = toJson(LembreteResponse.fromDomain(buscarUseCase.executar(id)));
         deletarUseCase.executar(id);
         auditPublisher.publish(new AuditEvent(
                 ENTITY_TYPE, id, AuditAction.DELETE,
                 userEmail(authentication), screenCode, before, null));
-    }
-
-    private UUID resolverUserId(Authentication authentication) {
-        String email = authentication.getName();
-        return usuarioRepository.buscarPorEmail(email)
-                .orElseThrow(() -> new IllegalStateException(
-                        "Usuario autenticado nao encontrado: " + email))
-                .getId();
     }
 
     private String userEmail(Authentication authentication) {

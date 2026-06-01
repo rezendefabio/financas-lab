@@ -9,7 +9,7 @@ import com.laboratorio.financas.limite.interfaces.dto.AtualizarLimiteRequest;
 import com.laboratorio.financas.limite.interfaces.dto.CriarLimiteRequest;
 import com.laboratorio.financas.limite.interfaces.dto.LimiteResponse;
 import com.laboratorio.financas.shared.domain.Money;
-import com.laboratorio.financas.usuario.domain.UsuarioRepository;
+import com.laboratorio.financas.shared.infrastructure.web.UserIdResolver;
 import jakarta.validation.Valid;
 import java.util.Currency;
 import java.util.List;
@@ -37,7 +37,7 @@ public class LimiteController {
     private final BuscarLimiteUseCase buscarUseCase;
     private final AtualizarLimiteUseCase atualizarUseCase;
     private final DesativarLimiteUseCase desativarUseCase;
-    private final UsuarioRepository usuarioRepository;
+    private final UserIdResolver userIdResolver;
 
     public LimiteController(
             CriarLimiteUseCase criarUseCase,
@@ -45,18 +45,18 @@ public class LimiteController {
             BuscarLimiteUseCase buscarUseCase,
             AtualizarLimiteUseCase atualizarUseCase,
             DesativarLimiteUseCase desativarUseCase,
-            UsuarioRepository usuarioRepository) {
+            UserIdResolver userIdResolver) {
         this.criarUseCase = criarUseCase;
         this.listarUseCase = listarUseCase;
         this.buscarUseCase = buscarUseCase;
         this.atualizarUseCase = atualizarUseCase;
         this.desativarUseCase = desativarUseCase;
-        this.usuarioRepository = usuarioRepository;
+        this.userIdResolver = userIdResolver;
     }
 
     @GetMapping
     public List<LimiteResponse> listar(Authentication authentication) {
-        UUID userId = resolverUserId(authentication);
+        UUID userId = userIdResolver.resolve(authentication);
         return listarUseCase.executar(userId).stream()
                 .map(LimiteResponse::fromDomain)
                 .toList();
@@ -64,7 +64,7 @@ public class LimiteController {
 
     @GetMapping("/{id}")
     public LimiteResponse buscar(@PathVariable UUID id, Authentication authentication) {
-        UUID userId = resolverUserId(authentication);
+        UUID userId = userIdResolver.resolve(authentication);
         return LimiteResponse.fromDomain(buscarUseCase.executar(id, userId));
     }
 
@@ -73,7 +73,7 @@ public class LimiteController {
     public LimiteResponse criar(
             @Valid @RequestBody CriarLimiteRequest request,
             Authentication authentication) {
-        UUID userId = resolverUserId(authentication);
+        UUID userId = userIdResolver.resolve(authentication);
         CriarLimiteUseCase.Comando comando = new CriarLimiteUseCase.Comando(
                 userId,
                 request.nome(),
@@ -87,7 +87,7 @@ public class LimiteController {
             @PathVariable UUID id,
             @Valid @RequestBody AtualizarLimiteRequest request,
             Authentication authentication) {
-        UUID userId = resolverUserId(authentication);
+        UUID userId = userIdResolver.resolve(authentication);
         AtualizarLimiteUseCase.Comando comando = new AtualizarLimiteUseCase.Comando(
                 id,
                 userId,
@@ -100,15 +100,7 @@ public class LimiteController {
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void desativar(@PathVariable UUID id, Authentication authentication) {
-        UUID userId = resolverUserId(authentication);
+        UUID userId = userIdResolver.resolve(authentication);
         desativarUseCase.executar(id, userId);
-    }
-
-    private UUID resolverUserId(Authentication authentication) {
-        String email = authentication.getName();
-        return usuarioRepository.buscarPorEmail(email)
-                .orElseThrow(() -> new IllegalStateException(
-                        "Usuario autenticado nao encontrado: " + email))
-                .getId();
     }
 }
