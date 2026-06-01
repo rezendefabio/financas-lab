@@ -137,7 +137,7 @@ class AnotacaoRepositoryImplTest extends AbstractIntegrationTest {
     void listarPorUsuarioRetornaApenasAnotacoesDoUsuario() {
         // Given
         UUID userId = criarUsuarioPersistido();
-        UUID outrouserId = criarUsuarioPersistido();
+        UUID outroUserId = criarUsuarioPersistido();
 
         Anotacao a1 = new Anotacao(
                 userId, "A1", null, TipoAnotacao.LEMBRETE, PrioridadeAnotacao.MEDIA, null, null
@@ -146,7 +146,7 @@ class AnotacaoRepositoryImplTest extends AbstractIntegrationTest {
                 userId, "A2", null, TipoAnotacao.ALERTA, PrioridadeAnotacao.ALTA, null, null
         );
         Anotacao outroUsuario = new Anotacao(
-                outrouserId, "Outro", null, TipoAnotacao.OBSERVACAO, PrioridadeAnotacao.BAIXA, null, null
+                outroUserId, "Outro", null, TipoAnotacao.OBSERVACAO, PrioridadeAnotacao.BAIXA, null, null
         );
         repository.salvar(a1);
         repository.salvar(a2);
