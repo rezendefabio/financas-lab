@@ -71,16 +71,17 @@ class AssinaturaRepositoryImplTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void listarPorUserIdRetornaSomenteDoUsuario() {
+    void listarTodosRetornaAssinaturasDeQualquerUsuario() {
         repository.salvar(new Assinatura(userId, "Netflix", TipoAssinatura.STREAMING, VALOR, RENOVACAO));
         repository.salvar(new Assinatura(userId, "Spotify", TipoAssinatura.STREAMING, VALOR, RENOVACAO));
         UUID outroUserId = criarUsuarioPersistido();
         repository.salvar(new Assinatura(outroUserId, "Outro", TipoAssinatura.OUTROS, VALOR, RENOVACAO));
 
-        List<Assinatura> resultado = repository.listarPorUserId(userId);
+        List<Assinatura> resultado = repository.listarTodos();
 
-        assertThat(resultado).hasSize(2);
-        assertThat(resultado).allMatch(a -> a.getUserId().equals(userId));
+        assertThat(resultado).hasSize(3);
+        assertThat(resultado).anyMatch(a -> a.getUserId().equals(userId));
+        assertThat(resultado).anyMatch(a -> a.getUserId().equals(outroUserId));
     }
 
     @Test

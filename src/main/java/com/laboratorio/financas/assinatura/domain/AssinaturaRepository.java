@@ -10,7 +10,7 @@ public interface AssinaturaRepository {
 
     Optional<Assinatura> buscarPorId(UUID id);
 
-    List<Assinatura> listarPorUserId(UUID userId);
+    List<Assinatura> listarTodos();
 
     Assinatura atualizar(Assinatura entidade);
 
