@@ -17,8 +17,8 @@ public class DesativarCentroCustoUseCase {
     }
 
     @Transactional
-    public void executar(UUID id, UUID userId) {
-        CentroCusto centroCusto = repository.findByIdAndUserId(id, userId)
+    public void executar(UUID id) {
+        CentroCusto centroCusto = repository.findById(id)
                 .orElseThrow(() -> new CentroCustoNaoEncontradoException(id));
         CentroCusto desativado = centroCusto.desativar();
         repository.save(desativado);

@@ -110,12 +110,10 @@ public class CentroCustoController {
             @Valid @RequestBody AtualizarCentroCustoRequest request,
             @RequestHeader(value = "X-Screen-Code", required = false) String screenCode
     ) {
-        UUID userId = userIdResolver.resolve();
         CentroCusto antes = buscarCentroCustoPorIdUseCase.executar(id);
         String before = toJson(CentroCustoResponse.fromDomain(antes));
         AtualizarCentroCustoComando comando = new AtualizarCentroCustoComando(
                 id,
-                userId,
                 request.nome(),
                 request.descricao()
         );
@@ -132,10 +130,9 @@ public class CentroCustoController {
     public void desativar(
             @PathVariable UUID id,
             @RequestHeader(value = "X-Screen-Code", required = false) String screenCode) {
-        UUID userId = userIdResolver.resolve();
         CentroCusto antes = buscarCentroCustoPorIdUseCase.executar(id);
         String before = toJson(CentroCustoResponse.fromDomain(antes));
-        desativarCentroCustoUseCase.executar(id, userId);
+        desativarCentroCustoUseCase.executar(id);
         CentroCusto depois = buscarCentroCustoPorIdUseCase.executar(id);
         auditPublisher.publish(new AuditEvent(
                 ENTITY_TYPE, id, AuditAction.UPDATE,
