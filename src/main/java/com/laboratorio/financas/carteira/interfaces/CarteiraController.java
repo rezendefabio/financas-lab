@@ -11,6 +11,7 @@ import com.laboratorio.financas.carteira.application.DeletarCarteiraUseCase;
 import com.laboratorio.financas.carteira.application.ListarCarteirasUseCase;
 import com.laboratorio.financas.carteira.domain.Carteira;
 import com.laboratorio.financas.carteira.domain.CarteiraNaoEncontradaException;
+import com.laboratorio.financas.carteira.domain.CarteiraRepository;
 import com.laboratorio.financas.shared.infrastructure.web.UserIdResolver;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -41,6 +42,7 @@ public class CarteiraController {
     private final ListarCarteirasUseCase listarCarteirasUseCase;
     private final AtualizarCarteiraUseCase atualizarCarteiraUseCase;
     private final DeletarCarteiraUseCase deletarCarteiraUseCase;
+    private final CarteiraRepository carteiraRepository;
     private final UserIdResolver userIdResolver;
     private final AuditPublisher auditPublisher;
     private final ObjectMapper objectMapper;
@@ -50,6 +52,7 @@ public class CarteiraController {
             ListarCarteirasUseCase listarCarteirasUseCase,
             AtualizarCarteiraUseCase atualizarCarteiraUseCase,
             DeletarCarteiraUseCase deletarCarteiraUseCase,
+            CarteiraRepository carteiraRepository,
             UserIdResolver userIdResolver,
             AuditPublisher auditPublisher,
             ObjectMapper objectMapper
@@ -58,23 +61,23 @@ public class CarteiraController {
         this.listarCarteirasUseCase = listarCarteirasUseCase;
         this.atualizarCarteiraUseCase = atualizarCarteiraUseCase;
         this.deletarCarteiraUseCase = deletarCarteiraUseCase;
+        this.carteiraRepository = carteiraRepository;
         this.userIdResolver = userIdResolver;
         this.auditPublisher = auditPublisher;
         this.objectMapper = objectMapper;
     }
 
     @GetMapping
-    public List<CarteiraResponse> listar(Authentication authentication) {
-        UUID userId = userIdResolver.resolve(authentication);
-        return listarCarteirasUseCase.executar(userId).stream()
+    public List<CarteiraResponse> listar() {
+        return listarCarteirasUseCase.executar().stream()
                 .map(CarteiraResponse::fromDomain)
                 .toList();
     }
 
     @GetMapping("/{id}")
-    public CarteiraResponse buscar(@PathVariable UUID id, Authentication authentication) {
-        UUID userId = userIdResolver.resolve(authentication);
-        Carteira carteira = buscarDoUsuario(id, userId);
+    public CarteiraResponse buscar(@PathVariable UUID id) {
+        Carteira carteira = carteiraRepository.buscarPorId(id)
+                .orElseThrow(() -> new CarteiraNaoEncontradaException(id));
         return CarteiraResponse.fromDomain(carteira);
     }
 
@@ -124,9 +127,8 @@ public class CarteiraController {
     }
 
     private Carteira buscarDoUsuario(UUID id, UUID userId) {
-        return listarCarteirasUseCase.executar(userId).stream()
-                .filter(c -> c.getId().equals(id))
-                .findFirst()
+        return carteiraRepository.buscarPorId(id)
+                .filter(c -> c.getUserId().equals(userId))
                 .orElseThrow(() -> new CarteiraNaoEncontradaException(id));
     }
 

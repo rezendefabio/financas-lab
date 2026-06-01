@@ -26,27 +26,25 @@ class ListarCarteirasUseCaseTest {
     }
 
     @Test
-    void executarRetornaCarteirasDoUsuario() {
-        UUID userId = UUID.randomUUID();
+    void executarRetornaTodasAsCarteiras() {
         UUID contaId = UUID.randomUUID();
         List<Carteira> carteiras = List.of(
-                new Carteira(userId, contaId, "Tesouro", TipoCarteira.RENDA_FIXA),
-                new Carteira(userId, contaId, "Acoes", TipoCarteira.RENDA_VARIAVEL)
+                new Carteira(UUID.randomUUID(), contaId, "Tesouro", TipoCarteira.RENDA_FIXA),
+                new Carteira(UUID.randomUUID(), contaId, "Acoes", TipoCarteira.RENDA_VARIAVEL)
         );
-        when(carteiraRepository.listarPorUserId(userId)).thenReturn(carteiras);
+        when(carteiraRepository.listarTodos()).thenReturn(carteiras);
 
-        List<Carteira> resultado = useCase.executar(userId);
+        List<Carteira> resultado = useCase.executar();
 
         assertThat(resultado).hasSize(2);
-        verify(carteiraRepository, times(1)).listarPorUserId(userId);
+        verify(carteiraRepository, times(1)).listarTodos();
     }
 
     @Test
-    void executarRetornaListaVaziaQuandoUsuarioSemCarteiras() {
-        UUID userId = UUID.randomUUID();
-        when(carteiraRepository.listarPorUserId(userId)).thenReturn(List.of());
+    void executarRetornaListaVaziaQuandoNaoHaCarteiras() {
+        when(carteiraRepository.listarTodos()).thenReturn(List.of());
 
-        List<Carteira> resultado = useCase.executar(userId);
+        List<Carteira> resultado = useCase.executar();
 
         assertThat(resultado).isEmpty();
     }
