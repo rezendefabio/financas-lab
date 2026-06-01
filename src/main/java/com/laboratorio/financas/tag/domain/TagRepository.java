@@ -12,8 +12,6 @@ public interface TagRepository {
 
     List<Tag> buscarPorUserId(UUID userId);
 
-    Optional<Tag> buscarPorIdEUserId(UUID id, UUID userId);
-
     Tag salvar(Tag tag);
 
     void deletar(UUID id);

@@ -16,11 +16,11 @@ public class AtualizarTagUseCase {
         this.tagRepository = tagRepository;
     }
 
-    public record Comando(UUID id, UUID userId, String nome, String cor) { }
+    public record Comando(UUID id, String nome, String cor) { }
 
     @Transactional
     public Tag executar(Comando comando) {
-        Tag existente = tagRepository.buscarPorIdEUserId(comando.id(), comando.userId())
+        Tag existente = tagRepository.buscarPorId(comando.id())
                 .orElseThrow(() -> new TagNaoEncontradaException(comando.id()));
 
         String novoNome = (comando.nome() != null) ? comando.nome() : existente.getNome();

@@ -38,11 +38,6 @@ public class TagRepositoryImpl implements TagRepository {
     }
 
     @Override
-    public Optional<Tag> buscarPorIdEUserId(UUID id, UUID userId) {
-        return jpaRepository.findByIdAndUserId(id, userId).map(mapper::toDomain);
-    }
-
-    @Override
     public Tag salvar(Tag tag) {
         TagEntity entity = mapper.toEntity(tag);
         TagEntity saved = jpaRepository.save(entity);

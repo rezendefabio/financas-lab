@@ -54,4 +54,20 @@ public abstract class AbstractAuthenticatedIntegrationTest extends AbstractInteg
     protected MockHttpServletRequestBuilder comAuth(MockHttpServletRequestBuilder request) {
         return request.header("Authorization", "Bearer " + token);
     }
+
+    /**
+     * Registra outro usuario persistido e retorna seu id. Util para cenarios de
+     * escrita compartilhada: criar registro carimbado com a autoria de outro
+     * usuario e validar que o usuario autenticado consegue edita-lo/delete-lo.
+     */
+    protected UUID registrarOutroUsuario(String email) throws Exception {
+        String body = "{\"email\":\"" + email + "\",\"senha\":\"senha12345678\"}";
+        mockMvc.perform(post("/api/auth/registrar")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andReturn();
+        return usuarioJpaRepository.findByEmail(email)
+                .map(u -> u.getId())
+                .orElseThrow(() -> new IllegalStateException("Usuario nao persistido: " + email));
+    }
 }

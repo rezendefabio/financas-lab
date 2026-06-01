@@ -126,22 +126,20 @@ class TagRepositoryImplTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void findByIdAndUserIdRetornaTagQuandoExisteParaUsuario() {
+    void buscarPorIdRetornaTagIndependenteDoAutor() {
         Tag tag = new Tag(userIdA, "Viagem", "#0000FF");
         repository.salvar(tag);
 
-        Optional<Tag> resultado = repository.buscarPorIdEUserId(tag.getId(), userIdA);
+        Optional<Tag> resultado = repository.buscarPorId(tag.getId());
 
         assertThat(resultado).isPresent();
         assertThat(resultado.get().getId()).isEqualTo(tag.getId());
+        assertThat(resultado.get().getUserId()).isEqualTo(userIdA);
     }
 
     @Test
-    void findByIdAndUserIdRetornaVazioParaOutroUsuario() {
-        Tag tag = new Tag(userIdA, "Viagem", null);
-        repository.salvar(tag);
-
-        Optional<Tag> resultado = repository.buscarPorIdEUserId(tag.getId(), userIdB);
+    void buscarPorIdRetornaVazioQuandoNaoExiste() {
+        Optional<Tag> resultado = repository.buscarPorId(UUID.randomUUID());
 
         assertThat(resultado).isEmpty();
     }
