@@ -9,7 +9,7 @@ public interface LimiteRepository {
 
     Optional<Limite> buscarPorId(UUID id);
 
-    List<Limite> listarPorUserId(UUID userId);
+    List<Limite> listarTodos();
 
     Limite atualizar(Limite limite);
 

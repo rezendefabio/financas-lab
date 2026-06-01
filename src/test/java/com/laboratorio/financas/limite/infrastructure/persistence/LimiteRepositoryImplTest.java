@@ -74,16 +74,17 @@ class LimiteRepositoryImplTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void listarPorUserIdRetornaApenasDoUsuario() {
+    void listarTodosRetornaLimitesDeQualquerUsuario() {
         repository.salvar(new Limite(userId, "A", TipoLimite.DIARIO, valor("10.00")));
         repository.salvar(new Limite(userId, "B", TipoLimite.SEMANAL, valor("20.00")));
         UUID outroUser = criarUsuarioPersistido();
         repository.salvar(new Limite(outroUser, "Outro", TipoLimite.ANUAL, valor("30.00")));
 
-        List<Limite> lista = repository.listarPorUserId(userId);
+        List<Limite> lista = repository.listarTodos();
 
-        assertThat(lista).hasSize(2);
-        assertThat(lista).allMatch(l -> l.getUserId().equals(userId));
+        assertThat(lista).hasSize(3);
+        assertThat(lista).anyMatch(l -> l.getUserId().equals(userId));
+        assertThat(lista).anyMatch(l -> l.getUserId().equals(outroUser));
     }
 
     @Test
