@@ -12,8 +12,7 @@ import com.laboratorio.financas.payee.application.ListarPayeesUseCase;
 import com.laboratorio.financas.payee.application.dto.AtualizarPayeeComando;
 import com.laboratorio.financas.payee.application.dto.CriarPayeeComando;
 import com.laboratorio.financas.payee.domain.Payee;
-import com.laboratorio.financas.usuario.domain.Usuario;
-import com.laboratorio.financas.usuario.domain.UsuarioRepository;
+import com.laboratorio.financas.shared.infrastructure.web.UserIdResolver;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
@@ -45,7 +44,7 @@ public class PayeeController {
     private final ListarPayeesUseCase listarPayeesUseCase;
     private final AtualizarPayeeUseCase atualizarPayeeUseCase;
     private final DeletarPayeeUseCase deletarPayeeUseCase;
-    private final UsuarioRepository usuarioRepository;
+    private final UserIdResolver userIdResolver;
     private final AuditPublisher auditPublisher;
     private final ObjectMapper objectMapper;
 
@@ -54,7 +53,7 @@ public class PayeeController {
             ListarPayeesUseCase listarPayeesUseCase,
             AtualizarPayeeUseCase atualizarPayeeUseCase,
             DeletarPayeeUseCase deletarPayeeUseCase,
-            UsuarioRepository usuarioRepository,
+            UserIdResolver userIdResolver,
             AuditPublisher auditPublisher,
             ObjectMapper objectMapper
     ) {
@@ -62,14 +61,14 @@ public class PayeeController {
         this.listarPayeesUseCase = listarPayeesUseCase;
         this.atualizarPayeeUseCase = atualizarPayeeUseCase;
         this.deletarPayeeUseCase = deletarPayeeUseCase;
-        this.usuarioRepository = usuarioRepository;
+        this.userIdResolver = userIdResolver;
         this.auditPublisher = auditPublisher;
         this.objectMapper = objectMapper;
     }
 
     @GetMapping
     public List<PayeeResponse> listar() {
-        UUID userId = resolverUserId();
+        UUID userId = userIdResolver.resolve();
         List<Payee> payees = listarPayeesUseCase.executar(userId);
         return payees.stream().map(PayeeResponse::fromDomain).toList();
     }
@@ -78,7 +77,7 @@ public class PayeeController {
     public ResponseEntity<PayeeResponse> criar(
             @Valid @RequestBody PayeeRequest request,
             @RequestHeader(value = "X-Screen-Code", required = false) String screenCode) {
-        UUID userId = resolverUserId();
+        UUID userId = userIdResolver.resolve();
         CriarPayeeComando comando = new CriarPayeeComando(userId, request.nome(), request.categoriaPadraoId());
         Payee criado = criarPayeeUseCase.executar(comando);
         PayeeResponse response = PayeeResponse.fromDomain(criado);
@@ -94,7 +93,7 @@ public class PayeeController {
             @Valid @RequestBody PayeeRequest request,
             @RequestHeader(value = "X-Screen-Code", required = false) String screenCode
     ) {
-        UUID userId = resolverUserId();
+        UUID userId = userIdResolver.resolve();
         AtualizarPayeeComando comando = new AtualizarPayeeComando(
                 id,
                 userId,
@@ -114,19 +113,11 @@ public class PayeeController {
     public void deletar(
             @PathVariable UUID id,
             @RequestHeader(value = "X-Screen-Code", required = false) String screenCode) {
-        UUID userId = resolverUserId();
+        UUID userId = userIdResolver.resolve();
         deletarPayeeUseCase.executar(id, userId);
         auditPublisher.publish(new AuditEvent(
                 ENTITY_TYPE, id, AuditAction.DELETE,
                 userEmail(), screenCode, null, null));
-    }
-
-    private UUID resolverUserId() {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        String email = (String) auth.getPrincipal();
-        Usuario usuario = usuarioRepository.buscarPorEmail(email)
-                .orElseThrow(() -> new IllegalStateException("Usuario autenticado nao encontrado: " + email));
-        return usuario.getId();
     }
 
     private String userEmail() {

@@ -14,8 +14,7 @@ import com.laboratorio.financas.fatura.domain.Fatura;
 import com.laboratorio.financas.fatura.interfaces.dto.AtualizarFaturaRequest;
 import com.laboratorio.financas.fatura.interfaces.dto.CriarFaturaRequest;
 import com.laboratorio.financas.fatura.interfaces.dto.FaturaResponse;
-import com.laboratorio.financas.usuario.domain.Usuario;
-import com.laboratorio.financas.usuario.domain.UsuarioRepository;
+import com.laboratorio.financas.shared.infrastructure.web.UserIdResolver;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
@@ -48,7 +47,7 @@ public class FaturaController {
     private final BuscarFaturaPorIdUseCase buscarFaturaPorIdUseCase;
     private final AtualizarFaturaUseCase atualizarFaturaUseCase;
     private final DeletarFaturaUseCase deletarFaturaUseCase;
-    private final UsuarioRepository usuarioRepository;
+    private final UserIdResolver userIdResolver;
     private final AuditPublisher auditPublisher;
     private final ObjectMapper objectMapper;
 
@@ -58,7 +57,7 @@ public class FaturaController {
             BuscarFaturaPorIdUseCase buscarFaturaPorIdUseCase,
             AtualizarFaturaUseCase atualizarFaturaUseCase,
             DeletarFaturaUseCase deletarFaturaUseCase,
-            UsuarioRepository usuarioRepository,
+            UserIdResolver userIdResolver,
             AuditPublisher auditPublisher,
             ObjectMapper objectMapper
     ) {
@@ -67,14 +66,14 @@ public class FaturaController {
         this.buscarFaturaPorIdUseCase = buscarFaturaPorIdUseCase;
         this.atualizarFaturaUseCase = atualizarFaturaUseCase;
         this.deletarFaturaUseCase = deletarFaturaUseCase;
-        this.usuarioRepository = usuarioRepository;
+        this.userIdResolver = userIdResolver;
         this.auditPublisher = auditPublisher;
         this.objectMapper = objectMapper;
     }
 
     @GetMapping
     public List<FaturaResponse> listar() {
-        UUID userId = resolverUserId();
+        UUID userId = userIdResolver.resolve();
         return listarFaturasUseCase.executar(userId).stream()
                 .map(FaturaResponse::fromDomain)
                 .toList();
@@ -90,7 +89,7 @@ public class FaturaController {
     public ResponseEntity<FaturaResponse> criar(
             @Valid @RequestBody CriarFaturaRequest request,
             @RequestHeader(value = "X-Screen-Code", required = false) String screenCode) {
-        UUID userId = resolverUserId();
+        UUID userId = userIdResolver.resolve();
         CriarFaturaUseCase.Comando comando = new CriarFaturaUseCase.Comando(
                 userId,
                 request.contaId(),
@@ -143,14 +142,6 @@ public class FaturaController {
         auditPublisher.publish(new AuditEvent(
                 ENTITY_TYPE, id, AuditAction.DELETE,
                 userEmail(), screenCode, before, null));
-    }
-
-    private UUID resolverUserId() {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        String email = (String) auth.getPrincipal();
-        Usuario usuario = usuarioRepository.buscarPorEmail(email)
-                .orElseThrow(() -> new IllegalStateException("Usuario autenticado nao encontrado: " + email));
-        return usuario.getId();
     }
 
     private String userEmail() {
