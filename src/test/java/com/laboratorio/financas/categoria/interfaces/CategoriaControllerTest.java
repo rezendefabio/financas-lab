@@ -113,6 +113,24 @@ class CategoriaControllerTest extends AbstractAuthenticatedIntegrationTest {
     }
 
     @Test
+    void postCategoriaComSystemNoBodyIgnoraOpcaoERetorna201ComSystemFalse() throws Exception {
+        // O campo 'system' foi removido de CriarCategoriaRequest: a criacao via API
+        // e sempre categoria de usuario (system=false). Enviar "system": true no JSON
+        // deve ser ignorado (Jackson ignora campos desconhecidos) e nunca produzir uma
+        // categoria de sistema -- isso fecha o vetor de violacao do invariante.
+        Map<String, Object> body = new HashMap<>();
+        body.put("nome", "Tentativa de categoria de sistema");
+        body.put("tipo", "DESPESA");
+        body.put("system", true);
+        mockMvc.perform(comAuth(post("/api/categorias")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(body))))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.system", equalTo(false)))
+                .andExpect(jsonPath("$.userId", equalTo(authenticatedUserId.toString())));
+    }
+
+    @Test
     void postCategoriaComUserIdRetorna201() throws Exception {
         Map<String, Object> body = new HashMap<>();
         body.put("nome", "Mercado");
