@@ -10,7 +10,7 @@ public interface LembreteRepository {
 
     Optional<Lembrete> buscarPorId(UUID id);
 
-    List<Lembrete> listarPorUserId(UUID userId);
+    List<Lembrete> listarTodos();
 
     Lembrete atualizar(Lembrete lembrete);
 

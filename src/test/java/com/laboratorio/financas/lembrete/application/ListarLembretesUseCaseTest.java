@@ -27,12 +27,12 @@ class ListarLembretesUseCaseTest {
     }
 
     @Test
-    void executarRetornaListaDoRepositorio() {
+    void executarRetornaTodosOsLembretes() {
         List<Lembrete> esperado = List.of(
                 new Lembrete(USER_ID, "A", null, LocalDate.now(), Prioridade.BAIXA));
-        when(repository.listarPorUserId(USER_ID)).thenReturn(esperado);
+        when(repository.listarTodos()).thenReturn(esperado);
 
-        List<Lembrete> resultado = useCase.executar(USER_ID);
+        List<Lembrete> resultado = useCase.executar();
 
         assertThat(resultado).isEqualTo(esperado);
     }

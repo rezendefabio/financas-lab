@@ -67,9 +67,8 @@ public class LembreteController {
     }
 
     @GetMapping
-    public List<LembreteResponse> listar(Authentication authentication) {
-        UUID userId = userIdResolver.resolve(authentication);
-        return listarUseCase.executar(userId).stream()
+    public List<LembreteResponse> listar() {
+        return listarUseCase.executar().stream()
                 .map(LembreteResponse::fromDomain)
                 .toList();
     }

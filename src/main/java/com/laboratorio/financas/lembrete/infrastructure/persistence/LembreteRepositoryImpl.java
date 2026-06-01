@@ -30,8 +30,8 @@ public class LembreteRepositoryImpl implements LembreteRepository {
     }
 
     @Override
-    public List<Lembrete> listarPorUserId(UUID userId) {
-        return jpaRepository.findByUserId(userId).stream()
+    public List<Lembrete> listarTodos() {
+        return jpaRepository.findAll().stream()
                 .map(mapper::toDomain)
                 .toList();
     }
