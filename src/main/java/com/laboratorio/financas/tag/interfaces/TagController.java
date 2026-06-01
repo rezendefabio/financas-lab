@@ -63,9 +63,8 @@ public class TagController {
     }
 
     @GetMapping
-    public List<TagResponse> listar(Authentication authentication) {
-        UUID userId = userIdResolver.resolve(authentication);
-        List<Tag> tags = listarTagsUseCase.executar(userId);
+    public List<TagResponse> listar() {
+        List<Tag> tags = listarTagsUseCase.executar();
         return tags.stream().map(TagResponse::fromDomain).toList();
     }
 

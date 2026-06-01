@@ -26,12 +26,12 @@ class ListarTagsUseCaseTest {
     }
 
     @Test
-    void executarRetornaListaDeTags() {
+    void executarRetornaTodasAsTags() {
         Tag t1 = new Tag(UUID.randomUUID(), USER_ID, "Essencial", null, Instant.now());
-        Tag t2 = new Tag(UUID.randomUUID(), USER_ID, "Lazer", "#00FF00", Instant.now());
-        when(repository.buscarPorUserId(USER_ID)).thenReturn(List.of(t1, t2));
+        Tag t2 = new Tag(UUID.randomUUID(), UUID.randomUUID(), "Lazer", "#00FF00", Instant.now());
+        when(repository.listarTodos()).thenReturn(List.of(t1, t2));
 
-        List<Tag> resultado = useCase.executar(USER_ID);
+        List<Tag> resultado = useCase.executar();
 
         assertThat(resultado).hasSize(2);
         assertThat(resultado).contains(t1, t2);
@@ -39,19 +39,19 @@ class ListarTagsUseCaseTest {
 
     @Test
     void executarRetornaListaVaziaQuandoNaoHaTags() {
-        when(repository.buscarPorUserId(USER_ID)).thenReturn(List.of());
+        when(repository.listarTodos()).thenReturn(List.of());
 
-        List<Tag> resultado = useCase.executar(USER_ID);
+        List<Tag> resultado = useCase.executar();
 
         assertThat(resultado).isEmpty();
     }
 
     @Test
-    void executarPassaUserIdCorretoParaRepositorio() {
-        when(repository.buscarPorUserId(USER_ID)).thenReturn(List.of());
+    void executarDelegaParaListarTodos() {
+        when(repository.listarTodos()).thenReturn(List.of());
 
-        useCase.executar(USER_ID);
+        useCase.executar();
 
-        Mockito.verify(repository).buscarPorUserId(USER_ID);
+        Mockito.verify(repository).listarTodos();
     }
 }

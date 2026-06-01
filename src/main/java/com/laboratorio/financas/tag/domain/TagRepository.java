@@ -8,6 +8,8 @@ public interface TagRepository {
 
     Optional<Tag> buscarPorId(UUID id);
 
+    List<Tag> listarTodos();
+
     List<Tag> buscarPorUserId(UUID userId);
 
     Optional<Tag> buscarPorIdEUserId(UUID id, UUID userId);
