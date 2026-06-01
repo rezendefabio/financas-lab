@@ -22,12 +22,9 @@ public class AtualizarLimiteUseCase {
     public Limite executar(Comando comando) {
         Limite limite = repository.buscarPorId(comando.id())
                 .orElseThrow(() -> new LimiteNaoEncontradoException(comando.id()));
-        if (!limite.getUserId().equals(comando.userId())) {
-            throw new LimiteNaoEncontradoException(comando.id());
-        }
         limite.atualizar(comando.nome(), comando.tipo(), comando.valor());
         return repository.atualizar(limite);
     }
 
-    public record Comando(UUID id, UUID userId, String nome, TipoLimite tipo, Money valor) { }
+    public record Comando(UUID id, String nome, TipoLimite tipo, Money valor) { }
 }

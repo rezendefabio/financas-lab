@@ -83,12 +83,9 @@ public class LimiteController {
     @PutMapping("/{id}")
     public LimiteResponse atualizar(
             @PathVariable UUID id,
-            @Valid @RequestBody AtualizarLimiteRequest request,
-            Authentication authentication) {
-        UUID userId = userIdResolver.resolve(authentication);
+            @Valid @RequestBody AtualizarLimiteRequest request) {
         AtualizarLimiteUseCase.Comando comando = new AtualizarLimiteUseCase.Comando(
                 id,
-                userId,
                 request.nome(),
                 request.tipo(),
                 new Money(request.valor(), MOEDA_PADRAO));
@@ -97,8 +94,7 @@ public class LimiteController {
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void desativar(@PathVariable UUID id, Authentication authentication) {
-        UUID userId = userIdResolver.resolve(authentication);
-        desativarUseCase.executar(id, userId);
+    public void desativar(@PathVariable UUID id) {
+        desativarUseCase.executar(id);
     }
 }

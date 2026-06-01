@@ -17,12 +17,9 @@ public class DesativarLimiteUseCase {
     }
 
     @Transactional
-    public void executar(UUID id, UUID userId) {
+    public void executar(UUID id) {
         Limite limite = repository.buscarPorId(id)
                 .orElseThrow(() -> new LimiteNaoEncontradoException(id));
-        if (!limite.getUserId().equals(userId)) {
-            throw new LimiteNaoEncontradoException(id);
-        }
         limite.desativar();
         repository.atualizar(limite);
     }
