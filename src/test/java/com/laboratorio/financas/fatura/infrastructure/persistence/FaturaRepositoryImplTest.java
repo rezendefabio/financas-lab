@@ -108,15 +108,16 @@ class FaturaRepositoryImplTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void listarPorUserIdRetornaApenasDoUsuario() {
+    void listarTodosRetornaFaturasDeQualquerUsuario() {
         repository.salvar(new Fatura(userId, contaId, "Maio", vencimento, null, null));
         repository.salvar(new Fatura(userId, contaId, "Junho", vencimento, null, null));
         repository.salvar(new Fatura(outroUserId, contaId, "Maio", vencimento, null, null));
 
-        List<Fatura> resultado = repository.listarPorUserId(userId);
+        List<Fatura> resultado = repository.listarTodos();
 
-        assertThat(resultado).hasSize(2);
-        assertThat(resultado).allMatch(f -> f.getUserId().equals(userId));
+        assertThat(resultado).hasSize(3);
+        assertThat(resultado).anyMatch(f -> f.getUserId().equals(userId));
+        assertThat(resultado).anyMatch(f -> f.getUserId().equals(outroUserId));
     }
 
     @Test

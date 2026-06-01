@@ -10,7 +10,7 @@ public interface FaturaRepository {
 
     Optional<Fatura> buscarPorId(UUID id);
 
-    List<Fatura> listarPorUserId(UUID userId);
+    List<Fatura> listarTodos();
 
     Fatura atualizar(Fatura fatura);
 
