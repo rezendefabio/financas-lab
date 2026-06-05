@@ -62,6 +62,9 @@ data/
 # ─── Prompts de sub-etapas (efemeros, conteudo embutido inline pelo /batch) ────
 docs/prompts/
 
+# ─── Modelos / kit de outra fabrica (autoria local -- nao versionar no financas-lab) ─
+modelos/
+
 # ─── Estado persistente de routines (gerado em runtime, nao versionado) ─────
 .claude/daily-summary.state
 .claude/babysit-prs.state
